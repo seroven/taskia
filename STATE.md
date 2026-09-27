@@ -26,11 +26,12 @@ Mundos, el vínculo mundo-materia y misiones se archivan (`is_active = false`), 
 
 ## Cómo correrlo
 
-En la raíz, con dependencias ya instaladas en cada carpeta:
+En la raíz:
 
 ```bash
-npm run dev        # API y Vite en paralelo
-npm run build      # compila los dos, el API primero
+npm run install:all   # dependencias del API y de Vite
+npm run dev           # los dos en paralelo
+npm run build         # compila los dos, el API primero
 ```
 
 Variantes: `dev:pd`, `build:qa`, `build:pd`.

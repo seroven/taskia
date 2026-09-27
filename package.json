@@ -2,6 +2,7 @@
   "name": "taskia",
   "private": true,
   "scripts": {
+    "install:all": "npm install --prefix taskia_backend && npm install --prefix taskia_frontend",
     "dev": "node scripts/run.mjs dev",
     "dev:pd": "node scripts/run.mjs dev:pd",
     "build": "node scripts/run.mjs build",
