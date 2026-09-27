@@ -18,6 +18,7 @@ Mundos, el vínculo mundo-materia y misiones se archivan (`is_active = false`), 
 - Volver a agregar una materia reactiva solo el vínculo. Las misiones archivadas no reaparecen.
 - En un desafío, la respuesta vacía se avisa con un toast de warning, no con texto rojo.
 - Las tablas del tutor de tareas y del tutor de misiones siguen separadas.
+- El trabajo del día se commitea y se sube a `staging`. `main` queda limpia hasta que se pida lo contrario.
 
 ## Pendiente
 

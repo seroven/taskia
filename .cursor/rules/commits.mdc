@@ -11,7 +11,20 @@ Dilo así, con el mensaje ya armado:
 
 > Hemos hecho X. Recomiendo el commit `[alcance] tipo: resumen`.
 
-No ejecutes `git commit` hasta que el usuario lo confirme (`ya`, `haz el commit`, o equivalente). Nunca incluyas `.env`, credenciales ni `node_modules`.
+No ejecutes `git commit` hasta que el usuario lo confirme (`ya`, `haz el commit`, o equivalente).
+
+El trabajo del día va a la rama `staging`. `main` se queda limpia: no hagas commit ni push ahí salvo que el usuario lo pida con esas palabras. Si estás en `main` al confirmar, pasa a `staging` antes de commitear.
+
+La terminal es PowerShell: encadena con `;`, no con `&&`. Al confirmar, en este orden:
+
+```powershell
+git status
+git add .
+git commit -m "[alcance] tipo: resumen"
+git push -u origin staging
+```
+
+`git status` primero, para ver qué entra. `git add .` después. Si en el status aparece un `.env`, credenciales o `node_modules`, no los agregues. El push publica `staging`, no `main`.
 
 ## Mensaje
 
