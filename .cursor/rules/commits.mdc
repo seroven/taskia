@@ -1,0 +1,28 @@
+---
+description: Recomendar commits del monorepo y su mensaje, y hacerlos solo si el usuario lo confirma
+alwaysApply: true
+---
+
+# Commits
+
+El workspace es un solo repositorio. Recomienda un commit al cerrar una unidad coherente (feature, fix, esquema, docs de ese cambio). No lo recomiendes a mitad de un cambio ni por un ajuste de formato.
+
+Dilo así, con el mensaje ya armado:
+
+> Hemos hecho X. Recomiendo el commit `[alcance] tipo: resumen`.
+
+No ejecutes `git commit` hasta que el usuario lo confirme (`ya`, `haz el commit`, o equivalente). Nunca incluyas `.env`, credenciales ni `node_modules`.
+
+## Mensaje
+
+```
+[taskia_backend] feat: new endpoint for tasks
+[taskia_frontend] fix: warning toast on empty challenge answer
+[taskia_fullstack] chore: root scripts to run both apps
+```
+
+- Solo `taskia_backend/` → `taskia_backend`
+- Solo `taskia_frontend/` → `taskia_frontend`
+- Los dos, o archivos de la raíz (scripts, reglas, `STATE.md`, `.gitignore`) → `taskia_fullstack`
+- Tipo: `feat`, `fix`, `refactor`, `docs`, `chore`
+- El resumen va en inglés, en imperativo corto, y dice el porqué

@@ -1,0 +1,11 @@
+{
+  "name": "taskia",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/run.mjs dev",
+    "dev:pd": "node scripts/run.mjs dev:pd",
+    "build": "node scripts/run.mjs build",
+    "build:qa": "node scripts/run.mjs build:qa",
+    "build:pd": "node scripts/run.mjs build:pd"
+  }
+}

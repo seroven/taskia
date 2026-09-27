@@ -1,0 +1,22 @@
+---
+description: Mantener el contexto del proyecto en STATE.md de la raíz
+alwaysApply: true
+---
+
+# Contexto en STATE.md
+
+`STATE.md` en la raíz es la memoria del proyecto. Léelo al empezar una tarea, antes de recorrer el repo. No reemplaza al código: si el archivo y el código se contradicen, manda el código y corrige `STATE.md`.
+
+## Cuándo actualizarlo
+
+En el mismo turno del cambio, si un futuro chat lo necesitaría para no redescubrirlo:
+
+- comportamiento visible, contrato de API o esquema de base de datos
+- decisión de arquitectura que haya que respetar después
+- algo pendiente, bloqueado o a propósito sin hacer
+
+No lo toques por formato, un typo, un rename sin cambio de comportamiento ni una lectura que no decidió nada.
+
+## Cómo escribirlo
+
+Reescribe la sección que cambió. No agregues una bitácora. Mantén cuatro secciones: Ahora, Decisiones vigentes, Pendiente, Cómo correrlo. Si pasa de unas 80 líneas, comprime lo viejo en una decisión de una línea.

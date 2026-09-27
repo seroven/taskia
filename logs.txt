@@ -1,0 +1,232 @@
+2026-09-10T04:23:09.418483794Z ==> It looks like we don't have access to your repo, but we'll try to clone it anyway.
+2026-09-10T04:23:09.418492872Z ==> Cloning from https://github.com/seroven/taskia_backend
+2026-09-10T04:23:15.668927105Z ==> Checking out commit 73966f30403729b3fec555065666fcf533158834 in branch main
+2026-09-10T04:23:17.63635655Z ==> Using Node.js version 24.14.1 (default)
+2026-09-10T04:23:17.63636895Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2026-09-10T04:23:17.667304893Z ==> Running build command 'npm install; npm run build'...
+2026-09-10T04:23:18.751732681Z 
+2026-09-10T04:23:18.751742009Z added 100 packages, and audited 101 packages in 984ms
+2026-09-10T04:23:18.751749389Z 
+2026-09-10T04:23:18.751843388Z 34 packages are looking for funding
+2026-09-10T04:23:18.751889153Z   run `npm fund` for details
+2026-09-10T04:23:18.752721876Z 
+2026-09-10T04:23:18.752725916Z found 0 vulnerabilities
+2026-09-10T04:23:18.884267435Z 
+2026-09-10T04:23:18.884282823Z > taskia_backend@1.0.0 build
+2026-09-10T04:23:18.884284527Z > tsc
+2026-09-10T04:23:18.88428609Z 
+2026-09-10T04:23:19.045493086Z src/app.ts(1,21): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.045506443Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.045508181Z src/app.ts(2,18): error TS7016: Could not find a declaration file for module 'cors'. '/opt/render/project/src/node_modules/cors/lib/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.045514003Z   Try `npm i --save-dev @types/cors` if it exists or add a new declaration (.d.ts) file containing `declare module 'cors';`
+2026-09-10T04:23:19.045515792Z src/app.ts(3,26): error TS7016: Could not find a declaration file for module 'cookie-parser'. '/opt/render/project/src/node_modules/cookie-parser/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.045517267Z   Try `npm i --save-dev @types/cookie-parser` if it exists or add a new declaration (.d.ts) file containing `declare module 'cookie-parser';`
+2026-09-10T04:23:19.045518532Z src/app.ts(27,23): error TS7006: Parameter '_req' implicitly has an 'any' type.
+2026-09-10T04:23:19.045521527Z src/app.ts(27,29): error TS7006: Parameter 'res' implicitly has an 'any' type.
+2026-09-10T04:23:19.045522977Z src/config/env.ts(2,17): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045526396Z src/config/env.ts(10,12): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045527897Z src/config/env.ts(11,16): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045530926Z src/config/env.ts(15,18): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045533735Z src/config/env.ts(17,15): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045542774Z src/config/env.ts(22,16): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045545717Z src/config/env.ts(25,11): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045546965Z src/config/env.ts(26,14): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045551469Z src/config/env.ts(27,16): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045552661Z src/config/env.ts(30,13): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045556352Z src/config/env.ts(31,12): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045561579Z src/db/pool.ts(20,16): error TS2339: Property 'query' does not exist on type 'PoolConnection'.
+2026-09-10T04:23:19.045566294Z src/index.ts(15,3): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+2026-09-10T04:23:19.045586167Z src/middleware/auth.ts(1,54): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.045587993Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.045591138Z src/middleware/auth.ts(2,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/opt/render/project/src/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.045592532Z   Try `npm i --save-dev @types/jsonwebtoken` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsonwebtoken';`
+2026-09-10T04:23:19.045599523Z src/middleware/auth.ts(59,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045618583Z src/middleware/error.ts(1,54): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.045620177Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.045621581Z src/routes/admin.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.045624523Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.045627524Z src/routes/admin.ts(54,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045630342Z src/routes/admin.ts(64,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04565485Z src/routes/admin.ts(220,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04565972Z src/routes/admin.ts(240,38): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045661114Z src/routes/admin.ts(253,35): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045668127Z src/routes/admin.ts(270,36): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04567117Z src/routes/admin.ts(280,38): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045672472Z src/routes/admin.ts(297,40): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045673766Z src/routes/admin.ts(308,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045676938Z src/routes/admin.ts(340,35): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045679774Z src/routes/admin.ts(361,40): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04568254Z src/routes/admin.ts(378,40): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045691383Z src/routes/admin.ts(400,43): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045694356Z src/routes/admin.ts(430,44): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045702261Z src/routes/admin.ts(452,47): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045711826Z src/routes/admin.ts(475,44): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045713489Z src/routes/admin.ts(496,44): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045714888Z src/routes/admin.ts(517,35): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.045717867Z src/routes/admin.ts(534,41): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045720627Z src/routes/admin.ts(547,41): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045725438Z src/routes/admin.ts(561,38): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045731241Z src/routes/admin.ts(573,37): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045734061Z src/routes/admin.ts(587,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045739743Z src/routes/admin.ts(608,38): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045744152Z src/routes/admin.ts(620,41): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045776272Z src/routes/admin.ts(785,19): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.045778088Z src/routes/admin.ts(872,27): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.045779423Z src/routes/admin.ts(907,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045782586Z src/routes/admin.ts(931,39): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045783907Z src/routes/admin.ts(937,40): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045786938Z src/routes/admin.ts(944,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045789945Z src/routes/admin.ts(979,39): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045794453Z src/routes/admin.ts(985,40): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045821387Z src/routes/admin.ts(993,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045827762Z src/routes/admin.ts(999,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045829079Z src/routes/admin.ts(1028,30): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045831941Z src/routes/admin.ts(1035,20): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045833185Z src/routes/admin.ts(1045,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045835878Z src/routes/admin.ts(1080,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045838589Z src/routes/admin.ts(1091,32): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045846747Z src/routes/admin.ts(1098,22): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045850746Z src/routes/admin.ts(1108,35): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.0458632Z src/routes/admin.ts(1133,30): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045869147Z src/routes/admin.ts(1139,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045872983Z src/routes/admin.ts(1153,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04587439Z src/routes/admin.ts(1168,35): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045875703Z src/routes/admin.ts(1181,35): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045879328Z src/routes/admin.ts(1192,41): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045882456Z src/routes/admin.ts(1197,38): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045886413Z src/routes/admin.ts(1210,36): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045890828Z src/routes/admin.ts(1223,45): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04589364Z src/routes/admin.ts(1231,43): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045899377Z src/routes/admin.ts(1245,40): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045923725Z src/routes/admin.ts(1277,31): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.045925358Z src/routes/admin.ts(1337,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045928294Z src/routes/admin.ts(1385,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04593128Z src/routes/admin.ts(1392,17): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.045934083Z src/routes/admin.ts(1423,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045938191Z src/routes/admin.ts(1461,36): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045960134Z src/routes/admin.ts(1469,37): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045961642Z src/routes/admin.ts(1479,38): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045962832Z src/routes/admin.ts(1516,40): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.045965578Z src/routes/admin.ts(1547,48): error TS7006: Parameter 'w' implicitly has an 'any' type.
+2026-09-10T04:23:19.046001865Z src/routes/admin.ts(1715,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046003492Z src/routes/admin.ts(1722,35): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046009749Z src/routes/admin.ts(1740,19): error TS7006: Parameter 'w' implicitly has an 'any' type.
+2026-09-10T04:23:19.046013542Z src/routes/admin.ts(1747,51): error TS7006: Parameter 'm' implicitly has an 'any' type.
+2026-09-10T04:23:19.046015936Z src/routes/auth.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.046017529Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.04602091Z src/routes/auth.ts(40,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046022356Z src/routes/auth.ts(106,39): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046025396Z src/routes/auth.ts(114,40): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046028269Z src/routes/auth.ts(124,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046036955Z src/routes/auth.ts(129,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046044794Z src/routes/courses.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.046050184Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.046055156Z src/routes/courses.ts(15,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04605955Z src/routes/courses.ts(21,24): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.046077644Z src/routes/difficulties.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.046079587Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.046080806Z src/routes/difficulties.ts(14,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046082173Z src/routes/difficulties.ts(18,17): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.046085406Z src/routes/study.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.046086692Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.046088003Z src/routes/study.ts(98,14): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046090855Z src/routes/study.ts(108,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04609504Z src/routes/study.ts(114,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046103202Z src/routes/study.ts(126,25): error TS7006: Parameter 'm' implicitly has an 'any' type.
+2026-09-10T04:23:19.046111091Z src/routes/study.ts(135,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046113016Z src/routes/study.ts(152,14): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04611582Z src/routes/study.ts(167,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046118653Z src/routes/study.ts(174,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046124245Z src/routes/study.ts(180,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046129787Z src/routes/study.ts(192,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046134271Z src/routes/study.ts(200,14): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046138741Z src/routes/study.ts(214,14): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046162421Z src/routes/study.ts(353,48): error TS7006: Parameter 'm' implicitly has an 'any' type.
+2026-09-10T04:23:19.046163891Z src/routes/study.ts(497,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046165431Z src/routes/tasks.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.04616982Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.046187352Z src/routes/tasks.ts(51,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046188812Z src/routes/tasks.ts(99,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046191789Z src/routes/tasks.ts(109,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04620002Z src/routes/tasks.ts(157,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046202809Z src/routes/tasks.ts(183,34): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046206545Z src/routes/tasks.ts(189,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046210054Z src/routes/tasks.ts(239,34): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046218326Z src/routes/tasks.ts(251,36): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046221277Z src/routes/tasks.ts(264,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046230236Z src/routes/tasks.ts(304,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04623223Z src/routes/tasks.ts(327,35): error TS2339: Property 'query' does not exist on type 'PoolConnection'.
+2026-09-10T04:23:19.04623519Z src/routes/tasks.ts(339,20): error TS2339: Property 'query' does not exist on type 'PoolConnection'.
+2026-09-10T04:23:19.046239522Z src/routes/worlds.ts(1,24): error TS7016: Could not find a declaration file for module 'express'. '/opt/render/project/src/node_modules/express/index.js' implicitly has an 'any' type.
+2026-09-10T04:23:19.046242486Z   Try `npm i --save-dev @types/express` if it exists or add a new declaration (.d.ts) file containing `declare module 'express';`
+2026-09-10T04:23:19.046246636Z src/routes/worlds.ts(90,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046252044Z src/routes/worlds.ts(100,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046256165Z src/routes/worlds.ts(111,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046261847Z src/routes/worlds.ts(126,20): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.046289405Z src/routes/worlds.ts(139,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046290878Z src/routes/worlds.ts(150,14): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046292137Z src/routes/worlds.ts(161,36): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046298256Z src/routes/worlds.ts(167,32): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046301497Z src/routes/worlds.ts(180,28): error TS7006: Parameter 'm' implicitly has an 'any' type.
+2026-09-10T04:23:19.046318364Z src/routes/worlds.ts(190,14): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046320491Z src/routes/worlds.ts(199,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046327894Z src/routes/worlds.ts(223,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046329297Z src/routes/worlds.ts(230,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04633223Z src/routes/worlds.ts(237,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046333542Z src/routes/worlds.ts(309,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046336706Z src/routes/worlds.ts(330,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046340282Z src/routes/worlds.ts(342,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046344502Z src/routes/worlds.ts(359,36): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046375086Z src/routes/worlds.ts(364,32): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046376704Z src/routes/worlds.ts(374,11): error TS7006: Parameter 'm' implicitly has an 'any' type.
+2026-09-10T04:23:19.046378013Z src/routes/worlds.ts(376,11): error TS7006: Parameter 'c' implicitly has an 'any' type.
+2026-09-10T04:23:19.046391326Z src/routes/worlds.ts(693,29): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046392873Z src/routes/worlds.ts(704,30): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046394131Z src/routes/worlds.ts(719,32): error TS7006: Parameter 'q' implicitly has an 'any' type.
+2026-09-10T04:23:19.046397168Z src/routes/worlds.ts(719,35): error TS7006: Parameter 'i' implicitly has an 'any' type.
+2026-09-10T04:23:19.04640021Z src/routes/worlds.ts(758,50): error TS7006: Parameter 'q' implicitly has an 'any' type.
+2026-09-10T04:23:19.046404635Z src/routes/worlds.ts(857,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04640738Z src/routes/worlds.ts(861,17): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.04641303Z src/routes/worlds.ts(885,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046417265Z src/routes/worlds.ts(901,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046456676Z src/routes/worlds.ts(914,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046462212Z src/routes/worlds.ts(938,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046463626Z src/routes/worlds.ts(972,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046466975Z src/routes/worlds.ts(990,48): error TS7006: Parameter 'm' implicitly has an 'any' type.
+2026-09-10T04:23:19.046468242Z src/routes/worlds.ts(1110,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04646949Z src/routes/worlds.ts(1124,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046472328Z src/routes/worlds.ts(1156,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046475166Z src/routes/worlds.ts(1191,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046478006Z src/routes/worlds.ts(1235,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046483123Z src/routes/worlds.ts(1241,46): error TS7006: Parameter 'm' implicitly has an 'any' type.
+2026-09-10T04:23:19.046489282Z src/routes/worlds.ts(1252,24): error TS7006: Parameter 'm' implicitly has an 'any' type.
+2026-09-10T04:23:19.046492149Z src/routes/worlds.ts(1299,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046497674Z src/routes/worlds.ts(1318,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046502169Z src/routes/worlds.ts(1326,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046506364Z src/routes/worlds.ts(1351,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046511881Z src/routes/worlds.ts(1362,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046516045Z src/routes/worlds.ts(1376,32): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046521866Z src/routes/worlds.ts(1408,32): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046528633Z src/routes/worlds.ts(1462,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046550877Z src/routes/worlds.ts(1479,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04655285Z src/routes/worlds.ts(1489,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046561177Z src/routes/worlds.ts(1508,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046564076Z src/routes/worlds.ts(1530,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046565508Z src/routes/worlds.ts(1551,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046568613Z src/routes/worlds.ts(1566,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046571508Z src/routes/worlds.ts(1592,37): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046577253Z src/routes/worlds.ts(1598,34): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046581456Z src/routes/worlds.ts(1604,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046587659Z src/routes/worlds.ts(1621,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046590445Z src/routes/worlds.ts(1648,37): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.04663003Z src/routes/worlds.ts(1664,34): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046631889Z src/routes/worlds.ts(1670,33): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046633159Z src/routes/worlds.ts(1688,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046634684Z src/routes/worlds.ts(1698,17): error TS7006: Parameter 'r' implicitly has an 'any' type.
+2026-09-10T04:23:19.046635944Z src/routes/worlds.ts(1728,37): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046639102Z src/routes/worlds.ts(1736,34): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046640535Z src/routes/worlds.ts(1749,18): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046641899Z src/routes/worlds.ts(1805,31): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.046703456Z src/services/gemini.ts(227,16): error TS2339: Property 'query' does not exist on type 'Pool'.
+2026-09-10T04:23:19.082827995Z ==> Build failed 😞
+2026-09-10T04:23:19.082837791Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
