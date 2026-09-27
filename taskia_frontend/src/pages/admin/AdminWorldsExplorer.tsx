@@ -25,7 +25,7 @@ import {
   MISSION_STATUS_LABEL,
   SCOPE_LABEL,
 } from '../../lib/worldsTypes'
-import { formatWhen } from './adminFormat'
+import { formatWhen } from '../../lib/datetime'
 import { phaseLabel } from '../../lib/studyProtocol'
 import { todayISO } from '../../types'
 

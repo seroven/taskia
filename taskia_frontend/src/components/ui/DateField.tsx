@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
+import { formatDay } from '../../lib/datetime'
 import { Field } from './Field'
 import { useAnchoredPopoverStyle } from './useAnchoredPopoverStyle'
 
@@ -50,13 +51,8 @@ function sameDay(a: Date, b: Date): boolean {
 }
 
 function formatDisplay(value: string): string {
-  const date = parseISO(value)
-  if (!date) return 'Elegir fecha'
-  return date.toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
+  if (!value || !parseISO(value)) return 'Elegir fecha'
+  return formatDay(value)
 }
 
 interface Props {
@@ -125,7 +121,7 @@ export function DateField({
     })
   }, [cursor])
 
-  const monthLabel = cursor.toLocaleDateString('es-ES', {
+  const monthLabel = cursor.toLocaleDateString('es', {
     month: 'long',
     year: 'numeric',
   })

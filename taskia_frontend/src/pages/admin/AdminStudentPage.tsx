@@ -39,11 +39,8 @@ import { useToast } from '../../toast'
 import { AdminChallengeReview } from './AdminChallengeReview'
 import { AdminStatCard } from './AdminStatCard'
 import { AdminWorldsExplorer } from './AdminWorldsExplorer'
-import {
-  formatDay,
-  formatWhen,
-  taskStatusLabel,
-} from './adminFormat'
+import { formatDay, formatWhen } from '../../lib/datetime'
+import { taskStatusLabel } from './adminFormat'
 
 type StudentTab = 'resumen' | 'tareas' | 'mundos' | 'cuenta'
 

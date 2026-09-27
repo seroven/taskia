@@ -8,7 +8,7 @@ Un solo repo en la raíz. Backend en `taskia_backend/`, frontend en `taskia_fron
 
 Roles en catálogo `roles`: Explorador (`user`), Administrador (`admin`), Guardián (`parent`). El admin afilia Guardianes y Exploradores. El Guardián entra a la web (chat con resumen diario, progreso, avisos WhatsApp). Latencia de respuesta se guarda en los chats de estudio.
 
-La base de Postgres guarda instantes en UTC. La web los muestra en la zona de quien mira. `tasks.due_date` es un día de calendario, sin zona.
+La base de Postgres guarda instantes en UTC. La web los muestra en la zona de quien mira con `formatWhen` / `formatDay` en `taskia_frontend/src/lib/datetime.ts`. `tasks.due_date` es un día de calendario, sin zona.
 
 Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no se borran en duro (salvo descartar un desafío a medias).
 

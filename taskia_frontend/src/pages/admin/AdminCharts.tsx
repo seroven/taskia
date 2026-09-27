@@ -25,8 +25,7 @@ import { useAccent } from '../../accent'
 import { EmptyState } from '../../components/EmptyState'
 import { useTheme } from '../../theme'
 import type { AdminDashboard, AdminRosterRow } from '../../lib/adminTypes'
-import { civilDayAsDate, parseInstant } from '../../lib/datetime'
-import { formatDay } from './adminFormat'
+import { daysSince, formatDay, formatDayShort } from '../../lib/datetime'
 
 const IDLE_DAYS = 3
 const MAX_BARS = 10
@@ -69,20 +68,8 @@ function useChartColors() {
   }, [theme, accent])
 }
 
-function shortDay(value: string) {
-  const d = civilDayAsDate(value)
-  if (!d) return value.slice(5)
-  return d.toLocaleDateString('es', { day: 'numeric', month: 'short' })
-}
-
 function shortName(name: string) {
   return name.length > 14 ? `${name.slice(0, 13)}…` : name
-}
-
-function daysSince(value: string | null) {
-  const d = parseInstant(value)
-  if (!d) return null
-  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000))
 }
 
 function ChartTooltip({
@@ -144,7 +131,7 @@ export function AdminDashboardCharts({
     () =>
       data.series.days.map((point) => ({
         ...point,
-        label: shortDay(point.date),
+        label: formatDayShort(point.date),
       })),
     [data.series.days],
   )
@@ -198,7 +185,7 @@ export function AdminDashboardCharts({
     () =>
       (usage?.days ?? []).map((point) => ({
         ...point,
-        label: shortDay(point.date),
+        label: formatDayShort(point.date),
       })),
     [usage],
   )

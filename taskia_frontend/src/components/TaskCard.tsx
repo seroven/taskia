@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { formatDay } from '../lib/datetime'
 import type { Task } from '../types'
 
 export function TaskCardView({
@@ -27,7 +28,7 @@ export function TaskCardView({
         <span className={`kind-tag kind-${task.task_kind}`}>
           {task.task_kind === 'daily' ? 'Del día' : 'Proyecto'}
         </span>
-        <span className="due-tag">Para {task.due_date}</span>
+        <span className="due-tag">Para {formatDay(task.due_date)}</span>
       </div>
       <h3>{task.title}</h3>
       {task.description && <p>{task.description}</p>}

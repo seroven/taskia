@@ -420,7 +420,7 @@ Hay dos clases de columnas y no se tratan igual:
 | Instante | `timestamptz` | `created_at` | ISO 8601 UTC: `2026-09-11T02:26:59.000Z` |
 | Día de calendario | `date` | `due_date` | `YYYY-MM-DD`, sin zona |
 
-Un **instante** es un momento exacto. Se escribe con `NOW()` o con el default de la columna, el API lo serializa con `toInstantISO()` (que agrega la `Z`) y el navegador lo formatea en la zona de quien mira con `Intl`. El mismo dato se ve `02:26` en Lima y `09:26` en Madrid. Lo que nunca hay que hacer es mandar `"2026-09-11 02:26:59"` sin zona: el navegador lo lee como hora local y el desfase aparece en producción, donde el servidor corre en UTC.
+Un **instante** es un momento exacto. Se escribe con `NOW()` o con el default de la columna, el API lo serializa con `toInstantISO()` (que agrega la `Z`) y el navegador lo formatea en la zona de quien mira con `formatWhen` / `formatDay` en `taskia_frontend/src/lib/datetime.ts` (siempre vía `parseInstant`, nunca con `toLocale*` ni `.slice` a mano sobre el string del API). El mismo dato se ve `02:26` en Lima y `09:26` en Madrid. Lo que nunca hay que hacer es mandar `"2026-09-11 02:26:59"` sin zona: el navegador lo lee como hora local y el desfase aparece en producción, donde el servidor corre en UTC.
 
 Un **día de calendario** no tiene hora ni zona, así que convertirlo solo puede correrlo de fecha. Si una tarea vence el 10, vence el 10 en todo el mundo.
 

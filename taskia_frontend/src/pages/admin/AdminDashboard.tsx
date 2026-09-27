@@ -22,7 +22,7 @@ import { AppLoader } from '../../components/AppLoader'
 import { EmptyState } from '../../components/EmptyState'
 import { AdminDashboardCharts } from './AdminCharts'
 import { AdminStatCard } from './AdminStatCard'
-import { formatWhen } from './adminFormat'
+import { formatWhen } from '../../lib/datetime'
 
 interface Props {
   onOpenStudent: (id: number) => void

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { civilDayISO } from '../lib/datetime'
+import { formatDay } from '../lib/datetime'
 import { errorMessage } from '../lib/errors'
 import { useToast } from '../toast'
 import {
@@ -161,7 +161,7 @@ export function TaskDetailModal({
             <div className="modal-panel-header">
               <h2>Detalle de la tarea</h2>
               <p className="lede">
-                Creada el {civilDayISO(task.created_at) ?? '—'}. Puedes editarla aquí.
+                Creada el {formatDay(task.created_at)}. Puedes editarla aquí.
               </p>
             </div>
 
