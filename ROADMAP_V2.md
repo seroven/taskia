@@ -55,7 +55,7 @@ Primer bloque a implementar. Enfoque: web.
 - [x] `reply_latency_seconds` + `is_pause` si supera 30 minutos
 - [x] Disponible en `study_messages` y `study_mission_messages` (sin UI en el chat del niño)
 
-**Cimiento cerrado en código.** Falta regenerar el schema `taskia` en Render con el `schema.pg.sql` nuevo.
+**Cimiento cerrado en código.** En Render: vaciar el schema `taskia` si hace falta y correr `npm run db:migrate:pd`.
 
 ---
 

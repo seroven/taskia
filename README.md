@@ -9,12 +9,12 @@ Qué es y cómo se usa: [PRODUCTO.md](PRODUCTO.md).
 ## Desarrollo local
 
 1. Copia envs:
-   - `taskia_backend/.env.example` → `.env.development` (completa MySQL, JWT, Gemini)
+   - `taskia_backend/.env.example` → `.env.development` (completa Postgres, JWT, Gemini)
    - `taskia_frontend/.env.example` → `.env.development`
-2. Base de datos (desde `taskia_backend`):
-   - Primera vez / schema completo: `npm run db:setup`
-   - Migraciones pendientes: `npm run db:migrate`
-   - QA / producción: `npm run db:migrate:qa` / `npm run db:migrate:pd`
+2. Base de datos (desde la raíz o `taskia_backend`):
+   - `npm run db:migrate` — crea el schema y aplica migraciones pendientes
+   - Admin semilla: usuario `Sebastian` / contraseña `123456`
+   - QA / producción: `npm run db:migrate:qa` / `npm run db:migrate:pd` (en `taskia_backend`)
 3. Backend: `cd taskia_backend && npm install && npm run dev`
 4. Frontend: `cd taskia_frontend && npm install && npm run dev`
 

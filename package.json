@@ -7,6 +7,8 @@
     "dev:pd": "node scripts/run.mjs dev:pd",
     "build": "node scripts/run.mjs build",
     "build:qa": "node scripts/run.mjs build:qa",
-    "build:pd": "node scripts/run.mjs build:pd"
+    "build:pd": "node scripts/run.mjs build:pd",
+    "db:migrate": "npm run db:migrate --prefix taskia_backend",
+    "db:setup": "npm run db:setup --prefix taskia_backend"
   }
 }

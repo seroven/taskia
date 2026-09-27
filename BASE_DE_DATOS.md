@@ -1,10 +1,10 @@
 # Base de datos de Taskia
 
-Taskia usa **PostgreSQL**. Son **19 tablas** y viven todas en el schema `taskia`, no en `public`.
+Taskia usa **PostgreSQL**. Son **24 tablas** de aplicación (más `schema_migrations`) y viven todas en el schema `taskia`, no en `public`.
 
 Este documento explica para qué sirve cada tabla y cómo se relacionan. Si buscas el *qué hace la app*, eso está en [PRODUCTO.md](PRODUCTO.md); acá está el *dónde se guarda*.
 
-La fuente de verdad del esquema es [`taskia_backend/db/schema.pg.sql`](taskia_backend/db/schema.pg.sql). No hay ORM: el backend escribe SQL a mano.
+La fuente de verdad del esquema son las migraciones en [`taskia_backend/db/migrations/`](taskia_backend/db/migrations/) (`001_initial.sql`, …). Se aplican con `npm run db:migrate`. No hay ORM: el backend escribe SQL a mano.
 
 ---
 
@@ -476,22 +476,24 @@ Las claves foráneas, en cambio, actúan cuando sí hay un `DELETE` físico (bor
 
 ## Cómo se crea y actualiza el esquema
 
-Desde `taskia_backend`:
+Desde la raíz del repo o desde `taskia_backend`:
 
 ```bash
-npm run db:setup      # crea el schema y aplica schema.pg.sql
-npm run db:migrate    # aplica schema.pg.sql si todavía no hay tablas
+npm run db:migrate    # crea PG_SCHEMA si falta y aplica migraciones pendientes
+npm run db:setup      # alias de db:migrate
 ```
 
-Hay variantes por entorno (`db:setup:qa`, `db:migrate:pd`), que solo cambian el `--env-file`. El script es `db/migrate.mjs` y el esquema `db/schema.pg.sql`.
+Hay variantes por entorno (`db:migrate:qa`, `db:migrate:pd`), que solo cambian el `--env-file`. El runner es `db/migrate.mjs`; los archivos viven en `db/migrations/` (`NNN_nombre.sql` o `.mjs` con `export async function up(client)`). Cada una se registra en `schema_migrations`.
 
-El archivo es **idempotente** sobre una base vacía o ya creada con este mismo esquema: usa `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `CREATE OR REPLACE FUNCTION` y `ON CONFLICT DO UPDATE` en las siembras. Lo que **no** hace es alterar tablas que ya están creadas. Las columnas `is_active` de mundos y misiones, el `user_id` del vínculo y las claves compuestas solo aparecen si el schema se arma de cero.
+**Cambios futuros:** se agrega un archivo nuevo (`003_…`) y se vuelve a correr `db:migrate`. No se edita una migración ya aplicada en bases compartidas.
 
-Para aplicar esta versión hay que vaciar antes, por ejemplo `DROP SCHEMA taskia CASCADE;`, y después correr el setup. Volver a aplicar el archivo sobre las tablas viejas no migra nada y deja la base sin estas reglas.
+Sobre una base vacía, `001_initial.sql` arma tablas, índices, triggers y siembras de roles / dificultades / presets. `002_seed_admin.mjs` crea el admin `Sebastian` / `123456` si no existe. Si una base ya había corrido el dump viejo `schema.pg.sql`, el runner marca `001_initial.sql` como aplicada y solo corre las siguientes (p. ej. el seed del admin).
+
+Si el schema viejo no cuadra (faltan columnas, FKs distintas), hay que vaciar antes: `DROP SCHEMA taskia CASCADE;` y luego `db:migrate`.
 
 El schema se elige con `PG_SCHEMA` (por defecto `taskia`) y la conexión con `PG_DSN`, o bien `PG_HOST` / `PG_PORT` / `PG_USER` / `PG_PASSWORD` / `PG_DATABASE`. En hosting va además `PG_SSLMODE=require`.
 
-Las migraciones viejas de MySQL que quedan en `db/migrations/` **no** se aplican en Postgres. Son historia; el esquema vivo es `schema.pg.sql`.
+Las migraciones MySQL históricas están en `db/migrations_mysql_legacy/` y **no** se aplican.
 
 ---
 

@@ -1,8 +1,8 @@
 # Taskia — backend
 
-API de **Taskia**: Express + TypeScript + MySQL. Sirve al frontend web (`[taskia_frontend](../taskia_frontend)`) y concentra autenticación, tareas, estudio con Gemini, mundos y el panel del adulto.
+API de **Taskia**: Express + TypeScript + PostgreSQL. Sirve al frontend web (`[taskia_frontend](../taskia_frontend)`) y concentra autenticación, tareas, estudio con Gemini, mundos, Guardián y el panel admin.
 
-El producto es una app de estudio para **alumnos** (`role: user`) con un **adulto/admin** que crea las cuentas y sigue el progreso. No hay registro público: `POST /auth/register` responde 403.
+El producto es una app de estudio para **Exploradores** (`role: user`) con un **Administrador** que crea las cuentas y un **Guardián** afiliado. No hay registro público: `POST /auth/register` responde 403.
 
 ## Qué cubre la API
 
@@ -27,16 +27,17 @@ Gemini vive en `src/services/gemini.ts` (tutor, transcripciones, generación y c
 
 ## Cómo correrlo
 
-1. Copia `.env.example` a `.env.development` y completa MySQL, `JWT_SECRET` y `GEMINI_API_KEY`.
+1. Copia `.env.example` a `.env.development` y completa Postgres (`PG_*` / `PG_DSN`), `JWT_SECRET` y `GEMINI_API_KEY`.
 2. `CORS_ORIGIN` debe ser el origen exacto del front (en local, `http://localhost:5173`).
-3. Base de datos (MySQL, no SQLite):
+3. Base de datos (PostgreSQL):
 
 ```bash
 npm install
-npm run db:setup      # primera vez (schema + migraciones)
-npm run db:migrate    # migraciones pendientes
+npm run db:migrate    # crea PG_SCHEMA + migraciones pendientes
 npm run dev           # tsx watch + .env.development  (puerto 3001)
 ```
+
+Tras migrar en vacío queda el admin `Sebastian` / `123456` (cámbialo en cuanto puedas).
 
 
 | Script                                  | Env                                                              |
@@ -46,7 +47,8 @@ npm run dev           # tsx watch + .env.development  (puerto 3001)
 | `npm run build` / `build:pd`            | Compila a `dist/`                                                |
 | `npm start`                             | `node dist/index.js` (usa el env del proceso; típico en hosting) |
 | `npm run start:pd`                      | `dist/` + `.env.pd` en disco                                     |
-| `npm run db:setup:pd` / `db:migrate:pd` | Igual con `.env.pd` (también hay variantes `:qa`)                |
+| `npm run db:migrate` / `db:setup`       | Migraciones con `.env.development`                               |
+| `npm run db:migrate:pd` / `:qa`         | Igual con `.env.pd` / `.env.qa`                                  |
 
 
 `GET /health` responde `{ ok: true }`.
@@ -85,7 +87,7 @@ Montadas en `src/app.ts`:
 ## Carpetas
 
 ```
-db/              schema.pg.sql, migrate.mjs, migrations/ (MySQL histórico)
+db/              migrate.mjs, migrations/ (Postgres), migrations_mysql_legacy/
 src/index.ts     Arranque
 src/app.ts       Express, CORS, rutas
 src/config/      Entorno

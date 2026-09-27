@@ -13,11 +13,11 @@
     "start:dev": "tsx --env-file=.env.development src/index.ts",
     "start:qa": "tsx --env-file=.env.qa src/index.ts",
     "start:pd": "node --env-file=.env.pd dist/index.js",
-    "db:setup": "node --env-file=.env.development db/migrate.mjs --setup",
+    "db:setup": "node --env-file=.env.development db/migrate.mjs",
     "db:migrate": "node --env-file=.env.development db/migrate.mjs",
-    "db:setup:qa": "node --env-file=.env.qa db/migrate.mjs --setup",
+    "db:setup:qa": "node --env-file=.env.qa db/migrate.mjs",
     "db:migrate:qa": "node --env-file=.env.qa db/migrate.mjs",
-    "db:setup:pd": "node --env-file=.env.pd db/migrate.mjs --setup",
+    "db:setup:pd": "node --env-file=.env.pd db/migrate.mjs",
     "db:migrate:pd": "node --env-file=.env.pd db/migrate.mjs"
   },
   "dependencies": {

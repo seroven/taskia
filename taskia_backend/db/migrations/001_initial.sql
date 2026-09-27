@@ -1,6 +1,6 @@
--- Taskia — PostgreSQL
--- Las tablas se crean en el schema de PG_SCHEMA (por defecto "taskia"),
--- no en public. migrate.mjs hace CREATE SCHEMA + SET search_path antes de esto.
+-- 001_initial — esquema Postgres completo de Taskia.
+-- Las tablas viven en PG_SCHEMA (por defecto "taskia"), no en public.
+-- migrate.mjs hace CREATE SCHEMA + SET search_path antes de aplicar esto.
 -- Instantes en timestamptz. Fechas de vencimiento en date.
 
 CREATE OR REPLACE FUNCTION set_updated_at()

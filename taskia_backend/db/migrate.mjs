@@ -1,27 +1,29 @@
 /**
- * Taskia DB setup (PostgreSQL).
+ * Taskia — migraciones PostgreSQL.
  *
- *   npm run db:setup     → CREATE SCHEMA + aplica schema.pg.sql
- *   npm run db:migrate   → si no hay tablas, aplica schema.pg.sql; si ya está, no-op
+ *   npm run db:migrate   → crea PG_SCHEMA si falta y aplica pendientes
+ *   npm run db:setup     → igual (alias de primera vez)
  *
- * El schema de aplicación es PG_SCHEMA (por defecto "taskia"), no public.
- * Las migraciones históricas de MySQL en db/migrations/ no se aplican aquí:
- * el esquema vivo está en schema.pg.sql.
+ * Archivos en db/migrations/:
+ *   NNN_nombre.sql  — SQL puro
+ *   NNN_nombre.mjs  — export async function up(client)
  *
- * Env: PG_* / PG_DSN del --env-file del script npm (.env.development por defecto).
- * Override: TASKIA_ENV=qa|pd|production o --env=pd
+ * Tabla schema_migrations (id, applied_at). El schema de app es PG_SCHEMA
+ * (por defecto "taskia"), no public.
+ *
+ * Env: --env-file del script npm, o TASKIA_ENV / --env=pd.
  */
 import fs from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import pg from 'pg'
 import dotenv from 'dotenv'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(__dirname, '..')
+const migrationsDir = path.join(__dirname, 'migrations')
 
 const args = process.argv.slice(2)
-const setupOnly = args.includes('--setup')
 const envArg = args.find((a) => a.startsWith('--env='))?.slice('--env='.length)
 const envName = envArg || process.env.TASKIA_ENV || 'development'
 const envFiles = {
@@ -76,8 +78,6 @@ function clientConfig() {
     ssl,
   }
 }
-
-const schemaPath = path.join(__dirname, 'schema.pg.sql')
 
 function splitPgStatements(sql) {
   const out = []
@@ -139,12 +139,12 @@ function splitPgStatements(sql) {
   return out
 }
 
-async function applySchema(client) {
-  const sql = fs.readFileSync(schemaPath, 'utf8')
-  console.log('→ schema.pg.sql')
-  for (const stmt of splitPgStatements(sql)) {
-    await client.query(stmt)
-  }
+function listMigrationFiles() {
+  if (!fs.existsSync(migrationsDir)) return []
+  return fs
+    .readdirSync(migrationsDir)
+    .filter((name) => /^\d{3}_.+\.(sql|mjs)$/.test(name))
+    .sort((a, b) => a.localeCompare(b, 'en'))
 }
 
 async function ensureMigrationsTable(client) {
@@ -172,18 +172,38 @@ async function markApplied(client, id) {
   )
 }
 
-async function tableExists(client, table) {
-  const result = await client.query(
-    `SELECT 1 AS ok
-     FROM information_schema.tables
-     WHERE table_schema = $1 AND table_name = $2
-     LIMIT 1`,
-    [pgSchema, table],
-  )
-  return result.rows.length > 0
+async function applySqlFile(client, filePath) {
+  const sql = fs.readFileSync(filePath, 'utf8')
+  for (const stmt of splitPgStatements(sql)) {
+    await client.query(stmt)
+  }
+}
+
+async function applyMjsFile(client, filePath) {
+  const mod = await import(pathToFileURL(filePath).href)
+  if (typeof mod.up !== 'function') {
+    throw new Error(`${path.basename(filePath)} debe exportar async function up(client)`)
+  }
+  await mod.up(client)
+}
+
+/** Bases que ya corrieron el dump monolítico schema.pg.sql. */
+async function bootstrapFromLegacySchema(client) {
+  const legacy = await isApplied(client, 'schema.pg.sql')
+  const initial = await isApplied(client, '001_initial.sql')
+  if (legacy && !initial) {
+    await markApplied(client, '001_initial.sql')
+    console.log('→ 001_initial.sql (ya aplicada vía schema.pg.sql)')
+  }
 }
 
 async function main() {
+  const files = listMigrationFiles()
+  if (files.length === 0) {
+    console.error('No hay migraciones en db/migrations/')
+    process.exit(1)
+  }
+
   const client = new pg.Client(clientConfig())
   await client.connect()
 
@@ -197,16 +217,36 @@ async function main() {
     await client.query(`CREATE SCHEMA IF NOT EXISTS ${quoteIdent(pgSchema)}`)
     await client.query(`SET search_path TO ${quoteIdent(pgSchema)}, public`)
     await ensureMigrationsTable(client)
+    await bootstrapFromLegacySchema(client)
 
-    const schemaId = 'schema.pg.sql'
-    const hasUsers = await tableExists(client, 'users')
-    const already = await isApplied(client, schemaId)
+    let applied = 0
+    for (const name of files) {
+      if (await isApplied(client, name)) {
+        console.log(`· ${name} (ya aplicada)`)
+        continue
+      }
+      console.log(`→ ${name}`)
+      const full = path.join(migrationsDir, name)
+      await client.query('BEGIN')
+      try {
+        if (name.endsWith('.sql')) {
+          await applySqlFile(client, full)
+        } else {
+          await applyMjsFile(client, full)
+        }
+        await markApplied(client, name)
+        await client.query('COMMIT')
+        applied += 1
+      } catch (err) {
+        await client.query('ROLLBACK')
+        throw err
+      }
+    }
 
-    if (setupOnly || !hasUsers || !already) {
-      await applySchema(client)
-      await markApplied(client, schemaId)
-    } else {
+    if (applied === 0) {
       console.log('Nada pendiente')
+    } else {
+      console.log(`OK — ${applied} migración(es) nueva(s)`)
     }
 
     const tables = await client.query(
@@ -217,7 +257,7 @@ async function main() {
       [pgSchema],
     )
     console.log(
-      'OK — tablas:',
+      'Tablas:',
       tables.rows.map((t) => t.name).join(', '),
     )
   } finally {

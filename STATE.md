@@ -14,7 +14,8 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 
 ## Decisiones vigentes
 
-- Esquema vivo: `taskia_backend/db/schema.pg.sql`. No hay ORM. Regenerar el schema en Render vaciando `taskia`.
+- Esquema vivo: migraciones en `taskia_backend/db/migrations/` (`npm run db:migrate`). No hay ORM.
+- Admin semilla: usuario `Sebastian` / `123456` (migración `002_seed_admin.mjs`).
 - UI: Guardián / Explorador (no “padre” / “alumno” / “hijo” en superficies nuevas).
 - Preferencias WhatsApp: una por cuenta Guardián.
 - Chat del Guardián usa `student_daily_summaries` del día civil del visor; sin fila, la IA lo dice. Worker aún no escribe ahí.
@@ -22,7 +23,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 
 ## Pendiente
 
-- Vaciar el schema `taskia` en Render y volver a armarlo con el `schema.pg.sql` actual (roles, afiliación, prefs, latencias, chat Guardián).
+- En Render: `DROP SCHEMA taskia CASCADE` si el schema viejo no cuadra, luego `npm run db:migrate:pd`.
 - Workers de resumen / WhatsApp / inactividad (ROADMAP §2).
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.
 
@@ -30,6 +31,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 
 ```bash
 npm run install:all
+npm run db:migrate
 npm run dev
 npm run build
 ```
