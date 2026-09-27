@@ -33,34 +33,29 @@ Fuente de verdad de lo que falta para la versión 2.0. Se trabaja de a pocos; ca
 
 Primer bloque a implementar. Enfoque: web.
 
-### 1.1 Rol padre y afiliación
+### 1.1 Rol Guardián y afiliación
 
-- [ ] Rol nuevo en cuentas (aparte de `user` y `admin`), con login y permisos propios
-- [ ] Tabla o vínculo de afiliación padre ↔ alumno (un padre puede tener varios alumnos; un alumno puede tener más de un adulto si hace falta)
-- [ ] Módulo en el **panel admin** para crear/vincular/desvincular padres y alumnos
-- [ ] Vista web del padre: ve solo a sus alumnos afiliados (progreso, sin mezclarse en el tablero del niño)
-- [ ] El admin sigue viendo a todos; el padre no administra la plataforma
+- [x] Catálogo `roles` + `users.role_id` (`user` = Explorador, `admin`, `parent` = Guardián)
+- [x] Afiliación `parent_student_links` (baja lógica)
+- [x] Módulo admin: crear/vincular/desvincular Guardianes y Exploradores (tres superficies)
+- [x] Vista web del Guardián: solo sus Exploradores; chat primero; ficha secundaria
+- [x] Tabla `student_daily_summaries` + chat que la consume (sin worker aún; si no hay resumen de hoy, la IA lo dice)
+- [x] El admin sigue viendo a todos; el Guardián no administra la plataforma
 
 ### 1.2 Preferencias de notificación (datos, aún sin envío)
 
-- [ ] Por padre (y si aplica, por alumno): qué eventos quiere recibir
-  - [ ] Terminó una tarea (tablero)
-  - [ ] Terminó el estudio de una tarea (tutor dio el visto / sesión cerrada con avance)
-  - [ ] Terminó el estudio de un tema (misión)
-  - [ ] Terminó el estudio de un curso (materia en un mundo)
-  - [ ] Terminó el estudio de un mundo
-  - [ ] Realizó / completó desafíos
-- [ ] Guardar número o identificador de WhatsApp del padre (aunque el envío real venga después)
-- [ ] Pantalla web del padre para editar esas preferencias
+- [x] Una config por cuenta Guardián (`parent_notify_prefs`) para todos sus Exploradores
+  - [x] Terminó una tarea / estudio de tarea / tema / curso / mundo / desafío / inactividad
+- [x] WhatsApp E.164 en preferencias
+- [x] Pantalla web del Guardián para editarlas
 
-### 1.3 Tiempo de pensamiento del alumno
+### 1.3 Tiempo de pensamiento del Explorador
 
-- [ ] Registrar, por mensaje del tutor, el instante en que respondió la IA
-- [ ] Al responder el alumno, guardar el lapso hasta esa respuesta
-- [ ] Si el lapso supera **30 minutos**, marcarlo como pausa (no como “estuvo pensando”)
-- [ ] Dejar esa señal disponible para el worker de resumen (no hace falta usarla aún en UI)
+- [x] Latencia vs último mensaje del tutor al responder el Explorador
+- [x] `reply_latency_seconds` + `is_pause` si supera 30 minutos
+- [x] Disponible en `study_messages` y `study_mission_messages` (sin UI en el chat del niño)
 
-**Criterio de cierre del cimiento:** un admin puede afiliar un padre a un alumno; el padre entra a la web, ve solo a ese alumno y configura qué avisos quiere; la base ya guarda latencias de respuesta en los chats de estudio.
+**Cimiento cerrado en código.** Falta regenerar el schema `taskia` en Render con el `schema.pg.sql` nuevo.
 
 ---
 

@@ -14,6 +14,7 @@ import {
   soloBienCount,
   truncateChars,
 } from '../utils/helpers.js'
+import { latencyForMissionReply } from '../utils/replyLatency.js'
 
 const router = Router()
 
@@ -276,22 +277,27 @@ async function insertMissionMessage(
   content: string,
   fromVoice = false,
 ) {
-  let insertId = 0
-  try {
-    const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO study_mission_messages (mission_id, role, content, from_voice)
-       VALUES (?, ?, ?, ?)`,
-      [missionId, role, content, fromVoice],
-    )
-    insertId = result.insertId
-  } catch {
-    const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO study_mission_messages (mission_id, role, content)
-       VALUES (?, ?, ?)`,
-      [missionId, role, content],
-    )
-    insertId = result.insertId
+  let latency: { reply_latency_seconds: number | null; is_pause: boolean } = {
+    reply_latency_seconds: null,
+    is_pause: false,
   }
+  if (role === 'user') {
+    latency = await latencyForMissionReply(missionId)
+  }
+  const [result] = await pool.query<ResultSetHeader>(
+    `INSERT INTO study_mission_messages
+       (mission_id, role, content, from_voice, reply_latency_seconds, is_pause)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      missionId,
+      role,
+      content,
+      fromVoice,
+      latency.reply_latency_seconds,
+      latency.is_pause,
+    ],
+  )
+  const insertId = result.insertId
   const [rows] = await pool.query<RowDataPacket[]>(
     'SELECT created_at FROM study_mission_messages WHERE id = ? LIMIT 1',
     [insertId],

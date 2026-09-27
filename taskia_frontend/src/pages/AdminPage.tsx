@@ -9,12 +9,16 @@ import { WorldsIconBadge } from '../components/worlds/WorldsIconBadge'
 import { errorMessage } from '../lib/errors'
 import { useToast } from '../toast'
 import { AdminDashboard } from './admin/AdminDashboard'
+import { AdminGuardiansPage } from './admin/AdminGuardiansPage'
 import { AdminStudentPage } from './admin/AdminStudentPage'
+
+type AdminView = 'dashboard' | 'guardians'
 
 export function AdminPage() {
   const { showToast } = useToast()
   const [createOpen, setCreateOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [view, setView] = useState<AdminView>('dashboard')
 
   return (
     <div className="worlds-shell admin-shell">
@@ -24,6 +28,15 @@ export function AdminPage() {
           <p className="welcome">Panel de administrador</p>
         </div>
         <div className="topbar-actions">
+          {view === 'dashboard' && selectedId == null && (
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => setView('guardians')}
+            >
+              Guardianes
+            </button>
+          )}
           <AppearanceTools />
           <SessionActions />
         </div>
@@ -31,7 +44,18 @@ export function AdminPage() {
 
       <div className="admin-body">
         <AnimatePresence mode="wait">
-          {selectedId == null ? (
+          {view === 'guardians' ? (
+            <motion.div
+              key="guardians"
+              className="admin-view"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22 }}
+            >
+              <AdminGuardiansPage onBack={() => setView('dashboard')} />
+            </motion.div>
+          ) : selectedId == null ? (
             <motion.div
               key="dashboard"
               className="admin-view"

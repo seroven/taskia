@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env.js'
 import { pool } from '../db/pool.js'
+import type { RowDataPacket } from '../db/pool.js'
 import { AppError, type JwtPayload, type PublicUser, type UserRole } from '../utils/helpers.js'
 
 declare global {
@@ -12,9 +13,17 @@ declare global {
   }
 }
 
+const VALID_ROLES: UserRole[] = ['user', 'admin', 'parent']
+
+function isUserRole(value: unknown): value is UserRole {
+  return typeof value === 'string' && (VALID_ROLES as string[]).includes(value)
+}
+
 export function signToken(user: PublicUser): string {
   const payload: JwtPayload = { sub: user.id, role: user.role }
-  return jwt.sign(payload, env.jwt.secret, { expiresIn: env.jwt.expiresIn as jwt.SignOptions['expiresIn'] })
+  return jwt.sign(payload, env.jwt.secret, {
+    expiresIn: env.jwt.expiresIn as jwt.SignOptions['expiresIn'],
+  })
 }
 
 export function setAuthCookie(res: Response, token: string) {
@@ -50,44 +59,33 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     if (
       typeof decoded === 'string' ||
       typeof decoded.sub !== 'number' ||
-      (decoded.role !== 'user' && decoded.role !== 'admin')
+      !isUserRole(decoded.role)
     ) {
       throw new AppError('Sesión inválida o expirada', 401)
     }
-    const payload: JwtPayload = { sub: decoded.sub, role: decoded.role }
 
-    const [rows] = await pool.query<
-      Array<{
-        id: number
-        username: string
-        email: string
-        role: UserRole
-        is_active: number | boolean
-      }>
-    >(
-      'SELECT id, username, email, role, is_active FROM users WHERE id = ? LIMIT 1',
-      [payload.sub],
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT u.id, u.username, u.email, u.is_active, r.code AS role
+       FROM users u
+       INNER JOIN roles r ON r.id = u.role_id
+       WHERE u.id = ? LIMIT 1`,
+      [decoded.sub],
     )
 
-    const user = (
-      rows as unknown as Array<{
-        id: number
-        username: string
-        email: string
-        role: UserRole
-        is_active: number
-      }>
-    )[0]
+    const user = rows[0]
     if (!user) throw new AppError('Debes iniciar sesión', 401)
     if (Number(user.is_active) === 0) {
       throw new AppError('Tu cuenta está pausada. Pídele ayuda a un adulto.', 403)
     }
 
+    const role = user.role as string
+    if (!isUserRole(role)) throw new AppError('Sesión inválida o expirada', 401)
+
     req.user = {
       id: Number(user.id),
-      username: user.username,
-      email: user.email,
-      role: user.role,
+      username: user.username as string,
+      email: user.email as string,
+      role,
     }
     next()
   } catch (err) {
@@ -101,7 +99,7 @@ export function requireStudent(req: Request, _res: Response, next: NextFunction)
     return
   }
   if (req.user.role !== 'user') {
-    next(new AppError('Esta zona es solo para alumnos', 403))
+    next(new AppError('Esta zona es solo para exploradores', 403))
     return
   }
   next()
@@ -117,4 +115,29 @@ export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
     return
   }
   next()
+}
+
+export function requireParent(req: Request, _res: Response, next: NextFunction) {
+  if (!req.user) {
+    next(new AppError('Debes iniciar sesión', 401))
+    return
+  }
+  if (req.user.role !== 'parent') {
+    next(new AppError('Solo el guardián puede entrar aquí', 403))
+    return
+  }
+  next()
+}
+
+export async function assertParentLinked(parentId: number, studentId: number) {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT 1 AS ok
+     FROM parent_student_links
+     WHERE parent_id = ? AND student_id = ? AND is_active = 1
+     LIMIT 1`,
+    [parentId, studentId],
+  )
+  if (!rows[0]) {
+    throw new AppError('Ese explorador no está vinculado a tu cuenta', 403)
+  }
 }

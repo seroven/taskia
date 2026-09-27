@@ -8,15 +8,17 @@ El tono de la app está pensado para un niño de alrededor de 10 años: español
 
 ---
 
-## Dos caras, dos cuentas
+## Tres roles, tres entradas
 
-Hay dos roles. Al iniciar sesión, cada uno entra a un mundo distinto.
+Al iniciar sesión, cada rol entra a un mundo distinto.
 
-**El alumno** ve el tablero de tareas, el modo estudio y los mundos. Puede cambiar su usuario, correo y contraseña, y elegir tema claro/oscuro y color de acento. No puede crearse la cuenta solo: el registro público está cerrado a propósito.
+**El explorador** (`user`) ve el tablero de tareas, el modo estudio y los mundos. Puede cambiar su usuario, correo y contraseña, y elegir tema claro/oscuro y color de acento. No puede crearse la cuenta solo: el registro público está cerrado a propósito.
 
-**El adulto (admin)** no usa el tablero. Entra directo al panel: dashboard de todos los alumnos, ficha de cada uno, materias, tareas, sesiones de estudio, mundos y revisión de desafíos.
+**El administrador** (`admin`) no usa el tablero. Entra al panel: dashboard de exploradores, fichas, materias, mundos, desafíos y el módulo de **guardianes** (crear, vincular, desvincular).
 
-Si el adulto pausa una cuenta, ese alumno no puede entrar hasta que la reactiven.
+**El guardián** (`parent`) acompaña a uno o más exploradores vinculados por el admin. Entra a un panel propio: chat con la IA sobre el resumen del día, progreso en solo lectura y preferencias de avisos WhatsApp. No edita el tablero del explorador.
+
+Si el admin pausa una cuenta, esa persona no puede entrar hasta que la reactiven.
 
 ---
 

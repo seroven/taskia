@@ -13,6 +13,7 @@ import {
   soloBienCount,
   truncateChars,
 } from '../utils/helpers.js'
+import { latencyForTaskReply } from '../utils/replyLatency.js'
 import { fetchTask } from './tasks.js'
 
 const router = Router()
@@ -199,21 +200,27 @@ async function insertMessage(
   content: string,
   fromVoice = false,
 ) {
-  let insertId = 0
-  try {
-    const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO study_messages (task_id, role, content, from_voice)
-       VALUES (?, ?, ?, ?)`,
-      [taskId, role, content, fromVoice],
-    )
-    insertId = result.insertId
-  } catch {
-    const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO study_messages (task_id, role, content) VALUES (?, ?, ?)`,
-      [taskId, role, content],
-    )
-    insertId = result.insertId
+  let latency: { reply_latency_seconds: number | null; is_pause: boolean } = {
+    reply_latency_seconds: null,
+    is_pause: false,
   }
+  if (role === 'user') {
+    latency = await latencyForTaskReply(taskId)
+  }
+  const [result] = await pool.query<ResultSetHeader>(
+    `INSERT INTO study_messages
+       (task_id, role, content, from_voice, reply_latency_seconds, is_pause)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      taskId,
+      role,
+      content,
+      fromVoice,
+      latency.reply_latency_seconds,
+      latency.is_pause,
+    ],
+  )
+  const insertId = result.insertId
   const [rows] = await pool.query<RowDataPacket[]>(
     'SELECT created_at FROM study_messages WHERE id = ?',
     [insertId],

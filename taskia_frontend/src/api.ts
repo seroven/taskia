@@ -25,6 +25,7 @@ import type {
   AdminCourse,
   AdminCourseImportResult,
   AdminDashboard,
+  AdminGuardian,
   AdminOverview,
   AdminStudent,
   AdminChallengeRow,
@@ -32,6 +33,10 @@ import type {
   AdminTaskRow,
   AdminWorldDetail,
   AdminWorldTree,
+  ParentChatMessage,
+  ParentExplorer,
+  ParentExplorerOverview,
+  ParentNotifyPrefs,
 } from './lib/adminTypes'
 import { adminQuery } from './lib/adminTypes'
 import { viewerTimeZone } from './lib/datetime'
@@ -547,5 +552,89 @@ export const api = {
         difficulty: filters.difficulty,
       })}`,
     )
+  },
+  listGuardians() {
+    return request<AdminGuardian[]>('/admin/parents')
+  },
+  getGuardian(parent_id: number) {
+    return request<AdminGuardian>(`/admin/parents/${parent_id}`)
+  },
+  createGuardian(input: {
+    username: string
+    email: string
+    password: string
+    student_ids?: number[]
+  }) {
+    return request<AdminGuardian>('/admin/parents', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+  },
+  updateGuardian(
+    parent_id: number,
+    input: {
+      username?: string
+      email?: string
+      password?: string
+      is_active?: boolean
+    },
+  ) {
+    return request<AdminGuardian>(`/admin/parents/${parent_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    })
+  },
+  linkGuardianExplorer(parent_id: number, student_id: number) {
+    return request<AdminGuardian>(
+      `/admin/parents/${parent_id}/students/${student_id}`,
+      { method: 'POST' },
+    )
+  },
+  unlinkGuardianExplorer(parent_id: number, student_id: number) {
+    return request<AdminGuardian>(
+      `/admin/parents/${parent_id}/students/${student_id}`,
+      { method: 'DELETE' },
+    )
+  },
+  listStudentGuardians(student_id: number) {
+    return request<AdminGuardian[]>(`/admin/students/${student_id}/parents`)
+  },
+  linkStudentGuardian(student_id: number, parent_id: number) {
+    return request<AdminGuardian[]>(
+      `/admin/students/${student_id}/parents/${parent_id}`,
+      { method: 'POST' },
+    )
+  },
+  unlinkStudentGuardian(student_id: number, parent_id: number) {
+    return request<AdminGuardian[]>(
+      `/admin/students/${student_id}/parents/${parent_id}`,
+      { method: 'DELETE' },
+    )
+  },
+  listParentExplorers() {
+    return request<ParentExplorer[]>('/parent/explorers')
+  },
+  getParentExplorerOverview(student_id: number) {
+    return request<ParentExplorerOverview>(
+      `/parent/explorers/${student_id}/overview`,
+    )
+  },
+  getParentNotifyPrefs() {
+    return request<ParentNotifyPrefs>('/parent/notify-prefs')
+  },
+  updateParentNotifyPrefs(input: Partial<ParentNotifyPrefs>) {
+    return request<ParentNotifyPrefs>('/parent/notify-prefs', {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    })
+  },
+  listParentChat(student_id: number) {
+    return request<ParentChatMessage[]>(`/parent/explorers/${student_id}/chat`)
+  },
+  sendParentChat(student_id: number, message: string) {
+    return request<ParentChatMessage>(`/parent/explorers/${student_id}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    })
   },
 }

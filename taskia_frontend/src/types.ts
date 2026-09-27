@@ -1,4 +1,4 @@
-export type UserRole = 'user' | 'admin'
+export type UserRole = 'user' | 'admin' | 'parent'
 
 export type TaskStatus = 'pending' | 'in_progress' | 'studying' | 'done'
 

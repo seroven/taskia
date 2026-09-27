@@ -52,21 +52,41 @@ Los dos caminos del producto se ven en el mapa: `tasks` por un lado, `study_worl
 
 ## 1. Cuentas y catálogos
 
-### `users`
+### `roles`
 
-Las dos caras de la app viven en la misma tabla; las distingue `role`.
+Catálogo de roles. Semilla: `user` → Explorador, `admin` → Administrador, `parent` → Guardián.
 
 | Columna | Tipo | Nota |
 | --- | --- | --- |
 | `id` | bigint | PK |
-| `username` | varchar(50) | único |
+| `code` | varchar(20) | único; lo usa el código |
+| `name` | varchar(50) | único; etiqueta de producto |
+| `created_at` | timestamptz | |
+
+### `users`
+
+Todas las cuentas viven aquí; el rol es `role_id` → `roles`.
+
+| Columna | Tipo | Nota |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `username` | varchar(50) | único; es el nombre visible |
 | `email` | varchar(255) | único |
 | `password_hash` | varchar(255) | hash bcrypt |
-| `role` | text | `user` o `admin` |
+| `role_id` | bigint | → `roles`, restringido |
 | `is_active` | boolean | `false` = cuenta pausada |
 | `created_at` / `updated_at` | timestamptz | |
 
-`role` va entre comillas dobles en el SQL (`"role"`) porque es palabra reservada en Postgres. Pausar una cuenta es poner `is_active = FALSE`: el alumno no puede entrar, pero no se borra nada.
+Pausar es `is_active = FALSE`: no entra, pero no se borra la fila.
+
+### Afiliación y Guardián
+
+- `parent_student_links` — `(parent_id, student_id)`, `is_active` (desvínculo lógico).
+- `parent_notify_prefs` — una fila por Guardián: WhatsApp y toggles de eventos.
+- `student_daily_summaries` — resumen por explorador y día civil; el worker lo llenará después.
+- `parent_chat_messages` — chat Guardián ↔ IA por explorador.
+
+En `study_messages` y `study_mission_messages`: `reply_latency_seconds` e `is_pause` (pausa si el explorador tarda más de 30 minutos en responder al tutor).
 
 ### `courses`
 

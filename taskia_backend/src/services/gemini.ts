@@ -8,6 +8,7 @@ export type LlmUsageKind =
   | 'transcribe'
   | 'challenge_generate'
   | 'challenge_grade'
+  | 'parent_tutor'
 
 export interface LlmUsageContext {
   userId: number

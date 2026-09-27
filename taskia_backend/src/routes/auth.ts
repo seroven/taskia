@@ -38,7 +38,10 @@ router.post(
     validateCredentials(username, password)
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT id, username, email, password_hash, role, is_active FROM users WHERE username = ? LIMIT 1',
+      `SELECT u.id, u.username, u.email, u.password_hash, u.is_active, r.code AS role
+       FROM users u
+       INNER JOIN roles r ON r.id = u.role_id
+       WHERE u.username = ? LIMIT 1`,
       [username.trim()],
     )
     const row = rows[0]

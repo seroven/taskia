@@ -7,6 +7,7 @@ import { ThemeProvider } from './theme'
 import { ToastProvider } from './toast'
 import { AdminPage } from './pages/AdminPage'
 import { AuthPage } from './pages/AuthPage'
+import { GuardianPage } from './pages/GuardianPage'
 import { BoardPage } from './pages/BoardPage'
 import { StudyPage } from './pages/StudyPage'
 import { WorldsHome } from './pages/worlds/WorldsHome'
@@ -60,6 +61,7 @@ function AppRouter() {
 
   if (!user) return <AuthPage />
   if (user.role === 'admin') return <AdminPage />
+  if (user.role === 'parent') return <GuardianPage />
 
   const viewKey =
     view === 'study' && studyTaskId != null

@@ -1,4 +1,7 @@
-export type UserRole = 'user' | 'admin'
+export type UserRole = 'user' | 'admin' | 'parent'
+
+/** Segundos: si el Explorador tarda más, cuenta como pausa, no pensamiento. */
+export const REPLY_PAUSE_SECONDS = 30 * 60
 
 export interface PublicUser {
   id: number

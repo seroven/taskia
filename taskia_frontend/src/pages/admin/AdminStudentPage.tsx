@@ -24,6 +24,7 @@ import { errorMessage } from '../../lib/errors'
 import { phaseLabel } from '../../lib/studyProtocol'
 import type {
   AdminCourse,
+  AdminGuardian,
   AdminOverview,
   AdminStudent,
   AdminStudyRow,
@@ -811,6 +812,7 @@ function AccountTab({
             {savingStudent ? 'Guardando…' : 'Guardar cuenta'}
           </button>
         </form>
+        <StudentGuardiansBlock studentId={studentId} />
       </section>
 
       <section className="admin-panel">
@@ -1055,6 +1057,109 @@ function ImportCoursesBlock({
                     }`}
               </button>
             </>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function StudentGuardiansBlock({ studentId }: { studentId: number }) {
+  const { showToast } = useToast()
+  const [guardians, setGuardians] = useState<AdminGuardian[]>([])
+  const [allGuardians, setAllGuardians] = useState<AdminGuardian[]>([])
+  const [loading, setLoading] = useState(true)
+
+  async function refresh() {
+    const [linked, all] = await Promise.all([
+      api.listStudentGuardians(studentId),
+      api.listGuardians(),
+    ])
+    setGuardians(linked)
+    setAllGuardians(all)
+  }
+
+  useEffect(() => {
+    void (async () => {
+      setLoading(true)
+      try {
+        await refresh()
+      } catch (err) {
+        showToast({
+          tone: 'error',
+          title: 'Guardianes',
+          subtitle: errorMessage(err),
+        })
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [studentId])
+
+  const linkedIds = new Set(guardians.map((g) => g.id))
+  const available = allGuardians.filter((g) => !linkedIds.has(g.id) && g.is_active)
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <h3>Guardianes vinculados</h3>
+      {loading ? (
+        <AppLoader message="Cargando…" variant="section" />
+      ) : (
+        <>
+          <ul className="admin-course-list">
+            {guardians.map((g) => (
+              <li key={g.id} className="admin-course-row">
+                <span>
+                  {g.username} · {g.email}
+                </span>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() =>
+                    void api
+                      .unlinkStudentGuardian(studentId, g.id)
+                      .then(refresh)
+                      .catch((err) =>
+                        showToast({
+                          tone: 'error',
+                          title: 'No se pudo desvincular',
+                          subtitle: errorMessage(err),
+                        }),
+                      )
+                  }
+                >
+                  Desvincular
+                </button>
+              </li>
+            ))}
+          </ul>
+          {available.length > 0 && (
+            <select
+              className="field-control"
+              defaultValue=""
+              onChange={(e) => {
+                const id = Number(e.target.value)
+                if (!id) return
+                void api
+                  .linkStudentGuardian(studentId, id)
+                  .then(refresh)
+                  .catch((err) =>
+                    showToast({
+                      tone: 'error',
+                      title: 'No se pudo vincular',
+                      subtitle: errorMessage(err),
+                    }),
+                  )
+                e.target.value = ''
+              }}
+            >
+              <option value="">Vincular guardián…</option>
+              {available.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.username}
+                </option>
+              ))}
+            </select>
           )}
         </>
       )}

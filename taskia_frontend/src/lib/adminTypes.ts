@@ -9,6 +9,64 @@ export interface AdminStudent {
   course_count?: number
 }
 
+export interface AdminGuardian {
+  id: number
+  username: string
+  email: string
+  is_active: boolean
+  created_at: string
+  explorer_count?: number
+  explorers?: AdminStudent[]
+}
+
+export interface ParentNotifyPrefs {
+  whatsapp_e164: string | null
+  notify_task_done: boolean
+  notify_task_study_done: boolean
+  notify_mission_done: boolean
+  notify_course_done: boolean
+  notify_world_done: boolean
+  notify_challenge_done: boolean
+  notify_inactivity: boolean
+}
+
+export interface ParentExplorer {
+  id: number
+  username: string
+  email: string
+  is_active: boolean
+}
+
+export interface ParentExplorerOverview {
+  explorer: ParentExplorer
+  tasks: {
+    pending: number
+    in_progress: number
+    studying: number
+    done: number
+    overdue: number
+    total: number
+  }
+  missions: {
+    pending: number
+    studying: number
+    mastered: number
+    total: number
+  }
+  challenges: {
+    completed_count: number
+    avg_score: number | null
+  }
+  worlds_count: number
+}
+
+export interface ParentChatMessage {
+  id: number
+  role: string
+  content: string
+  created_at: string
+}
+
 export interface AdminCourse {
   id: number
   user_id: number

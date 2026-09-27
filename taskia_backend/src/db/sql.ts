@@ -18,6 +18,8 @@ export function mysqlToPg(sql: string): string {
   s = s.replace(/\bstudy_passed\s*=\s*1\b/gi, 'study_passed = TRUE')
   s = s.replace(/\buses_board\s*=\s*1\b/gi, 'uses_board = TRUE')
   s = s.replace(/\buses_board\s*=\s*0\b/gi, 'uses_board = FALSE')
+  s = s.replace(/\bis_pause\s*=\s*1\b/gi, 'is_pause = TRUE')
+  s = s.replace(/\bis_pause\s*=\s*0\b/gi, 'is_pause = FALSE')
 
   s = s.replace(/\bSUM\s*\(([^)]+)\)/gi, (_m, inner: string) => {
     if (/[=<>]/.test(inner) || /\bTRUE\b|\bFALSE\b/.test(inner)) {

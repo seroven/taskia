@@ -5,6 +5,7 @@ import { pool } from '../db/pool.js'
 import { requireAuth, requireAdmin } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/error.js'
 import { AppError, formatCivilDate, toInstantISO } from '../utils/helpers.js'
+import { roleIdByCode } from '../db/roles.js'
 import { getChallengeDetail } from './worlds.js'
 import { civilDayKey, viewerDates } from '../db/civilDate.js'
 
@@ -49,10 +50,10 @@ function mapCourse(r: RowDataPacket) {
 async function requireStudent(studentId: number) {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT id, username, email, is_active, created_at
-     FROM users WHERE id = ? AND role = 'user' LIMIT 1`,
+     FROM users WHERE id = ? AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = role_id AND _r.code = 'user') LIMIT 1`,
     [studentId],
   )
-  if (!rows[0]) throw new AppError('Alumno no encontrado', 404)
+  if (!rows[0]) throw new AppError('Explorador no encontrado', 404)
   return mapStudent(rows[0])
 }
 
@@ -215,7 +216,8 @@ router.get(
          COUNT(*) AS total,
          SUM(is_active = 1) AS active,
          SUM(is_active = 0) AS paused
-       FROM users WHERE role = 'user'${studentSql}`,
+       FROM users
+       WHERE EXISTS (SELECT 1 FROM roles _r WHERE _r.id = role_id AND _r.code = 'user')${studentSql}`,
       studentParams,
     )
     const studentStats = studentRows[0]
@@ -232,7 +234,7 @@ router.get(
          SUM(status <> 'done' AND due_date < ?) AS overdue,
          COUNT(*) AS total
        FROM tasks t
-       INNER JOIN users u ON u.id = t.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = t.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE 1=1${taskPeriodSql}${taskStudentSql}`,
       taskParams,
     )
@@ -243,7 +245,7 @@ router.get(
     const [worldRows] = await pool.query<RowDataPacket[]>(
       `SELECT COUNT(*) AS c
        FROM study_worlds w
-       INNER JOIN users u ON u.id = w.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = w.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE w.is_active = 1${worldSql}`,
       worldParams,
     )
@@ -258,7 +260,7 @@ router.get(
          COUNT(*) AS total
        FROM study_missions m
        INNER JOIN study_worlds w ON w.id = m.world_id
-       INNER JOIN users u ON u.id = w.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = w.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE m.is_active = 1 AND w.is_active = 1${missionSql}`,
       missionParams,
     )
@@ -270,7 +272,7 @@ router.get(
     const [challengeRows] = await pool.query<RowDataPacket[]>(
       `SELECT COUNT(*) AS completed_count, AVG(ch.score) AS avg_score
        FROM study_challenges ch
-       INNER JOIN users u ON u.id = ch.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = ch.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE ch.status = 'completed'${challengePeriodSql}${challengeStudentSql}`,
       challengeParams,
     )
@@ -295,7 +297,7 @@ router.get(
                  INNER JOIN study_worlds w ON w.id = m.world_id WHERE w.user_id = u.id
                ) act) AS last_study_at
        FROM users u
-       WHERE u.role = 'user'${rosterSql}
+       WHERE EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')${rosterSql}
        ORDER BY u.username ASC`,
       rosterParams,
     )
@@ -313,7 +315,7 @@ router.get(
     const [taskDays] = await pool.query<RowDataPacket[]>(
       `SELECT ${day('t.created_at')} AS day, COUNT(*) AS c
        FROM tasks t
-       INNER JOIN users u ON u.id = t.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = t.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE 1=1${taskDaySql}${taskDayStudentSql}
        GROUP BY ${day('t.created_at')}`,
       taskDayParams,
@@ -334,7 +336,7 @@ router.get(
     const [challengeDays] = await pool.query<RowDataPacket[]>(
       `SELECT ${day('ch.completed_at')} AS day, COUNT(*) AS c
        FROM study_challenges ch
-       INNER JOIN users u ON u.id = ch.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = ch.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE ch.status = 'completed'${challengeDaySql}${challengeDayStudentSql}
        GROUP BY ${day('ch.completed_at')}`,
       challengeDayParams,
@@ -352,7 +354,7 @@ router.get(
       `SELECT ${day('ss.updated_at')} AS day, COUNT(*) AS c
        FROM study_sessions ss
        INNER JOIN tasks t ON t.id = ss.task_id
-       INNER JOIN users u ON u.id = t.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = t.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE 1=1${studyTaskFilter}${studyTaskStudentSql}
        GROUP BY ${day('ss.updated_at')}`,
       studyTaskParams,
@@ -375,7 +377,7 @@ router.get(
        FROM study_mission_sessions ms
        INNER JOIN study_missions m ON m.id = ms.mission_id
        INNER JOIN study_worlds w ON w.id = m.world_id
-       INNER JOIN users u ON u.id = w.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = w.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE 1=1${studyMissionFilter}${studyMissionStudentSql}
        GROUP BY ${day('ms.updated_at')}`,
       studyMissionParams,
@@ -404,7 +406,7 @@ router.get(
       `SELECT t.user_id AS user_id, COUNT(*) AS c
        FROM study_sessions ss
        INNER JOIN tasks t ON t.id = ss.task_id
-       INNER JOIN users u ON u.id = t.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = t.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE 1=1${studyUserTaskSql}${studyUserTaskStudentSql}
        GROUP BY t.user_id`,
       studyUserTaskParams,
@@ -427,7 +429,7 @@ router.get(
        FROM study_mission_sessions ms
        INNER JOIN study_missions m ON m.id = ms.mission_id
        INNER JOIN study_worlds w ON w.id = m.world_id
-       INNER JOIN users u ON u.id = w.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = w.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE 1=1${studyUserMissionSql}${studyUserMissionStudentSql}
        GROUP BY w.user_id`,
       studyUserMissionParams,
@@ -448,7 +450,7 @@ router.get(
     const [tasksDoneUserRows] = await pool.query<RowDataPacket[]>(
       `SELECT t.user_id AS user_id, COUNT(*) AS c
        FROM tasks t
-       INNER JOIN users u ON u.id = t.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = t.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE t.status = 'done'${tasksDoneUserSql}${tasksDoneUserStudentSql}
        GROUP BY t.user_id`,
       tasksDoneUserParams,
@@ -469,7 +471,7 @@ router.get(
     const [challengeUserRows] = await pool.query<RowDataPacket[]>(
       `SELECT ch.user_id AS user_id, COUNT(*) AS c, AVG(ch.score) AS avg_score
        FROM study_challenges ch
-       INNER JOIN users u ON u.id = ch.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = ch.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE ch.status = 'completed'${challengeUserSql}${challengeUserStudentSql}
        GROUP BY ch.user_id`,
       challengeUserParams,
@@ -509,7 +511,7 @@ router.get(
               COUNT(*) AS c, SUM(CHAR_LENGTH(sm.content)) AS chars
        FROM study_messages sm
        INNER JOIN tasks t ON t.id = sm.task_id
-       INNER JOIN users u ON u.id = t.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = t.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE 1=1${taskAssistSql}
        GROUP BY t.user_id, ${day('sm.created_at')}, sm.role`,
       taskAssistParams,
@@ -523,7 +525,7 @@ router.get(
        FROM study_mission_messages mm
        INNER JOIN study_missions m ON m.id = mm.mission_id
        INNER JOIN study_worlds w ON w.id = m.world_id
-       INNER JOIN users u ON u.id = w.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = w.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE 1=1${missionMsgSql}
        GROUP BY w.user_id, ${day('mm.created_at')}, mm.role`,
       missionMsgParams,
@@ -535,7 +537,7 @@ router.get(
       `SELECT ch.user_id AS user_id, ${day('ch.started_at')} AS day,
               COUNT(*) AS c, SUM(ch.question_count) AS q
        FROM study_challenges ch
-       INNER JOIN users u ON u.id = ch.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = ch.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE 1=1${chStartSql}
        GROUP BY ch.user_id, ${day('ch.started_at')}`,
       chStartParams,
@@ -547,7 +549,7 @@ router.get(
       `SELECT ch.user_id AS user_id, ${day('ch.completed_at')} AS day,
               COUNT(*) AS c, SUM(ch.question_count) AS q
        FROM study_challenges ch
-       INNER JOIN users u ON u.id = ch.user_id AND u.role = 'user'
+       INNER JOIN users u ON u.id = ch.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        WHERE ch.status = 'completed'${chDoneSql}
        GROUP BY ch.user_id, ${day('ch.completed_at')}`,
       chDoneParams,
@@ -564,7 +566,7 @@ router.get(
                 SUM(lu.output_tokens) AS output,
                 SUM(lu.total_tokens) AS tokens
          FROM llm_usage lu
-         INNER JOIN users u ON u.id = lu.user_id AND u.role = 'user'
+         INNER JOIN users u ON u.id = lu.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
          WHERE 1=1${realSql}
          GROUP BY lu.user_id, ${day('lu.created_at')}, lu.kind`,
         realParams,
@@ -583,7 +585,7 @@ router.get(
                 COUNT(*) AS c, SUM(CHAR_LENGTH(sm.content)) AS chars
          FROM study_messages sm
          INNER JOIN tasks t ON t.id = sm.task_id
-         INNER JOIN users u ON u.id = t.user_id AND u.role = 'user'
+         INNER JOIN users u ON u.id = t.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
          WHERE sm.role = 'user' AND sm.from_voice = 1${taskVoiceSql}
          GROUP BY t.user_id, ${day('sm.created_at')}`,
         taskVoiceParams,
@@ -596,7 +598,7 @@ router.get(
          FROM study_mission_messages mm
          INNER JOIN study_missions m ON m.id = mm.mission_id
          INNER JOIN study_worlds w ON w.id = m.world_id
-         INNER JOIN users u ON u.id = w.user_id AND u.role = 'user'
+         INNER JOIN users u ON u.id = w.user_id AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
          WHERE mm.role = 'user' AND mm.from_voice = 1${missionVoiceSql}
          GROUP BY w.user_id, ${day('mm.created_at')}`,
         missionVoiceParams,
@@ -941,7 +943,7 @@ router.get(
               COUNT(c.id) AS course_count
        FROM users u
        LEFT JOIN courses c ON c.user_id = u.id AND c.is_active = 1
-       WHERE u.role = 'user'
+       WHERE EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        GROUP BY u.id, u.username, u.email, u.is_active, u.created_at
        ORDER BY u.username ASC`,
     )
@@ -973,10 +975,11 @@ router.post(
     if (existingEmail.length > 0) throw new AppError('Ese correo ya está registrado')
 
     const passwordHash = await bcrypt.hash(password, 10)
+    const explorerRoleId = await roleIdByCode('user')
     const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO users (username, email, password_hash, role, is_active)
-       VALUES (?, ?, ?, 'user', TRUE)`,
-      [u, e, passwordHash],
+      `INSERT INTO users (username, email, password_hash, role_id, is_active)
+       VALUES (?, ?, ?, ?, TRUE)`,
+      [u, e, passwordHash, explorerRoleId],
     )
     res.json(await requireStudent(result.insertId))
   }),
@@ -1024,13 +1027,13 @@ router.patch(
       const passwordHash = await bcrypt.hash(password, 10)
       await pool.query(
         `UPDATE users SET username = ?, email = ?, is_active = ?, password_hash = ?
-         WHERE id = ? AND role = 'user'`,
+         WHERE id = ? AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = role_id AND _r.code = 'user')`,
         [u, e, isActive, passwordHash, studentId],
       )
     } else {
       await pool.query(
         `UPDATE users SET username = ?, email = ?, is_active = ?
-         WHERE id = ? AND role = 'user'`,
+         WHERE id = ? AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = role_id AND _r.code = 'user')`,
         [u, e, isActive, studentId],
       )
     }
@@ -1790,6 +1793,319 @@ router.get(
           })),
         }
       }),
+    )
+  }),
+)
+
+function mapGuardian(r: RowDataPacket) {
+  return {
+    id: Number(r.id),
+    username: r.username as string,
+    email: r.email as string,
+    is_active: Number(r.is_active) !== 0,
+    created_at: toInstantISO(r.created_at as Date | string) ?? '',
+    explorer_count: Number(r.explorer_count ?? 0),
+  }
+}
+
+async function requireGuardian(guardianId: number) {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT id, username, email, is_active, created_at
+     FROM users
+     WHERE id = ?
+       AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = role_id AND _r.code = 'parent')
+     LIMIT 1`,
+    [guardianId],
+  )
+  if (!rows[0]) throw new AppError('Guardián no encontrado', 404)
+  return mapGuardian({ ...rows[0], explorer_count: 0 })
+}
+
+async function listGuardianExplorers(guardianId: number) {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT u.id, u.username, u.email, u.is_active, u.created_at, l.is_active AS link_active
+     FROM parent_student_links l
+     INNER JOIN users u ON u.id = l.student_id
+     WHERE l.parent_id = ? AND l.is_active = 1
+       AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
+     ORDER BY u.username ASC`,
+    [guardianId],
+  )
+  return rows.map((r) => ({
+    id: Number(r.id),
+    username: r.username as string,
+    email: r.email as string,
+    is_active: Number(r.is_active) !== 0,
+    created_at: toInstantISO(r.created_at as Date | string) ?? '',
+  }))
+}
+
+async function ensureLink(parentId: number, studentId: number) {
+  await requireGuardian(parentId)
+  await requireStudent(studentId)
+  await pool.query(
+    `INSERT INTO parent_student_links (parent_id, student_id, is_active)
+     VALUES (?, ?, TRUE)
+     ON CONFLICT (parent_id, student_id) DO UPDATE SET is_active = TRUE`,
+    [parentId, studentId],
+  )
+}
+
+router.get(
+  '/parents',
+  asyncHandler(async (_req, res) => {
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT u.id, u.username, u.email, u.is_active, u.created_at,
+              COUNT(l.student_id) FILTER (WHERE l.is_active) AS explorer_count
+       FROM users u
+       LEFT JOIN parent_student_links l ON l.parent_id = u.id
+       WHERE EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'parent')
+       GROUP BY u.id, u.username, u.email, u.is_active, u.created_at
+       ORDER BY u.username ASC`,
+    )
+    res.json(rows.map(mapGuardian))
+  }),
+)
+
+router.post(
+  '/parents',
+  asyncHandler(async (req, res) => {
+    const username = String(req.body.username ?? '')
+    const email = String(req.body.email ?? '')
+    const password = String(req.body.password ?? '')
+    validateStudentInput(username, password, email)
+
+    const u = username.trim()
+    const e = email.trim().toLowerCase()
+    const studentIds = Array.isArray(req.body.student_ids)
+      ? (req.body.student_ids as unknown[])
+          .map(Number)
+          .filter((id) => Number.isFinite(id) && id > 0)
+      : []
+
+    const [existingUser] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM users WHERE username = ? LIMIT 1',
+      [u],
+    )
+    if (existingUser.length > 0) throw new AppError('Ese nombre de usuario ya existe')
+    const [existingEmail] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM users WHERE email = ? LIMIT 1',
+      [e],
+    )
+    if (existingEmail.length > 0) throw new AppError('Ese correo ya está registrado')
+
+    const passwordHash = await bcrypt.hash(password, 10)
+    const parentRoleId = await roleIdByCode('parent')
+    const [result] = await pool.query<ResultSetHeader>(
+      `INSERT INTO users (username, email, password_hash, role_id, is_active)
+       VALUES (?, ?, ?, ?, TRUE)`,
+      [u, e, passwordHash, parentRoleId],
+    )
+    const guardianId = result.insertId
+
+    await pool.query(
+      `INSERT INTO parent_notify_prefs (parent_id) VALUES (?)
+       ON CONFLICT (parent_id) DO NOTHING`,
+      [guardianId],
+    )
+
+    for (const studentId of studentIds) {
+      await ensureLink(guardianId, studentId)
+    }
+
+    const guardian = await requireGuardian(guardianId)
+    res.json({
+      ...guardian,
+      explorers: await listGuardianExplorers(guardianId),
+    })
+  }),
+)
+
+router.get(
+  '/parents/:parentId',
+  asyncHandler(async (req, res) => {
+    const parentId = Number(req.params.parentId)
+    const guardian = await requireGuardian(parentId)
+    res.json({
+      ...guardian,
+      explorers: await listGuardianExplorers(parentId),
+    })
+  }),
+)
+
+router.patch(
+  '/parents/:parentId',
+  asyncHandler(async (req, res) => {
+    const parentId = Number(req.params.parentId)
+    const current = await requireGuardian(parentId)
+
+    const username =
+      req.body.username === undefined
+        ? current.username
+        : String(req.body.username)
+    const email =
+      req.body.email === undefined ? current.email : String(req.body.email)
+    const password =
+      req.body.password === undefined || req.body.password === ''
+        ? undefined
+        : String(req.body.password)
+    const isActive =
+      req.body.is_active === undefined
+        ? current.is_active
+        : Boolean(req.body.is_active)
+
+    validateStudentInput(username, password, email)
+    const u = username.trim()
+    const e = email.trim().toLowerCase()
+
+    const [existingUser] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM users WHERE username = ? AND id <> ? LIMIT 1',
+      [u, parentId],
+    )
+    if (existingUser.length > 0) throw new AppError('Ese nombre de usuario ya existe')
+    const [existingEmail] = await pool.query<RowDataPacket[]>(
+      'SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1',
+      [e, parentId],
+    )
+    if (existingEmail.length > 0) throw new AppError('Ese correo ya está registrado')
+
+    if (password) {
+      const passwordHash = await bcrypt.hash(password, 10)
+      await pool.query(
+        `UPDATE users SET username = ?, email = ?, is_active = ?, password_hash = ?
+         WHERE id = ?
+           AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = role_id AND _r.code = 'parent')`,
+        [u, e, isActive, passwordHash, parentId],
+      )
+    } else {
+      await pool.query(
+        `UPDATE users SET username = ?, email = ?, is_active = ?
+         WHERE id = ?
+           AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = role_id AND _r.code = 'parent')`,
+        [u, e, isActive, parentId],
+      )
+    }
+
+    const guardian = await requireGuardian(parentId)
+    res.json({
+      ...guardian,
+      explorers: await listGuardianExplorers(parentId),
+    })
+  }),
+)
+
+router.post(
+  '/parents/:parentId/students/:studentId',
+  asyncHandler(async (req, res) => {
+    const parentId = Number(req.params.parentId)
+    const studentId = Number(req.params.studentId)
+    await ensureLink(parentId, studentId)
+    res.json({
+      ...(await requireGuardian(parentId)),
+      explorers: await listGuardianExplorers(parentId),
+    })
+  }),
+)
+
+router.delete(
+  '/parents/:parentId/students/:studentId',
+  asyncHandler(async (req, res) => {
+    const parentId = Number(req.params.parentId)
+    const studentId = Number(req.params.studentId)
+    await requireGuardian(parentId)
+    await requireStudent(studentId)
+    await pool.query(
+      `UPDATE parent_student_links SET is_active = 0
+       WHERE parent_id = ? AND student_id = ?`,
+      [parentId, studentId],
+    )
+    res.json({
+      ...(await requireGuardian(parentId)),
+      explorers: await listGuardianExplorers(parentId),
+    })
+  }),
+)
+
+router.get(
+  '/students/:studentId/parents',
+  asyncHandler(async (req, res) => {
+    const studentId = Number(req.params.studentId)
+    await requireStudent(studentId)
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT u.id, u.username, u.email, u.is_active, u.created_at
+       FROM parent_student_links l
+       INNER JOIN users u ON u.id = l.parent_id
+       WHERE l.student_id = ? AND l.is_active = 1
+         AND EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'parent')
+       ORDER BY u.username ASC`,
+      [studentId],
+    )
+    res.json(
+      rows.map((r) => ({
+        id: Number(r.id),
+        username: r.username as string,
+        email: r.email as string,
+        is_active: Number(r.is_active) !== 0,
+        created_at: toInstantISO(r.created_at as Date | string) ?? '',
+      })),
+    )
+  }),
+)
+
+router.post(
+  '/students/:studentId/parents/:parentId',
+  asyncHandler(async (req, res) => {
+    const studentId = Number(req.params.studentId)
+    const parentId = Number(req.params.parentId)
+    await ensureLink(parentId, studentId)
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT u.id, u.username, u.email, u.is_active, u.created_at
+       FROM parent_student_links l
+       INNER JOIN users u ON u.id = l.parent_id
+       WHERE l.student_id = ? AND l.is_active = 1
+       ORDER BY u.username ASC`,
+      [studentId],
+    )
+    res.json(
+      rows.map((r) => ({
+        id: Number(r.id),
+        username: r.username as string,
+        email: r.email as string,
+        is_active: Number(r.is_active) !== 0,
+        created_at: toInstantISO(r.created_at as Date | string) ?? '',
+      })),
+    )
+  }),
+)
+
+router.delete(
+  '/students/:studentId/parents/:parentId',
+  asyncHandler(async (req, res) => {
+    const studentId = Number(req.params.studentId)
+    const parentId = Number(req.params.parentId)
+    await requireStudent(studentId)
+    await requireGuardian(parentId)
+    await pool.query(
+      `UPDATE parent_student_links SET is_active = 0
+       WHERE parent_id = ? AND student_id = ?`,
+      [parentId, studentId],
+    )
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT u.id, u.username, u.email, u.is_active, u.created_at
+       FROM parent_student_links l
+       INNER JOIN users u ON u.id = l.parent_id
+       WHERE l.student_id = ? AND l.is_active = 1
+       ORDER BY u.username ASC`,
+      [studentId],
+    )
+    res.json(
+      rows.map((r) => ({
+        id: Number(r.id),
+        username: r.username as string,
+        email: r.email as string,
+        is_active: Number(r.is_active) !== 0,
+        created_at: toInstantISO(r.created_at as Date | string) ?? '',
+      })),
     )
   }),
 )
