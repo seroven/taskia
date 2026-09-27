@@ -1,10 +1,12 @@
 # Estado de Taskia
 
-Memoria corta del proyecto. El detalle de tablas está en [BASE_DE_DATOS.md](BASE_DE_DATOS.md).
+Memoria corta del proyecto. El detalle de tablas está en [BASE_DE_DATOS.md](BASE_DE_DATOS.md). El checklist de la 2.0 está en [ROADMAP_V2.md](ROADMAP_V2.md).
 
 ## Ahora
 
 Un solo repo en la raíz. Backend en `taskia_backend/`, frontend en `taskia_frontend/`. Desde aquí: `npm run dev` y `npm run build`.
+
+La 2.0 empieza por el **cimiento** de [ROADMAP_V2.md](ROADMAP_V2.md): rol padre, afiliación que arma el admin, vista web del padre, preferencias de aviso y latencia de respuesta en el chat. WhatsApp, workers y Flutter vienen después.
 
 La base de Postgres guarda instantes en UTC. La web los muestra en la zona de quien mira. `tasks.due_date` es un día de calendario, sin zona.
 

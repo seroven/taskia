@@ -230,4 +230,4 @@ Tema claro u oscuro y un color de acento (azul por defecto; también verde, ámb
 - No hay registro libre en internet: si un niño llega a la pantalla de login sin cuenta, tiene que pedirle a un adulto que lo dé de alta.
 - La app de escritorio (`taskia_desktop`) quedó congelada; el producto vivo es la web.
 
-Para cómo levantarlo en una máquina, ver el [README de la raíz](README.md). Para el detalle de cada paquete, [frontend](taskia_frontend/README.md) y [backend](taskia_backend/README.md).
+Para cómo levantarlo en una máquina, ver el [README de la raíz](README.md). Para el detalle de cada paquete, [frontend](taskia_frontend/README.md) y [backend](taskia_backend/README.md). El plan de la versión 2.0 (padres, WhatsApp, workers, Flutter) está en [ROADMAP_V2.md](ROADMAP_V2.md).
