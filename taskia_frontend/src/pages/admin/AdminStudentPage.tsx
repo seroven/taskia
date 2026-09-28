@@ -37,13 +37,13 @@ import {
   DIFFICULTY_LABEL,
   SCOPE_LABEL,
 } from '../../lib/worldsTypes'
-import { STATUS_COLUMNS, todayISO } from '../../types'
+import { todayISO } from '../../types'
 import { useToast } from '../../toast'
 import { AdminChallengeReview } from './AdminChallengeReview'
 import { AdminStatCard } from './AdminStatCard'
 import { AdminWorldsExplorer } from './AdminWorldsExplorer'
 import { formatDay, formatWhen } from '../../lib/datetime'
-import { taskStatusLabel } from './adminFormat'
+import { ADMIN_STATUS_OPTIONS, taskStatusLabel } from './adminFormat'
 
 type StudentTab = 'resumen' | 'tareas' | 'mundos' | 'cuenta'
 
@@ -334,7 +334,7 @@ function ResumenTab({
                     <>
                       <strong>{item.title}</strong>
                       {item.study_passed ? (
-                        <span className="data-table-sub">Visto del tutor</span>
+                        <span className="data-table-sub">Visto de Taskia</span>
                       ) : null}
                     </>
                   ),
@@ -466,7 +466,7 @@ function TasksTab({
           placeholder="Todos"
           options={[
             { value: '', label: 'Todos' },
-            ...STATUS_COLUMNS.map((column) => ({
+            ...ADMIN_STATUS_OPTIONS.map((column) => ({
               value: column.id,
               label: column.label,
             })),
@@ -527,7 +527,7 @@ function TasksTab({
             { key: 'status', header: 'Estado', cell: (item) => taskStatusLabel(item.status) },
             {
               key: 'tutor',
-              header: 'Tutor',
+              header: 'Taskia',
               cell: (item) => (item.study_passed ? 'Listo' : 'Pendiente'),
             },
             { key: 'created', header: 'Creada', cell: (item) => formatWhen(item.created_at) },
@@ -571,7 +571,7 @@ function TaskStudyBlock({ studentId }: { studentId: number }) {
     <section className="admin-panel">
       <div className="admin-section-head">
         <h2>Estudio de tareas</h2>
-        <p className="muted">Sesiones del tutor en el tablero, no de mundos.</p>
+        <p className="muted">Sesiones con Taskia en el tablero, no de mundos.</p>
       </div>
       <div className="admin-filters">
         <DateField label="Desde" value={from} onChange={setFrom} />

@@ -57,7 +57,7 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
       onClose={onClose}
       titleId="create-mission-title"
       title="Nueva misión"
-      lead="Un tema para estudiar con el tutor. Luego podrás desafiarlo."
+      lead="Un tema para estudiar con Taskia. Luego podrás desafiarlo."
       icon={Rocket}
     >
       <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>

@@ -531,7 +531,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
               className="field-control challenge-text-input"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
-              placeholder="Opcional: explicale a la IA lo que dibujaste"
+              placeholder="Opcional: explicale a Taskia lo que dibujaste"
               disabled={submitting || grading}
             />
           )}
@@ -593,7 +593,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
               <span className="challenge-grade-orb" aria-hidden />
               <p className="challenge-grade-title">¡Un momentito!</p>
               <p className="challenge-grade-copy">
-                Estamos revisando tus respuestas, como un profesor amable.
+                Taskia está mirando tus respuestas…
               </p>
               <span className="study-thinking-dots challenge-grade-dots" aria-hidden>
                 <span />

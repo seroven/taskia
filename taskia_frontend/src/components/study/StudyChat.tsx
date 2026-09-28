@@ -327,7 +327,7 @@ export function StudyChat({
           <p className="study-topic-summary">{context.topic_summary}</p>
         ) : (
           <p className="study-topic-summary muted">
-            Tu tutor amigable ya tiene el título de la tarea y te espera.
+            Taskia ya tiene el título de la tarea y te espera.
           </p>
         )}
       </div>
@@ -357,7 +357,7 @@ export function StudyChat({
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             >
               <span className="study-bubble-role">
-                {message.role === 'user' ? 'Tú' : 'Tutor'}
+                {message.role === 'user' ? 'Tú' : 'Taskia'}
               </span>
               {isAssistant ? (
                 <TypewriterText
@@ -390,7 +390,7 @@ export function StudyChat({
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.2 }}
             >
-              <span className="study-bubble-role">Tutor</span>
+              <span className="study-bubble-role">Taskia</span>
               <p>
                 Pensando
                 <span className="study-thinking-dots" aria-hidden>
@@ -421,7 +421,7 @@ export function StudyChat({
             <SwitchToggle
               checked={allowAiDraw}
               disabled={sending || voiceBusy}
-              title="IA dibuja"
+              title="Taskia dibuja"
               onChange={setAllowAiDraw}
             />
           </div>
@@ -502,9 +502,9 @@ export function StudyChat({
           }}
           placeholder={
             boardControls
-              ? 'Escribe tu duda… “Enviar pizarra” para que mire tu dibujo; “IA dibuja” para que ella dibuje el ejercicio.'
+              ? 'Escribe tu duda… “Enviar pizarra” para que mire tu dibujo; “Taskia dibuja” para que dibuje el ejercicio.'
               : voiceEnabled
-                ? 'Cuéntale al tutor lo de tu tema. Puedes grabar varias veces, sumarlo aquí y enviar cuando esté listo.'
+                ? 'Cuéntale a Taskia lo de tu tema. Puedes grabar varias veces, sumarlo aquí y enviar cuando esté listo.'
                 : 'Escribe tu duda o lo que acabas de entender…'
           }
           rows={3}
@@ -512,7 +512,7 @@ export function StudyChat({
         />
         {voiceEnabled && (
           <p className="muted study-voice-compose-hint">
-            El tutor quiere conocer tu tema. Puedes grabar varias veces, sumar las palabras aquí y
+            Taskia quiere conocer tu tema. Puedes grabar varias veces, sumar las palabras aquí y
             enviar cuando esté listo.
           </p>
         )}
@@ -576,7 +576,7 @@ export function StudyChat({
         onSecondary={() => setVoicePrompt(null)}
       >
         <p>
-          El tutor quiere conocer tu tema con tus palabras. Puedes hablar un rato, revisar lo que
+          Taskia quiere conocer tu tema con tus palabras. Puedes hablar un rato, revisar lo que
           se escribió y sumarlo abajo. Si no te alcanza, graba otra vez. Cuando esté todo, envíaselo
           con el botón de abajo.
         </p>

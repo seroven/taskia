@@ -37,8 +37,8 @@ export type CourseProgress = 'empty' | 'pending' | 'studying' | 'mastered'
 export const COURSE_PROGRESS_LABEL: Record<CourseProgress, string> = {
   empty: 'Sin temas',
   pending: 'Sin empezar',
-  studying: 'En proceso',
-  mastered: 'Completado',
+  studying: 'En marcha',
+  mastered: 'Listo',
 }
 
 export function courseProgress(course: StudyWorldCourse): CourseProgress {
@@ -174,7 +174,7 @@ export interface ChallengeAnswerPayload {
 export const MISSION_STATUS_LABEL: Record<string, string> = {
   pending: 'Por empezar',
   studying: 'En marcha',
-  mastered: 'Dominado',
+  mastered: 'Lista',
 }
 
 export const DIFFICULTY_LABEL: Record<string, string> = {
@@ -186,7 +186,7 @@ export const DIFFICULTY_LABEL: Record<string, string> = {
 export const SCOPE_LABEL: Record<string, string> = {
   mission: 'Tema',
   course: 'Curso',
-  world: 'Global',
+  world: 'Todo el mundo',
 }
 
 export function challengeHistoryTitle(ch: {

@@ -29,7 +29,7 @@ export function BoardFilters({
   return (
     <div className="filters">
       <DateField
-        label="Creada el"
+        label="Hecha el"
         value={filters.created_on ?? ''}
         onChange={(created_on) =>
           onChange({
@@ -75,7 +75,7 @@ export function BoardFilters({
           })
         }
       >
-        Limpiar filtros
+        Quitar filtros
       </button>
 
       <button

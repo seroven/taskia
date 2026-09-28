@@ -65,7 +65,7 @@ export function TaskFormModal({
       return
     }
     if (!difficultyId) {
-      setError('Selecciona una dificultad')
+      setError('Elige un nivel')
       return
     }
     if (taskKind === 'project' && !dueDate) {
@@ -103,7 +103,7 @@ export function TaskFormModal({
       onClose={onClose}
       titleId="create-task-title"
       title="Nueva tarea"
-      lead="Se creará en Pendiente."
+      lead="Va a Por hacer."
       icon={NotePencil}
     >
       <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>
@@ -151,7 +151,7 @@ export function TaskFormModal({
         />
 
         <SelectField
-          label="Dificultad"
+          label="Nivel"
           value={difficultyId}
           options={difficultyOptions}
           placeholder="Selecciona…"
@@ -161,7 +161,7 @@ export function TaskFormModal({
 
         {taskKind === 'daily' ? (
           <p className="kind-hint">
-            Fecha de término: <strong>hoy ({todayISO()})</strong>
+            Se entrega: <strong>hoy ({todayISO()})</strong>
           </p>
         ) : (
           <DateField

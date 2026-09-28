@@ -1001,7 +1001,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
         </div>
         <p className="grid-board-hint muted">
           La mano mueve la vista. El cursor selecciona: clic en una forma o arrastrá un recuadro
-          para agarrar varias. El dibujo violeta es del tutor y no se mueve.
+          para agarrar varias. El dibujo violeta es de Taskia y no se mueve.
         </p>
       </div>
     )

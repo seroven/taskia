@@ -133,9 +133,9 @@ export function StudyPage({ taskId, onBack }: Props) {
         if (justPassed) {
           showToast({
             tone: 'success',
-            title: '¡Listo para Terminado!',
+            title: '¡Ya puedes marcarla lista!',
             subtitle:
-              'El tutor confirma que ya dominas la tarea. Puedes moverla a Terminado.',
+              'Taskia confirma que ya sabes la tarea. Muévela a Listo.',
           })
         }
       }
@@ -182,9 +182,9 @@ export function StudyPage({ taskId, onBack }: Props) {
       await applyUsesBoard(next)
       showToast({
         tone: 'success',
-        title: next ? '¡Pizarra lista!' : 'Ahora solo charlamos',
+        title: next ? '¡Pizarra lista!' : 'Ahora solo hablamos',
         subtitle: next
-          ? 'Ya puedes dibujar junto al tutor.'
+          ? 'Ya puedes dibujar junto a Taskia.'
           : 'Si quieres dibujar después, toca Pizarra.',
       })
     } catch (err) {
@@ -201,7 +201,7 @@ export function StudyPage({ taskId, onBack }: Props) {
   if (loading) {
     return (
       <div className="study-page">
-        <AppLoader message="Preparando la sesión…" />
+        <AppLoader message="Preparando tu estudio…" />
       </div>
     )
   }
@@ -214,7 +214,7 @@ export function StudyPage({ taskId, onBack }: Props) {
             ← Volver
           </button>
         </header>
-        <p className="form-error banner">{error ?? 'No se pudo abrir la sesión'}</p>
+        <p className="form-error banner">{error ?? 'No se pudo abrir el estudio'}</p>
       </div>
     )
   }

@@ -108,18 +108,19 @@ export function ChallengeSetupModal({
       title="Nuevo desafío"
       lead={
         <>
-          {title ? `Alcance: ${title}. ` : ''}
-          La IA no charla durante el desafío. Si el tema usa pizarra, dibuja el
-          problema y tú resuelves ahí; al final revisa todas las respuestas.
+          {title ? `Sobre: ${title}. ` : ''}
+          En el desafío Taskia no habla: solo corrige al final. Si el tema usa
+          pizarra, dibuja el problema y tú resuelves ahí; al final revisa todas
+          las respuestas.
         </>
       }
       icon={Trophy}
     >
             <div className="modal-panel-body">
               {loading && (
-                <AppLoader message="Cargando dificultades…" variant="section" />
+                <AppLoader message="Cargando niveles…" variant="section" />
               )}
-              <div className="worlds-diff-grid" role="group" aria-label="Dificultad">
+              <div className="worlds-diff-grid" role="group" aria-label="Nivel del desafío">
                 {options.map((opt) => (
                   <button
                     key={opt.difficulty}

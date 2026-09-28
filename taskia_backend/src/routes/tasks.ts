@@ -93,8 +93,8 @@ function ensureCanMarkDone(
   if (difficultyCode === 'high' || currentStatus === 'studying') {
     throw new AppError(
       difficultyCode === 'high'
-        ? 'Esta tarea es de dificultad Alta. Primero estudiala con el tutor hasta que diga que estás listo.'
-        : 'Primero estudia con el tutor hasta que diga que estás listo para Terminado.',
+        ? 'Esta tarea es de dificultad Alta. Primero estudiala con Taskia hasta que diga que estás listo.'
+        : 'Primero estudia con Taskia hasta que diga que estás listo para marcarla Listo.',
     )
   }
 }

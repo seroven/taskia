@@ -322,7 +322,7 @@ export function BoardPage({
     setOverStatus(null)
   }
 
-  const loaderLabel = hasLoadedOnce ? 'Filtrando tareas…' : 'Cargando tablero…'
+  const loaderLabel = hasLoadedOnce ? 'Buscando tareas…' : 'Cargando tablero…'
 
   return (
     <div className="board-shell">

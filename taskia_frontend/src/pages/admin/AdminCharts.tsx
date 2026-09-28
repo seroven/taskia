@@ -413,7 +413,7 @@ export function AdminDashboardCharts({
             compact
             icon={Lightning}
             title="Sin uso de Gemini"
-            description="Nadie usó el tutor, transcripciones ni desafíos en este período."
+            description="Nadie usó Taskia, transcripciones ni desafíos en este período."
           />
         )}
       </section>

@@ -159,7 +159,7 @@ export function TaskEditPanel({ task, courses, difficulties, onSave }: Props) {
         onChange={setCourseId}
       />
       <SelectField
-        label="Dificultad"
+        label="Nivel"
         value={difficultyId}
         options={difficulties.map((d) => ({
           value: String(d.id),
@@ -170,7 +170,7 @@ export function TaskEditPanel({ task, courses, difficulties, onSave }: Props) {
         onChange={setDifficultyId}
       />
       <SelectField
-        label="Estado"
+        label="¿Dónde está?"
         value={status}
         options={STATUS_COLUMNS.map((c) => ({ value: c.id, label: c.label }))}
         required
@@ -179,7 +179,7 @@ export function TaskEditPanel({ task, courses, difficulties, onSave }: Props) {
 
       {taskKind === 'daily' ? (
         <p className="kind-hint">
-          Fecha de término: <strong>hoy ({todayISO()})</strong>
+          Se entrega: <strong>hoy ({todayISO()})</strong>
         </p>
       ) : (
         <DateField
@@ -200,7 +200,7 @@ export function TaskEditPanel({ task, courses, difficulties, onSave }: Props) {
           <strong>¿Quieres dibujar en una pizarra?</strong>
           <span className="muted">
             {' '}
-            Si no, estudias solo charlando con el tutor.
+            Si no, estudias solo hablando con Taskia.
           </span>
         </span>
       </label>

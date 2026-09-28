@@ -52,7 +52,7 @@ export function StudyBoardChoiceModal({ task, onClose, onReady }: Props) {
       title="¿Cómo quieres estudiar?"
       lead={
         task
-          ? `${task.title}. Elige si vas a dibujar o solo a conversar con el tutor.`
+          ? `${task.title}. ¿Solo con Taskia, o también dibujando?`
           : undefined
       }
       icon={BookOpenText}
@@ -65,10 +65,9 @@ export function StudyBoardChoiceModal({ task, onClose, onReady }: Props) {
             onClick={() => setUsesBoard(false)}
           >
             <WorldsIconBadge icon={BookOpenText} size="md" />
-            <strong>Solo charla</strong>
+            <strong>Solo con Taskia</strong>
             <span>
-              Estudio guiado, como un tema de Mundos. Preguntas y práctica en el
-              chat.
+              Te hace preguntas y practicas en el chat. Sin dibujar.
             </span>
           </button>
           <button
@@ -78,7 +77,7 @@ export function StudyBoardChoiceModal({ task, onClose, onReady }: Props) {
           >
             <WorldsIconBadge icon={PencilLine} size="md" />
             <strong>Con pizarra</strong>
-            <span>Dibujas y el tutor también puede marcar en la pizarra.</span>
+            <span>Puedes dibujar, y Taskia también puede marcar cosas.</span>
           </button>
         </div>
         {error && <p className="form-error">{error}</p>}
@@ -92,7 +91,7 @@ export function StudyBoardChoiceModal({ task, onClose, onReady }: Props) {
             disabled={saving}
             onClick={() => void onConfirm()}
           >
-            {saving ? 'Abriendo…' : 'Estudiar'}
+            {saving ? 'Abriendo…' : '¡Vamos!'}
           </button>
         </div>
       </div>

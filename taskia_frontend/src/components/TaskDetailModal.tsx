@@ -93,7 +93,7 @@ export function TaskDetailModal({
       return
     }
     if (!difficultyId) {
-      setError('Selecciona una dificultad')
+      setError('Elige un nivel')
       return
     }
     if (taskKind === 'project' && !dueDate) {
@@ -145,10 +145,10 @@ export function TaskDetailModal({
       open={task != null}
       onClose={onClose}
       titleId="task-detail-title"
-      title="Detalle de la tarea"
+      title="Tu tarea"
       lead={
         task
-          ? `Creada el ${formatDay(task.created_at)}. Puedes editarla aquí.`
+          ? `Hecha el ${formatDay(task.created_at)}. Puedes cambiarla aquí.`
           : undefined
       }
       icon={NotePencil}
@@ -199,7 +199,7 @@ export function TaskDetailModal({
         />
 
         <SelectField
-          label="Dificultad"
+          label="Nivel"
           value={difficultyId}
           options={difficultyOptions}
           placeholder="Selecciona…"
@@ -208,7 +208,7 @@ export function TaskDetailModal({
         />
 
         <SelectField
-          label="Estado"
+          label="¿Dónde está?"
           value={status}
           options={statusOptions}
           required
@@ -217,7 +217,7 @@ export function TaskDetailModal({
 
         {taskKind === 'daily' ? (
           <p className="kind-hint">
-            Fecha de término: <strong>hoy ({todayISO()})</strong>
+            Se entrega: <strong>hoy ({todayISO()})</strong>
           </p>
         ) : (
           <DateField
@@ -238,7 +238,7 @@ export function TaskDetailModal({
             <strong>¿Usar pizarra?</strong>
             <span className="muted">
               {' '}
-              Actívalo si vas a practicar dibujando en el modo estudio.
+              Márcalo si quieres dibujar cuando estudies.
             </span>
           </span>
         </label>

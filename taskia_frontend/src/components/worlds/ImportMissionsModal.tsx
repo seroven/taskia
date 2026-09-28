@@ -74,7 +74,7 @@ export function ImportMissionsModal({
       onClose={onClose}
       titleId="import-missions-title"
       title="Traer misiones"
-      lead="Copia temas de otros mundos (mismo curso). El progreso empieza de cero."
+      lead="Trae temas de otros mundos (mismo curso). Empiezan de cero aquí."
       icon={DownloadSimple}
       size="lg"
     >
@@ -118,7 +118,7 @@ export function ImportMissionsModal({
                   onClick={() => void onSubmit()}
                 >
                   <DownloadSimple size={18} weight="bold" />
-                  {submitting ? 'Importando…' : 'Traer seleccionadas'}
+                  {submitting ? 'Trayendo…' : 'Traer seleccionadas'}
                 </button>
               </div>
             </div>

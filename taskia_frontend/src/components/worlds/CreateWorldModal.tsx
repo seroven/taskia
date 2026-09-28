@@ -47,7 +47,7 @@ export function CreateWorldModal({ open, onClose, onCreate }: Props) {
       onClose={onClose}
       titleId="create-world-title"
       title="Nuevo mundo"
-      lead="Un mundo agrupa los cursos y misiones que quieres estudiar."
+      lead="Un mundo junta los cursos y misiones que quieres estudiar."
       icon={GlobeHemisphereWest}
     >
       <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>

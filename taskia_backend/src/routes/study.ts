@@ -78,7 +78,7 @@ Ejemplo segmento: [{"op":"clear_board"},{"op":"shape","type":"line","col":64,"ro
 `
 
 function tutorSystemPrompt(allowAiDraw: boolean) {
-  let p = `Tutor amable para niño ~10 años. Español latinoamericano, claro y breve.
+  let p = `Eres Taskia, guía de estudio amable para un niño ~10 años. Te llaman Taskia (no digas que eres una IA ni un “tutor”). Español latinoamericano, claro y breve.
 No des la solución completa: guía con preguntas/pistas. Prioriza la tarea actual.
 Recibes context_summary (esta tarea), last_tutor_message (tu burbuja anterior) y user_memory_summary. No el chat entero.
 Mantén coherencia con el ejercicio abierto: si last_tutor_message o context_summary citan un número/ejercicio, NO preguntes de qué número hablan.
@@ -100,15 +100,15 @@ Dominio (study_eval): passed=true SOLO si TODOS se cumplen (si falta uno → pas
 3) No basta “sí/ok/ya/listo”: tiene que haber respondido de verdad y haber reforzado los puntos débiles.
 4) no regalaste la solución completa en esos turnos
 5) evidence debe citar en 1 frase qué demostró el niño (si no puedes citarlo → passed=false)
-Por defecto passed=false. NO preguntes si quiere más ejercicios: si ya cumple el piso, celebra y dile que ya puede mover la tarea a Terminado.
+Por defecto passed=false. NO preguntes si quiere más ejercicios: si ya cumple el piso, celebra y dile que ya puede mover la tarea a Listo.
 `
   } else {
     p += DRAW_OPS_PROMPT
     p += `Dominio CON PIZARRA (study_eval.passed=true) SOLO si TODOS se cumplen:
 1) El niño resolvió 2 problemas DISTINTOS él solo: sin que le dictes la respuesta ni el paso clave, y sin errores. Si se equivoca o lo ayudas a resolverlo, ese intento NO cuenta; plantea otro para que lo intente solo.
 2) En context_summary lleva SIEMPRE "Solo bien: N/2" (N = problemas resueltos solo).
-3) Cuando N llega a 2, NO marques passed=true en ese mismo turno. Primero, con tono cálido de tutor, pregúntale si quiere practicar OTRO TIPO de ejercicio de este mismo tema (un formato distinto). En ese turno passed=false.
-4) passed=true SOLO después, si dice que no / que ya está / que no quiere más. Entonces celebra y dile que ya puede mover la tarea a Terminado.
+3) Cuando N llega a 2, NO marques passed=true en ese mismo turno. Primero, con tono cálido, pregúntale si quiere practicar OTRO TIPO de ejercicio de este mismo tema (un formato distinto). En ese turno passed=false.
+4) passed=true SOLO después, si dice que no / que ya está / que no quiere más. Entonces celebra y dile que ya puede mover la tarea a Listo.
 5) Si pide más, dale ese otro tipo (passed=false). Cuando cierre y no quiera más, passed=true (los 2 solos ya valen).
 6) phase=reviewing. evidence cita los 2 problemas que resolvió solo. Si no puedes citarlos → passed=false.
 Por defecto passed=false.
@@ -330,7 +330,7 @@ router.get(
     const task = await fetchTask(taskId, userId)
     if (!canOpenStudy(task)) {
       throw new AppError(
-        'Solo puedes abrir el modo estudio en tareas En estudio, o Terminado si son de dificultad Alta',
+        'Solo puedes estudiar tareas en Estudiando, o Listo si son de nivel Alto',
       )
     }
     const context = await loadContext(taskId)
@@ -375,7 +375,7 @@ router.post(
     const task = await fetchTask(taskId, userId)
     if (!canOpenStudy(task)) {
       throw new AppError(
-        'Solo puedes chatear en modo estudio en tareas En estudio, o Terminado si son de dificultad Alta',
+        'Solo puedes chatear en estudio en tareas Estudiando, o Listo si son de nivel Alto',
       )
     }
 
@@ -412,8 +412,8 @@ router.post(
           boardMasteryHint +
           ' Incluye draw_ops con clear_board + stamps/shapes (no dejes el ejercicio solo en texto).'
       : boardHas
-        ? 'Responde breve. Usa context + last_tutor_message + mensaje + pizarra. Conserva el ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Terminado (no preguntes si quiere más).'
-        : 'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo. Ignora pizarra. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Terminado (no preguntes si quiere más).'
+        ? 'Responde breve. Usa context + last_tutor_message + mensaje + pizarra. Conserva el ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
+        : 'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo. Ignora pizarra. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
     if (fromVoice) {
       instruction +=
         ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'

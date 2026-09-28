@@ -19,7 +19,7 @@ export function TaskCardView({
           {task.difficulty_name}
         </span>
         {task.study_passed && (
-          <span className="study-passed-tag" title="El tutor confirmó que entendiste">
+          <span className="study-passed-tag" title="Taskia confirmó que entendiste">
             Listo
           </span>
         )}

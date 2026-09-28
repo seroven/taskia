@@ -40,7 +40,7 @@ export interface Task {
   study_passed: boolean
   /** Si true, el modo estudio muestra la pizarra cuadriculada. */
   uses_board: boolean
-  /** Si true, ya eligió charla vs pizarra (no repetir el modal). */
+  /** Si true, ya eligió solo chat vs pizarra (no repetir el modal). */
   study_mode_chosen: boolean
   due_date: string
   created_at: string
@@ -54,17 +54,18 @@ export interface TaskFilters {
   status?: TaskStatus | null
 }
 
+/** Etiquetas del tablero del explorador (claras, sin jerga de oficina). */
 export const STATUS_COLUMNS: { id: TaskStatus; label: string }[] = [
-  { id: 'pending', label: 'Pendiente' },
-  { id: 'in_progress', label: 'En proceso' },
-  { id: 'studying', label: 'En estudio' },
-  { id: 'done', label: 'Terminado' },
+  { id: 'pending', label: 'Por hacer' },
+  { id: 'in_progress', label: 'Haciendo' },
+  { id: 'studying', label: 'Estudiando' },
+  { id: 'done', label: 'Listo' },
 ]
 
-/** Candado de dificultad Alta → Terminado. */
-export const STUDY_PASSED_REQUIRED_TITLE = 'Aún no puedes terminar'
+/** Candado de dificultad Alta → Listo. */
+export const STUDY_PASSED_REQUIRED_TITLE = 'Aún no puedes marcarla lista'
 export const STUDY_PASSED_REQUIRED_MSG =
-  'Estudia con el tutor hasta que diga que estás listo.'
+  'Estudia con Taskia hasta que diga que estás listo.'
 
 export function todayISO(): string {
   const now = new Date()
@@ -82,13 +83,13 @@ export function localDayBoundsISO(dateStr: string): { start: string; end: string
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
-/** Vista de estudio: En estudio, o Terminado si es dificultad Alta. */
+/** Vista de estudio: Estudiando, o Listo si es nivel Alta. */
 export function canOpenStudyMode(task: Pick<Task, 'status' | 'difficulty_code'>): boolean {
   if (task.status === 'studying') return true
   return task.status === 'done' && task.difficulty_code === 'high'
 }
 
-/** Alta siempre, o cualquier tarea que esté en estudio, necesita el visto del tutor. */
+/** Alta siempre, o cualquier tarea que esté en estudio, necesita el visto de Taskia. */
 export function needsStudyPassedGate(
   task: Pick<Task, 'status' | 'difficulty_code' | 'study_passed'>,
   nextStatus: TaskStatus,

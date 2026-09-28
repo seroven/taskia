@@ -119,8 +119,8 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
       if (result.mission.status === 'mastered' && mission?.status !== 'mastered') {
         showToast({
           tone: 'success',
-          title: '¡Misión dominada!',
-          subtitle: 'El tutor confirma que ya manejas el tema',
+          title: '¡Misión lista!',
+          subtitle: 'Taskia confirma que ya sabes el tema',
         })
       }
       const ops = parseDrawOps(result.reply.draw_ops)
@@ -166,9 +166,9 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
       await applyUsesBoard(next)
       showToast({
         tone: 'success',
-        title: next ? '¡Pizarra lista!' : 'Ahora solo charlamos',
+        title: next ? '¡Pizarra lista!' : 'Ahora solo hablamos',
         subtitle: next
-          ? 'Ya puedes dibujar junto al tutor.'
+          ? 'Ya puedes dibujar junto a Taskia.'
           : 'Si quieres dibujar después, toca Pizarra.',
       })
     } catch (err) {
@@ -218,7 +218,7 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
   if (loading) {
     return (
       <div className="study-page">
-        <AppLoader message="Preparando la sesión…" />
+        <AppLoader message="Preparando tu estudio…" />
       </div>
     )
   }

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 
-export function BoardLoader({ label = 'Filtrando tareas…' }: { label?: string }) {
+export function BoardLoader({ label = 'Buscando tareas…' }: { label?: string }) {
   return (
     <motion.div
       className="board-loader"
