@@ -8,9 +8,11 @@ import {
   AppError,
   extractJson,
   toInstantISO,
+  looksLikeCelebratingTaskReady,
   looksLikeOfferingMorePractice,
   requiredChatTurns,
   soloBienCount,
+  stripPrematureReadyCelebration,
   truncateChars,
 } from '../utils/helpers.js'
 import { latencyForTaskReply } from '../utils/replyLatency.js'
@@ -87,6 +89,8 @@ Si hay imagen adjunta: esa imagen es la fuente de verdad de lo que dibujó el ni
 Para dibujar tú usa draw_ops con coordenadas de grilla (como se indica en las reglas de pizarra de salida); no “pintes” la foto.
 Responde SOLO JSON (sin markdown):
 {"phase":"understanding|practicing|reviewing","speak_to_child":"...","ask_questions":[],"topic_summary":"...","context_summary":"...","user_memory_summary":"...","exercise":null,"draw_ops":[],"hints_level":0,"study_eval":{"passed":false,"evidence":""}}
+speak_to_child: mensaje breve que ve el niño. Si preguntas, hazlo SOLO ahí (una pregunta natural en el párrafo). No numeres listas de preguntas.
+ask_questions: opcional/interno; el niño NO lo ve. Puedes dejar []. No repitas ahí lo mismo que ya dijiste en speak_to_child.
 context_summary ≤ 400 chars. Debe incluir SIEMPRE, si hay ejercicio abierto: "Ejercicio activo: …" con el número/datos exactos; no lo borres hasta resolverlo o cambiarlo. Resume aciertos del niño.
 user_memory_summary ≤ 600 chars (si update_user_memory=false, repite el recibido).
 exercise: usa el objeto cuando planteas un ejercicio nuevo (también en reviewing); si sigues el mismo, puedes dejar null pero conserva "Ejercicio activo" en context_summary.
@@ -103,6 +107,7 @@ Dominio (study_eval): passed=true SOLO si TODOS se cumplen (si falta uno → pas
 4) no regalaste la solución completa en esos turnos
 5) evidence debe citar en 1 frase qué demostró el niño (si no puedes citarlo → passed=false)
 Por defecto passed=false. NO preguntes si quiere más ejercicios: si ya cumple el piso, celebra y dile que ya puede mover la tarea a Listo.
+NUNCA digas "mover a Listo" / "márcala Listo" si study_eval.passed es false en ESTE mismo JSON.
 `
   } else {
     p += DRAW_OPS_PROMPT
@@ -114,6 +119,7 @@ Por defecto passed=false. NO preguntes si quiere más ejercicios: si ya cumple e
 5) Si pide más, dale ese otro tipo (passed=false). Cuando cierre y no quiera más, passed=true (los 2 solos ya valen).
 6) phase=reviewing. evidence cita los 2 problemas que resolvió solo. Si no puedes citarlos → passed=false.
 Por defecto passed=false.
+NUNCA digas "mover a Listo" / "márcala Listo" si study_eval.passed es false en ESTE mismo JSON.
 `
   }
   return p
@@ -519,9 +525,21 @@ router.post(
       }
     }
 
+    // Si el servidor negó el visto, no dejar que el texto diga "ya puedes a Listo".
+    let speakSafe = speakToChild
+    if (!passed && looksLikeCelebratingTaskReady(speakSafe)) {
+      const stripped = stripPrematureReadyCelebration(speakSafe)
+      speakSafe = truncateChars(
+        stripped.length >= 20
+          ? stripped
+          : '¡Vas muy bien! Sigamos un poquito más para afianzar y luego sí la movemos a Listo.',
+        MAX_SPEAK,
+      )
+    }
+
     const reply = {
       phase,
-      speak_to_child: speakToChild,
+      speak_to_child: speakSafe,
       ask_questions: askQuestions,
       topic_summary: String(value.topic_summary ?? ''),
       context_summary: ensureActiveExercise(
@@ -551,13 +569,8 @@ router.post(
     context.context_summary = reply.context_summary
     context.hints_level = reply.hints_level
 
+    // ask_questions queda para lógica interna; no se lista al niño (evita preguntas duplicadas).
     let visible = reply.speak_to_child
-    if (reply.ask_questions.length) {
-      visible += '\n\n'
-      reply.ask_questions.forEach((q, i) => {
-        visible += `${i + 1}. ${q}\n`
-      })
-    }
     if (reply.exercise) {
       visible += `\nEjercicio: ${reply.exercise.title}\n${reply.exercise.instructions}`
     }

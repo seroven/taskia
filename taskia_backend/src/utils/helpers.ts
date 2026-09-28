@@ -73,6 +73,67 @@ export function looksLikeOfferingMorePractice(text: string): boolean {
   )
 }
 
+/** Celebra que el niño ya puede pasar la tarea a Listo (aunque passed quede false). */
+export function looksLikeCelebratingTaskReady(text: string): boolean {
+  const t = text.toLowerCase()
+  return (
+    /mover\s+(esta\s+)?(tarea\s+)?a\s+listo/.test(t) ||
+    /ya puedes\s+(mover|marcar)/.test(t) ||
+    /márcala?\s+(como\s+)?listo|marcala?\s+(como\s+)?listo/.test(t) ||
+    /pásala\s+a\s+listo|pasala\s+a\s+listo/.test(t) ||
+    /tarea\s+(ya\s+)?(está|esta)\s+lista/.test(t)
+  )
+}
+
+/** Celebra dominio de misión aunque passed quede false. */
+export function looksLikeCelebratingMissionMastered(text: string): boolean {
+  const t = text.toLowerCase()
+  return (
+    /ya\s+dominaste|dominaste\s+(el\s+)?tema/.test(t) ||
+    /misión\s+(ya\s+)?dominada|mision\s+(ya\s+)?dominada/.test(t) ||
+    /ya\s+sabes\s+(bien\s+)?(este\s+)?tema/.test(t) ||
+    /tema\s+dominado|quedó\s+dominad|quedo\s+dominad/.test(t)
+  )
+}
+
+/**
+ * Quita frases que digan al niño que ya puede cerrar (Listo / dominio)
+ * cuando el servidor forzó study_eval.passed=false.
+ */
+export function stripPrematureReadyCelebration(text: string): string {
+  let out = text
+  out = out.replace(
+    /[.!?¡¿]*\s*[^.!?]*(?:ya puedes|puedes ya)\s+(?:mover|marcar)[^.!?]*[.!?¡]*/gi,
+    ' ',
+  )
+  out = out.replace(
+    /[.!?¡¿]*\s*[^.!?]*mover\s+(?:esta\s+)?(?:tarea\s+)?a\s+listo[^.!?]*[.!?¡]*/gi,
+    ' ',
+  )
+  out = out.replace(
+    /[.!?¡¿]*\s*[^.!?]*pásala\s+a\s+listo[^.!?]*[.!?¡]*/gi,
+    ' ',
+  )
+  out = out.replace(
+    /[.!?¡¿]*\s*[^.!?]*pasala\s+a\s+listo[^.!?]*[.!?¡]*/gi,
+    ' ',
+  )
+  out = out.replace(
+    /[.!?¡¿]*\s*[^.!?]*(?:ya\s+)?dominaste[^.!?]*[.!?¡]*/gi,
+    ' ',
+  )
+  out = out.replace(
+    /[.!?¡¿]*\s*[^.!?]*misi[oó]n\s+(?:ya\s+)?dominada[^.!?]*[.!?¡]*/gi,
+    ' ',
+  )
+  out = out.replace(
+    /[.!?¡¿]*\s*[^.!?]*tema\s+dominado[^.!?]*[.!?¡]*/gi,
+    ' ',
+  )
+  out = out.replace(/\s{2,}/g, ' ').replace(/\s+([.!?])/g, '$1').trim()
+  return out
+}
+
 /** Contador "Solo bien: N/2" del context_summary (pizarra). */
 export function soloBienCount(summary: string): number | null {
   const m = summary.match(/solo bien:\s*(\d+)\s*\/\s*2/i)

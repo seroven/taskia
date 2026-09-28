@@ -9,9 +9,11 @@ import {
   extractJson,
   toInstantISO,
   looksLikeAskingMoreTopicContent,
+  looksLikeCelebratingMissionMastered,
   looksLikeOfferingMorePractice,
   requiredChatTurns,
   soloBienCount,
+  stripPrematureReadyCelebration,
   truncateChars,
 } from '../utils/helpers.js'
 import { latencyForMissionReply } from '../utils/replyLatency.js'
@@ -552,6 +554,8 @@ Si hay imagen adjunta: esa imagen es la fuente de verdad de lo que dibujó el ni
 Para dibujar tú usa draw_ops con coordenadas de grilla (reglas de pizarra de salida); no “pintes” la foto.
 Responde SOLO JSON (sin markdown):
 {"phase":"understanding|practicing|reviewing","speak_to_child":"...","ask_questions":[],"topic_summary":"...","context_summary":"...","draw_ops":[],"hints_level":0,"study_eval":{"passed":false,"evidence":""}}
+speak_to_child: mensaje breve que ve el niño. Si preguntas, hazlo SOLO ahí (una pregunta natural en el párrafo). No numeres listas de preguntas.
+ask_questions: opcional/interno; el niño NO lo ve. Puedes dejar []. No repitas ahí lo mismo que ya dijiste en speak_to_child.
 context_summary ≤ 400 chars; incluye "Ejercicio activo: …" si hay práctica abierta. Anota qué partes del tema ya cubrió el niño y cuáles faltan.
 
 RECORRIDO OBLIGATORIO del tema (no saltes etapas):
@@ -578,6 +582,7 @@ Dominio (study_eval.passed=true) SOLO si TODOS se cumplen. Si falta uno → pass
 7) Si pide más, sigue recorriendo ese contenido (passed=false, quita "Cierre: preguntado"). Cuando cierre y no quiera más, passed=true.
 8) evidence cita en 1–2 frases QUÉ demostró y qué partes cubrió; si no puedes citarlo → passed=false
 Por defecto passed=false.
+NUNCA digas que ya dominó / "misión lista" / "ya sabe el tema" si study_eval.passed es false en ESTE mismo JSON.
 `
   } else {
     p += MISSION_DRAW_OPS_PROMPT
@@ -590,6 +595,7 @@ Dominio CON PIZARRA (study_eval.passed=true) SOLO si TODOS se cumplen:
 5) Si pide más, dale ese otro tipo (passed=false). Cuando cierre y no quiera más, passed=true (los 2 solos ya valen).
 6) phase=reviewing. evidence cita los 2 problemas que resolvió solo. Si no puedes citarlos → passed=false.
 Por defecto passed=false.
+NUNCA digas que ya dominó / "misión lista" / "ya sabe el tema" si study_eval.passed es false en ESTE mismo JSON.
 `
   }
   return p
@@ -1496,13 +1502,22 @@ router.post(
     }
     if (mission.status === 'mastered') reply.study_eval.passed = true
 
-    let visible = reply.speak_to_child
-    if (reply.ask_questions.length > 0) {
-      visible += '\n\n'
-      reply.ask_questions.forEach((q, i) => {
-        visible += `${i + 1}. ${q}\n`
-      })
+    // Si el servidor negó el dominio, no dejar que el texto diga que ya dominó.
+    if (
+      !reply.study_eval.passed &&
+      looksLikeCelebratingMissionMastered(reply.speak_to_child)
+    ) {
+      const stripped = stripPrematureReadyCelebration(reply.speak_to_child)
+      reply.speak_to_child = truncateChars(
+        stripped.length >= 20
+          ? stripped
+          : '¡Vas muy bien! Sigamos un poquito más para afianzar el tema.',
+        450,
+      )
     }
+
+    // ask_questions queda para lógica interna; no se lista al niño (evita preguntas duplicadas).
+    const visible = reply.speak_to_child
 
     const saved = await insertMissionMessage(missionId, 'assistant', visible)
     context.messages.push(saved)
