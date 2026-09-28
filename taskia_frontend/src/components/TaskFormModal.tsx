@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { NotePencil, Plus } from '@phosphor-icons/react'
 import { errorMessage } from '../lib/errors'
 import type { Course, Difficulty, TaskKind } from '../types'
 import { todayISO } from '../types'
 import { DateField } from './ui/DateField'
 import { TextAreaField, TextField } from './ui/Field'
+import { ModalShell } from './ui/ModalShell'
 import { SelectField } from './ui/SelectField'
 
 interface Props {
@@ -97,109 +98,91 @@ export function TaskFormModal({
   }
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="modal-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <motion.form
-            className="modal-panel"
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ duration: 0.28 }}
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={onSubmit}
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      titleId="create-task-title"
+      title="Nueva tarea"
+      lead="Se creará en Pendiente."
+      icon={NotePencil}
+    >
+      <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>
+        <div className="kind-toggle" role="group" aria-label="Tipo de tarea">
+          <button
+            type="button"
+            className={taskKind === 'daily' ? 'active' : ''}
+            onClick={() => {
+              setTaskKind('daily')
+              setDueDate(todayISO())
+            }}
           >
-            <div className="modal-panel-header">
-              <h2>Nueva tarea</h2>
-              <p className="lede">Se creará en Pendiente.</p>
-            </div>
+            Tarea del día
+          </button>
+          <button
+            type="button"
+            className={taskKind === 'project' ? 'active' : ''}
+            onClick={() => setTaskKind('project')}
+          >
+            Proyecto
+          </button>
+        </div>
 
-            <div className="modal-panel-body">
-              <div className="kind-toggle" role="group" aria-label="Tipo de tarea">
-                <button
-                  type="button"
-                  className={taskKind === 'daily' ? 'active' : ''}
-                  onClick={() => {
-                    setTaskKind('daily')
-                    setDueDate(todayISO())
-                  }}
-                >
-                  Tarea del día
-                </button>
-                <button
-                  type="button"
-                  className={taskKind === 'project' ? 'active' : ''}
-                  onClick={() => setTaskKind('project')}
-                >
-                  Proyecto
-                </button>
-              </div>
+        <TextField
+          label="Título"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+        />
 
-              <TextField
-                label="Título"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
+        <TextAreaField
+          label="Descripción"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+        />
 
-              <TextAreaField
-                label="Descripción"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
+        <SelectField
+          label="Curso"
+          value={courseId}
+          options={courseOptions}
+          placeholder="Selecciona…"
+          required
+          onChange={setCourseId}
+        />
 
-              <SelectField
-                label="Curso"
-                value={courseId}
-                options={courseOptions}
-                placeholder="Selecciona…"
-                required
-                onChange={setCourseId}
-              />
+        <SelectField
+          label="Dificultad"
+          value={difficultyId}
+          options={difficultyOptions}
+          placeholder="Selecciona…"
+          required
+          onChange={setDifficultyId}
+        />
 
-              <SelectField
-                label="Dificultad"
-                value={difficultyId}
-                options={difficultyOptions}
-                placeholder="Selecciona…"
-                required
-                onChange={setDifficultyId}
-              />
+        {taskKind === 'daily' ? (
+          <p className="kind-hint">
+            Fecha de término: <strong>hoy ({todayISO()})</strong>
+          </p>
+        ) : (
+          <DateField
+            label="Hasta cuándo tienes para hacerlo"
+            value={dueDate}
+            required
+            onChange={setDueDate}
+          />
+        )}
 
-              {taskKind === 'daily' ? (
-                <p className="kind-hint">
-                  Fecha de término: <strong>hoy ({todayISO()})</strong>
-                </p>
-              ) : (
-                <DateField
-                  label="Hasta cuándo tienes para hacerlo"
-                  value={dueDate}
-                  required
-                  onChange={setDueDate}
-                />
-              )}
-
-              {error && <p className="form-error">{error}</p>}
-            </div>
-
-            <div className="modal-actions">
-              <button type="button" className="ghost" onClick={onClose}>
-                Cancelar
-              </button>
-              <button type="submit" className="primary" disabled={submitting}>
-                {submitting ? 'Guardando…' : 'Crear tarea'}
-              </button>
-            </div>
-          </motion.form>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {error && <p className="form-error">{error}</p>}
+        <div className="modal-actions">
+          <button type="button" className="ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="submit" className="primary" disabled={submitting}>
+            <Plus size={18} weight="bold" />
+            {submitting ? 'Guardando…' : 'Crear tarea'}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
   )
 }

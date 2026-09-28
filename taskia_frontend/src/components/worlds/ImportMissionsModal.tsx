@@ -4,7 +4,7 @@ import { api } from '../../api'
 import { AppLoader } from '../AppLoader'
 import { EmptyState } from '../EmptyState'
 import { WorldsBoardPill } from './WorldsStatusPill'
-import { WorldsModalShell } from './WorldsModalShell'
+import { ModalShell } from '../ui/ModalShell'
 import { errorMessage } from '../../lib/errors'
 import type { ImportableMission } from '../../lib/worldsTypes'
 
@@ -69,14 +69,14 @@ export function ImportMissionsModal({
   }
 
   return (
-    <WorldsModalShell
+    <ModalShell
       open={open}
       onClose={onClose}
       titleId="import-missions-title"
       title="Traer misiones"
       lead="Copia temas de otros mundos (mismo curso). El progreso empieza de cero."
       icon={DownloadSimple}
-      wide
+      size="lg"
     >
             <div className="modal-panel-body">
               {loading && <AppLoader message="Buscando misiones…" variant="section" />}
@@ -122,6 +122,6 @@ export function ImportMissionsModal({
                 </button>
               </div>
             </div>
-    </WorldsModalShell>
+    </ModalShell>
   )
 }

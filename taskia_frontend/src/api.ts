@@ -398,7 +398,13 @@ export const api = {
   listStudents() {
     return request<AdminStudent[]>('/admin/students')
   },
-  createStudent(input: { username: string; email: string; password: string }) {
+  createStudent(input: {
+    username: string
+    email: string
+    password: string
+    parent_ids?: number[]
+    new_parent?: { username: string; email: string; password: string }
+  }) {
     return request<AdminStudent>('/admin/students', {
       method: 'POST',
       body: JSON.stringify(input),
@@ -564,6 +570,7 @@ export const api = {
     email: string
     password: string
     student_ids?: number[]
+    new_student?: { username: string; email: string; password: string }
   }) {
     return request<AdminGuardian>('/admin/parents', {
       method: 'POST',

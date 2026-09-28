@@ -473,7 +473,8 @@ textarea {
 }
 
 .modal-panel {
-  width: min(460px, 100%);
+  --modal-width: 460px;
+  width: min(var(--modal-width), calc(100vw - 32px));
   max-height: calc(100% - 32px);
   background: var(--panel);
   backdrop-filter: blur(16px);
@@ -485,6 +486,26 @@ textarea {
   overflow: hidden;
   position: relative;
   z-index: 1;
+}
+
+.modal-panel--sm {
+  --modal-width: 400px;
+}
+
+.modal-panel--md {
+  --modal-width: 460px;
+}
+
+.modal-panel--lg {
+  --modal-width: 680px;
+}
+
+.modal-panel > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .auth-panel h1,
@@ -1591,7 +1612,7 @@ input[type='checkbox']:active:not(:disabled) {
 }
 
 .task-detail-panel {
-  width: min(520px, 100%);
+  --modal-width: 520px;
 }
 
 .admin-main {
@@ -2044,7 +2065,7 @@ input[type='checkbox']:active:not(:disabled) {
 }
 
 .study-kid-dialog {
-  width: min(420px, 100%);
+  --modal-width: 400px;
 }
 
 .study-kid-dialog h2 {
@@ -3642,16 +3663,19 @@ button.ghost.worlds-back {
   gap: 6px;
 }
 
+.modal-shell-header,
 .worlds-modal-header {
   display: flex;
   align-items: flex-start;
   gap: 14px;
 }
 
+.modal-shell-header h2,
 .worlds-modal-header h2 {
   margin: 0 0 4px;
 }
 
+.modal-shell-header .lede,
 .worlds-modal-header .lede {
   margin: 0;
 }
@@ -3898,7 +3922,90 @@ button.ghost.worlds-back {
 }
 
 .modal-panel-wide {
-  width: min(560px, 94vw);
+  --modal-width: 680px;
+}
+
+.modal-split-body {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+@media (min-width: 640px) {
+  .modal-split-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+
+.modal-split-col {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+
+.modal-split-col-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.modal-link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.modal-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+}
+
+.modal-link-row .session-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-width: 1px;
+}
+
+.modal-link-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.modal-link-row-text strong {
+  font-size: 0.95rem;
+}
+
+.modal-link-row-text span {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .study-layout-chat-only {
@@ -4634,12 +4741,35 @@ button.ghost.worlds-back {
   gap: 16px;
 }
 
+.admin-identity-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-identity-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 .admin-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: end;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+.admin-toolbar--accounts {
+  align-items: center;
+}
+
+.admin-toolbar--accounts .admin-page-head {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
 }
 
 .admin-toolbar .admin-filters {
@@ -4653,6 +4783,20 @@ button.ghost.worlds-back {
   flex-shrink: 0;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.study-board-toggle.admin-view-switch {
+  flex: 0 0 auto;
+  max-width: 220px;
+}
+
+.admin-accounts-stage {
+  position: relative;
+  min-height: 200px;
+}
+
+.admin-accounts-view {
+  width: 100%;
 }
 
 .admin-open-student {
@@ -4958,13 +5102,15 @@ button.ghost.worlds-back {
   border-bottom-color: var(--accent);
 }
 
+.data-table-wrap,
 .admin-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: calc(var(--radius));
+  border-radius: var(--radius);
   background: var(--panel-strong);
 }
 
+.data-table-wrap--flush,
 .admin-table-wrap--flush {
   margin: 0 -18px -18px;
   border-radius: 0 0 calc(var(--radius) + 3px) calc(var(--radius) + 3px);
@@ -4973,11 +5119,42 @@ button.ghost.worlds-back {
   border-bottom: 0;
 }
 
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
+.admin-panel:has(> .data-table-wrap--flush:first-child),
+.admin-panel:has(> .admin-table-wrap--flush:first-child) {
+  padding-top: 0;
 }
 
+.admin-panel > .data-table-wrap--flush:first-child,
+.admin-panel > .admin-table-wrap--flush:first-child {
+  margin-top: 0;
+  margin-left: -18px;
+  margin-right: -18px;
+  border-top: 0;
+  border-radius: 0 0 calc(var(--radius) + 3px) calc(var(--radius) + 3px);
+}
+
+.admin-panel:has(> .data-table-wrap--flush:only-child),
+.admin-panel:has(> .admin-table-wrap--flush:only-child) {
+  padding: 0;
+  overflow: hidden;
+}
+
+.admin-panel > .data-table-wrap--flush:only-child,
+.admin-panel > .admin-table-wrap--flush:only-child {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.data-table,
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.data-table th,
+.data-table td,
 .admin-table th,
 .admin-table td {
   text-align: left;
@@ -4988,11 +5165,13 @@ button.ghost.worlds-back {
   white-space: nowrap;
 }
 
+.data-table td:first-child,
 .admin-table td:first-child {
   white-space: normal;
   min-width: 160px;
 }
 
+.data-table th,
 .admin-table th {
   font-size: 0.78rem;
   font-weight: 800;
@@ -5003,25 +5182,31 @@ button.ghost.worlds-back {
   white-space: nowrap;
 }
 
+.data-table tbody tr:last-child td,
 .admin-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
+.data-table tbody tr.is-clickable,
 .admin-table tbody tr.is-clickable {
   cursor: pointer;
 }
 
+.data-table tbody tr.is-clickable:hover,
+.data-table tbody tr.is-clickable:focus-visible,
 .admin-table tbody tr.is-clickable:hover,
 .admin-table tbody tr.is-clickable:focus-visible {
   background: var(--accent-soft);
   outline: none;
 }
 
+.data-table strong,
 .admin-table strong {
   display: block;
   font-weight: 800;
 }
 
+.data-table-sub,
 .admin-table-sub,
 .admin-table-summary {
   display: block;
@@ -5291,7 +5476,8 @@ button.ghost.worlds-back {
   padding: 16px 18px 18px;
 }
 
-.admin-world-card .admin-table-wrap--flush {
+.admin-world-card .admin-table-wrap--flush,
+.admin-world-card .data-table-wrap--flush {
   margin: 0;
 }
 

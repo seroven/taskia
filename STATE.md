@@ -17,6 +17,9 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - Esquema vivo: migraciones en `taskia_backend/db/migrations/` (`npm run db:migrate`). No hay ORM.
 - Admin semilla: usuario `Sebastian` / `123456` (migración `002_seed_admin.mjs`).
 - UI: Guardián / Explorador (no “padre” / “alumno” / “hijo” en superficies nuevas).
+- Admin: página «Guardianes y Exploradores» (vínculo obligatorio al crear; no hay alta suelta). El dashboard ya no lista exploradores ni tiene «Nuevo alumno».
+- Modales: shell único `ModalShell` con tamaños `sm` / `md` / `lg`; `WorldsModalShell` solo reexporta.
+- Tablas: componente `DataTable` (`taskia_frontend/src/components/ui/DataTable.tsx`); `flush` pega la tabla al borde del `admin-panel`.
 - Preferencias WhatsApp: una por cuenta Guardián.
 - Chat del Guardián usa `student_daily_summaries` del día civil del visor; sin fila, la IA lo dice. Worker aún no escribe ahí.
 - El trabajo del día se commitea y se sube a `staging`.

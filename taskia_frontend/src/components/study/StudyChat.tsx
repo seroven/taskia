@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { AnimatePresence, motion } from 'framer-motion'
 import { Microphone, Stop } from '@phosphor-icons/react'
 import { api } from '../../api'
+import { ModalShell } from '../ui/ModalShell'
+import { SwitchToggle } from '../ui/SwitchToggle'
 import { errorMessage } from '../../lib/errors'
 import type { StudyContext, StudyExercise, StudyMessage, TutorPhase } from '../../lib/studyProtocol'
 import { phaseLabel } from '../../lib/studyProtocol'
@@ -410,32 +412,18 @@ export function StudyChat({
       <form className="study-chat-form" onSubmit={(e) => void onSubmit(e)}>
         {boardControls && (
           <div className="study-chat-toggles">
-            <button
-              type="button"
-              className={`study-board-toggle${includeBoard ? ' is-on' : ''}`}
-              role="switch"
-              aria-checked={includeBoard}
+            <SwitchToggle
+              checked={includeBoard}
               disabled={sending || voiceBusy}
-              onClick={() => setIncludeBoard((value) => !value)}
-            >
-              <span className="study-board-toggle-track" aria-hidden>
-                <span className="study-board-toggle-thumb" />
-              </span>
-              <span className="study-board-toggle-title">Enviar pizarra</span>
-            </button>
-            <button
-              type="button"
-              className={`study-board-toggle${allowAiDraw ? ' is-on' : ''}`}
-              role="switch"
-              aria-checked={allowAiDraw}
+              title="Enviar pizarra"
+              onChange={setIncludeBoard}
+            />
+            <SwitchToggle
+              checked={allowAiDraw}
               disabled={sending || voiceBusy}
-              onClick={() => setAllowAiDraw((value) => !value)}
-            >
-              <span className="study-board-toggle-track" aria-hidden>
-                <span className="study-board-toggle-thumb" />
-              </span>
-              <span className="study-board-toggle-title">IA dibuja</span>
-            </button>
+              title="IA dibuja"
+              onChange={setAllowAiDraw}
+            />
           </div>
         )}
 
@@ -648,51 +636,44 @@ function KidAskDialog({
   primaryDisabled?: boolean
 }) {
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="modal-backdrop study-kid-dialog-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.22 }}
-        >
-          <motion.div
-            className="modal-panel study-kid-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            initial={{ opacity: 0, y: 14, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            onClick={(e) => e.stopPropagation()}
+    <ModalShell
+      open={open}
+      titleId={titleId}
+      title={title}
+      size="sm"
+      panelClassName="study-kid-dialog"
+      backdropClassName="study-kid-dialog-backdrop"
+      closeOnBackdrop={false}
+    >
+      <div className="modal-panel-body study-kid-dialog-body">{children}</div>
+      <div className="modal-actions">
+        {tertiaryLabel && onTertiary ? (
+          <button
+            type="button"
+            className="ghost"
+            onClick={onTertiary}
+            disabled={busy}
           >
-            <div className="modal-panel-header">
-              <h2 id={titleId}>{title}</h2>
-            </div>
-            <div className="modal-panel-body study-kid-dialog-body">{children}</div>
-            <div className="modal-actions">
-              {tertiaryLabel && onTertiary ? (
-                <button type="button" className="ghost" onClick={onTertiary} disabled={busy}>
-                  {tertiaryLabel}
-                </button>
-              ) : null}
-              <button type="button" className="ghost" onClick={onSecondary} disabled={busy}>
-                {secondaryLabel}
-              </button>
-              <button
-                type="button"
-                className="primary"
-                onClick={onPrimary}
-                disabled={busy || primaryDisabled}
-              >
-                {primaryLabel}
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+            {tertiaryLabel}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="ghost"
+          onClick={onSecondary}
+          disabled={busy}
+        >
+          {secondaryLabel}
+        </button>
+        <button
+          type="button"
+          className="primary"
+          onClick={onPrimary}
+          disabled={busy || primaryDisabled}
+        >
+          {primaryLabel}
+        </button>
+      </div>
+    </ModalShell>
   )
 }

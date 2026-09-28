@@ -34,6 +34,85 @@ function mapStudent(r: RowDataPacket) {
     is_active: Number(r.is_active) !== 0,
     created_at: toInstantISO(r.created_at as Date | string) ?? '',
     course_count: r.course_count == null ? undefined : Number(r.course_count),
+    guardian_count:
+      r.guardian_count == null ? undefined : Number(r.guardian_count),
+  }
+}
+
+function parseIds(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map(Number)
+    .filter((id) => Number.isFinite(id) && id > 0)
+}
+
+function parseNewAccount(raw: unknown): {
+  username: string
+  email: string
+  password: string
+} | null {
+  if (!raw || typeof raw !== 'object') return null
+  const body = raw as Record<string, unknown>
+  const username = String(body.username ?? '').trim()
+  const email = String(body.email ?? '').trim().toLowerCase()
+  const password = String(body.password ?? '')
+  if (!username && !email && !password) return null
+  validateStudentInput(username, password, email)
+  return { username, email, password }
+}
+
+async function assertUsernameEmailFree(
+  username: string,
+  email: string,
+  exceptId?: number,
+) {
+  const [existingUser] = await pool.query<RowDataPacket[]>(
+    exceptId == null
+      ? 'SELECT id FROM users WHERE username = ? LIMIT 1'
+      : 'SELECT id FROM users WHERE username = ? AND id <> ? LIMIT 1',
+    exceptId == null ? [username] : [username, exceptId],
+  )
+  if (existingUser.length > 0) throw new AppError('Ese nombre de usuario ya existe')
+  const [existingEmail] = await pool.query<RowDataPacket[]>(
+    exceptId == null
+      ? 'SELECT id FROM users WHERE email = ? LIMIT 1'
+      : 'SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1',
+    exceptId == null ? [email] : [email, exceptId],
+  )
+  if (existingEmail.length > 0) throw new AppError('Ese correo ya está registrado')
+}
+
+async function countActiveLinksForParent(parentId: number) {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT COUNT(*)::int AS n FROM parent_student_links
+     WHERE parent_id = ? AND is_active = 1`,
+    [parentId],
+  )
+  return Number(rows[0]?.n ?? 0)
+}
+
+async function countActiveLinksForStudent(studentId: number) {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT COUNT(*)::int AS n FROM parent_student_links
+     WHERE student_id = ? AND is_active = 1`,
+    [studentId],
+  )
+  return Number(rows[0]?.n ?? 0)
+}
+
+/** No dejar guardián sin explorador ni explorador sin guardián. */
+async function assertCanUnlink(parentId: number, studentId: number) {
+  const parentLinks = await countActiveLinksForParent(parentId)
+  const studentLinks = await countActiveLinksForStudent(studentId)
+  if (parentLinks <= 1) {
+    throw new AppError(
+      'Un guardián debe tener al menos un explorador. Vincula otro antes de desvincular.',
+    )
+  }
+  if (studentLinks <= 1) {
+    throw new AppError(
+      'Un explorador debe tener al menos un guardián. Vincula otro antes de desvincular.',
+    )
   }
 }
 
@@ -940,9 +1019,11 @@ router.get(
   asyncHandler(async (_req, res) => {
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT u.id, u.username, u.email, u.is_active, u.created_at,
-              COUNT(c.id) AS course_count
+              COUNT(DISTINCT c.id) FILTER (WHERE c.is_active) AS course_count,
+              COUNT(DISTINCT l.parent_id) FILTER (WHERE l.is_active) AS guardian_count
        FROM users u
-       LEFT JOIN courses c ON c.user_id = u.id AND c.is_active = 1
+       LEFT JOIN courses c ON c.user_id = u.id
+       LEFT JOIN parent_student_links l ON l.student_id = u.id
        WHERE EXISTS (SELECT 1 FROM roles _r WHERE _r.id = u.role_id AND _r.code = 'user')
        GROUP BY u.id, u.username, u.email, u.is_active, u.created_at
        ORDER BY u.username ASC`,
@@ -961,27 +1042,73 @@ router.post(
 
     const u = username.trim()
     const e = email.trim().toLowerCase()
+    const parentIds = parseIds(req.body.parent_ids)
+    const newParent = parseNewAccount(req.body.new_parent)
 
-    const [existingUser] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE username = ? LIMIT 1',
-      [u],
-    )
-    if (existingUser.length > 0) throw new AppError('Ese nombre de usuario ya existe')
+    if (parentIds.length === 0 && !newParent) {
+      throw new AppError(
+        'Un explorador necesita al menos un guardián (existente o nuevo)',
+      )
+    }
+    if (parentIds.length > 0 && newParent) {
+      throw new AppError('Elige un guardián existente o uno nuevo, no ambos')
+    }
 
-    const [existingEmail] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE email = ? LIMIT 1',
-      [e],
-    )
-    if (existingEmail.length > 0) throw new AppError('Ese correo ya está registrado')
+    await assertUsernameEmailFree(u, e)
+    if (newParent) {
+      await assertUsernameEmailFree(newParent.username, newParent.email)
+    }
+    for (const parentId of parentIds) {
+      await requireGuardian(parentId)
+    }
 
-    const passwordHash = await bcrypt.hash(password, 10)
-    const explorerRoleId = await roleIdByCode('user')
-    const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO users (username, email, password_hash, role_id, is_active)
-       VALUES (?, ?, ?, ?, TRUE)`,
-      [u, e, passwordHash, explorerRoleId],
-    )
-    res.json(await requireStudent(result.insertId))
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+      const passwordHash = await bcrypt.hash(password, 10)
+      const explorerRoleId = await roleIdByCode('user')
+      const [insertExplorer] = await conn.query<ResultSetHeader>(
+        `INSERT INTO users (username, email, password_hash, role_id, is_active)
+         VALUES (?, ?, ?, ?, TRUE)`,
+        [u, e, passwordHash, explorerRoleId],
+      )
+      const explorerId = insertExplorer.insertId
+
+      let guardianId = parentIds[0]
+      if (newParent) {
+        const parentHash = await bcrypt.hash(newParent.password, 10)
+        const parentRoleId = await roleIdByCode('parent')
+        const [insertParent] = await conn.query<ResultSetHeader>(
+          `INSERT INTO users (username, email, password_hash, role_id, is_active)
+           VALUES (?, ?, ?, ?, TRUE)`,
+          [newParent.username, newParent.email, parentHash, parentRoleId],
+        )
+        guardianId = insertParent.insertId
+        await conn.query(
+          `INSERT INTO parent_notify_prefs (parent_id) VALUES (?)
+           ON CONFLICT (parent_id) DO NOTHING`,
+          [guardianId],
+        )
+      }
+
+      const linkParents = newParent ? [guardianId!] : parentIds
+      for (const parentId of linkParents) {
+        await conn.query(
+          `INSERT INTO parent_student_links (parent_id, student_id, is_active)
+           VALUES (?, ?, TRUE)
+           ON CONFLICT (parent_id, student_id) DO UPDATE SET is_active = TRUE`,
+          [parentId, explorerId],
+        )
+      }
+
+      await conn.commit()
+      res.json(await requireStudent(explorerId))
+    } catch (err) {
+      await conn.rollback()
+      throw err
+    } finally {
+      conn.release()
+    }
   }),
 )
 
@@ -1877,47 +2004,77 @@ router.post(
 
     const u = username.trim()
     const e = email.trim().toLowerCase()
-    const studentIds = Array.isArray(req.body.student_ids)
-      ? (req.body.student_ids as unknown[])
-          .map(Number)
-          .filter((id) => Number.isFinite(id) && id > 0)
-      : []
+    const studentIds = parseIds(req.body.student_ids)
+    const newStudent = parseNewAccount(req.body.new_student)
 
-    const [existingUser] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE username = ? LIMIT 1',
-      [u],
-    )
-    if (existingUser.length > 0) throw new AppError('Ese nombre de usuario ya existe')
-    const [existingEmail] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE email = ? LIMIT 1',
-      [e],
-    )
-    if (existingEmail.length > 0) throw new AppError('Ese correo ya está registrado')
-
-    const passwordHash = await bcrypt.hash(password, 10)
-    const parentRoleId = await roleIdByCode('parent')
-    const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO users (username, email, password_hash, role_id, is_active)
-       VALUES (?, ?, ?, ?, TRUE)`,
-      [u, e, passwordHash, parentRoleId],
-    )
-    const guardianId = result.insertId
-
-    await pool.query(
-      `INSERT INTO parent_notify_prefs (parent_id) VALUES (?)
-       ON CONFLICT (parent_id) DO NOTHING`,
-      [guardianId],
-    )
-
-    for (const studentId of studentIds) {
-      await ensureLink(guardianId, studentId)
+    if (studentIds.length === 0 && !newStudent) {
+      throw new AppError(
+        'Un guardián necesita al menos un explorador (existente o nuevo)',
+      )
+    }
+    if (studentIds.length > 0 && newStudent) {
+      throw new AppError('Elige un explorador existente o uno nuevo, no ambos')
     }
 
-    const guardian = await requireGuardian(guardianId)
-    res.json({
-      ...guardian,
-      explorers: await listGuardianExplorers(guardianId),
-    })
+    await assertUsernameEmailFree(u, e)
+    if (newStudent) {
+      await assertUsernameEmailFree(newStudent.username, newStudent.email)
+    }
+    for (const studentId of studentIds) {
+      await requireStudent(studentId)
+    }
+
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+      const passwordHash = await bcrypt.hash(password, 10)
+      const parentRoleId = await roleIdByCode('parent')
+      const [result] = await conn.query<ResultSetHeader>(
+        `INSERT INTO users (username, email, password_hash, role_id, is_active)
+         VALUES (?, ?, ?, ?, TRUE)`,
+        [u, e, passwordHash, parentRoleId],
+      )
+      const guardianId = result.insertId
+
+      await conn.query(
+        `INSERT INTO parent_notify_prefs (parent_id) VALUES (?)
+         ON CONFLICT (parent_id) DO NOTHING`,
+        [guardianId],
+      )
+
+      let explorerIds = studentIds
+      if (newStudent) {
+        const explorerHash = await bcrypt.hash(newStudent.password, 10)
+        const explorerRoleId = await roleIdByCode('user')
+        const [insertExplorer] = await conn.query<ResultSetHeader>(
+          `INSERT INTO users (username, email, password_hash, role_id, is_active)
+           VALUES (?, ?, ?, ?, TRUE)`,
+          [newStudent.username, newStudent.email, explorerHash, explorerRoleId],
+        )
+        explorerIds = [insertExplorer.insertId]
+      }
+
+      for (const studentId of explorerIds) {
+        await conn.query(
+          `INSERT INTO parent_student_links (parent_id, student_id, is_active)
+           VALUES (?, ?, TRUE)
+           ON CONFLICT (parent_id, student_id) DO UPDATE SET is_active = TRUE`,
+          [guardianId, studentId],
+        )
+      }
+
+      await conn.commit()
+      const guardian = await requireGuardian(guardianId)
+      res.json({
+        ...guardian,
+        explorers: await listGuardianExplorers(guardianId),
+      })
+    } catch (err) {
+      await conn.rollback()
+      throw err
+    } finally {
+      conn.release()
+    }
   }),
 )
 
@@ -2014,6 +2171,7 @@ router.delete(
     const studentId = Number(req.params.studentId)
     await requireGuardian(parentId)
     await requireStudent(studentId)
+    await assertCanUnlink(parentId, studentId)
     await pool.query(
       `UPDATE parent_student_links SET is_active = 0
        WHERE parent_id = ? AND student_id = ?`,
@@ -2085,6 +2243,7 @@ router.delete(
     const parentId = Number(req.params.parentId)
     await requireStudent(studentId)
     await requireGuardian(parentId)
+    await assertCanUnlink(parentId, studentId)
     await pool.query(
       `UPDATE parent_student_links SET is_active = 0
        WHERE parent_id = ? AND student_id = ?`,

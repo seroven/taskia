@@ -3,15 +3,14 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle,
+  Compass,
   GlobeHemisphereWest,
-  Student,
   Trophy,
-  UserPlus,
+  UsersThree,
   WarningCircle,
 } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { DateField } from '../../components/ui/DateField'
-import { TextField } from '../../components/ui/Field'
 import { SelectField } from '../../components/ui/SelectField'
 import { errorMessage } from '../../lib/errors'
 import type {
@@ -19,22 +18,19 @@ import type {
   AdminStudent,
 } from '../../lib/adminTypes'
 import { AppLoader } from '../../components/AppLoader'
-import { EmptyState } from '../../components/EmptyState'
 import { AdminDashboardCharts } from './AdminCharts'
 import { AdminStatCard } from './AdminStatCard'
-import { formatWhen } from '../../lib/datetime'
 
 interface Props {
   onOpenStudent: (id: number) => void
-  onCreateStudent: () => void
+  onOpenAccounts: () => void
 }
 
-export function AdminDashboard({ onOpenStudent, onCreateStudent }: Props) {
+export function AdminDashboard({ onOpenStudent, onOpenAccounts }: Props) {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [studentId, setStudentId] = useState('')
   const [students, setStudents] = useState<AdminStudent[]>([])
-  const [query, setQuery] = useState('')
   const [data, setData] = useState<AdminDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -44,7 +40,7 @@ export function AdminDashboard({ onOpenStudent, onCreateStudent }: Props) {
       try {
         setStudents(await api.listStudents())
       } catch {
-        /* el listado del dashboard sirve de respaldo */
+        /* el filtro usa el roster del dashboard de respaldo */
       }
     })()
   }, [])
@@ -69,17 +65,6 @@ export function AdminDashboard({ onOpenStudent, onCreateStudent }: Props) {
     })()
   }, [from, to, studentId])
 
-  const roster = useMemo(() => {
-    const list = data?.roster ?? []
-    const q = query.trim().toLowerCase()
-    if (!q) return list
-    return list.filter(
-      (row) =>
-        row.username.toLowerCase().includes(q) ||
-        row.email.toLowerCase().includes(q),
-    )
-  }, [data, query])
-
   const studentOptions = useMemo(() => {
     const list = students.length > 0 ? students : (data?.roster ?? [])
     return list.map((row) => ({
@@ -97,7 +82,7 @@ export function AdminDashboard({ onOpenStudent, onCreateStudent }: Props) {
       <div className="admin-toolbar">
         <div className="admin-filters">
           <SelectField
-            label="Alumno"
+            label="Explorador"
             value={studentId}
             placeholder="Todos"
             searchable
@@ -128,14 +113,14 @@ export function AdminDashboard({ onOpenStudent, onCreateStudent }: Props) {
               className="admin-open-student"
               onClick={() => onOpenStudent(selectedStudentId)}
             >
-              <Student size={18} weight="fill" />
+              <Compass size={18} weight="fill" />
               Ver ficha
               <ArrowRight size={16} weight="bold" />
             </button>
           )}
-          <button type="button" className="primary" onClick={onCreateStudent}>
-            <UserPlus size={18} weight="fill" />
-            Nuevo alumno
+          <button type="button" className="primary" onClick={onOpenAccounts}>
+            <UsersThree size={18} weight="fill" />
+            Guardianes y Exploradores
           </button>
         </div>
       </div>
@@ -147,8 +132,8 @@ export function AdminDashboard({ onOpenStudent, onCreateStudent }: Props) {
         <>
           <section className="admin-stat-grid" aria-label="Indicadores">
             <AdminStatCard
-              icon={Student}
-              label="Alumnos"
+              icon={Compass}
+              label="Exploradores"
               value={String(data.students.total)}
               hint={`${data.students.active} activos · ${data.students.paused} pausados`}
             />
@@ -193,106 +178,6 @@ export function AdminDashboard({ onOpenStudent, onCreateStudent }: Props) {
           </section>
 
           <AdminDashboardCharts data={data} onOpenStudent={onOpenStudent} />
-
-          <section className="admin-panel" aria-label="Alumnos">
-            <div className="admin-section-head">
-              <h2>Alumnos</h2>
-              <TextField
-                label="Buscar"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Usuario o correo"
-                className="admin-search-field"
-              />
-            </div>
-            {roster.length === 0 ? (
-              <EmptyState
-                compact
-                icon={Student}
-                title={
-                  data.roster.length === 0
-                    ? 'Todavía no hay alumnos'
-                    : 'Ningún alumno coincide'
-                }
-                description={
-                  data.roster.length === 0
-                    ? 'Crea el primero para empezar.'
-                    : 'Prueba con otro usuario o correo.'
-                }
-                action={
-                  data.roster.length === 0 ? (
-                    <button type="button" className="primary" onClick={onCreateStudent}>
-                      <UserPlus size={18} weight="fill" />
-                      Nuevo alumno
-                    </button>
-                  ) : undefined
-                }
-              />
-            ) : (
-            <div className="admin-table-wrap admin-table-wrap--flush">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Alumno</th>
-                    <th>Estado</th>
-                    <th>Materias</th>
-                    <th>Tareas</th>
-                    <th>Atrasadas</th>
-                    <th>Desafíos</th>
-                    <th>Promedio</th>
-                    <th>Último estudio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                    {roster.map((row) => (
-                      <tr
-                        key={row.id}
-                        className="is-clickable"
-                        tabIndex={0}
-                        onClick={() => onOpenStudent(row.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            onOpenStudent(row.id)
-                          }
-                        }}
-                      >
-                        <td>
-                          <strong>{row.username}</strong>
-                          <span className="admin-table-sub">{row.email}</span>
-                        </td>
-                        <td>
-                          <span
-                            className={`admin-pill${row.is_active ? '' : ' is-muted'}`}
-                          >
-                            {row.is_active ? 'Activo' : 'Pausado'}
-                          </span>
-                        </td>
-                        <td>{row.course_count}</td>
-                        <td>
-                          {row.tasks_done}/{row.tasks_total}
-                        </td>
-                        <td>
-                          {row.tasks_overdue > 0 ? (
-                            <span className="admin-pill is-warn">
-                              {row.tasks_overdue}
-                            </span>
-                          ) : (
-                            '0'
-                          )}
-                        </td>
-                        <td>{row.challenges_completed}</td>
-                        <td>
-                          {row.avg_score == null ? '—' : row.avg_score}
-                        </td>
-                        <td>{formatWhen(row.last_study_at)}</td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-            )}
-          </section>
         </>
       )}
     </>

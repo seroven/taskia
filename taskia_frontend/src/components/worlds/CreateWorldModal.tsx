@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { GlobeHemisphereWest, Plus } from '@phosphor-icons/react'
 import { TextAreaField, TextField } from '../ui/Field'
-import { WorldsModalShell } from './WorldsModalShell'
+import { ModalShell } from '../ui/ModalShell'
 import { errorMessage } from '../../lib/errors'
 
 interface Props {
@@ -42,7 +42,7 @@ export function CreateWorldModal({ open, onClose, onCreate }: Props) {
   }
 
   return (
-    <WorldsModalShell
+    <ModalShell
       open={open}
       onClose={onClose}
       titleId="create-world-title"
@@ -76,6 +76,6 @@ export function CreateWorldModal({ open, onClose, onCreate }: Props) {
           </button>
         </div>
       </form>
-    </WorldsModalShell>
+    </ModalShell>
   )
 }

@@ -11,6 +11,7 @@ import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
 import { EmptyState } from '../../components/EmptyState'
 import { DateField } from '../../components/ui/DateField'
+import { DataTable } from '../../components/ui/DataTable'
 import { SelectField } from '../../components/ui/SelectField'
 import { errorMessage } from '../../lib/errors'
 import type {
@@ -574,54 +575,51 @@ function ChallengeBlock({
       {rows.length === 0 ? (
         <EmptyState compact icon={Trophy} title="Sin desafíos" description={empty} />
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Alcance</th>
-                <th>Dificultad</th>
-                <th>Estado</th>
-                <th>Puntaje</th>
-                <th>Completado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((ch) => (
-                <tr
-                  key={ch.id}
-                  className="is-clickable"
-                  tabIndex={0}
-                  onClick={() => onOpen(ch.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      onOpen(ch.id)
-                    }
-                  }}
-                >
-                  <td>
-                    <strong>{SCOPE_LABEL[ch.scope] ?? ch.scope}</strong>
-                    <span className="admin-table-sub">
-                      {ch.mission_title ?? ch.course_name ?? '—'}
-                    </span>
-                  </td>
-                  <td>{DIFFICULTY_LABEL[ch.difficulty] ?? ch.difficulty}</td>
-                  <td>
-                    {ch.status === 'completed'
-                      ? 'Completado'
-                      : ch.status === 'in_progress'
-                        ? 'En curso'
-                        : ch.status}
-                  </td>
-                  <td>{ch.score == null ? '—' : `${ch.score} pts`}</td>
-                  <td>{formatWhen(ch.completed_at)}</td>
-                  <td>Ver detalle</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          rows={rows}
+          rowKey={(ch) => ch.id}
+          onRowClick={(ch) => onOpen(ch.id)}
+          columns={[
+            {
+              key: 'scope',
+              header: 'Alcance',
+              cell: (ch) => (
+                <>
+                  <strong>{SCOPE_LABEL[ch.scope] ?? ch.scope}</strong>
+                  <span className="data-table-sub">
+                    {ch.mission_title ?? ch.course_name ?? '—'}
+                  </span>
+                </>
+              ),
+            },
+            {
+              key: 'difficulty',
+              header: 'Dificultad',
+              cell: (ch) => DIFFICULTY_LABEL[ch.difficulty] ?? ch.difficulty,
+            },
+            {
+              key: 'status',
+              header: 'Estado',
+              cell: (ch) =>
+                ch.status === 'completed'
+                  ? 'Completado'
+                  : ch.status === 'in_progress'
+                    ? 'En curso'
+                    : ch.status,
+            },
+            {
+              key: 'score',
+              header: 'Puntaje',
+              cell: (ch) => (ch.score == null ? '—' : `${ch.score} pts`),
+            },
+            {
+              key: 'completed',
+              header: 'Completado',
+              cell: (ch) => formatWhen(ch.completed_at),
+            },
+            { key: 'open', header: '', cell: () => 'Ver detalle' },
+          ]}
+        />
       )}
     </div>
   )

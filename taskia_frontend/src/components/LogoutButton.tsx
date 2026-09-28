@@ -1,18 +1,15 @@
 import { SignOut } from '@phosphor-icons/react'
 import { useAuth } from '../auth'
+import { IconButton } from './ui/IconButton'
 
 export function LogoutButton() {
   const { logout } = useAuth()
 
   return (
-    <button
-      type="button"
-      className="session-icon-btn"
+    <IconButton
+      icon={SignOut}
+      label="Salir"
       onClick={() => void logout()}
-      aria-label="Salir"
-      title="Salir"
-    >
-      <SignOut size={22} weight="bold" />
-    </button>
+    />
   )
 }

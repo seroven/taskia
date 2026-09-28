@@ -511,7 +511,7 @@ export function AdminDashboardCharts({
 
       <section className="admin-panel">
         <div className="admin-section-head">
-          <h2>Costo por alumno</h2>
+          <h2>Costo por explorador</h2>
           <p className="muted">
             Gemini Flash · {usage?.measured ? 'tokens medidos' : 'aprox. por acción'} ·
             apilado por tipo
@@ -589,9 +589,9 @@ export function AdminDashboardCharts({
 
       <section className="admin-panel">
         <div className="admin-section-head">
-          <h2>Acciones por alumno</h2>
+          <h2>Acciones por explorador</h2>
           <p className="muted">
-            Lo que hizo el alumno, no el gasto: mensajes enviados, desafíos iniciados y
+            Lo que hizo el explorador, no el gasto: mensajes enviados, desafíos iniciados y
             audios.
           </p>
         </div>
@@ -607,7 +607,7 @@ export function AdminDashboardCharts({
             compact
             icon={ChartBar}
             title="Sin desglose"
-            description="Hay actividad, pero no se pudo agrupar por alumno."
+            description="Hay actividad, pero no se pudo agrupar por explorador."
           />
         ) : (
           <div
@@ -647,7 +647,7 @@ export function AdminDashboardCharts({
                 <Legend wrapperStyle={{ fontWeight: 800, fontSize: 13 }} />
                 <Bar
                   dataKey="mensajes"
-                  name="Mensajes del alumno"
+                  name="Mensajes del explorador"
                   fill={colors.pending}
                   radius={[0, 6, 6, 0]}
                 />

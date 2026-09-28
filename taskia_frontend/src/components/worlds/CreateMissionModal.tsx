@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { PencilLine, Plus, Rocket } from '@phosphor-icons/react'
 import { TextAreaField, TextField } from '../ui/Field'
-import { WorldsModalShell } from './WorldsModalShell'
+import { ModalShell } from '../ui/ModalShell'
 import { errorMessage } from '../../lib/errors'
 
 interface Props {
@@ -52,7 +52,7 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
   }
 
   return (
-    <WorldsModalShell
+    <ModalShell
       open={open}
       onClose={onClose}
       titleId="create-mission-title"
@@ -102,6 +102,6 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
                 </button>
               </div>
             </form>
-    </WorldsModalShell>
+    </ModalShell>
   )
 }

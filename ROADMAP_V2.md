@@ -37,7 +37,7 @@ Primer bloque a implementar. Enfoque: web.
 
 - [x] Catálogo `roles` + `users.role_id` (`user` = Explorador, `admin`, `parent` = Guardián)
 - [x] Afiliación `parent_student_links` (baja lógica)
-- [x] Módulo admin: crear/vincular/desvincular Guardianes y Exploradores (tres superficies)
+- [x] Módulo admin: página «Guardianes y Exploradores» (vínculo obligatorio al crear)
 - [x] Vista web del Guardián: solo sus Exploradores; chat primero; ficha secundaria
 - [x] Tabla `student_daily_summaries` + chat que la consume (sin worker aún; si no hay resumen de hoy, la IA lo dice)
 - [x] El admin sigue viendo a todos; el Guardián no administra la plataforma

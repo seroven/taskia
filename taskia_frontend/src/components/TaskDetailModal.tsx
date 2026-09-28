@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { NotePencil } from '@phosphor-icons/react'
 import { formatDay } from '../lib/datetime'
 import { errorMessage } from '../lib/errors'
 import { useToast } from '../toast'
@@ -17,6 +17,7 @@ import {
 } from '../types'
 import { DateField } from './ui/DateField'
 import { TextAreaField, TextField } from './ui/Field'
+import { ModalShell } from './ui/ModalShell'
 import { SelectField } from './ui/SelectField'
 
 interface Props {
@@ -140,134 +141,118 @@ export function TaskDetailModal({
   }
 
   return (
-    <AnimatePresence>
-      {task && (
-        <motion.div
-          className="modal-backdrop"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <motion.form
-            className="modal-panel task-detail-panel"
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ duration: 0.28 }}
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={onSubmit}
+    <ModalShell
+      open={task != null}
+      onClose={onClose}
+      titleId="task-detail-title"
+      title="Detalle de la tarea"
+      lead={
+        task
+          ? `Creada el ${formatDay(task.created_at)}. Puedes editarla aquí.`
+          : undefined
+      }
+      icon={NotePencil}
+      panelClassName="task-detail-panel"
+    >
+      <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>
+        <div className="kind-toggle" role="group" aria-label="Tipo de tarea">
+          <button
+            type="button"
+            className={taskKind === 'daily' ? 'active' : ''}
+            onClick={() => {
+              setTaskKind('daily')
+              setDueDate(todayISO())
+            }}
           >
-            <div className="modal-panel-header">
-              <h2>Detalle de la tarea</h2>
-              <p className="lede">
-                Creada el {formatDay(task.created_at)}. Puedes editarla aquí.
-              </p>
-            </div>
+            Tarea del día
+          </button>
+          <button
+            type="button"
+            className={taskKind === 'project' ? 'active' : ''}
+            onClick={() => setTaskKind('project')}
+          >
+            Proyecto
+          </button>
+        </div>
 
-            <div className="modal-panel-body">
-              <div className="kind-toggle" role="group" aria-label="Tipo de tarea">
-                <button
-                  type="button"
-                  className={taskKind === 'daily' ? 'active' : ''}
-                  onClick={() => {
-                    setTaskKind('daily')
-                    setDueDate(todayISO())
-                  }}
-                >
-                  Tarea del día
-                </button>
-                <button
-                  type="button"
-                  className={taskKind === 'project' ? 'active' : ''}
-                  onClick={() => setTaskKind('project')}
-                >
-                  Proyecto
-                </button>
-              </div>
+        <TextField
+          label="Título"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+        />
 
-              <TextField
-                label="Título"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
+        <TextAreaField
+          label="Descripción"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={4}
+        />
 
-              <TextAreaField
-                label="Descripción"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-              />
+        <SelectField
+          label="Curso"
+          value={courseId}
+          options={courseOptions}
+          placeholder="Selecciona…"
+          required
+          onChange={setCourseId}
+        />
 
-              <SelectField
-                label="Curso"
-                value={courseId}
-                options={courseOptions}
-                placeholder="Selecciona…"
-                required
-                onChange={setCourseId}
-              />
+        <SelectField
+          label="Dificultad"
+          value={difficultyId}
+          options={difficultyOptions}
+          placeholder="Selecciona…"
+          required
+          onChange={setDifficultyId}
+        />
 
-              <SelectField
-                label="Dificultad"
-                value={difficultyId}
-                options={difficultyOptions}
-                placeholder="Selecciona…"
-                required
-                onChange={setDifficultyId}
-              />
+        <SelectField
+          label="Estado"
+          value={status}
+          options={statusOptions}
+          required
+          onChange={(value) => setStatus(value as TaskStatus)}
+        />
 
-              <SelectField
-                label="Estado"
-                value={status}
-                options={statusOptions}
-                required
-                onChange={(value) => setStatus(value as TaskStatus)}
-              />
+        {taskKind === 'daily' ? (
+          <p className="kind-hint">
+            Fecha de término: <strong>hoy ({todayISO()})</strong>
+          </p>
+        ) : (
+          <DateField
+            label="Hasta cuándo tienes para hacerlo"
+            value={dueDate}
+            required
+            onChange={setDueDate}
+          />
+        )}
 
-              {taskKind === 'daily' ? (
-                <p className="kind-hint">
-                  Fecha de término: <strong>hoy ({todayISO()})</strong>
-                </p>
-              ) : (
-                <DateField
-                  label="Hasta cuándo tienes para hacerlo"
-                  value={dueDate}
-                  required
-                  onChange={setDueDate}
-                />
-              )}
+        <label className="worlds-switch-row">
+          <input
+            type="checkbox"
+            checked={usesBoard}
+            onChange={(e) => setUsesBoard(e.target.checked)}
+          />
+          <span>
+            <strong>¿Usar pizarra?</strong>
+            <span className="muted">
+              {' '}
+              Actívalo si vas a practicar dibujando en el modo estudio.
+            </span>
+          </span>
+        </label>
 
-              <label className="worlds-switch-row">
-                <input
-                  type="checkbox"
-                  checked={usesBoard}
-                  onChange={(e) => setUsesBoard(e.target.checked)}
-                />
-                <span>
-                  <strong>¿Usar pizarra?</strong>
-                  <span className="muted">
-                    {' '}
-                    Actívalo si vas a practicar dibujando en el modo estudio.
-                  </span>
-                </span>
-              </label>
-
-              {error && <p className="form-error">{error}</p>}
-            </div>
-
-            <div className="modal-actions">
-              <button type="button" className="ghost" onClick={onClose}>
-                Cerrar
-              </button>
-              <button type="submit" className="primary" disabled={submitting}>
-                {submitting ? 'Guardando…' : 'Guardar cambios'}
-              </button>
-            </div>
-          </motion.form>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {error && <p className="form-error">{error}</p>}
+        <div className="modal-actions">
+          <button type="button" className="ghost" onClick={onClose}>
+            Cerrar
+          </button>
+          <button type="submit" className="primary" disabled={submitting}>
+            {submitting ? 'Guardando…' : 'Guardar cambios'}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
   )
 }

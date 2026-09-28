@@ -4,21 +4,24 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle,
+  Compass,
   Copy,
   FloppyDisk,
   GlobeHemisphereWest,
   Pause,
   Play,
   Plus,
-  Student,
+  Shield,
   Trophy,
 } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
 import { EmptyState } from '../../components/EmptyState'
 import { DateField } from '../../components/ui/DateField'
+import { DataTable } from '../../components/ui/DataTable'
 import { PasswordField, TextField } from '../../components/ui/Field'
 import { SelectField } from '../../components/ui/SelectField'
+import { IconButton } from '../../components/ui/IconButton'
 import { WorldsIconBadge } from '../../components/worlds/WorldsIconBadge'
 import { errorMessage } from '../../lib/errors'
 import { phaseLabel } from '../../lib/studyProtocol'
@@ -61,9 +64,11 @@ const tabMotion = {
 export function AdminStudentPage({
   studentId,
   onBack,
+  backLabel = 'Panel',
 }: {
   studentId: number
   onBack: () => void
+  backLabel?: string
 }) {
   const { showToast } = useToast()
   const [overview, setOverview] = useState<AdminOverview | null>(null)
@@ -120,10 +125,7 @@ export function AdminStudentPage({
   if (error || !overview) {
     return (
       <div>
-        <button type="button" className="ghost worlds-back" onClick={onBack}>
-          <ArrowLeft size={18} weight="bold" />
-          Panel general
-        </button>
+        <IconButton icon={ArrowLeft} label={backLabel} onClick={onBack} />
         <p className="form-error banner">{error ?? 'No se pudo abrir la ficha'}</p>
       </div>
     )
@@ -135,26 +137,6 @@ export function AdminStudentPage({
 
   return (
     <>
-      <nav className="admin-file-nav">
-        <button type="button" className="ghost worlds-back" onClick={onBack}>
-          <ArrowLeft size={18} weight="bold" />
-          Panel general
-        </button>
-        <button type="button" className="ghost" onClick={() => void onToggleActive()}>
-          {student.is_active ? (
-            <>
-              <Pause size={16} weight="fill" />
-              Pausar cuenta
-            </>
-          ) : (
-            <>
-              <Play size={16} weight="fill" />
-              Activar cuenta
-            </>
-          )}
-        </button>
-      </nav>
-
       <AnimatePresence mode="wait">
         {challengeId != null ? (
           <motion.div
@@ -182,11 +164,11 @@ export function AdminStudentPage({
           >
           <header className="admin-identity">
             <WorldsIconBadge
-              icon={Student}
+              icon={Compass}
               size="xl"
               tone={student.is_active ? 'accent' : 'muted'}
             />
-            <div>
+            <div className="admin-identity-text">
               <h1>{student.username}</h1>
               <p>
                 {student.email}
@@ -194,6 +176,15 @@ export function AdminStudentPage({
                 {' · '}
                 Último estudio: {formatWhen(overview.last_study_at)}
               </p>
+            </div>
+            <div className="admin-identity-actions">
+              <IconButton icon={ArrowLeft} label={backLabel} onClick={onBack} />
+              <IconButton
+                icon={student.is_active ? Pause : Play}
+                weight="fill"
+                label={student.is_active ? 'Pausar cuenta' : 'Activar cuenta'}
+                onClick={() => void onToggleActive()}
+              />
             </div>
           </header>
 
@@ -331,33 +322,28 @@ function ResumenTab({
               description="Aún no tiene tareas."
             />
           ) : (
-            <div className="admin-table-wrap admin-table-wrap--flush">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Tarea</th>
-                    <th>Materia</th>
-                    <th>Estado</th>
-                    <th>Entrega</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasks.items.slice(0, 8).map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <strong>{item.title}</strong>
-                        {item.study_passed ? (
-                          <span className="admin-table-sub">Visto del tutor</span>
-                        ) : null}
-                      </td>
-                      <td>{item.course_name}</td>
-                      <td>{taskStatusLabel(item.status)}</td>
-                      <td>{formatDay(item.due_date)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              flush
+              rows={tasks.items.slice(0, 8)}
+              rowKey={(item) => item.id}
+              columns={[
+                {
+                  key: 'task',
+                  header: 'Tarea',
+                  cell: (item) => (
+                    <>
+                      <strong>{item.title}</strong>
+                      {item.study_passed ? (
+                        <span className="data-table-sub">Visto del tutor</span>
+                      ) : null}
+                    </>
+                  ),
+                },
+                { key: 'course', header: 'Materia', cell: (item) => item.course_name },
+                { key: 'status', header: 'Estado', cell: (item) => taskStatusLabel(item.status) },
+                { key: 'due', header: 'Entrega', cell: (item) => formatDay(item.due_date) },
+              ]}
+            />
           )}
         </section>
 
@@ -373,48 +359,38 @@ function ResumenTab({
               description="Todavía no completa un desafío."
             />
           ) : (
-            <div className="admin-table-wrap admin-table-wrap--flush">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Desafío</th>
-                    <th>Puntaje</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {challenges.recent.map((ch) => (
-                    <tr
-                      key={ch.id}
-                      className="is-clickable"
-                      tabIndex={0}
-                      onClick={() => onOpenChallenge(ch.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          onOpenChallenge(ch.id)
-                        }
-                      }}
-                    >
-                      <td>
-                        <strong>
-                          {SCOPE_LABEL[ch.scope] ?? ch.scope}
-                          {ch.mission_title ? ` · ${ch.mission_title}` : ''}
-                        </strong>
-                        <span className="admin-table-sub">
-                          {DIFFICULTY_LABEL[ch.difficulty] ?? ch.difficulty}
-                          {ch.course_name ? ` · ${ch.course_name}` : ''}
-                          {' · '}
-                          {ch.world_title}
-                        </span>
-                      </td>
-                      <td>{ch.score ?? '—'} pts</td>
-                      <td>Ver detalle</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              flush
+              rows={challenges.recent}
+              rowKey={(ch) => ch.id}
+              onRowClick={(ch) => onOpenChallenge(ch.id)}
+              columns={[
+                {
+                  key: 'challenge',
+                  header: 'Desafío',
+                  cell: (ch) => (
+                    <>
+                      <strong>
+                        {SCOPE_LABEL[ch.scope] ?? ch.scope}
+                        {ch.mission_title ? ` · ${ch.mission_title}` : ''}
+                      </strong>
+                      <span className="data-table-sub">
+                        {DIFFICULTY_LABEL[ch.difficulty] ?? ch.difficulty}
+                        {ch.course_name ? ` · ${ch.course_name}` : ''}
+                        {' · '}
+                        {ch.world_title}
+                      </span>
+                    </>
+                  ),
+                },
+                {
+                  key: 'score',
+                  header: 'Puntaje',
+                  cell: (ch) => `${ch.score ?? '—'} pts`,
+                },
+                { key: 'open', header: '', cell: () => 'Ver detalle' },
+              ]}
+            />
           )}
         </section>
       </div>
@@ -537,36 +513,28 @@ function TasksTab({
           description="No hay tareas con estos filtros."
         />
       ) : (
-        <div className="admin-table-wrap admin-table-wrap--flush">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Tarea</th>
-                <th>Materia</th>
-                <th>Estado</th>
-                <th>Tutor</th>
-                <th>Creada</th>
-                <th>Entrega</th>
-                <th>Actualizada</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <strong>{item.title}</strong>
-                  </td>
-                  <td>{item.course_name}</td>
-                  <td>{taskStatusLabel(item.status)}</td>
-                  <td>{item.study_passed ? 'Listo' : 'Pendiente'}</td>
-                  <td>{formatWhen(item.created_at)}</td>
-                  <td>{formatDay(item.due_date)}</td>
-                  <td>{formatWhen(item.updated_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          flush
+          rows={rows}
+          rowKey={(item) => item.id}
+          columns={[
+            {
+              key: 'task',
+              header: 'Tarea',
+              cell: (item) => <strong>{item.title}</strong>,
+            },
+            { key: 'course', header: 'Materia', cell: (item) => item.course_name },
+            { key: 'status', header: 'Estado', cell: (item) => taskStatusLabel(item.status) },
+            {
+              key: 'tutor',
+              header: 'Tutor',
+              cell: (item) => (item.study_passed ? 'Listo' : 'Pendiente'),
+            },
+            { key: 'created', header: 'Creada', cell: (item) => formatWhen(item.created_at) },
+            { key: 'due', header: 'Entrega', cell: (item) => formatDay(item.due_date) },
+            { key: 'updated', header: 'Actualizada', cell: (item) => formatWhen(item.updated_at) },
+          ]}
+        />
       )}
     </section>
   )
@@ -631,32 +599,29 @@ function TaskStudyBlock({ studentId }: { studentId: number }) {
           description="No hay sesiones de estudio de tareas en este período."
         />
       ) : (
-        <div className="admin-table-wrap admin-table-wrap--flush">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Tarea</th>
-                <th>Materia</th>
-                <th>Fase</th>
-                <th>Resumen</th>
-                <th>Actualizado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((item, index) => (
-                <tr key={`${item.kind}-${item.ref_id}-${item.updated_at}-${index}`}>
-                  <td>
-                    <strong>{item.title}</strong>
-                  </td>
-                  <td>{item.course_name}</td>
-                  <td>{phaseLabel(item.phase)}</td>
-                  <td className="admin-table-summary">{item.summary || '—'}</td>
-                  <td>{formatWhen(item.updated_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          flush
+          rows={rows}
+          rowKey={(item, index) =>
+            `${item.kind}-${item.ref_id}-${item.updated_at}-${index}`
+          }
+          columns={[
+            {
+              key: 'task',
+              header: 'Tarea',
+              cell: (item) => <strong>{item.title}</strong>,
+            },
+            { key: 'course', header: 'Materia', cell: (item) => item.course_name },
+            { key: 'phase', header: 'Fase', cell: (item) => phaseLabel(item.phase) },
+            {
+              key: 'summary',
+              header: 'Resumen',
+              className: 'admin-table-summary',
+              cell: (item) => item.summary || '—',
+            },
+            { key: 'updated', header: 'Actualizado', cell: (item) => formatWhen(item.updated_at) },
+          ]}
+        />
       )}
     </section>
   )
@@ -747,7 +712,7 @@ function AccountTab({
       showToast({
         tone: 'success',
         title: 'Materia archivada',
-        subtitle: `${name} ya no aparece para el alumno.`,
+        subtitle: `${name} ya no aparece para el explorador.`,
       })
     } catch (err) {
       showToast({
@@ -809,7 +774,7 @@ function AccountTab({
             {savingStudent ? 'Guardando…' : 'Guardar cuenta'}
           </button>
         </form>
-        <StudentGuardiansBlock studentId={studentId} />
+        <ExplorerGuardiansReadonly studentId={studentId} />
       </section>
 
       <section className="admin-panel">
@@ -954,7 +919,7 @@ function ImportCoursesBlock({
                   ? ` · ${result.skipped.length} ya las tenía`
                   : ''
               }.`
-            : 'Este alumno ya tenía esas materias.',
+            : 'Este explorador ya tenía esas materias.',
       })
     } catch (err) {
       showToast({
@@ -969,22 +934,22 @@ function ImportCoursesBlock({
 
   return (
     <div className="admin-import">
-      <p className="admin-import-label">Importar de otro alumno</p>
+      <p className="admin-import-label">Importar de otro explorador</p>
       {students.length === 0 ? (
         <EmptyState
           compact
-          icon={Student}
-          title="Sin otros alumnos"
-          description="No hay otros alumnos de quienes copiar materias."
+          icon={Compass}
+          title="Sin otros exploradores"
+          description="No hay otros exploradores de quienes copiar materias."
         />
       ) : (
         <>
           <SelectField
             label="Copiar desde"
             value={sourceId}
-            placeholder="Elige un alumno"
+            placeholder="Elige un explorador"
             options={[
-              { value: '', label: 'Elige un alumno' },
+              { value: '', label: 'Elige un explorador' },
               ...students.map((student) => ({
                 value: String(student.id),
                 label: student.username,
@@ -1000,7 +965,7 @@ function ImportCoursesBlock({
               compact
               icon={BookOpen}
               title="Sin materias activas"
-              description="Ese alumno no tiene materias activas."
+              description="Ese explorador no tiene materias activas."
             />
           )}
           {sourceCourses.length > 0 && (
@@ -1061,26 +1026,16 @@ function ImportCoursesBlock({
   )
 }
 
-function StudentGuardiansBlock({ studentId }: { studentId: number }) {
+function ExplorerGuardiansReadonly({ studentId }: { studentId: number }) {
   const { showToast } = useToast()
   const [guardians, setGuardians] = useState<AdminGuardian[]>([])
-  const [allGuardians, setAllGuardians] = useState<AdminGuardian[]>([])
   const [loading, setLoading] = useState(true)
-
-  async function refresh() {
-    const [linked, all] = await Promise.all([
-      api.listStudentGuardians(studentId),
-      api.listGuardians(),
-    ])
-    setGuardians(linked)
-    setAllGuardians(all)
-  }
 
   useEffect(() => {
     void (async () => {
       setLoading(true)
       try {
-        await refresh()
+        setGuardians(await api.listStudentGuardians(studentId))
       } catch (err) {
         showToast({
           tone: 'error',
@@ -1091,74 +1046,33 @@ function StudentGuardiansBlock({ studentId }: { studentId: number }) {
         setLoading(false)
       }
     })()
-  }, [studentId])
-
-  const linkedIds = new Set(guardians.map((g) => g.id))
-  const available = allGuardians.filter((g) => !linkedIds.has(g.id) && g.is_active)
+  }, [studentId, showToast])
 
   return (
     <div style={{ marginTop: 24 }}>
       <h3>Guardianes vinculados</h3>
+      <p className="muted">
+        Para vincular o desvincular, usa Guardianes y Exploradores en el panel.
+      </p>
       {loading ? (
         <AppLoader message="Cargando…" variant="section" />
+      ) : guardians.length === 0 ? (
+        <EmptyState
+          compact
+          icon={Shield}
+          title="Sin guardianes"
+          description="Este explorador no tiene guardián vinculado."
+        />
       ) : (
-        <>
-          <ul className="admin-course-list">
-            {guardians.map((g) => (
-              <li key={g.id} className="admin-course-row">
-                <span>
-                  {g.username} · {g.email}
-                </span>
-                <button
-                  type="button"
-                  className="ghost"
-                  onClick={() =>
-                    void api
-                      .unlinkStudentGuardian(studentId, g.id)
-                      .then(refresh)
-                      .catch((err) =>
-                        showToast({
-                          tone: 'error',
-                          title: 'No se pudo desvincular',
-                          subtitle: errorMessage(err),
-                        }),
-                      )
-                  }
-                >
-                  Desvincular
-                </button>
-              </li>
-            ))}
-          </ul>
-          {available.length > 0 && (
-            <select
-              className="field-control"
-              defaultValue=""
-              onChange={(e) => {
-                const id = Number(e.target.value)
-                if (!id) return
-                void api
-                  .linkStudentGuardian(studentId, id)
-                  .then(refresh)
-                  .catch((err) =>
-                    showToast({
-                      tone: 'error',
-                      title: 'No se pudo vincular',
-                      subtitle: errorMessage(err),
-                    }),
-                  )
-                e.target.value = ''
-              }}
-            >
-              <option value="">Vincular guardián…</option>
-              {available.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.username}
-                </option>
-              ))}
-            </select>
-          )}
-        </>
+        <ul className="admin-course-list">
+          {guardians.map((g) => (
+            <li key={g.id} className="admin-course-row">
+              <span>
+                {g.username} · {g.email}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )

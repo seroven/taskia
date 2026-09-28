@@ -7,6 +7,7 @@ export interface AdminStudent {
   is_active: boolean
   created_at: string
   course_count?: number
+  guardian_count?: number
 }
 
 export interface AdminGuardian {
