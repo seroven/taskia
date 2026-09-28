@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
-function useMobileStudy(maxWidth = 900) {
-  const [mobile, setMobile] = useState(() =>
+/** Misma franja que el CSS (`max-width: 900px`): chat y pizarra no caben a la vez. */
+export function useCompactStudyBoard(maxWidth = 900) {
+  const [compact, setCompact] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia(`(max-width: ${maxWidth}px)`).matches
       : false,
@@ -10,13 +11,13 @@ function useMobileStudy(maxWidth = 900) {
 
   useEffect(() => {
     const media = window.matchMedia(`(max-width: ${maxWidth}px)`)
-    const onChange = () => setMobile(media.matches)
+    const onChange = () => setCompact(media.matches)
     onChange()
     media.addEventListener('change', onChange)
     return () => media.removeEventListener('change', onChange)
   }, [maxWidth])
 
-  return mobile
+  return compact
 }
 
 export function StudyBoardPane({
@@ -30,7 +31,7 @@ export function StudyBoardPane({
   children: ReactNode
   portalParent?: HTMLElement | null
 }) {
-  const mobile = useMobileStudy()
+  const compact = useCompactStudyBoard()
 
   useEffect(() => {
     if (!open) return
@@ -53,7 +54,7 @@ export function StudyBoardPane({
     </div>
   )
 
-  if (mobile) {
+  if (compact) {
     if (!portalParent) return null
     return createPortal(pane, portalParent)
   }

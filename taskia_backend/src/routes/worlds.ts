@@ -548,6 +548,8 @@ function missionTutorPrompt(allowAiDraw: boolean): string {
 Enseñas un TEMA completo (misión), no una tarea escolar suelta. Guía con preguntas/pistas; no des la solución completa.
 Recibes context_summary (resumen corto de ESTA charla) y last_tutor_message. Conserva coherencia con el ejercicio/ejemplo abierto.
 Pizarra de entrada: si board_has_drawing=false, ignora lo que haya dibujado el niño.
+Si hay imagen adjunta: esa imagen es la fuente de verdad de lo que dibujó el niño (léela para entender su respuesta).
+Para dibujar tú usa draw_ops con coordenadas de grilla (reglas de pizarra de salida); no “pintes” la foto.
 Responde SOLO JSON (sin markdown):
 {"phase":"understanding|practicing|reviewing","speak_to_child":"...","ask_questions":[],"topic_summary":"...","context_summary":"...","draw_ops":[],"hints_level":0,"study_eval":{"passed":false,"evidence":""}}
 context_summary ≤ 400 chars; incluye "Ejercicio activo: …" si hay práctica abierta. Anota qué partes del tema ya cubrió el niño y cuáles faltan.
@@ -1160,7 +1162,7 @@ async function gradeOpenAnswersBatch(
 NO des pistas ni enseñes. Sé razonable con variaciones de redacción.
 Para preguntas de pizarra (requires_board=true):
 - El niño NO conversó con un tutor. Solo dibujó la resolución y, a veces, dejó una nota breve.
-- Juzga sobre todo board_description (y la imagen si viene). La nota es apoyo, no un chat.
+- Si hay imagen, júzgala como fuente de verdad de la pizarra. Si no, usa board_description. La nota es apoyo, no un chat.
 - Distingue el enunciado dibujado por la IA ([enunciado]) de lo que agregó el alumno ([alumno]).
 - correct=true solo si el alumno resolvió el problema, no por copiar el enunciado.
 Responde SOLO un JSON array:
@@ -1363,7 +1365,12 @@ router.post(
       typeof req.body.board_description === 'string'
         ? req.body.board_description
         : null
-    const boardHas = Boolean(boardDescription?.trim())
+    const boardImageRaw = mission.uses_board
+      ? String(
+          req.body.board_image_base64 ?? req.body.boardImageBase64 ?? '',
+        ).trim()
+      : ''
+    const boardHas = Boolean(boardDescription?.trim() || boardImageRaw)
 
     let instruction = allowAiDraw
       ? 'Responde breve. Conserva ejercicio activo. Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina. Incluye draw_ops con clear_board + stamps/shapes (no dejes el ejercicio solo en texto).'
@@ -1399,8 +1406,8 @@ router.post(
       hints_level: context.hints_level,
       ...(allowAiDraw ? { allow_ai_draw: true } : {}),
       board_has_drawing: boardHas,
-      ...(boardHas
-        ? { board_drawing: truncateChars(boardDescription ?? '', 500) }
+      ...(!boardImageRaw && boardDescription?.trim()
+        ? { board_drawing: truncateChars(boardDescription, 500) }
         : {}),
       child_message: truncateChars(
         message,
@@ -1415,6 +1422,7 @@ router.post(
     const raw = await callGemini({
       system: missionTutorPrompt(allowAiDraw),
       user: payload,
+      boardImageBase64: boardImageRaw || null,
       usage: { userId, kind: 'mission_tutor' },
     })
 

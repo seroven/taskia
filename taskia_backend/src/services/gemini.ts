@@ -40,7 +40,8 @@ export async function callGemini(opts: {
         ? [
             {
               data: opts.boardImageBase64,
-              caption: 'Imagen de la pizarra del niño. Úsala solo si aporta.',
+              caption:
+                'Imagen de la pizarra del niño. Es la fuente de verdad de lo que dibujó; úsala para entender su respuesta. Si debes dibujar, hazlo con draw_ops/coordenadas de grilla, no a partir de la foto.',
             },
           ]
         : []

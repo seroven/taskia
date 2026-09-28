@@ -44,6 +44,10 @@ import {
   textChars,
   themeDefaultColor,
 } from '../../lib/gridBoardModel'
+import {
+  boardContentCrop,
+  exportSvgBoardToPngBase64,
+} from '../../lib/exportGridBoardPng'
 
 export interface BoardAttachment {
   description: string
@@ -262,9 +266,21 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
         },
         async getBoardAttachment() {
           const current = sceneRef.current
+          const description = describeGridScene(current)
+          const svg = svgRef.current
+          let imageBase64: string | null = null
+          if (svg && current.items.length > 0) {
+            imageBase64 = await exportSvgBoardToPngBase64(svg, {
+              dark: theme === 'dark',
+              paperW: current.cols * GRID_CELL,
+              paperH: current.rows * GRID_CELL,
+              crop: boardContentCrop(current),
+              maxSide: 1024,
+            })
+          }
           return {
-            description: describeGridScene(current),
-            imageBase64: null,
+            description,
+            imageBase64,
             elementCount: current.items.length,
           }
         },
@@ -272,7 +288,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
           return sceneRef.current
         },
       }),
-      [commit],
+      [commit, theme],
     )
 
     useLayoutEffect(() => {

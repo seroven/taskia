@@ -109,10 +109,10 @@ export function StudyPage({ taskId, onBack }: Props) {
       if (options.includeBoard && task?.uses_board) {
         const attachment = await boardRef.current?.getBoardAttachment()
         if ((attachment?.elementCount ?? 0) > 0) {
-          boardAttach = {
-            description: attachment?.description,
-            image_base64: attachment?.imageBase64 ?? null,
-          }
+          // La imagen manda para que Taskia entienda; coords solo si falla el PNG.
+          boardAttach = attachment?.imageBase64
+            ? { image_base64: attachment.imageBase64 }
+            : { description: attachment?.description }
         }
       }
       const result = await api.studyChat(

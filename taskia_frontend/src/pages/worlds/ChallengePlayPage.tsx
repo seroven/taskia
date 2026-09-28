@@ -167,7 +167,9 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
         question_id: current.id,
         user_answer: note || '(respuesta en pizarra)',
         board_json: boardJson,
-        board_description: attach?.description,
+        ...(attach?.imageBase64
+          ? { board_image_base64: attach.imageBase64 }
+          : { board_description: attach?.description }),
       }
     }
     if (!answer.trim()) return pending[current.id] ?? null
@@ -190,6 +192,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
       let userAnswer = answer.trim()
       let boardJson: StudyBoardScene | null = null
       let boardDescription: string | undefined
+      let boardImage: string | undefined
 
       if (
         current.kind === 'multiple_choice' &&
@@ -219,7 +222,11 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
           return
         }
         userAnswer = userAnswer || '(respuesta en pizarra)'
-        boardDescription = attach?.description
+        if (attach?.imageBase64) {
+          boardImage = attach.imageBase64
+        } else {
+          boardDescription = attach?.description
+        }
       } else if (!userAnswer) {
         showToast({
           title: 'Escribe tu respuesta',
@@ -237,6 +244,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
           user_answer: userAnswer,
           board_json: boardJson,
           board_description: boardDescription,
+          board_image_base64: boardImage,
         },
       }
       setPending(nextPending)

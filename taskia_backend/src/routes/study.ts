@@ -83,6 +83,8 @@ No des la solución completa: guía con preguntas/pistas. Prioriza la tarea actu
 Recibes context_summary (esta tarea), last_tutor_message (tu burbuja anterior) y user_memory_summary. No el chat entero.
 Mantén coherencia con el ejercicio abierto: si last_tutor_message o context_summary citan un número/ejercicio, NO preguntes de qué número hablan.
 Pizarra de entrada: si board_has_drawing=false, ignora lo que haya dibujado el niño.
+Si hay imagen adjunta: esa imagen es la fuente de verdad de lo que dibujó el niño (léela para entender su respuesta).
+Para dibujar tú usa draw_ops con coordenadas de grilla (como se indica en las reglas de pizarra de salida); no “pintes” la foto.
 Responde SOLO JSON (sin markdown):
 {"phase":"understanding|practicing|reviewing","speak_to_child":"...","ask_questions":[],"topic_summary":"...","context_summary":"...","user_memory_summary":"...","exercise":null,"draw_ops":[],"hints_level":0,"study_eval":{"passed":false,"evidence":""}}
 context_summary ≤ 400 chars. Debe incluir SIEMPRE, si hay ejercicio abierto: "Ejercicio activo: …" con el número/datos exactos; no lo borres hasta resolverlo o cambiarlo. Resume aciertos del niño.
@@ -386,6 +388,11 @@ router.post(
     const boardDescription = task.uses_board
       ? ((req.body.board_description ?? req.body.boardDescription) as string | null)
       : null
+    const boardImageRaw = task.uses_board
+      ? String(
+          req.body.board_image_base64 ?? req.body.boardImageBase64 ?? '',
+        ).trim()
+      : ''
     const fromVoice = Boolean(req.body.from_voice ?? req.body.fromVoice)
 
     const context = await loadContext(taskId)
@@ -399,7 +406,7 @@ router.post(
         .reverse()
         .find((m) => m.role === 'assistant')
         ?.content ?? ''
-    const boardHas = Boolean(boardDescription?.trim())
+    const boardHas = Boolean(boardDescription?.trim() || boardImageRaw)
 
     const boardMasteryHint =
       ' Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina.'
@@ -441,14 +448,16 @@ router.post(
       board_has_drawing: boardHas,
       child_message: truncateChars(message, fromVoice ? 4000 : 800),
       ...(allowAiDraw ? { allow_ai_draw: true } : {}),
-      ...(boardHas
-        ? { board_drawing: truncateChars(boardDescription ?? '', MAX_BOARD) }
+      // Texto de coords solo si no hay imagen (fallback).
+      ...(!boardImageRaw && boardDescription?.trim()
+        ? { board_drawing: truncateChars(boardDescription, MAX_BOARD) }
         : {}),
     }
 
     const raw = await callGemini({
       system: tutorSystemPrompt(allowAiDraw),
       user: JSON.stringify(payload),
+      boardImageBase64: boardImageRaw || null,
       usage: { userId, kind: 'task_tutor' },
     })
 

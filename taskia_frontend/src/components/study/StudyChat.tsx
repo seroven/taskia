@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Microphone, Stop } from '@phosphor-icons/react'
 import { api } from '../../api'
@@ -8,6 +15,7 @@ import { errorMessage } from '../../lib/errors'
 import type { StudyContext, StudyExercise, StudyMessage, TutorPhase } from '../../lib/studyProtocol'
 import { phaseLabel } from '../../lib/studyProtocol'
 import { MAX_VOICE_SECONDS, VoiceRecorder } from '../../lib/voiceRecorder'
+import { useCompactStudyBoard } from './StudyBoardPane'
 
 interface Props {
   context: StudyContext | null
@@ -26,8 +34,21 @@ interface Props {
   ) => Promise<void>
 }
 
+/** Clave estable: el optimista y el mensaje confirmado del usuario comparten índice/contenido. */
 function messageKey(message: StudyMessage, index: number) {
-  return `${message.created_at}-${message.role}-${index}`
+  if (message.role === 'user') {
+    return `user-${index}-${message.content}`
+  }
+  return `assistant-${index}-${message.created_at}`
+}
+
+const bubbleEnter = { opacity: 0, y: 18, scale: 0.97 }
+const bubbleShown = { opacity: 1, y: 0, scale: 1 }
+const bubbleTransition = {
+  type: 'spring' as const,
+  stiffness: 420,
+  damping: 30,
+  mass: 0.75,
 }
 
 function TypewriterText({
@@ -109,6 +130,8 @@ export function StudyChat({
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [voicePrompt, setVoicePrompt] = useState<'intro' | 'review' | null>(null)
   const [pendingVoiceText, setPendingVoiceText] = useState('')
+  const [pendingUser, setPendingUser] = useState<string | null>(null)
+  const [expectingReply, setExpectingReply] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const bootstrapped = useRef(false)
   const [instantKeys, setInstantKeys] = useState<Set<string>>(() => new Set())
@@ -118,7 +141,54 @@ export function StudyChat({
   const stoppingRef = useRef(false)
 
   const messages = context?.messages ?? []
+  const displayMessages = useMemo(() => {
+    if (!pendingUser) return messages
+    const already = messages.some(
+      (message) => message.role === 'user' && message.content === pendingUser,
+    )
+    if (already) return messages
+    return [
+      ...messages,
+      {
+        role: 'user',
+        content: pendingUser,
+        created_at: 'pending',
+      },
+    ]
+  }, [messages, pendingUser])
+
+  const lastAssistantIndex =
+    messages.length > 0 && messages[messages.length - 1]?.role === 'assistant'
+      ? messages.length - 1
+      : -1
+  const lastAssistant =
+    lastAssistantIndex >= 0 ? messages[lastAssistantIndex] : null
+  const lastAssistantKey =
+    lastAssistant != null
+      ? messageKey(lastAssistant, lastAssistantIndex)
+      : null
+  const liveAssistant =
+    lastAssistant != null &&
+    lastAssistantKey != null &&
+    !instantKeys.has(lastAssistantKey) &&
+    (sending || expectingReply || typingKey === lastAssistantKey)
+      ? {
+          message: lastAssistant,
+          index: lastAssistantIndex,
+          key: lastAssistantKey,
+        }
+      : null
+  const showThinking = sending && !liveAssistant
+  const showLiveTaskia = showThinking || liveAssistant != null
+  const listMessages = useMemo(() => {
+    if (!liveAssistant) return displayMessages
+    return displayMessages.filter((_, index) => index !== liveAssistant.index)
+  }, [displayMessages, liveAssistant])
+
   const voiceBusy = voiceStatus !== 'idle' || voicePrompt !== null
+  const compactBoard = useCompactStudyBoard()
+  const showBoardViewToggle =
+    Boolean(boardControls && onToggleBoardView) && compactBoard
 
   useEffect(() => {
     return () => {
@@ -157,6 +227,14 @@ export function StudyChat({
   }, [context, messages])
 
   useEffect(() => {
+    if (!pendingUser) return
+    const confirmed = messages.some(
+      (message) => message.role === 'user' && message.content === pendingUser,
+    )
+    if (confirmed) setPendingUser(null)
+  }, [messages, pendingUser])
+
+  useEffect(() => {
     if (!bootstrapped.current || messages.length === 0) return
     const lastIndex = messages.length - 1
     const last = messages[lastIndex]
@@ -176,7 +254,7 @@ export function StudyChat({
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages, sending, typingKey])
+  }, [listMessages, showLiveTaskia, showThinking, liveAssistant, typingKey])
 
   function clearVoiceTick() {
     if (tickRef.current != null) {
@@ -295,12 +373,14 @@ export function StudyChat({
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     const text = draft.trim()
-    if (!text || sending || voiceBusy) return
+    if (!text || sending || voiceBusy || pendingUser) return
     const sendBoard = includeBoard
     const draw = allowAiDraw
     const voice = fromVoiceDraft
     setDraft('')
     setFromVoiceDraft(false)
+    setPendingUser(text)
+    setExpectingReply(true)
     try {
       await onSend(text, {
         includeBoard: sendBoard,
@@ -309,7 +389,10 @@ export function StudyChat({
       })
       if (sendBoard) setIncludeBoard(false)
     } catch {
-      // El error lo muestra el padre
+      setPendingUser(null)
+      setExpectingReply(false)
+      setDraft(text)
+      setFromVoiceDraft(voice)
     }
   }
 
@@ -340,57 +423,45 @@ export function StudyChat({
       )}
 
       <div className="study-chat-messages" ref={listRef}>
-        {messages.length === 0 && (
+        {listMessages.length === 0 && !showLiveTaskia && (
           <p className="muted study-chat-empty">Escribe tu primer mensaje para empezar.</p>
         )}
-        {messages.map((message, index) => {
-          const key = messageKey(message, index)
-          const isAssistant = message.role === 'assistant'
-          const shouldType = isAssistant && typingKey === key && !instantKeys.has(key)
+        <AnimatePresence initial={false}>
+          {listMessages.map((message, index) => {
+            const key = messageKey(message, index)
+            const skipEnter = instantKeys.has(key)
 
-          return (
-            <motion.div
-              key={key}
-              className={`study-bubble study-bubble-${message.role}`}
-              initial={isAssistant && shouldType ? { opacity: 0.6, y: 6 } : false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <span className="study-bubble-role">
-                {message.role === 'user' ? 'Tú' : 'Taskia'}
-              </span>
-              {isAssistant ? (
-                <TypewriterText
-                  text={message.content}
-                  active={shouldType}
-                  onTick={scrollToBottom}
-                  onDone={() => {
-                    setInstantKeys((prev) => {
-                      const next = new Set(prev)
-                      next.add(key)
-                      return next
-                    })
-                    setTypingKey((current) => (current === key ? null : current))
-                    scrollToBottom()
-                  }}
-                />
-              ) : (
+            return (
+              <motion.div
+                key={key}
+                className={`study-bubble study-bubble-${message.role}`}
+                initial={skipEnter ? false : bubbleEnter}
+                animate={bubbleShown}
+                transition={bubbleTransition}
+                layout="position"
+              >
+                <span className="study-bubble-role">
+                  {message.role === 'user' ? 'Tú' : 'Taskia'}
+                </span>
                 <p>{message.content}</p>
-              )}
-            </motion.div>
-          )
-        })}
-        <AnimatePresence>
-          {sending && (
-            <motion.div
-              key="thinking"
-              className="study-bubble study-bubble-assistant is-typing"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.2 }}
-            >
-              <span className="study-bubble-role">Taskia</span>
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
+        {showLiveTaskia ? (
+          <motion.div
+            key="taskia-live"
+            className={`study-bubble study-bubble-assistant${showThinking ? ' is-typing' : ''}`}
+            initial={bubbleEnter}
+            animate={bubbleShown}
+            transition={{
+              ...bubbleTransition,
+              delay: showThinking && pendingUser ? 0.12 : 0,
+            }}
+            layout="position"
+          >
+            <span className="study-bubble-role">Taskia</span>
+            {showThinking || !liveAssistant ? (
               <p>
                 Pensando
                 <span className="study-thinking-dots" aria-hidden>
@@ -399,9 +470,26 @@ export function StudyChat({
                   <span />
                 </span>
               </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            ) : (
+              <TypewriterText
+                text={liveAssistant.message.content}
+                active
+                onTick={scrollToBottom}
+                onDone={() => {
+                  const key = liveAssistant.key
+                  setInstantKeys((prev) => {
+                    const next = new Set(prev)
+                    next.add(key)
+                    return next
+                  })
+                  setTypingKey((current) => (current === key ? null : current))
+                  setExpectingReply(false)
+                  scrollToBottom()
+                }}
+              />
+            )}
+          </motion.div>
+        ) : null}
       </div>
       </div>
 
@@ -517,7 +605,7 @@ export function StudyChat({
           </p>
         )}
         <div className="study-chat-send-row">
-          {boardControls && onToggleBoardView ? (
+          {showBoardViewToggle ? (
             <button
               type="button"
               className="ghost study-open-board-btn"

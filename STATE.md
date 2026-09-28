@@ -19,6 +19,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - UI: Guardián / Explorador (no “padre” / “alumno” / “hijo” en superficies nuevas).
 - Naming: para el niño, **Taskia** es quien ayuda a estudiar (chat/pizarra). En código interno puede seguir diciéndose “tutor”; en copy visible al explorador, no.
 - Tono explorador: claro y cercano; sin jerga de oficina. Columnas del tablero: Por hacer / Haciendo / Estudiando / Listo. Se mantienen Mundos, misiones y desafíos. Admin y Guardián siguen con lenguaje adulto.
+- Pizarra en estudio: «Enviar pizarra» manda PNG para que Taskia entienda. Dibuja solo con `draw_ops`/coords (proceso aparte). Sin texto de coordenadas al chat si hay imagen.
 - Admin: página «Guardianes y Exploradores» (vínculo obligatorio al crear; no hay alta suelta). El dashboard ya no lista exploradores ni tiene «Nuevo alumno».
 - Modales: shell único `ModalShell` con tamaños `sm` / `md` / `lg`; `WorldsModalShell` solo reexporta.
 - Tablas: componente `DataTable` (`taskia_frontend/src/components/ui/DataTable.tsx`); `flush` pega la tabla al borde del `admin-panel`.
