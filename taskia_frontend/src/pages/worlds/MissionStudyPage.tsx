@@ -16,6 +16,8 @@ import { WorldsStatusPill } from '../../components/worlds/WorldsStatusPill'
 import { errorMessage } from '../../lib/errors'
 import { parseDrawOps, type StudyBoardScene } from '../../lib/studyProtocol'
 import type { MissionContext, StudyMission } from '../../lib/worldsTypes'
+import { mergeXpIntoUser, xpToastCopy } from '../../lib/xp'
+import { useAuth } from '../../auth'
 import { useTheme } from '../../theme'
 import { useToast } from '../../toast'
 
@@ -26,6 +28,7 @@ interface Props {
 
 export function MissionStudyPage({ missionId, onBack }: Props) {
   const { theme } = useTheme()
+  const { user, setUser } = useAuth()
   const { showToast } = useToast()
   const [mode, setMode] = useState<'study' | 'edit'>('study')
   const [mission, setMission] = useState<StudyMission | null>(null)
@@ -121,6 +124,12 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
           title: '¡Misión lista!',
           subtitle: 'Taskia confirma que ya sabes el tema',
         })
+      }
+      if (result.xp && result.xp_gained && result.xp_gained > 0) {
+        const next = mergeXpIntoUser(user, result.xp)
+        if (next) setUser(next)
+        const copy = xpToastCopy(result.xp_gained)
+        if (copy) showToast({ tone: 'success', ...copy })
       }
       const ops = parseDrawOps(result.reply.draw_ops)
       if (ops.length > 0) {

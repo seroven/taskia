@@ -8,6 +8,8 @@ import { ToastProvider } from './toast'
 import { AdminPage } from './pages/AdminPage'
 import { AuthPage } from './pages/AuthPage'
 import { GuardianPage } from './pages/GuardianPage'
+import { HubPage } from './pages/HubPage'
+import { TroopsPage } from './pages/TroopsPage'
 import { BoardPage } from './pages/BoardPage'
 import { StudyPage } from './pages/StudyPage'
 import { WorldsHome } from './pages/worlds/WorldsHome'
@@ -18,6 +20,8 @@ import { ChallengePlayPage } from './pages/worlds/ChallengePlayPage'
 import type { Task } from './types'
 
 type AppView =
+  | 'hub'
+  | 'troops'
   | 'board'
   | 'study'
   | 'worlds'
@@ -42,7 +46,7 @@ const challengeTransition = {
 
 function AppRouter() {
   const { user, loading } = useAuth()
-  const [view, setView] = useState<AppView>('board')
+  const [view, setView] = useState<AppView>('hub')
   const [studyTaskId, setStudyTaskId] = useState<number | null>(null)
   const [worldId, setWorldId] = useState<number | null>(null)
   const [courseId, setCourseId] = useState<number | null>(null)
@@ -62,6 +66,15 @@ function AppRouter() {
   if (!user) return <AuthPage />
   if (user.role === 'admin') return <AdminPage />
   if (user.role === 'parent') return <GuardianPage />
+
+  const goHub = () => {
+    setView('hub')
+    setStudyTaskId(null)
+    setWorldId(null)
+    setCourseId(null)
+    setMissionId(null)
+    setChallengeId(null)
+  }
 
   const viewKey =
     view === 'study' && studyTaskId != null
@@ -92,7 +105,17 @@ function AppRouter() {
           exit={viewMotion.exit}
           transition={viewMotion.transition}
         >
-          {view === 'study' && studyTaskId != null ? (
+          {view === 'hub' ? (
+            <HubPage
+              onOpen={(door) => {
+                if (door === 'troops') setView('troops')
+                else if (door === 'worlds') setView('worlds')
+                else setView('board')
+              }}
+            />
+          ) : view === 'troops' ? (
+            <TroopsPage onBack={goHub} />
+          ) : view === 'study' && studyTaskId != null ? (
             <StudyPage
               taskId={studyTaskId}
               onBack={() => {
@@ -102,7 +125,7 @@ function AppRouter() {
             />
           ) : view === 'worlds' ? (
             <WorldsHome
-              onBack={() => setView('board')}
+              onBack={goHub}
               onOpenWorld={(id) => {
                 setWorldId(id)
                 setView('world')
@@ -165,7 +188,7 @@ function AppRouter() {
                 setStudyTaskId(task.id)
                 setView('study')
               }}
-              onOpenWorlds={() => setView('worlds')}
+              onBack={goHub}
             />
           )}
         </motion.div>

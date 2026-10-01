@@ -12,6 +12,7 @@ import { GridBoard, type GridBoardHandle } from '../../components/study/GridBoar
 import { ChallengeReviewAnswersList } from '../../components/worlds/ChallengeReviewAnswersList'
 import { WorldsHero } from '../../components/worlds/WorldsHero'
 import { WorldsNav } from '../../components/worlds/WorldsNav'
+import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import { challengeDifficultyIcon } from '../../components/worlds/worldsIcons'
 import { errorMessage } from '../../lib/errors'
 import { parseDrawOps, type StudyBoardScene } from '../../lib/studyProtocol'
@@ -22,6 +23,8 @@ import {
   type ChallengeDetail,
   type ChallengeQuestionPublic,
 } from '../../lib/worldsTypes'
+import { mergeXpIntoUser, xpToastCopy } from '../../lib/xp'
+import { useAuth } from '../../auth'
 import { useTheme } from '../../theme'
 import { useToast } from '../../toast'
 
@@ -60,6 +63,7 @@ function promptSceneFor(q: ChallengeQuestionPublic): StudyBoardScene {
 
 export function ChallengePlayPage({ challengeId, onBack }: Props) {
   const { theme } = useTheme()
+  const { user, setUser } = useAuth()
   const { showToast } = useToast()
   const [detail, setDetail] = useState<ChallengeDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -274,6 +278,12 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
       const completed = await api.completeChallenge(challengeId, payload)
       setDetail(completed)
       setShowResult(true)
+      if (completed.xp && completed.xp_gained && completed.xp_gained > 0) {
+        const next = mergeXpIntoUser(user, completed.xp)
+        if (next) setUser(next)
+        const copy = xpToastCopy(completed.xp_gained)
+        if (copy) showToast({ tone: 'success', ...copy })
+      }
     } catch (err) {
       showToast({
         title: 'No se pudo enviar',
@@ -433,7 +443,11 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
     <div
       className={`worlds-shell challenge-play${isBoardQuestion(current) ? ' challenge-play--board' : ''}`}
     >
-      <WorldsNav backLabel="Salir" onBack={() => void leaveChallenge()} />
+      <WorldsNav
+        backLabel="Salir"
+        onBack={() => void leaveChallenge()}
+        trailing={<ExplorerXpBar />}
+      />
 
       <div className="worlds-content worlds-stage">
         <motion.div

@@ -16,6 +16,8 @@ import {
   type StudyExercise,
   type TutorPhase,
 } from '../lib/studyProtocol'
+import { mergeXpIntoUser, xpToastCopy } from '../lib/xp'
+import { useAuth } from '../auth'
 import { useTheme } from '../theme'
 import { useToast } from '../toast'
 import {
@@ -33,6 +35,7 @@ interface Props {
 
 export function StudyPage({ taskId, onBack }: Props) {
   const { theme } = useTheme()
+  const { user, setUser } = useAuth()
   const { showToast } = useToast()
   const [mode, setMode] = useState<'study' | 'edit'>('study')
   const [task, setTask] = useState<Task | null>(null)
@@ -139,6 +142,12 @@ export function StudyPage({ taskId, onBack }: Props) {
           })
         }
       }
+      if (result.xp && result.xp_gained && result.xp_gained > 0) {
+        const next = mergeXpIntoUser(user, result.xp)
+        if (next) setUser(next)
+        const copy = xpToastCopy(result.xp_gained)
+        if (copy) showToast({ tone: 'success', ...copy })
+      }
       const ops = parseDrawOps(result.reply.draw_ops)
       if (ops.length > 0 && task?.uses_board) {
         boardRef.current?.applyDrawOps(ops)
@@ -224,7 +233,7 @@ export function StudyPage({ taskId, onBack }: Props) {
       <header className="study-header">
         <button type="button" className="ghost" onClick={onBack}>
           <ArrowLeft size={18} weight="bold" />
-          Tablero
+          Campamento
         </button>
         <div className="study-header-main">
           <h1>{task.title}</h1>

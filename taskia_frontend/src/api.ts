@@ -387,13 +387,22 @@ export const api = {
     }).then(() => undefined)
   },
   completeChallenge(challenge_id: number, answers: ChallengeAnswerPayload[]) {
-    return request<ChallengeDetail>(
-      `/worlds/challenges/${challenge_id}/complete`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ answers }),
-      },
-    )
+    return request<
+      ChallengeDetail & {
+        xp_gained?: number
+        xp?: {
+          level: number
+          xp_total: number
+          xp_into_level: number
+          xp_to_next: number
+          awarded: boolean
+          xp_gained: number
+        }
+      }
+    >(`/worlds/challenges/${challenge_id}/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    })
   },
   listStudents() {
     return request<AdminStudent[]>('/admin/students')

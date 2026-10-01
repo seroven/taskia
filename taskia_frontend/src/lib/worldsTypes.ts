@@ -112,6 +112,15 @@ export interface MissionChatResponse {
   reply: MissionTutorReply
   context: MissionContext
   mission: StudyMission
+  xp_gained?: number
+  xp?: {
+    level: number
+    xp_total: number
+    xp_into_level: number
+    xp_to_next: number
+    awarded: boolean
+    xp_gained: number
+  }
 }
 
 export interface StudyChallenge {

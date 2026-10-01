@@ -9,6 +9,7 @@ import { WorldsCoverGrid, WorldsCoverItem } from '../../components/worlds/Worlds
 import { WorldsEmptyState } from '../../components/worlds/WorldsEmptyState'
 import { WorldsHero } from '../../components/worlds/WorldsHero'
 import { WorldsNav } from '../../components/worlds/WorldsNav'
+import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import { WorldsStatusPill, WorldsTags } from '../../components/worlds/WorldsStatusPill'
 import { SelectField } from '../../components/ui/SelectField'
 import { errorMessage } from '../../lib/errors'
@@ -98,7 +99,11 @@ export function WorldDetail({
 
   return (
     <div className="worlds-shell">
-      <WorldsNav backLabel="Mundos" onBack={onBack} />
+      <WorldsNav
+        backLabel="Mundos"
+        onBack={onBack}
+        trailing={<ExplorerXpBar />}
+      />
 
       {error && <p className="form-error banner">{error}</p>}
 

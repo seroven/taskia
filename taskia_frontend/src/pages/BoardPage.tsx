@@ -16,7 +16,7 @@ import type {
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 import { AnimatePresence, motion } from 'framer-motion'
-import { GlobeHemisphereWest } from '@phosphor-icons/react'
+import { ArrowLeft } from '@phosphor-icons/react'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { BoardFilters } from '../components/BoardFilters'
@@ -28,6 +28,7 @@ import { TaskFormModal } from '../components/TaskFormModal'
 import { StudyBoardChoiceModal } from '../components/StudyBoardChoiceModal'
 import { AppearanceTools } from '../components/AppearanceTools'
 import { ExpandIconButton } from '../components/ExpandIconButton'
+import { ExplorerXpBar } from '../components/ExplorerXpBar'
 import { SessionActions } from '../components/SessionActions'
 import {
   STATUS_COLUMNS,
@@ -43,6 +44,7 @@ import {
   type TaskStatus,
 } from '../types'
 import { errorMessage } from '../lib/errors'
+import { xpToastCopy } from '../lib/xp'
 import { useToast } from '../toast'
 
 function isStatus(value: string | number): value is TaskStatus {
@@ -63,12 +65,12 @@ const dropAnimation: DropAnimation = {
 
 export function BoardPage({
   onOpenStudy,
-  onOpenWorlds,
+  onBack,
 }: {
   onOpenStudy: (task: Task) => void
-  onOpenWorlds: () => void
+  onBack: () => void
 }) {
-  const { user } = useAuth()
+  const { user, setUser } = useAuth()
   const { showToast } = useToast()
   const [courses, setCourses] = useState<Course[]>([])
   const [difficulties, setDifficulties] = useState<Difficulty[]>([])
@@ -171,6 +173,16 @@ export function BoardPage({
 
     try {
       await api.reorderTasks([...unique.values()])
+      const movedToDone = [...unique.values()].some((item) => item.status === 'done')
+      if (movedToDone) {
+        const refreshed = await api.currentUser()
+        if (refreshed) {
+          const gained = Math.max(0, refreshed.xp_total - (user?.xp_total ?? 0))
+          setUser(refreshed)
+          const copy = xpToastCopy(gained)
+          if (copy) showToast({ tone: 'success', ...copy })
+        }
+      }
     } catch (err) {
       const message = errorMessage(err)
       setError(message)
@@ -322,23 +334,27 @@ export function BoardPage({
     setOverStatus(null)
   }
 
-  const loaderLabel = hasLoadedOnce ? 'Buscando tareas…' : 'Cargando tablero…'
+  const loaderLabel = hasLoadedOnce ? 'Buscando tareas…' : 'Cargando campamento…'
 
   return (
     <div className="board-shell">
       <header className="topbar">
-        <div>
-          <p className="brand">Taskia</p>
-          <p className="welcome">¡Hola, {user?.username}! 👋</p>
-        </div>
-        <div className="topbar-actions">
-          <AppearanceTools />
+        <div className="topbar-title-row">
           <ExpandIconButton
-            icon={GlobeHemisphereWest}
-            label="Mundos"
-            onClick={onOpenWorlds}
+            icon={ArrowLeft}
+            label="Inicio"
+            weight="bold"
+            onClick={onBack}
             disabled={loading}
           />
+          <div>
+            <p className="brand">Campamento</p>
+            <p className="welcome">Tareas del día · {user?.username}</p>
+          </div>
+        </div>
+        <div className="topbar-actions">
+          <ExplorerXpBar />
+          <AppearanceTools />
           <SessionActions />
         </div>
       </header>

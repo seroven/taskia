@@ -129,6 +129,15 @@ export interface StudyChatResponse {
   reply: GeminiTutorReply
   context: StudyContext
   study_passed: boolean
+  xp_gained?: number
+  xp?: {
+    level: number
+    xp_total: number
+    xp_into_level: number
+    xp_to_next: number
+    awarded: boolean
+    xp_gained: number
+  }
 }
 
 export function phaseLabel(phase: string): string {

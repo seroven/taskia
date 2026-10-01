@@ -16,6 +16,7 @@ import { WorldsCoverGrid, WorldsCoverItem } from '../../components/worlds/Worlds
 import { WorldsEmptyState } from '../../components/worlds/WorldsEmptyState'
 import { WorldsHero } from '../../components/worlds/WorldsHero'
 import { WorldsNav } from '../../components/worlds/WorldsNav'
+import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import {
   WorldsBoardPill,
   WorldsStatusPill,
@@ -83,7 +84,11 @@ export function CourseDetail({
 
   return (
     <div className="worlds-shell">
-      <WorldsNav backLabel="Mundo" onBack={onBack} />
+      <WorldsNav
+        backLabel="Mundo"
+        onBack={onBack}
+        trailing={<ExplorerXpBar />}
+      />
 
       {error && <p className="form-error banner">{error}</p>}
 

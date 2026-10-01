@@ -110,11 +110,12 @@ Vista de **solo lectura**: su explorador (nivel, XP/progreso) y la **tropa** en 
 
 ### Oleada 2 — Hub + barra superior
 
-- [ ] Pantalla hub: Tropas | Mundos | Campamento
-- [ ] Rename visible “tablero” → **Campamento** (copy explorador)
-- [ ] Barra superior con nivel + barra de progreso (estilo videojuego ligero; acentos del tema actual)
-- [ ] Toast/chip de XP ganado en cierres relevantes
-- [ ] Navegación: desde hub a cada puerta; volver al hub desde Campamento/Mundos/Tropas
+- [x] Pantalla hub: Tropas | Mundos | Campamento
+- [x] Rename visible “tablero” → **Campamento** (copy explorador)
+- [x] Barra superior con nivel + barra de progreso (estilo videojuego ligero; acentos del tema actual)
+- [x] Toast/chip de XP ganado en cierres relevantes
+- [x] Navegación: desde hub a cada puerta; volver al hub desde Campamento/Mundos/Tropas
+- [x] Tropas: placeholder hasta oleada 3
 
 ### Oleada 3 — Tropas (CRUD social)
 

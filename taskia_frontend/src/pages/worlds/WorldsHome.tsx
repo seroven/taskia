@@ -8,6 +8,7 @@ import { WorldsCoverGrid, WorldsCoverItem } from '../../components/worlds/Worlds
 import { WorldsEmptyState } from '../../components/worlds/WorldsEmptyState'
 import { WorldsHero } from '../../components/worlds/WorldsHero'
 import { WorldsNav } from '../../components/worlds/WorldsNav'
+import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import { errorMessage } from '../../lib/errors'
 import type { StudyWorld } from '../../lib/worldsTypes'
 import { useToast } from '../../toast'
@@ -45,7 +46,7 @@ export function WorldsHome({ onBack, onOpenWorld }: Props) {
 
   return (
     <div className="worlds-shell">
-      <WorldsNav backLabel="Tablero" onBack={onBack} />
+      <WorldsNav backLabel="Inicio" onBack={onBack} trailing={<ExplorerXpBar />} />
 
       {error && <p className="form-error banner">{error}</p>}
 
