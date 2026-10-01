@@ -16,6 +16,11 @@ import {
   truncateChars,
 } from '../utils/helpers.js'
 import { latencyForTaskReply } from '../utils/replyLatency.js'
+import {
+  awardXp,
+  clampEffortScore,
+  xpForTaskStudy,
+} from '../services/xp.js'
 import { fetchTask } from './tasks.js'
 
 const router = Router()
@@ -88,12 +93,13 @@ Pizarra de entrada: si board_has_drawing=false, ignora lo que haya dibujado el n
 Si hay imagen adjunta: esa imagen es la fuente de verdad de lo que dibujó el niño (léela para entender su respuesta).
 Para dibujar tú usa draw_ops con coordenadas de grilla (como se indica en las reglas de pizarra de salida); no “pintes” la foto.
 Responde SOLO JSON (sin markdown):
-{"phase":"understanding|practicing|reviewing","speak_to_child":"...","ask_questions":[],"topic_summary":"...","context_summary":"...","user_memory_summary":"...","exercise":null,"draw_ops":[],"hints_level":0,"study_eval":{"passed":false,"evidence":""}}
+{"phase":"understanding|practicing|reviewing","speak_to_child":"...","ask_questions":[],"topic_summary":"...","context_summary":"...","user_memory_summary":"...","exercise":null,"draw_ops":[],"hints_level":0,"study_eval":{"passed":false,"evidence":"","effort_score":40}}
 speak_to_child: mensaje breve que ve el niño. Si preguntas, hazlo SOLO ahí (una pregunta natural en el párrafo). No numeres listas de preguntas.
 ask_questions: opcional/interno; el niño NO lo ve. Puedes dejar []. No repitas ahí lo mismo que ya dijiste en speak_to_child.
 context_summary ≤ 400 chars. Debe incluir SIEMPRE, si hay ejercicio abierto: "Ejercicio activo: …" con el número/datos exactos; no lo borres hasta resolverlo o cambiarlo. Resume aciertos del niño.
 user_memory_summary ≤ 600 chars (si update_user_memory=false, repite el recibido).
 exercise: usa el objeto cuando planteas un ejercicio nuevo (también en reviewing); si sigues el mismo, puedes dejar null pero conserva "Ejercicio activo" en context_summary.
+study_eval.effort_score: entero 1–100 (esfuerzo real del niño). Sé estricto: lo normal es 41–65; 86–95 solo si autonomía y evidencia claras; casi nunca 96–100. Si passed=false, effort_score ≤ 40.
 Si study_passed_already=true → study_eval.passed=true y evidence corta "ya aprobado".
 Si message_source=voice: el niño habló (audio transcrito). Usa ese relato para afinar topic_summary (de qué trata el tema, ≤120 chars) y context_summary. En speak_to_child, resume en 1 frase lo que entendiste y sigue guiando; no digas que “transcribiste” ni hables de micrófonos.
 `
@@ -577,17 +583,36 @@ router.post(
     context.messages.push(await insertMessage(taskId, 'assistant', visible))
     await saveSessionMeta(context)
     if (updateUserMemory) await saveUserMemory(userId, reply.user_memory_summary)
+
+    let xpAward = null as Awaited<ReturnType<typeof awardXp>> | null
+    const justPassed = reply.study_eval.passed && !task.study_passed
     if (reply.study_eval.passed) {
       await pool.query('UPDATE tasks SET study_passed = TRUE WHERE id = ? AND user_id = ?', [
         taskId,
         userId,
       ])
+      if (justPassed) {
+        const effort = clampEffortScore(
+          (value.study_eval as { effort_score?: unknown } | undefined)?.effort_score,
+          { passed: true, hasEvidence: Boolean(evidence) },
+        )
+        xpAward = await awardXp({
+          userId,
+          sourceType: 'task_study',
+          sourceId: taskId,
+          amount: xpForTaskStudy(task.difficulty_code, effort),
+          effortScore: effort,
+          reason: evidence || 'Visto de estudio',
+        })
+      }
     }
 
     res.json({
       reply,
       context,
       study_passed: task.study_passed || reply.study_eval.passed,
+      xp_gained: xpAward?.xp_gained ?? 0,
+      xp: xpAward,
     })
   }),
 )

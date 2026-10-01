@@ -17,6 +17,12 @@ import {
   truncateChars,
 } from '../utils/helpers.js'
 import { latencyForMissionReply } from '../utils/replyLatency.js'
+import {
+  awardXp,
+  clampEffortScore,
+  xpForChallenge,
+  xpForMission,
+} from '../services/xp.js'
 
 const router = Router()
 
@@ -553,10 +559,11 @@ Pizarra de entrada: si board_has_drawing=false, ignora lo que haya dibujado el n
 Si hay imagen adjunta: esa imagen es la fuente de verdad de lo que dibujó el niño (léela para entender su respuesta).
 Para dibujar tú usa draw_ops con coordenadas de grilla (reglas de pizarra de salida); no “pintes” la foto.
 Responde SOLO JSON (sin markdown):
-{"phase":"understanding|practicing|reviewing","speak_to_child":"...","ask_questions":[],"topic_summary":"...","context_summary":"...","draw_ops":[],"hints_level":0,"study_eval":{"passed":false,"evidence":""}}
+{"phase":"understanding|practicing|reviewing","speak_to_child":"...","ask_questions":[],"topic_summary":"...","context_summary":"...","draw_ops":[],"hints_level":0,"study_eval":{"passed":false,"evidence":"","effort_score":40}}
 speak_to_child: mensaje breve que ve el niño. Si preguntas, hazlo SOLO ahí (una pregunta natural en el párrafo). No numeres listas de preguntas.
 ask_questions: opcional/interno; el niño NO lo ve. Puedes dejar []. No repitas ahí lo mismo que ya dijiste en speak_to_child.
 context_summary ≤ 400 chars; incluye "Ejercicio activo: …" si hay práctica abierta. Anota qué partes del tema ya cubrió el niño y cuáles faltan.
+study_eval.effort_score: entero 1–100 (esfuerzo real). Sé estricto: lo normal es 41–65; 86–95 raro; casi nunca 96–100. Si passed=false, effort_score ≤ 40.
 
 RECORRIDO OBLIGATORIO del tema (no saltes etapas):
 1) Básico: nombres, definiciones, hechos claros del título/descripción y de lo que el niño contó.
@@ -1547,6 +1554,26 @@ router.post(
         [missionId],
       )
       mission.status = 'mastered'
+      const effort = clampEffortScore(studyEvalRaw.effort_score, {
+        passed: true,
+        hasEvidence: Boolean(reply.study_eval.evidence.trim()),
+      })
+      const xpAward = await awardXp({
+        userId,
+        sourceType: 'mission',
+        sourceId: missionId,
+        amount: xpForMission(effort),
+        effortScore: effort,
+        reason: reply.study_eval.evidence || 'Misión dominada',
+      })
+      res.json({
+        reply,
+        context,
+        mission,
+        xp_gained: xpAward.xp_gained,
+        xp: xpAward,
+      })
+      return
     }
 
     res.json({ reply, context, mission })
@@ -1809,7 +1836,7 @@ router.post(
     const challengeId = Number(req.params.challengeId)
 
     const [crows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, status FROM study_challenges
+      `SELECT id, status, scope, difficulty FROM study_challenges
        WHERE id = ? AND user_id = ? LIMIT 1`,
       [challengeId, userId],
     )
@@ -1944,7 +1971,21 @@ router.post(
       [score, challengeId],
     )
 
-    res.json(await getChallengeDetail(challengeId, userId))
+    const challengeRow = crows[0]!
+    const xpAward = await awardXp({
+      userId,
+      sourceType: 'challenge',
+      sourceId: challengeId,
+      amount: xpForChallenge(
+        String(challengeRow.scope ?? 'mission'),
+        String(challengeRow.difficulty ?? 'quest'),
+        score,
+      ),
+      reason: `Desafío ${score}%`,
+    })
+
+    const detail = await getChallengeDetail(challengeId, userId)
+    res.json({ ...detail, xp_gained: xpAward.xp_gained, xp: xpAward })
   }),
 )
 

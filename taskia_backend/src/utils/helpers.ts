@@ -8,6 +8,10 @@ export interface PublicUser {
   username: string
   email: string
   role: UserRole
+  level: number
+  xp_total: number
+  xp_into_level: number
+  xp_to_next: number
 }
 
 export interface JwtPayload {

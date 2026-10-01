@@ -10,6 +10,7 @@ import {
 } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/error.js'
 import { AppError, type PublicUser, type UserRole } from '../utils/helpers.js'
+import { progressFromXpTotal } from '../services/xp.js'
 
 const router = Router()
 
@@ -38,7 +39,7 @@ router.post(
     validateCredentials(username, password)
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id, u.username, u.email, u.password_hash, u.is_active, r.code AS role
+      `SELECT u.id, u.username, u.email, u.password_hash, u.is_active, u.xp_total, r.code AS role
        FROM users u
        INNER JOIN roles r ON r.id = u.role_id
        WHERE u.username = ? LIMIT 1`,
@@ -53,11 +54,13 @@ router.post(
       throw new AppError('Tu cuenta está pausada. Pídele ayuda a un adulto.')
     }
 
+    const progress = progressFromXpTotal(Number(row.xp_total ?? 0))
     const user: PublicUser = {
       id: Number(row.id),
       username: row.username as string,
       email: row.email as string,
       role: row.role as UserRole,
+      ...progress,
     }
     setAuthCookie(res, signToken(user))
     res.json(user)
@@ -76,7 +79,24 @@ router.get(
   '/me',
   requireAuth,
   asyncHandler(async (req, res) => {
-    res.json(req.user ?? null)
+    const current = req.user!
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT u.username, u.email, u.xp_total, r.code AS role
+       FROM users u
+       INNER JOIN roles r ON r.id = u.role_id
+       WHERE u.id = ? LIMIT 1`,
+      [current.id],
+    )
+    const row = rows[0]
+    if (!row) throw new AppError('Debes iniciar sesión', 401)
+    const progress = progressFromXpTotal(Number(row.xp_total ?? 0))
+    res.json({
+      id: current.id,
+      username: row.username as string,
+      email: row.email as string,
+      role: row.role as UserRole,
+      ...progress,
+    } satisfies PublicUser)
   }),
 )
 
@@ -136,11 +156,17 @@ router.patch(
       ])
     }
 
+    const [xpRows] = await pool.query<RowDataPacket[]>(
+      'SELECT xp_total FROM users WHERE id = ? LIMIT 1',
+      [current.id],
+    )
+    const progress = progressFromXpTotal(Number(xpRows[0]?.xp_total ?? 0))
     const user: PublicUser = {
       id: current.id,
       username: u,
       email: e,
       role: current.role,
+      ...progress,
     }
     res.json(user)
   }),

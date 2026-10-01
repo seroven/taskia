@@ -99,13 +99,14 @@ Vista de **solo lectura**: su explorador (nivel, XP/progreso) y la **tropa** en 
 
 ### Oleada 1 — Motor de XP (sin tropas aún)
 
-- [ ] Otorgar ~10 XP al marcar Listo sin estudio (una vez; respetar candado Listo existente)
-- [ ] Al `study_passed` de tarea: calcular base × effort_score; redes de seguridad; feedback “+N XP”
-- [ ] Al dominar misión: igual
-- [ ] Al completar desafío: base × desempeño (piso bajo si va mal; 0 si abandona)
-- [ ] Prompt + parseo del effort_score 1–100 solo en cierres
-- [ ] Subida de nivel al cruzar múltiplos de 1000
-- [ ] API para leer nivel/XP del explorador autenticado
+- [x] Otorgar ~10 XP al marcar Listo sin estudio (una vez; respetar candado Listo existente)
+- [x] Al `study_passed` de tarea: calcular base × effort_score; redes de seguridad; feedback “+N XP”
+- [x] Al dominar misión: igual
+- [x] Al completar desafío: base × desempeño (piso bajo si va mal; 0 si abandona)
+- [x] Prompt + parseo del effort_score 1–100 solo en cierres
+- [x] Subida de nivel al cruzar múltiplos de 1000
+- [x] API para leer nivel/XP del explorador autenticado (`/auth/me` + `xp_gained` en cierres)
+- [x] Tope 20 tareas creadas / día (America/Lima)
 
 ### Oleada 2 — Hub + barra superior
 

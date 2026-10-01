@@ -8,7 +8,7 @@ Un solo repo en la raíz. Backend en `taskia_backend/`, frontend en `taskia_fron
 
 Roles en catálogo `roles`: Explorador (`user`), Administrador (`admin`), Guardián (`parent`). El admin afilia Guardianes y Exploradores. El Guardián entra a la web (chat con resumen diario, progreso, avisos WhatsApp). Latencia de respuesta se guarda en los chats de estudio. Guía funcional: [FUNCIONES.md](FUNCIONES.md).
 
-Siguiente foco: **Tropas + XP/niveles + hub** — [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md). Oleada 0 (esquema) hecha (`003_tropas_xp.sql`); siguiente: **oleada 1** (motor de XP).
+Siguiente foco: **Tropas + XP/niveles + hub** — [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md). Oleadas 0–1 hechas (esquema + motor XP); siguiente: **oleada 2** (hub + barra de nivel).
 
 La base de Postgres guarda instantes en UTC. La web los muestra en la zona de quien mira con `formatWhen` / `formatDay` en `taskia_frontend/src/lib/datetime.ts`. `tasks.due_date` es un día de calendario, sin zona. XP semanal y tope de tareas/día usan día civil `America/Lima`.
 
@@ -28,12 +28,12 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - Tablas: componente `DataTable` (`taskia_frontend/src/components/ui/DataTable.tsx`); `flush` pega la tabla al borde del `admin-panel`.
 - Preferencias WhatsApp: una por cuenta Guardián.
 - Chat del Guardián usa `student_daily_summaries` del día civil del visor; sin fila, la IA lo dice. Worker aún no escribe ahí.
-- ROADMAP_V2 en pausa; plan activo Tropas/XP/hub. Oleada 0: `users.level` / `xp_total`, `xp_awards`, `troops` / `troop_members` / `troop_invites`.
+- ROADMAP_V2 en pausa; plan activo Tropas/XP/hub. Oleada 0: esquema. Oleada 1: motor XP (`taskia_backend/src/services/xp.ts`) — Listo simple ~10, estudio/misión con effort_score, desafío base×desempeño; `/auth/me` expone level/xp.
 - El trabajo del día se commitea y se sube a `staging`.
 
 ## Pendiente
 
-- Oleada 1 de [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md): motor de XP (Listo simple, estudio, misión, desafío).
+- Oleada 2 de [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md): hub Tropas/Mundos/Campamento + barra de nivel.
 - En Render / pd: `npm run db:reset:pd -- --yes` (borra el schema `taskia` y reaplica migraciones) si el schema viejo no cuadra.
 - ROADMAP_V2 en pausa (workers / WhatsApp / Flutter).
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.

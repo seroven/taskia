@@ -4,6 +4,7 @@ import { env } from '../config/env.js'
 import { pool } from '../db/pool.js'
 import type { RowDataPacket } from '../db/pool.js'
 import { AppError, type JwtPayload, type PublicUser, type UserRole } from '../utils/helpers.js'
+import { progressFromXpTotal } from '../services/xp.js'
 
 declare global {
   namespace Express {
@@ -65,7 +66,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     }
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id, u.username, u.email, u.is_active, r.code AS role
+      `SELECT u.id, u.username, u.email, u.is_active, u.level, u.xp_total, r.code AS role
        FROM users u
        INNER JOIN roles r ON r.id = u.role_id
        WHERE u.id = ? LIMIT 1`,
@@ -81,11 +82,13 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     const role = user.role as string
     if (!isUserRole(role)) throw new AppError('Sesión inválida o expirada', 401)
 
+    const progress = progressFromXpTotal(Number(user.xp_total ?? 0))
     req.user = {
       id: Number(user.id),
       username: user.username as string,
       email: user.email as string,
       role,
+      ...progress,
     }
     next()
   } catch (err) {

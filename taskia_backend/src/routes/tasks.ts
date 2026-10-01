@@ -5,6 +5,10 @@ import { requireAuth, requireStudent } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/error.js'
 import { AppError, formatCivilDate, toInstantISO } from '../utils/helpers.js'
 import { viewerDates } from '../db/civilDate.js'
+import {
+  assertCanCreateTask,
+  maybeAwardTaskDoneXp,
+} from '../services/xp.js'
 
 const router = Router()
 
@@ -182,6 +186,7 @@ router.post(
 
     await ensureCourse(courseId, userId)
     await ensureDifficulty(difficultyId)
+    await assertCanCreateTask(userId)
 
     const [maxRows] = await pool.query<RowDataPacket[]>(
       `SELECT MAX(board_order) AS m FROM tasks WHERE user_id = ? AND status = 'pending'`,
@@ -285,7 +290,15 @@ router.patch(
       ],
     )
     if (result.affectedRows === 0) throw new AppError('Tarea no encontrada', 404)
-    res.json(await fetchTask(taskId, userId))
+    const xp = await maybeAwardTaskDoneXp({
+      userId,
+      taskId,
+      previousStatus: current.status,
+      nextStatus: status,
+      studyPassed: current.study_passed,
+    })
+    const task = await fetchTask(taskId, userId)
+    res.json(xp ? { ...task, xp_gained: xp.xp_gained, xp } : task)
   }),
 )
 
@@ -309,7 +322,15 @@ router.post(
       [status, boardOrder, taskId, userId],
     )
     if (result.affectedRows === 0) throw new AppError('Tarea no encontrada', 404)
-    res.json(await fetchTask(taskId, userId))
+    const xp = await maybeAwardTaskDoneXp({
+      userId,
+      taskId,
+      previousStatus: current.status,
+      nextStatus: status,
+      studyPassed: current.study_passed,
+    })
+    const task = await fetchTask(taskId, userId)
+    res.json(xp ? { ...task, xp_gained: xp.xp_gained, xp } : task)
   }),
 )
 
@@ -321,6 +342,12 @@ router.post(
     if (!Array.isArray(items)) throw new AppError('Lista de tareas inválida')
 
     const conn = await pool.getConnection()
+    const doneAwards: Array<{
+      taskId: number
+      previousStatus: string
+      nextStatus: string
+      studyPassed: boolean
+    }> = []
     try {
       await conn.beginTransaction()
       for (const item of items) {
@@ -343,8 +370,23 @@ router.post(
           `UPDATE tasks SET status = ?, board_order = ? WHERE id = ? AND user_id = ?`,
           [status, boardOrder, taskId, userId],
         )
+        doneAwards.push({
+          taskId,
+          previousStatus: current.status,
+          nextStatus: status,
+          studyPassed: current.study_passed,
+        })
       }
       await conn.commit()
+      for (const a of doneAwards) {
+        await maybeAwardTaskDoneXp({
+          userId,
+          taskId: a.taskId,
+          previousStatus: a.previousStatus,
+          nextStatus: a.nextStatus,
+          studyPassed: a.studyPassed,
+        })
+      }
       res.json({ ok: true })
     } catch (err) {
       await conn.rollback()
