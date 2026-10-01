@@ -1,10 +1,10 @@
 # Base de datos de Taskia
 
-Taskia usa **PostgreSQL**. Son **24 tablas** de aplicación (más `schema_migrations`) y viven todas en el schema `taskia`, no en `public`.
+Taskia usa **PostgreSQL**. Son **28 tablas** de aplicación (más `schema_migrations`) y viven todas en el schema `taskia`, no en `public`.
 
 Este documento explica para qué sirve cada tabla y cómo se relacionan. Si buscas el *qué hace la app*, eso está en [PRODUCTO.md](PRODUCTO.md); acá está el *dónde se guarda*.
 
-La fuente de verdad del esquema son las migraciones en [`taskia_backend/db/migrations/`](taskia_backend/db/migrations/) (`001_initial.sql`, …). Se aplican con `npm run db:migrate`. No hay ORM: el backend escribe SQL a mano.
+La fuente de verdad del esquema son las migraciones en [`taskia_backend/db/migrations/`](taskia_backend/db/migrations/) (`001_initial.sql`, `003_tropas_xp.sql`, …). Se aplican con `npm run db:migrate`. No hay ORM: el backend escribe SQL a mano.
 
 ---
 
@@ -16,13 +16,13 @@ Antes de mirar tabla por tabla, conviene saber estas seis reglas, porque se repi
 
 **Instantes.** Todo momento en el tiempo es `TIMESTAMPTZ` y se guarda en UTC. Se escriben con `NOW()` de Postgres o con el default de la columna, nunca con una hora armada en el servidor de Node.
 
-**Fechas de calendario.** `tasks.due_date` es `DATE`, no un instante. Es un día del calendario y no se convierte a ninguna zona. Ver [Fechas y zonas horarias](#fechas-y-zonas-horarias).
+**Fechas de calendario.** `tasks.due_date` y `xp_awards.week_start` son `DATE`, no un instante. El día/semana de producto para XP y el tope de tareas creadas usan la zona **America/Lima**. Ver [Fechas y zonas horarias](#fechas-y-zonas-horarias).
 
 **Booleanos.** Son `BOOLEAN` de verdad (`TRUE`/`FALSE`), no `0`/`1`.
 
 **Listas de valores.** No se usa el tipo `ENUM`. Los campos con opciones fijas son `TEXT` con un `CHECK`, así agregar un valor es un `ALTER` y no una migración de tipo. El resumen de todos está en [Valores permitidos](#valores-permitidos).
 
-**`updated_at`.** Donde existe, lo mantiene el trigger `set_updated_at()`, que corre `BEFORE UPDATE`. No hay que actualizarlo a mano. Lo tienen nueve tablas: `users`, `tasks`, `study_sessions`, `study_boards`, `user_study_memory`, `study_worlds`, `study_missions`, `study_mission_sessions` y `study_mission_boards`.
+**`updated_at`.** Donde existe, lo mantiene el trigger `set_updated_at()`, que corre `BEFORE UPDATE`. No hay que actualizarlo a mano. Lo tienen, entre otras: `users`, `tasks`, `study_sessions`, `study_boards`, `user_study_memory`, `study_worlds`, `study_missions`, `study_mission_sessions`, `study_mission_boards`, `troops`, y tablas del Guardián con el mismo patrón.
 
 ---
 
@@ -33,6 +33,7 @@ users ─┬─ courses ────────────────┬─ t
        │                          │         ├─ study_messages
        │                          │         └─ study_boards
        ├─ user_study_memory       │
+       ├─ xp_awards               │
        │                          │
        ├─ study_worlds ─┬─ study_world_courses (courses)
        │                └─ study_missions ─┬─ study_mission_sessions
@@ -40,13 +41,14 @@ users ─┬─ courses ────────────────┬─ t
        │                                   └─ study_mission_boards
        │
        ├─ study_challenges ─── study_challenge_questions ─── study_challenge_answers
+       ├─ troop_members ─── troops ─── troop_invites
        └─ llm_usage
 
 difficulties ─── tasks            (catálogo, no cuelga de users)
 study_challenge_presets           (catálogo suelto, sin claves foráneas)
 ```
 
-Los dos caminos del producto se ven en el mapa: `tasks` por un lado, `study_worlds` por el otro, y `courses` como la pieza que une ambos.
+Los dos caminos del producto se ven en el mapa: `tasks` por un lado, `study_worlds` por el otro, y `courses` como la pieza que une ambos. La progresión (`xp_awards` / `users.level`) y las **tropas** son transversales al explorador.
 
 ---
 
@@ -75,9 +77,13 @@ Todas las cuentas viven aquí; el rol es `role_id` → `roles`.
 | `password_hash` | varchar(255) | hash bcrypt |
 | `role_id` | bigint | → `roles`, restringido |
 | `is_active` | boolean | `false` = cuenta pausada |
+| `level` | int | nivel de progresión (≥ 1); default 1 |
+| `xp_total` | bigint | experiencia acumulada (≥ 0); default 0 |
 | `created_at` / `updated_at` | timestamptz | |
 
 Pausar es `is_active = FALSE`: no entra, pero no se borra la fila.
+
+El progreso dentro del nivel se deriva: `xp_into_level = xp_total % 1000` (1000 XP por nivel). Al otorgar XP (oleada 1+) se mantienen `level` y `xp_total` alineados (`level = 1 + floor(xp_total / 1000)`). Índice `idx_users_level_xp` para rankings.
 
 ### Afiliación y Guardián
 
@@ -384,7 +390,82 @@ La cuarta columna es `label`, el nombre visible: Calentamiento, Aventura y Jefe 
 
 ---
 
-## 7. Consumo de IA
+## 7. Progresión y tropas
+
+Migración `003_tropas_xp.sql`. El motor que escribe XP y la UI de tropas llegan en oleadas posteriores; el esquema ya está listo.
+
+### `xp_awards`
+
+Log de cada otorgamiento de experiencia. Garantiza **una sola paga por actividad**.
+
+| Columna | Tipo | Nota |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `user_id` | bigint | → `users`, cascada |
+| `source_type` | text | `task_done_simple`, `task_study`, `mission`, `challenge` |
+| `source_id` | bigint | id de la tarea, misión o desafío |
+| `amount` | int | XP otorgada (`> 0`) |
+| `effort_score` | int | 1–100 si hubo juicio de IA; `NULL` en Listo sin estudio |
+| `reason` | varchar(200) | auditoría interna opcional |
+| `week_start` | date | lunes de la semana del award (zona producto `America/Lima`) |
+| `created_at` | timestamptz | |
+
+`UNIQUE (user_id, source_type, source_id)` evita doble pago. Índices `(user_id, week_start)` y `(week_start)` alimentan rankings semanales (suma de XP de miembros de una tropa en esa semana) sin tablas de agregado.
+
+### `troops`
+
+Contenedor de la tropa. Cupo máximo **10** miembros activos: se valida en la app, no con un CHECK de fila.
+
+| Columna | Tipo | Nota |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `name` | varchar(80) | nombre visible |
+| `is_active` | boolean | baja lógica de la tropa |
+| `created_at` / `updated_at` | timestamptz | |
+
+### `troop_members`
+
+Quién está (o estuvo) en una tropa y con qué rol.
+
+| Columna | Tipo | Nota |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `troop_id` | bigint | → `troops`, cascada |
+| `user_id` | bigint | → `users`, cascada |
+| `role` | text | `captain`, `copilot`, `member` |
+| `joined_at` | timestamptz | |
+| `left_at` | timestamptz | `NULL` = membership activo |
+
+Reglas con índices únicos parciales:
+
+- Un explorador solo puede tener **un** membership con `left_at IS NULL`.
+- Como máximo un `captain` activo y un `copilot` activo por tropa.
+- `UNIQUE (troop_id, user_id)` en el historial de ese par.
+
+Salir pone `left_at`; reentrar puede ser otra fila o reutilizar según la app (oleada 3).
+
+### `troop_invites`
+
+Invitaciones por búsqueda de nombre (global en v1).
+
+| Columna | Tipo | Nota |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `troop_id` | bigint | → `troops`, cascada |
+| `from_user_id` | bigint | quien invita (Capitán o Copiloto) |
+| `to_user_id` | bigint | invitado |
+| `status` | text | `pending`, `accepted`, `rejected`, `cancelled` |
+| `created_at` / `responded_at` | timestamptz | |
+
+Una sola invite `pending` por par `(troop_id, to_user_id)`. No se puede invitar a uno mismo (`from_user_id <> to_user_id`).
+
+### Límite de tareas por día
+
+No hay tabla de contador: al crear una tarea (oleada 1+) la API cuenta `tasks` del explorador cuyo `created_at` cae en el día civil `America/Lima` y rechaza si ya hay **20**.
+
+---
+
+## 8. Consumo de IA
 
 ### `llm_usage`
 
@@ -426,6 +507,8 @@ Un **día de calendario** no tiene hora ni zona, así que convertirlo solo puede
 
 Cuando el panel agrupa actividad por día (las gráficas), el día civil se calcula con la zona **del visor**, que el frontend manda en el header `X-Timezone`. Eso vive en `taskia_backend/src/db/civilDate.ts`. Sin eso, una sesión de las 21:00 en Lima caería en el día siguiente, porque en UTC ya lo es.
 
+Para **XP semanal** y el **tope de 20 tareas creadas por día**, la zona de producto fija es **America/Lima**: `xp_awards.week_start` es el lunes de esa semana en Lima; el conteo diario de creación de tareas usa el mismo día civil.
+
 ---
 
 ## Valores permitidos
@@ -446,9 +529,12 @@ Todos los campos con opciones fijas, en un solo lugar. Cambiarlos es tocar el `C
 | `study_challenges` | `difficulty` | `warm`, `quest`, `boss` |
 | `study_challenges` | `status` | `in_progress`, `completed`, `abandoned` |
 | `study_challenge_questions` | `kind` | `multiple_choice`, `short_text`, `fill_blank`, `board_prompt` |
-| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade` |
+| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade`, `parent_tutor` |
+| `xp_awards` | `source_type` | `task_done_simple`, `task_study`, `mission`, `challenge` |
+| `troop_members` | `role` | `captain`, `copilot`, `member` |
+| `troop_invites` | `status` | `pending`, `accepted`, `rejected`, `cancelled` |
 
-`study_challenges.score` no es una lista pero también tiene `CHECK`: o es `NULL`, o está entre 0 y 100.
+`study_challenges.score` no es una lista pero también tiene `CHECK`: o es `NULL`, o está entre 0 y 100. `xp_awards.effort_score` es `NULL` o entero 1–100; `xp_awards.amount` es `> 0`.
 
 ---
 
@@ -466,7 +552,7 @@ Volver a agregar la materia reactiva solo el vínculo. Los temas que se habían 
 
 Las claves foráneas, en cambio, actúan cuando sí hay un `DELETE` físico (borrar la cuenta del alumno, descartar un desafío a medias, o la cascada de esos borrados).
 
-**`ON DELETE CASCADE` — se va con el dueño.** Borrar un `user` se lleva sus materias, tareas, mundos, desafíos y uso de IA. Borrar una `task` se lleva su sesión, sus mensajes y su pizarra. Borrar una `study_mission` se lleva su sesión, mensajes y pizarra. Borrar un `study_challenge` se lleva sus preguntas, y cada pregunta sus respuestas. Borrar un vínculo mundo-materia se lleva las misiones de ese par; la app ya no hace ese `DELETE`, pero la cascada sigue ahí por si se borra el mundo junto con el alumno.
+**`ON DELETE CASCADE` — se va con el dueño.** Borrar un `user` se lleva sus materias, tareas, mundos, desafíos, uso de IA, `xp_awards`, memberships e invites donde figura. Borrar una `troop` se lleva miembros e invites. Borrar una `task` se lleva su sesión, sus mensajes y su pizarra. Borrar una `study_mission` se lleva su sesión, mensajes y pizarra. Borrar un `study_challenge` se lleva sus preguntas, y cada pregunta sus respuestas. Borrar un vínculo mundo-materia se lleva las misiones de ese par; la app ya no hace ese `DELETE`, pero la cascada sigue ahí por si se borra el mundo junto con el alumno.
 
 **`ON DELETE RESTRICT` — protege el historial.** Una `course` no se puede borrar si tiene tareas o está en un mundo, y una `difficulty` no se puede borrar si hay tareas que la usan. Para eso está archivar (`is_active = FALSE`) en lugar de borrar. La misma idea de “mismo dueño” está en `fk_tasks_course_owner`, en el `user_id` de `study_world_courses` y en `fk_study_challenges_world_owner`.
 
@@ -485,11 +571,11 @@ npm run db:setup      # alias de db:migrate
 
 Hay variantes por entorno (`db:migrate:qa`, `db:migrate:pd`), que solo cambian el `--env-file`. El runner es `db/migrate.mjs`; los archivos viven en `db/migrations/` (`NNN_nombre.sql` o `.mjs` con `export async function up(client)`). Cada una se registra en `schema_migrations`.
 
-**Cambios futuros:** se agrega un archivo nuevo (`003_…`) y se vuelve a correr `db:migrate`. No se edita una migración ya aplicada en bases compartidas.
+**Cambios futuros:** se agrega un archivo nuevo (`004_…`) y se vuelve a correr `db:migrate`. No se edita una migración ya aplicada en bases compartidas.
 
-Sobre una base vacía, `001_initial.sql` arma tablas, índices, triggers y siembras de roles / dificultades / presets. `002_seed_admin.mjs` crea el admin `Sebastian` / `123456` si no existe. Si una base ya había corrido el dump viejo `schema.pg.sql`, el runner marca `001_initial.sql` como aplicada y solo corre las siguientes (p. ej. el seed del admin).
+Sobre una base vacía, `001_initial.sql` arma tablas, índices, triggers y siembras de roles / dificultades / presets. `002_seed_admin.mjs` crea el admin `Sebastian` / `123456` si no existe. `003_tropas_xp.sql` agrega progresión, `xp_awards` y tropas. `004_seed_demo_users.mjs` crea el explorador `Seroven` (materias de primaria) y la guardián `Claudia` vinculada. Si una base ya había corrido el dump viejo `schema.pg.sql`, el runner marca `001_initial.sql` como aplicada y solo corre las siguientes.
 
-Si el schema viejo no cuadra (faltan columnas, FKs distintas), hay que vaciar antes: `DROP SCHEMA taskia CASCADE;` y luego `db:migrate`.
+Si el schema viejo no cuadra (faltan columnas, FKs distintas), hay que vaciar antes. En local: `npm run db:reset`. En pd/qa: `npm run db:reset:pd -- --yes` (o `:qa`). Eso hace `DROP SCHEMA taskia CASCADE` y vuelve a correr todas las migraciones.
 
 El schema se elige con `PG_SCHEMA` (por defecto `taskia`) y la conexión con `PG_DSN`, o bien `PG_HOST` / `PG_PORT` / `PG_USER` / `PG_PASSWORD` / `PG_DATABASE`. En hosting va además `PG_SSLMODE=require`.
 

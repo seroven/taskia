@@ -15,10 +15,13 @@
     "start:pd": "node --env-file=.env.pd dist/index.js",
     "db:setup": "node --env-file=.env.development db/migrate.mjs",
     "db:migrate": "node --env-file=.env.development db/migrate.mjs",
+    "db:reset": "node --env-file=.env.development db/reset.mjs",
     "db:setup:qa": "node --env-file=.env.qa db/migrate.mjs",
     "db:migrate:qa": "node --env-file=.env.qa db/migrate.mjs",
+    "db:reset:qa": "node --env-file=.env.qa db/reset.mjs --env=qa",
     "db:setup:pd": "node --env-file=.env.pd db/migrate.mjs",
-    "db:migrate:pd": "node --env-file=.env.pd db/migrate.mjs"
+    "db:migrate:pd": "node --env-file=.env.pd db/migrate.mjs",
+    "db:reset:pd": "node --env-file=.env.pd db/reset.mjs --env=pd"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

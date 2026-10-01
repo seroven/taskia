@@ -34,10 +34,11 @@ Gemini vive en `src/services/gemini.ts` (tutor, transcripciones, generación y c
 ```bash
 npm install
 npm run db:migrate    # crea PG_SCHEMA + migraciones pendientes
+npm run db:reset      # DROP SCHEMA taskia + vuelve a migrar (local; borra datos)
 npm run dev           # tsx watch + .env.development  (puerto 3001)
 ```
 
-Tras migrar en vacío queda el admin `Sebastian` / `123456` (cámbialo en cuanto puedas).
+Tras migrar en vacío queda el admin `Sebastian` / `123456`, el explorador `Seroven` / `123456` (con materias de primaria) y la guardián `Claudia` / `123456` (vinculada a Seroven). Cámbialos en cuanto puedas.
 
 
 | Script                                  | Env                                                              |
@@ -48,7 +49,9 @@ Tras migrar en vacío queda el admin `Sebastian` / `123456` (cámbialo en cuanto
 | `npm start`                             | `node dist/index.js` (usa el env del proceso; típico en hosting) |
 | `npm run start:pd`                      | `dist/` + `.env.pd` en disco                                     |
 | `npm run db:migrate` / `db:setup`       | Migraciones con `.env.development`                               |
+| `npm run db:reset`                      | Borra schema `taskia` y reaplica migraciones (desarrollo)        |
 | `npm run db:migrate:pd` / `:qa`         | Igual con `.env.pd` / `.env.qa`                                  |
+| `npm run db:reset:pd -- --yes`          | Reset en pd (obligatorio `--yes`; borra datos)                   |
 
 
 `GET /health` responde `{ ok: true }`.
