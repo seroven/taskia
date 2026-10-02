@@ -1414,6 +1414,34 @@ input[type='checkbox']:active:not(:disabled) {
   gap: 8px;
 }
 
+.guardian-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.guardian-xp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guardian-xp-level {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.guardian-xp-bar {
+  max-width: 320px;
+  min-width: 0;
+}
+
+.guardian-troop-summary {
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
 .session-actions {
   display: flex;
   align-items: center;

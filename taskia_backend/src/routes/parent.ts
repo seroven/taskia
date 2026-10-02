@@ -8,6 +8,7 @@ import {
 } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/error.js'
 import { callGemini } from '../services/gemini.js'
+import { progressFromXpTotal, weekStartMonday } from '../services/xp.js'
 import { AppError, extractJson, toInstantISO } from '../utils/helpers.js'
 import { viewerDates } from '../db/civilDate.js'
 
@@ -22,6 +23,75 @@ function mapExplorer(r: RowDataPacket) {
     username: r.username as string,
     email: r.email as string,
     is_active: Number(r.is_active) !== 0,
+  }
+}
+
+function mapTroopRole(role: string) {
+  if (role === 'captain' || role === 'copilot' || role === 'member') return role
+  return 'member' as const
+}
+
+async function loadExplorerTroop(studentId: number) {
+  const [membership] = await pool.query<RowDataPacket[]>(
+    `SELECT tm.troop_id, tm.role, t.name AS troop_name
+     FROM troop_members tm
+     INNER JOIN troops t ON t.id = tm.troop_id AND t.is_active = TRUE
+     WHERE tm.user_id = ? AND tm.left_at IS NULL
+     LIMIT 1`,
+    [studentId],
+  )
+  if (!membership[0]) return null
+
+  const troopId = Number(membership[0].troop_id)
+  const weekStart = weekStartMonday()
+  const [members] = await pool.query<RowDataPacket[]>(
+    `SELECT tm.user_id, u.username, tm.role, u.level, u.xp_total,
+            COALESCE((
+              SELECT SUM(a.amount) FROM xp_awards a
+              WHERE a.user_id = tm.user_id AND a.week_start = ?
+            ), 0) AS xp_week
+     FROM troop_members tm
+     INNER JOIN users u ON u.id = tm.user_id
+     WHERE tm.troop_id = ? AND tm.left_at IS NULL
+     ORDER BY u.level DESC, u.xp_total DESC, tm.joined_at ASC`,
+    [weekStart, troopId],
+  )
+
+  const ranked = members.map((m, i) => ({
+    user_id: Number(m.user_id),
+    username: m.username as string,
+    role: mapTroopRole(String(m.role)),
+    level: Number(m.level ?? 1),
+    xp_total: Number(m.xp_total ?? 0),
+    xp_week: Number(m.xp_week ?? 0),
+    rank: i + 1,
+  }))
+  const mine = ranked.find((m) => m.user_id === studentId)
+
+  const [weekly] = await pool.query<RowDataPacket[]>(
+    `SELECT t.id,
+            COALESCE(SUM(a.amount), 0) AS xp_week
+     FROM troops t
+     INNER JOIN troop_members tm
+       ON tm.troop_id = t.id AND tm.left_at IS NULL
+     LEFT JOIN xp_awards a
+       ON a.user_id = tm.user_id AND a.week_start = ?
+     WHERE t.is_active = TRUE
+     GROUP BY t.id, t.name
+     ORDER BY xp_week DESC, COUNT(DISTINCT tm.user_id) DESC, t.name ASC`,
+    [weekStart],
+  )
+  const weeklyRank =
+    weekly.findIndex((r) => Number(r.id) === troopId) + 1 || null
+
+  return {
+    id: troopId,
+    name: membership[0].troop_name as string,
+    my_role: mapTroopRole(String(membership[0].role)),
+    my_rank: mine?.rank ?? null,
+    member_count: ranked.length,
+    weekly_rank: weeklyRank,
+    members: ranked,
   }
 }
 
@@ -64,6 +134,12 @@ router.get(
     const explorer = await requireLinkedExplorer(parentId, studentId)
     const { today } = viewerDates(req)
 
+    const [xpRows] = await pool.query<RowDataPacket[]>(
+      `SELECT level, xp_total FROM users WHERE id = ? LIMIT 1`,
+      [studentId],
+    )
+    const xp = progressFromXpTotal(Number(xpRows[0]?.xp_total ?? 0))
+
     const [taskRows] = await pool.query<RowDataPacket[]>(
       `SELECT
          SUM(status = 'pending') AS pending,
@@ -97,8 +173,12 @@ router.get(
       [studentId],
     )
 
+    const troop = await loadExplorerTroop(studentId)
+
     res.json({
       explorer,
+      xp,
+      troop,
       tasks: {
         pending: Number(taskRows[0]?.pending) || 0,
         in_progress: Number(taskRows[0]?.in_progress) || 0,

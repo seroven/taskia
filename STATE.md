@@ -8,7 +8,7 @@ Un solo repo en la raíz. Backend en `taskia_backend/`, frontend en `taskia_fron
 
 Roles en catálogo `roles`: Explorador (`user`), Administrador (`admin`), Guardián (`parent`). El admin afilia Guardianes y Exploradores. El Guardián entra a la web (chat con resumen diario, progreso, avisos WhatsApp). Latencia de respuesta se guarda en los chats de estudio. Guía funcional: [FUNCIONES.md](FUNCIONES.md).
 
-Siguiente foco: **Tropas + XP/niveles + hub** — [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md). Oleadas 0–3 hechas; siguiente: **oleada 4** (Guardián solo lectura: nivel/XP y tropa del explorador).
+Siguiente foco: **Tropas + XP/niveles + hub** — [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md). Oleadas 0–4 hechas; siguiente: **oleada 5** (pulido, anti-abuso básico y docs de producto).
 
 La base de Postgres guarda instantes en UTC. La web los muestra en la zona de quien mira con `formatWhen` / `formatDay` en `taskia_frontend/src/lib/datetime.ts`. `tasks.due_date` es un día de calendario, sin zona. XP semanal y tope de tareas/día usan día civil `America/Lima`.
 
@@ -28,12 +28,12 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - Tablas: componente `DataTable` (`taskia_frontend/src/components/ui/DataTable.tsx`); `flush` pega la tabla al borde del `admin-panel`.
 - Preferencias WhatsApp: una por cuenta Guardián.
 - Chat del Guardián usa `student_daily_summaries` del día civil del visor; sin fila, la IA lo dice. Worker aún no escribe ahí.
-- ROADMAP_V2 en pausa; plan activo Tropas/XP/hub. Oleadas 0–3: esquema, motor XP, hub, tropas (Capitán/Copiloto, invitaciones, rankings). Guardián aún sin vista de tropa/XP.
+- ROADMAP_V2 en pausa; plan activo Tropas/XP/hub. Oleadas 0–4: esquema, motor XP, hub, tropas, Guardián solo lectura (nivel/XP y tropa).
 - El trabajo del día se commitea y se sube a `staging`.
 
 ## Pendiente
 
-- Oleada 4 de [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md): Guardián solo lectura (nivel/XP y tropa del explorador).
+- Oleada 5 de [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md): pulido, anti-abuso básico, actualizar FUNCIONES/PRODUCTO.
 - En Render / pd: `npm run db:reset:pd -- --yes` (borra el schema `taskia` y reaplica migraciones) si el schema viejo no cuadra.
 - ROADMAP_V2 en pausa (workers / WhatsApp / Flutter).
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.

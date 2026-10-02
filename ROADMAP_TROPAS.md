@@ -130,9 +130,9 @@ Vista de **solo lectura**: su explorador (nivel, XP/progreso) y la **tropa** en 
 
 ### Oleada 4 — Guardián (solo lectura)
 
-- [ ] En progreso/ficha del explorador: nivel, barra/XP
-- [ ] Tropa actual: nombre, rol del niño, lista de miembros con niveles, posición en ranking de tropa / mención al ranking semanal de tropas si aplica
-- [ ] Sin acciones de gestión
+- [x] En progreso/ficha del explorador: nivel, barra/XP
+- [x] Tropa actual: nombre, rol del niño, lista de miembros con niveles, posición en ranking de tropa / mención al ranking semanal de tropas si aplica
+- [x] Sin acciones de gestión
 
 ### Oleada 5 — Pulido y docs
 

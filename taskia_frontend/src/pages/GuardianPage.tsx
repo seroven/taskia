@@ -14,6 +14,7 @@ import type {
   ParentExplorerOverview,
   ParentNotifyPrefs,
 } from '../lib/adminTypes'
+import { troopRoleLabel } from '../lib/troopsTypes'
 import { useToast } from '../toast'
 
 type Tab = 'chat' | 'progress' | 'prefs'
@@ -256,25 +257,117 @@ function GuardianProgress({ studentId }: { studentId: number }) {
   if (error) return <p className="form-error">{error}</p>
   if (!data) return <AppLoader message="Cargando progreso…" variant="section" />
 
+  const xpPct = Math.min(
+    100,
+    Math.max(0, Math.round((data.xp.xp_into_level / 1000) * 100)),
+  )
+  const troop = data.troop
+
   return (
-    <section className="admin-panel">
-      <div className="admin-stat-grid">
-        <p>
-          Tareas: {data.tasks.done}/{data.tasks.total} hechas
-          {data.tasks.overdue > 0 ? ` · ${data.tasks.overdue} vencidas` : ''}
-        </p>
-        <p>
-          Misiones: {data.missions.mastered}/{data.missions.total} dominadas
-        </p>
-        <p>Mundos activos: {data.worlds_count}</p>
-        <p>
-          Desafíos completados: {data.challenges.completed_count}
-          {data.challenges.avg_score != null
-            ? ` · promedio ${Math.round(data.challenges.avg_score)}`
-            : ''}
-        </p>
-      </div>
-    </section>
+    <div className="guardian-progress">
+      <section className="admin-panel">
+        <div className="admin-section-head">
+          <h3>Nivel y experiencia</h3>
+        </div>
+        <div className="guardian-xp-card">
+          <span className="guardian-xp-level">Nivel {data.xp.level}</span>
+          <div
+            className="xp-bar guardian-xp-bar"
+            title={`${data.xp.xp_into_level}/1000 XP hacia el siguiente nivel`}
+          >
+            <div className="xp-bar-track">
+              <div className="xp-bar-fill" style={{ width: `${xpPct}%` }} />
+            </div>
+            <span className="xp-bar-frac">
+              {data.xp.xp_into_level}
+              <span className="xp-bar-max">/1000</span>
+            </span>
+          </div>
+          <p className="muted">
+            {data.xp.xp_total.toLocaleString('es')} XP en total · faltan{' '}
+            {data.xp.xp_to_next} para el siguiente nivel
+          </p>
+        </div>
+      </section>
+
+      <section className="admin-panel">
+        <div className="admin-section-head">
+          <h3>Tropa</h3>
+        </div>
+        {!troop ? (
+          <p className="muted">Este explorador aún no está en una tropa.</p>
+        ) : (
+          <>
+            <p className="guardian-troop-summary">
+              <strong>{troop.name}</strong>
+              {' · '}
+              {troopRoleLabel(troop.my_role)}
+              {troop.my_rank != null ? ` · #${troop.my_rank} en la tropa` : ''}
+              {troop.weekly_rank != null
+                ? ` · tropa #${troop.weekly_rank} esta semana`
+                : ''}
+            </p>
+            <div className="troops-table-wrap">
+              <table className="troops-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Explorador</th>
+                    <th>Rol</th>
+                    <th>Nivel</th>
+                    <th>XP sem.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {troop.members.map((m) => (
+                    <tr
+                      key={m.user_id}
+                      className={
+                        m.user_id === studentId ? 'troops-row--mine' : undefined
+                      }
+                    >
+                      <td>{m.rank}</td>
+                      <td>
+                        <strong>{m.username}</strong>
+                      </td>
+                      <td>
+                        <span className={`troops-role troops-role--${m.role}`}>
+                          {troopRoleLabel(m.role)}
+                        </span>
+                      </td>
+                      <td>{m.level}</td>
+                      <td>{m.xp_week}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="admin-panel">
+        <div className="admin-section-head">
+          <h3>Actividad</h3>
+        </div>
+        <div className="admin-stat-grid">
+          <p>
+            Tareas: {data.tasks.done}/{data.tasks.total} hechas
+            {data.tasks.overdue > 0 ? ` · ${data.tasks.overdue} vencidas` : ''}
+          </p>
+          <p>
+            Misiones: {data.missions.mastered}/{data.missions.total} dominadas
+          </p>
+          <p>Mundos activos: {data.worlds_count}</p>
+          <p>
+            Desafíos completados: {data.challenges.completed_count}
+            {data.challenges.avg_score != null
+              ? ` · promedio ${Math.round(data.challenges.avg_score)}`
+              : ''}
+          </p>
+        </div>
+      </section>
+    </div>
   )
 }
 

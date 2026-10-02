@@ -40,6 +40,29 @@ export interface ParentExplorer {
 
 export interface ParentExplorerOverview {
   explorer: ParentExplorer
+  xp: {
+    level: number
+    xp_total: number
+    xp_into_level: number
+    xp_to_next: number
+  }
+  troop: {
+    id: number
+    name: string
+    my_role: 'captain' | 'copilot' | 'member'
+    my_rank: number | null
+    member_count: number
+    weekly_rank: number | null
+    members: Array<{
+      user_id: number
+      username: string
+      role: 'captain' | 'copilot' | 'member'
+      level: number
+      xp_total: number
+      xp_week: number
+      rank: number
+    }>
+  } | null
   tasks: {
     pending: number
     in_progress: number
