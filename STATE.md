@@ -20,7 +20,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - Admin semilla: usuario `Sebastian` / `123456` (migración `002_seed_admin.mjs`). Demo: explorador `Seroven` / `123456` con materias de primaria; guardián `Claudia` / `123456` vinculada a Seroven (`004_seed_demo_users.mjs`).
 - UI: Guardián / Explorador (no “padre” / “alumno” / “hijo” en superficies nuevas).
 - Naming: para el niño, **Taskia** es quien ayuda a estudiar (chat/pizarra). En código interno puede seguir diciéndose “tutor”; en copy visible al explorador, no.
-- Tono explorador: claro y cercano; sin jerga de oficina. Columnas del tablero: Por hacer / Haciendo / Estudiando / Listo. Se mantienen Mundos, misiones y desafíos. Admin y Guardián siguen con lenguaje adulto.
+- Tono explorador: claro y cercano; sin jerga de oficina. El tablero se llama **Campamento** en copy. Columnas: Por hacer / Haciendo / Estudiando / Listo. Tropas: Capitán / Copiloto / Explorador. Admin y Guardián siguen con lenguaje adulto.
 - Pizarra en estudio: «Enviar pizarra» manda PNG para que Taskia entienda. Dibuja solo con `draw_ops`/coords (proceso aparte). Sin texto de coordenadas al chat si hay imagen.
 - Dominio de tarea: `study_passed` desbloquea Listo; la columna no se mueve sola. Misión sí pasa a `mastered`. Si Gemini celebra y el servidor fuerza `passed=false` (piso/evidence), se recorta ese cierre del texto.
 - Admin: página «Guardianes y Exploradores» (vínculo obligatorio al crear; no hay alta suelta). El dashboard ya no lista exploradores ni tiene «Nuevo alumno».
@@ -35,7 +35,6 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 
 - Retomar [ROADMAP_V2.md](ROADMAP_V2.md) cuando se decida (workers / WhatsApp / Flutter).
 - En Render / pd: `npm run db:reset:pd -- --yes` (borra el schema `taskia` y reaplica migraciones) si el schema viejo no cuadra.
-- ROADMAP_V2 en pausa (workers / WhatsApp / Flutter).
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.
 
 ## Cómo correrlo
