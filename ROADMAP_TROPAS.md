@@ -136,9 +136,9 @@ Vista de **solo lectura**: su explorador (nivel, XP/progreso) y la **tropa** en 
 
 ### Oleada 5 — Pulido y docs
 
-- [ ] Anti-abuso básico (límites de invitaciones, nombres)
-- [ ] Actualizar [FUNCIONES.md](FUNCIONES.md) / [PRODUCTO.md](PRODUCTO.md) / [STATE.md](STATE.md)
-- [ ] Revisar copy Capitán / Copiloto / Campamento en tono explorador
+- [x] Anti-abuso básico (límites de invitaciones, nombres)
+- [x] Actualizar [FUNCIONES.md](FUNCIONES.md) / [PRODUCTO.md](PRODUCTO.md) / [STATE.md](STATE.md)
+- [x] Revisar copy Capitán / Copiloto / Campamento en tono explorador
 
 ---
 

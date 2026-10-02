@@ -1,15 +1,31 @@
 import { Router } from 'express'
 import type { ResultSetHeader, RowDataPacket } from '../db/pool.js'
 import { pool } from '../db/pool.js'
+import { civilDayFromInstant } from '../db/civilDate.js'
 import { requireAuth, requireStudent } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/error.js'
 import { AppError, toInstantISO } from '../utils/helpers.js'
-import { weekStartMonday } from '../services/xp.js'
+import { PRODUCT_TZ, weekStartMonday } from '../services/xp.js'
 
 const router = Router()
 const MAX_MEMBERS = 10
+const MAX_PENDING_INVITES_PER_TROOP = 15
+const MAX_INVITES_SENT_PER_DAY = 20
 
 type TroopRole = 'captain' | 'copilot' | 'member'
+
+function normalizeTroopName(raw: string) {
+  return raw
+    .normalize('NFC')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function isReasonableTroopName(name: string) {
+  if (name.length < 3 || name.length > 80) return false
+  // Al menos una letra o número (evita solo símbolos / espacios raros)
+  return /[\p{L}\p{N}]/u.test(name)
+}
 
 function mapMember(r: RowDataPacket) {
   return {
@@ -248,9 +264,11 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const userId = req.user!.id
-    const name = String(req.body.name ?? '').trim()
-    if (name.length < 3 || name.length > 80) {
-      throw new AppError('El nombre de la tropa debe tener entre 3 y 80 caracteres')
+    const name = normalizeTroopName(String(req.body.name ?? ''))
+    if (!isReasonableTroopName(name)) {
+      throw new AppError(
+        'Elige un nombre de 3 a 80 caracteres con al menos una letra o número',
+      )
     }
     if (await activeMembership(userId)) {
       throw new AppError('Ya estás en una tropa. Sal primero para crear otra.')
@@ -296,6 +314,31 @@ router.post(
     const troopId = Number(membership.troop_id)
     if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
       throw new AppError(`La tropa ya tiene ${MAX_MEMBERS} exploradores`)
+    }
+
+    const [pendingCount] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS c FROM troop_invites
+       WHERE troop_id = ? AND status = 'pending'`,
+      [troopId],
+    )
+    if (Number(pendingCount[0]?.c ?? 0) >= MAX_PENDING_INVITES_PER_TROOP) {
+      throw new AppError(
+        'Hay demasiadas invitaciones pendientes. Espera a que respondan.',
+      )
+    }
+
+    const today = civilDayFromInstant(new Date(), PRODUCT_TZ)
+    const [sentToday] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS c FROM troop_invites
+       WHERE from_user_id = ?
+         AND created_at >= (?::date AT TIME ZONE 'America/Lima')
+         AND created_at < ((?::date + 1) AT TIME ZONE 'America/Lima')`,
+      [userId, today, today],
+    )
+    if (Number(sentToday[0]?.c ?? 0) >= MAX_INVITES_SENT_PER_DAY) {
+      throw new AppError(
+        'Ya enviaste demasiadas invitaciones hoy. Prueba mañana.',
+      )
     }
 
     const [target] = await pool.query<RowDataPacket[]>(

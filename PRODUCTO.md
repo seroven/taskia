@@ -1,6 +1,8 @@
 # Taskia
 
-Taskia es a la vez la app y **quien ayuda a estudiar**: para el niño, Taskia es el nombre de su guía en el chat y la pizarra. El adulto (padre, madre, tutor legal o docente) configura el terreno y mira cómo va, sin mezclarse en el mismo tablero.
+Guía funcional de lo que ven **Guardián** y **Explorador** hoy: [FUNCIONES.md](FUNCIONES.md). Plan de Tropas/XP/hub: [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md).
+
+Taskia es a la vez la app y **quien ayuda a estudiar**: para el niño, Taskia es el nombre de su guía en el chat y la pizarra. El administrador configura cuentas y materias; el **guardián** acompaña desde su panel; el **explorador** entra a un hub (Tropas | Mundos | Campamento), gana XP y puede unirse a una tropa.
 
 No es un chat suelto con una IA ni un kanban genérico. La idea es un ciclo cerrado: **materias → tareas o temas → estudiar con Taskia → demostrar que se entendió → (en mundos) ponerse a prueba con un desafío**. Taskia no regala la respuesta: guía, pregunta y solo da el visto cuando hay evidencia real.
 
@@ -12,11 +14,11 @@ El tono de la app está pensado para un niño de alrededor de 10 años: español
 
 Al iniciar sesión, cada rol entra a un mundo distinto.
 
-**El explorador** (`user`) ve el tablero de tareas, el modo estudio y los mundos. Puede cambiar su usuario, correo y contraseña, y elegir tema claro/oscuro y color de acento. No puede crearse la cuenta solo: el registro público está cerrado a propósito.
+**El explorador** (`user`) ve el hub (Tropas | Mundos | Campamento), el modo estudio y la barra de nivel/XP. Puede cambiar su usuario, correo y contraseña, y elegir tema claro/oscuro y color de acento. No puede crearse la cuenta solo: el registro público está cerrado a propósito.
 
-**El administrador** (`admin`) no usa el tablero. Entra al panel: dashboard de exploradores, fichas, materias, mundos, desafíos y el módulo de **guardianes** (crear, vincular, desvincular).
+**El administrador** (`admin`) no usa el Campamento. Entra al panel: dashboard de exploradores, fichas, materias, mundos, desafíos y el módulo de **guardianes** (crear, vincular, desvincular).
 
-**El guardián** (`parent`) acompaña a uno o más exploradores vinculados por el admin. Entra a un panel propio: chat con la IA sobre el resumen del día, progreso en solo lectura y preferencias de avisos WhatsApp. No edita el tablero del explorador.
+**El guardián** (`parent`) acompaña a uno o más exploradores vinculados por el admin. Entra a un panel propio: chat con la IA sobre el resumen del día, progreso en solo lectura (nivel/XP, tropa y totales) y preferencias de avisos WhatsApp. No edita el Campamento ni la tropa del explorador.
 
 Si el admin pausa una cuenta, esa persona no puede entrar hasta que la reactiven.
 
@@ -40,9 +42,9 @@ El adulto puede copiar materias de un alumno a otro (por ejemplo, hermanos en el
 
 ---
 
-## El tablero de tareas
+## El Campamento (tareas del día)
 
-Es la casa del alumno. Cuatro columnas:
+Es la casa del alumno para lo de hoy (antes “tablero”). Se entra desde el hub. Cuatro columnas:
 
 | Columna | Qué significa |
 | --- | --- |
@@ -194,16 +196,18 @@ En un desafío completado, el adulto ve el mismo desglose que el alumno: qué pr
 Adulto crea alumno y materias
         │
         ▼
-   Alumno entra
+   Alumno entra → hub
         │
-        ├── Tablero ──► tarea ──► (opcional) Taskia ──► visto ──► Listo
+        ├── Tropas ──► equipo, invitaciones, rankings
         │
-        └── Mundos ──► curso ──► misión ──► Taskia ──► Lista ──► desafío
+        ├── Campamento ──► tarea ──► (opcional) Taskia ──► visto ──► Listo ──► XP
+        │
+        └── Mundos ──► curso ──► misión ──► Taskia ──► Lista ──► desafío ──► XP
 ```
 
 Las **materias** unen los dos caminos: una tarea siempre es de una materia; un mundo solo puede incluir materias que el alumno ya tiene.
 
-**Taskia** es la misma guía en tareas y misiones (hablar, practicar, no regalar la solución), con listones distintos: más corto y atado a un ejercicio en el tablero; más largo y temático en mundos.
+**Taskia** es la misma guía en tareas y misiones (hablar, practicar, no regalar la solución), con listones distintos: más corto y atado a un ejercicio en el Campamento; más largo y temático en mundos.
 
 Los **desafíos** no sustituyen a Taskia: llegan después, para medir. El adulto no los arma; los mira.
 
@@ -213,7 +217,7 @@ Los **desafíos** no sustituyen a Taskia: llegan después, para medir. El adulto
 
 **Por la mañana, el adulto** abre el panel, filtra la semana y ve si alguien tiene tareas atrasadas o lleva días sin estudiar. Entra a la ficha, mira si Taskia ya dio el visto en la tarea difícil, o abre un desafío de ayer para ver en qué se equivocó.
 
-**El alumno** entra al tablero, arrastra “fracciones mixtas” a Estudiando, elige pizarra, practica con Taskia y, cuando celebra, mueve la tarjeta a Listo. Después abre su mundo, entra a un tema de Ciencias que todavía no sabe del todo, estudia un rato y, si ya lo tiene, lanza un calentamiento del curso.
+**El alumno** entra al hub, abre el Campamento, arrastra “fracciones mixtas” a Estudiando, elige pizarra, practica con Taskia y, cuando celebra, mueve la tarjeta a Listo. Después abre Mundos, entra a un tema de Ciencias que todavía no sabe del todo, estudia un rato y, si ya lo tiene, lanza un calentamiento del curso.
 
 Nada de eso exige que el adulto esté sentado al lado en el chat. El adulto configura y revisa; el alumno estudia y se pone a prueba.
 
