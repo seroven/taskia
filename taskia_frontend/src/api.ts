@@ -40,6 +40,12 @@ import type {
 } from './lib/adminTypes'
 import { adminQuery } from './lib/adminTypes'
 import { viewerTimeZone } from './lib/datetime'
+import type {
+  TroopDetail,
+  TroopMeResponse,
+  TroopRankingResponse,
+  TroopSearchHit,
+} from './lib/troopsTypes'
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(
   /\/$/,
@@ -652,5 +658,55 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ message }),
     })
+  },
+
+  getMyTroop() {
+    return request<TroopMeResponse>('/troops/me')
+  },
+  getTroopRanking() {
+    return request<TroopRankingResponse>('/troops/ranking')
+  },
+  searchExplorers(q: string) {
+    return request<TroopSearchHit[]>(
+      `/troops/search?q=${encodeURIComponent(q)}`,
+    )
+  },
+  createTroop(name: string) {
+    return request<TroopDetail>('/troops', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    })
+  },
+  inviteToTroop(to_user_id: number) {
+    return request<{ id: number; ok: boolean }>('/troops/invites', {
+      method: 'POST',
+      body: JSON.stringify({ to_user_id }),
+    })
+  },
+  acceptTroopInvite(invite_id: number) {
+    return request<TroopDetail>(`/troops/invites/${invite_id}/accept`, {
+      method: 'POST',
+    })
+  },
+  rejectTroopInvite(invite_id: number) {
+    return request<{ ok: boolean }>(`/troops/invites/${invite_id}/reject`, {
+      method: 'POST',
+    }).then(() => undefined)
+  },
+  setTroopCopilot(user_id: number | null) {
+    return request<TroopDetail>('/troops/copilot', {
+      method: 'POST',
+      body: JSON.stringify({ user_id }),
+    })
+  },
+  kickTroopMember(member_user_id: number) {
+    return request<TroopDetail>(`/troops/members/${member_user_id}`, {
+      method: 'DELETE',
+    })
+  },
+  leaveTroop() {
+    return request<{ ok: boolean }>('/troops/leave', { method: 'POST' }).then(
+      () => undefined,
+    )
   },
 }

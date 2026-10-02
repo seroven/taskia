@@ -119,14 +119,14 @@ Vista de **solo lectura**: su explorador (nivel, XP/progreso) y la **tropa** en 
 
 ### Oleada 3 — Tropas (CRUD social)
 
-- [ ] Crear tropa (nombre), quedar como Capitán
-- [ ] Buscar exploradores por nombre (global), invitar, aceptar/rechazar
-- [ ] Copiloto: agregar; Capitán: agregar y eliminar; Capitán asigna/cambia Copiloto
-- [ ] Salir de la tropa; sucesión Capitán → Copiloto → mayor nivel
-- [ ] Vista “mi tropa”: miembros, roles, niveles
-- [ ] Ranking interno de la tropa
-- [ ] Ranking de tropas por XP semanal (lun–dom)
-- [ ] Un solo membership activo por explorador
+- [x] Crear tropa (nombre), quedar como Capitán
+- [x] Buscar exploradores por nombre (global), invitar, aceptar/rechazar
+- [x] Copiloto: agregar; Capitán: agregar y eliminar; Capitán asigna/cambia Copiloto
+- [x] Salir de la tropa; sucesión Capitán → Copiloto → mayor nivel
+- [x] Vista “mi tropa”: miembros, roles, niveles
+- [x] Ranking interno de la tropa
+- [x] Ranking de tropas por XP semanal (lun–dom)
+- [x] Un solo membership activo por explorador
 
 ### Oleada 4 — Guardián (solo lectura)
 
