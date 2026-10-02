@@ -17,7 +17,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 ## Decisiones vigentes
 
 - Esquema vivo: migraciones en `taskia_backend/db/migrations/` (`npm run db:migrate`). No hay ORM.
-- Admin semilla: usuario `Sebastian` / `123456` (migración `002_seed_admin.mjs`). Demo: explorador `Seroven` / `123456` con materias de primaria; guardián `Claudia` / `123456` vinculada a Seroven (`004_seed_demo_users.mjs`).
+- Admin semilla: usuario `Sebastian` / `123456` (migración `002_seed_admin.mjs`). Demo: explorador `Seroven` / `123456` con materias de primaria; guardián `Claudia` / `123456` vinculada a Seroven (`004_seed_demo_users.mjs`). Tropas demo: `005_seed_demo_troops.mjs` (~6 tropas, muchos exploradores + guardianes, niveles/XP variados, mismos cursos; password `123456`).
 - UI: Guardián / Explorador (no “padre” / “alumno” / “hijo” en superficies nuevas).
 - Naming: para el niño, **Taskia** es quien ayuda a estudiar (chat/pizarra). En código interno puede seguir diciéndose “tutor”; en copy visible al explorador, no.
 - Tono explorador: claro y cercano; sin jerga de oficina. El tablero se llama **Campamento** en copy. Columnas: Por hacer / Haciendo / Estudiando / Listo. Tropas: Capitán / Copiloto / Explorador. Admin y Guardián siguen con lenguaje adulto.

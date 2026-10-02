@@ -573,7 +573,7 @@ Hay variantes por entorno (`db:migrate:qa`, `db:migrate:pd`), que solo cambian e
 
 **Cambios futuros:** se agrega un archivo nuevo (`004_…`) y se vuelve a correr `db:migrate`. No se edita una migración ya aplicada en bases compartidas.
 
-Sobre una base vacía, `001_initial.sql` arma tablas, índices, triggers y siembras de roles / dificultades / presets. `002_seed_admin.mjs` crea el admin `Sebastian` / `123456` si no existe. `003_tropas_xp.sql` agrega progresión, `xp_awards` y tropas. `004_seed_demo_users.mjs` crea el explorador `Seroven` (materias de primaria) y la guardián `Claudia` vinculada. Si una base ya había corrido el dump viejo `schema.pg.sql`, el runner marca `001_initial.sql` como aplicada y solo corre las siguientes.
+Sobre una base vacía, `001_initial.sql` arma tablas, índices, triggers y siembras de roles / dificultades / presets. `002_seed_admin.mjs` crea el admin `Sebastian` / `123456` si no existe. `003_tropas_xp.sql` agrega progresión, `xp_awards` y tropas. `004_seed_demo_users.mjs` crea el explorador `Seroven` (materias de primaria) y la guardián `Claudia` vinculada. `005_seed_demo_troops.mjs` llena ~6 tropas con exploradores de distinto nivel/XP, guardianes vinculados, mismos cursos de primaria y XP semanal sintético (para rankings); password común `123456`. Si una base ya había corrido el dump viejo `schema.pg.sql`, el runner marca `001_initial.sql` como aplicada y solo corre las siguientes.
 
 Si el schema viejo no cuadra (faltan columnas, FKs distintas), hay que vaciar antes. En local: `npm run db:reset`. En pd/qa: `npm run db:reset:pd -- --yes` (o `:qa`). Eso hace `DROP SCHEMA taskia CASCADE` y vuelve a correr todas las migraciones.
 
