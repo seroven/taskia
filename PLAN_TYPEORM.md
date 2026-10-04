@@ -72,7 +72,7 @@ Cada módulo conserva su repository. Ese archivo pasa de `pool.query` a `dataSou
 
 `initDb()` abre el `DataSource` (schema `PG_SCHEMA`, SSL igual que el pool) y deja de depender de `search_path` manual cuando el corte 0 lo compruebe. Hasta entonces el pool viejo sigue haciendo `SET search_path`.
 
-## Tablas (29 entidades)
+## Tablas (28 entidades)
 
 Cuentas y catálogo: `roles`, `users` (incluye `level`, `xp_total`, avatar y marco), `courses`, `difficulties`.
 
@@ -119,7 +119,7 @@ Cada corte compila (`npm run build` en `taskia_backend`), arranca contra una bas
 - `tsconfig`: `experimentalDecorators` y `emitDecoratorMetadata`. Import de `reflect-metadata` en `src/index.ts` antes que el resto.
 - `data-source.ts` lee el mismo `env.pg` que el pool (DSN o host, schema, SSL).
 - Transformers de bigint y date, probados con una lectura de `users.id` y de `tasks.due_date`.
-- Entidades de las 29 tablas, columnas alineadas a `001` + `003` + `006` + `007` + `008` + `009`. Sin métodos de negocio.
+- Entidades de las 28 tablas, columnas alineadas a `001` + `003` + `006` + `007` + `008` + `009`. Sin métodos de negocio.
 - Prueba de `orIgnore` contra `xp_awards`: la segunda inserción de la misma `(user_id, source_type, source_id)` no duplica y el repository lo distingue de un insert nuevo.
 - `index.ts` llama `dataSource.initialize()` junto al `initDb` actual.
 - El pool viejo sigue sirviendo al resto de la app.
@@ -226,4 +226,6 @@ No hace falta Vitest para cerrar el plan. Si un corte se pone frágil (XP o el r
 
 ## Avance
 
-Sin empezar. El siguiente corte de estructura (mundos, admin, frontend) espera a este plan en mundos y admin: se hacen una vez, ya sobre TypeORM. Auth, catálogo, tareas, estudio, guardián y tropas ya están en módulos; a esos se les reemplaza el SQL en el sitio.
+- **T0 hecho.** TypeORM 1 (`synchronize: false`), 28 entidades en `src/infrastructure/database/entities/`, transformers de bigint y de fecha civil, estrategia de nombres snake_case. `scripts/t0-check.ts` contra Postgres local, dentro de una transacción que hace rollback: `users.id` es número, `due_date` vuelve `YYYY-MM-DD`, `orIgnore()` devuelve 1 fila la primera vez y 0 en el conflicto. El pool viejo sigue atendiendo las consultas. El servidor abre el `DataSource` al arrancar.
+- Las relaciones `@ManyToOne` se declaran en el corte que haga el join. Ponerlas junto a la columna del id duplica el mapeo.
+- Siguiente: **T1** auth, catálogo, sesión, roles y `llm_usage`.
