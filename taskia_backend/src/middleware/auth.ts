@@ -66,7 +66,9 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     }
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id, u.username, u.email, u.is_active, u.level, u.xp_total, r.code AS role
+      `SELECT u.id, u.username, u.email, u.is_active, u.level, u.xp_total,
+              u.avatar_kind, u.avatar_preset_id, u.avatar_file, u.frame_id,
+              r.code AS role
        FROM users u
        INNER JOIN roles r ON r.id = u.role_id
        WHERE u.id = ? LIMIT 1`,
@@ -89,6 +91,10 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       email: user.email as string,
       role,
       ...progress,
+      avatar_kind: (user.avatar_kind as 'preset' | 'upload') ?? 'preset',
+      avatar_preset_id: (user.avatar_preset_id as string) ?? 'explorer_01',
+      avatar_file: (user.avatar_file as string | null) ?? null,
+      frame_id: (user.frame_id as string) ?? 'none',
     }
     next()
   } catch (err) {

@@ -13,6 +13,7 @@ import worldsRoutes from './routes/worlds.js'
 import adminRoutes from './routes/admin.js'
 import parentRoutes from './routes/parent.js'
 import troopsRoutes from './routes/troops.js'
+import filesRoutes from './routes/files.js'
 
 export function createApp() {
   const app = express()
@@ -43,6 +44,7 @@ export function createApp() {
   app.use('/study', studyRoutes)
   app.use('/worlds', worldsRoutes)
   app.use('/troops', troopsRoutes)
+  app.use('/files', filesRoutes)
   app.use('/admin', adminRoutes)
   app.use('/parent', parentRoutes)
 

@@ -23,10 +23,13 @@ import type {
   TroopSearchHit,
   UniverseTroop,
 } from '../lib/troopsTypes'
+import { useAuth } from '../auth'
 import { useToast } from '../toast'
+import { AVATAR_PRESETS, FRAME_OPTIONS } from '../lib/avatars'
 
 export function TroopsPage({ onBack }: { onBack: () => void }) {
   const { showToast } = useToast()
+  const { user, setUser } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [myTroop, setMyTroop] = useState<TroopDetail | null>(null)
@@ -42,6 +45,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
   const [createOpen, setCreateOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [planetOpen, setPlanetOpen] = useState(false)
+  const [avatarOpen, setAvatarOpen] = useState(false)
   const [rankingOpen, setRankingOpen] = useState(false)
   const [ranking, setRanking] = useState<TroopRankingRow[]>([])
   const [rankingHasMore, setRankingHasMore] = useState(true)
@@ -275,6 +279,8 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                         ? () => setPlanetOpen(true)
                         : undefined
                     }
+                    viewerUserId={user?.id}
+                    onEditAvatar={() => setAvatarOpen(true)}
                     onLeave={
                       openDetail.my_role
                         ? () => {
@@ -561,7 +567,169 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
         }}
       />
 
+      <AvatarModal
+        open={avatarOpen}
+        troopRole={openDetail?.my_role ?? myTroop?.my_role ?? null}
+        current={user}
+        onClose={() => setAvatarOpen(false)}
+        onSaved={async (next) => {
+          setUser(next)
+          if (openId != null) {
+            setOpenDetail(await api.getTroop(openId))
+          }
+          showToast({
+            tone: 'success',
+            title: 'Avatar guardado',
+            subtitle: next.username,
+          })
+        }}
+      />
+
     </div>
+  )
+}
+
+function AvatarModal({
+  open,
+  troopRole,
+  current,
+  onClose,
+  onSaved,
+}: {
+  open: boolean
+  troopRole: 'captain' | 'copilot' | 'member' | null
+  current: { avatar_preset_id?: string | null; frame_id?: string | null } | null
+  onClose: () => void
+  onSaved: (user: import('../types').PublicUser) => Promise<void>
+}) {
+  const [presetId, setPresetId] = useState('rocket')
+  const [frameId, setFrameId] = useState('none')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setPresetId(current?.avatar_preset_id ?? 'rocket')
+    setFrameId(current?.frame_id ?? 'none')
+    setError(null)
+  }, [open, current])
+
+  const roleKey = troopRole ?? 'member'
+  const frames = FRAME_OPTIONS.filter((f) =>
+    (f.roles as readonly string[]).includes(roleKey),
+  )
+
+  async function savePreset() {
+    setSubmitting(true)
+    setError(null)
+    try {
+      const next = await api.updateMyAvatar({
+        avatar_kind: 'preset',
+        avatar_preset_id: presetId,
+        frame_id: frameId,
+      })
+      await onSaved(next)
+      onClose()
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function onUpload(file: File | null) {
+    if (!file) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = () => reject(new Error('No se pudo leer la imagen'))
+        reader.readAsDataURL(file)
+      })
+      const next = await api.updateMyAvatar({
+        avatar_kind: 'upload',
+        image_base64: dataUrl,
+        mime_type: file.type,
+        frame_id: frameId,
+      })
+      await onSaved(next)
+      onClose()
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      titleId="avatar-title"
+      title="Tu avatar"
+      lead="Elige un icono, sube una foto y un marco."
+    >
+      <div className="modal-panel-body">
+        <div className="planet-style-grid">
+          {AVATAR_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={
+                presetId === p.id
+                  ? 'planet-style-swatch is-selected'
+                  : 'planet-style-swatch'
+              }
+              onClick={() => setPresetId(p.id)}
+            >
+              <span className="explorer-avatar-glyph" style={{ fontSize: 28 }}>
+                {p.glyph}
+              </span>
+              <span>{p.label}</span>
+            </button>
+          ))}
+        </div>
+        <label className="field" style={{ marginTop: 12 }}>
+          <span className="field-label">Marco</span>
+          <select
+            className="field-control"
+            value={frameId}
+            onChange={(e) => setFrameId(e.target.value)}
+          >
+            {frames.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span className="field-label">Subir imagen (opcional)</span>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(e) => void onUpload(e.target.files?.[0] ?? null)}
+            disabled={submitting}
+          />
+        </label>
+        {error && <p className="form-error">{error}</p>}
+        <div className="modal-actions">
+          <button type="button" className="ghost" onClick={onClose}>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="primary"
+            disabled={submitting}
+            onClick={() => void savePreset()}
+          >
+            {submitting ? 'Guardando…' : 'Guardar icono'}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
   )
 }
 

@@ -5,6 +5,7 @@ import {
   troopRoleLabel,
   type TroopDetail,
 } from '../../lib/troopsTypes'
+import { ExplorerAvatar } from './ExplorerAvatar'
 
 export function LevelStar({ level }: { level: number }) {
   return (
@@ -22,6 +23,8 @@ export function TroopSpaceCard({
   onRequestJoin,
   onInvite,
   onCustomizePlanet,
+  onEditAvatar,
+  viewerUserId,
   onLeave,
   onSetCopilot,
   onKick,
@@ -32,6 +35,8 @@ export function TroopSpaceCard({
   onRequestJoin?: () => void
   onInvite?: () => void
   onCustomizePlanet?: () => void
+  onEditAvatar?: () => void
+  viewerUserId?: number
   onLeave?: () => void
   onSetCopilot?: (userId: number | null) => void
   onKick?: (userId: number) => void
@@ -123,6 +128,27 @@ export function TroopSpaceCard({
         {detail.members.map((m) => (
           <div key={m.user_id} className="troop-space-member">
             <div className="troop-space-member-main">
+              <button
+                type="button"
+                className="explorer-avatar-btn"
+                disabled={viewerUserId !== m.user_id || !onEditAvatar}
+                onClick={() => {
+                  if (viewerUserId === m.user_id) onEditAvatar?.()
+                }}
+                aria-label={
+                  viewerUserId === m.user_id
+                    ? 'Cambiar mi avatar'
+                    : m.username
+                }
+              >
+                <ExplorerAvatar
+                  username={m.username}
+                  avatar_kind={m.avatar_kind}
+                  avatar_preset_id={m.avatar_preset_id}
+                  avatar_file={m.avatar_file}
+                  frame_id={m.frame_id}
+                />
+              </button>
               <strong>{m.username}</strong>
               <span className={`troops-role troops-role--${m.role}`}>
                 {troopRoleLabel(m.role)}

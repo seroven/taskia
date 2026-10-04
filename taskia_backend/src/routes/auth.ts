@@ -11,8 +11,28 @@ import {
 import { asyncHandler } from '../middleware/error.js'
 import { AppError, type PublicUser, type UserRole } from '../utils/helpers.js'
 import { progressFromXpTotal } from '../services/xp.js'
+import {
+  frameAllowedForRole,
+  isAvatarPreset,
+  isFrameId,
+} from '../lib/avatars.js'
+import { saveAvatarUpload } from '../services/files.js'
 
 const router = Router()
+
+function avatarFields(row: {
+  avatar_kind?: unknown
+  avatar_preset_id?: unknown
+  avatar_file?: unknown
+  frame_id?: unknown
+}) {
+  return {
+    avatar_kind: (row.avatar_kind as 'preset' | 'upload' | undefined) ?? 'preset',
+    avatar_preset_id: (row.avatar_preset_id as string | null) ?? 'rocket',
+    avatar_file: (row.avatar_file as string | null) ?? null,
+    frame_id: (row.frame_id as string | null) ?? 'none',
+  }
+}
 
 function validateCredentials(username: string, password: string, email?: string) {
   const u = username.trim()
@@ -39,7 +59,9 @@ router.post(
     validateCredentials(username, password)
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id, u.username, u.email, u.password_hash, u.is_active, u.xp_total, r.code AS role
+      `SELECT u.id, u.username, u.email, u.password_hash, u.is_active, u.xp_total,
+              u.avatar_kind, u.avatar_preset_id, u.avatar_file, u.frame_id,
+              r.code AS role
        FROM users u
        INNER JOIN roles r ON r.id = u.role_id
        WHERE u.username = ? LIMIT 1`,
@@ -61,6 +83,7 @@ router.post(
       email: row.email as string,
       role: row.role as UserRole,
       ...progress,
+      ...avatarFields(row),
     }
     setAuthCookie(res, signToken(user))
     res.json(user)
@@ -81,7 +104,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const current = req.user!
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.username, u.email, u.xp_total, r.code AS role
+      `SELECT u.username, u.email, u.xp_total, r.code AS role,
+              u.avatar_kind, u.avatar_preset_id, u.avatar_file, u.frame_id
        FROM users u
        INNER JOIN roles r ON r.id = u.role_id
        WHERE u.id = ? LIMIT 1`,
@@ -96,6 +120,82 @@ router.get(
       email: row.email as string,
       role: row.role as UserRole,
       ...progress,
+      ...avatarFields(row),
+    } satisfies PublicUser)
+  }),
+)
+
+router.patch(
+  '/me/avatar',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const current = req.user!
+    const kind = String(req.body.avatar_kind ?? 'preset')
+    let avatarKind: 'preset' | 'upload' = 'preset'
+    let presetId: string | null = null
+    let fileName: string | null = null
+
+    if (kind === 'upload') {
+      avatarKind = 'upload'
+      const raw = String(req.body.image_base64 ?? '')
+      fileName = saveAvatarUpload(current.id, raw, req.body.mime_type)
+    } else {
+      const preset = String(req.body.avatar_preset_id ?? 'rocket')
+      if (!isAvatarPreset(preset)) throw new AppError('Avatar no válido')
+      presetId = preset
+    }
+
+    let frameId =
+      req.body.frame_id === undefined
+        ? undefined
+        : String(req.body.frame_id ?? 'none')
+    if (frameId !== undefined) {
+      if (!isFrameId(frameId)) throw new AppError('Marco no válido')
+      const [mem] = await pool.query<RowDataPacket[]>(
+        `SELECT role FROM troop_members
+         WHERE user_id = ? AND left_at IS NULL LIMIT 1`,
+        [current.id],
+      )
+      const troopRole =
+        (mem[0]?.role as 'captain' | 'copilot' | 'member' | undefined) ?? null
+      if (!frameAllowedForRole(frameId, troopRole)) {
+        throw new AppError('Ese marco aún no está desbloqueado')
+      }
+    }
+
+    if (frameId !== undefined) {
+      await pool.query(
+        `UPDATE users
+         SET avatar_kind = ?, avatar_preset_id = ?, avatar_file = ?, frame_id = ?
+         WHERE id = ?`,
+        [avatarKind, presetId, fileName, frameId, current.id],
+      )
+    } else {
+      await pool.query(
+        `UPDATE users
+         SET avatar_kind = ?, avatar_preset_id = ?, avatar_file = ?
+         WHERE id = ?`,
+        [avatarKind, presetId, fileName, current.id],
+      )
+    }
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT u.username, u.email, u.xp_total, r.code AS role,
+              u.avatar_kind, u.avatar_preset_id, u.avatar_file, u.frame_id
+       FROM users u
+       INNER JOIN roles r ON r.id = u.role_id
+       WHERE u.id = ? LIMIT 1`,
+      [current.id],
+    )
+    const row = rows[0]!
+    const progress = progressFromXpTotal(Number(row.xp_total ?? 0))
+    res.json({
+      id: current.id,
+      username: row.username as string,
+      email: row.email as string,
+      role: row.role as UserRole,
+      ...progress,
+      ...avatarFields(row),
     } satisfies PublicUser)
   }),
 )
@@ -157,7 +257,8 @@ router.patch(
     }
 
     const [xpRows] = await pool.query<RowDataPacket[]>(
-      'SELECT xp_total FROM users WHERE id = ? LIMIT 1',
+      `SELECT xp_total, avatar_kind, avatar_preset_id, avatar_file, frame_id
+       FROM users WHERE id = ? LIMIT 1`,
       [current.id],
     )
     const progress = progressFromXpTotal(Number(xpRows[0]?.xp_total ?? 0))
@@ -167,6 +268,7 @@ router.patch(
       email: e,
       role: current.role,
       ...progress,
+      ...avatarFields(xpRows[0] ?? {}),
     }
     res.json(user)
   }),

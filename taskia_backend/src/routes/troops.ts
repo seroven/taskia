@@ -36,6 +36,10 @@ function mapMember(r: RowDataPacket) {
     xp_total: Number(r.xp_total ?? 0),
     xp_week: Number(r.xp_week ?? 0),
     joined_at: toInstantISO(r.joined_at as Date | string) ?? '',
+    avatar_kind: (r.avatar_kind as 'preset' | 'upload' | undefined) ?? 'preset',
+    avatar_preset_id: (r.avatar_preset_id as string | null) ?? 'rocket',
+    avatar_file: (r.avatar_file as string | null) ?? null,
+    frame_id: (r.frame_id as string | null) ?? 'none',
   }
 }
 
@@ -100,6 +104,7 @@ async function loadTroopDetail(troopId: number, viewerId: number) {
   const weekStart = weekStartMonday()
   const [members] = await pool.query<RowDataPacket[]>(
     `SELECT tm.user_id, u.username, tm.role, u.level, u.xp_total, tm.joined_at,
+            u.avatar_kind, u.avatar_preset_id, u.avatar_file, u.frame_id,
             COALESCE((
               SELECT SUM(a.amount) FROM xp_awards a
               WHERE a.user_id = tm.user_id AND a.week_start = ?

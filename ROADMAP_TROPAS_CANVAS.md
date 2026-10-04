@@ -289,10 +289,10 @@ Investigar y elegir **una** pila. Criterios: React 19 + Vite, móvil real, ~50�
 
 ### Oleada C5 — Avatares + marcos (datos + UI mínima)
 
-- [ ] Migración users avatar/frame
-- [ ] Serverfiles + endpoint upload + presets
-- [ ] Mostrar avatar+marco en TroopCard (y dejar listo para UserChip después)
-- [ ] Marcos especiales Capitán/Copiloto
+- [x] Migración users avatar/frame
+- [x] Serverfiles + endpoint upload + presets
+- [x] Mostrar avatar+marco en TroopCard (y dejar listo para UserChip después)
+- [x] Marcos especiales Capitán/Copiloto
 
 ### Oleada C6 — IA Planet Builder
 

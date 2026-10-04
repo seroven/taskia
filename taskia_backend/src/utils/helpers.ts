@@ -12,6 +12,10 @@ export interface PublicUser {
   xp_total: number
   xp_into_level: number
   xp_to_next: number
+  avatar_kind: 'preset' | 'upload'
+  avatar_preset_id: string | null
+  avatar_file: string | null
+  frame_id: string | null
 }
 
 export interface JwtPayload {

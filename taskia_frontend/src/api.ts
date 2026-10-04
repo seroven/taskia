@@ -136,6 +136,18 @@ export const api = {
       body: JSON.stringify(input),
     })
   },
+  updateMyAvatar(input: {
+    avatar_kind: 'preset' | 'upload'
+    avatar_preset_id?: string
+    image_base64?: string
+    mime_type?: string
+    frame_id?: string
+  }) {
+    return request<PublicUser>('/auth/me/avatar', {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    })
+  },
   listCourses() {
     return request<Course[]>('/courses')
   },

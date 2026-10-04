@@ -9,6 +9,9 @@ dist-ssr/
 
 *.log
 
+taskia_backend/serverfiles/avatars/*
+!taskia_backend/serverfiles/avatars/.gitkeep
+
 .venv/
 __pycache__/
 *.pyc
