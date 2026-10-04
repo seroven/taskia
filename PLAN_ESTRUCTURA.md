@@ -22,7 +22,7 @@ Los templates traen stack y producto que Taskia no va a adoptar en este trabajo:
 
 | Del template | En Taskia |
 | --- | --- |
-| TypeORM, codegen, `BaseRepository`, varias conexiones | SQL con `pg` y migraciones en `taskia_backend/db/migrations/` |
+| Codegen, `BaseRepository`, varias conexiones, driver MySQL | Un solo DataSource Postgres. El plan de entidades es [PLAN_TYPEORM.md](PLAN_TYPEORM.md). El DDL sigue en `db/migrations/` |
 | Envelope `{ status, data }` y prefijo `/api` | JSON actual y rutas actuales (`/auth`, `/tasks`, `/worlds`, …) |
 | TanStack Query, React Router, shadcn, Tailwind, catálogo `/ui` | Fetch y navegación por estado actuales; CSS y componentes actuales |
 | Google OAuth, mailing CIA, PDF, tests de plantilla | No se copian |
@@ -87,9 +87,10 @@ taskia_backend/src/
 ├── app.ts
 ├── config/env.ts
 ├── routes/index.ts                 # solo monta routers, sin SQL
-├── middlewares/
+├── middleware/                     # singular: es el uso de Taskia, no el plural del template
 │   ├── auth.middleware.ts
 │   └── error.middleware.ts
+├── prompts/                        # textos de Gemini, un archivo por uso
 ├── infrastructure/
 │   ├── database/                   # pool, sql, civilDate, roles de catálogo
 │   ├── storage/                    # avatares en disco (hoy services/files.ts)
@@ -242,13 +243,14 @@ Cuando B10 y F11 estén hechos, añadir en `.cursor/rules/` una regla corta con 
 3. Al partir un módulo del backend, la validación pasa a `schemas/` con Zod y acepta lo mismo que antes.
 4. Este plan no monta Vitest.
 5. Backend primero. Mundos y admin al final. Frontend desde F1 en paralelo cuando el cliente HTTP se extraiga.
-6. TypeORM, envelope `{ status, data }`, prefijo `/api`, shadcn y el catálogo UI quedan fuera.
+6. El acceso a datos pasa a TypeORM en [PLAN_TYPEORM.md](PLAN_TYPEORM.md). El envelope `{ status, data }`, el prefijo `/api`, shadcn y el catálogo UI siguen fuera. Mundos y admin no se parten a `pool.query`: se parten ya sobre el ORM.
 
 ## Avance
 
 Hecho y compilado (`npm run build` en `taskia_backend`):
 
-- **B1.** `routes/index.ts`, `shared/errors`, `infrastructure/database`, `infrastructure/gemini`, `infrastructure/storage`, `middlewares/`.
+- **B1.** `routes/index.ts`, `shared/errors`, `infrastructure/database`, `infrastructure/gemini`, `infrastructure/storage`, `middleware/`.
+- **Prompts.** Textos de Gemini en `src/prompts/` (`index.ts` reexporta). Los services y el cliente solo los importan.
 - **B2.** `modules/auth`.
 - **B3.** `modules/catalog` (cursos y dificultades) y `modules/files` (descarga de avatares).
 - **B4.** `modules/tasks`.
@@ -256,4 +258,4 @@ Hecho y compilado (`npm run build` en `taskia_backend`):
 - **B6.** `modules/guardian`. El prefijo HTTP sigue siendo `/parent`. El SQL de este módulo todavía vive en el service.
 - **B7.** `modules/troops`. El SQL sigue en el service. `planetParams` pasó a `modules/troops/lib/planet-params.ts`.
 
-Siguiente corte: **B8 mundos**, después admin, mover XP a `modules/progression`, y recién el frontend (F1 en adelante). `src/routes/` todavía tiene `worlds.ts` y `admin.ts`.
+Siguiente trabajo de backend: [PLAN_TYPEORM.md](PLAN_TYPEORM.md) (T0 en adelante). Mundos y admin salen de `src/routes/` dentro de ese plan. El frontend (F1 en adelante) espera a que el ORM cierre.

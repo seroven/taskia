@@ -16,7 +16,8 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 
 ## Decisiones vigentes
 
-- Esquema vivo: migraciones en `taskia_backend/db/migrations/` (`npm run db:migrate`). No hay ORM.
+- Esquema vivo: migraciones Postgres en `taskia_backend/db/migrations/` (`npm run db:migrate`). El acceso en runtime pasa a TypeORM ([PLAN_TYPEORM.md](PLAN_TYPEORM.md)): entidades, sin `mysqlToPg`, `synchronize` apagado. El DDL no se regenera con el ORM.
+- Prompts de Gemini: `taskia_backend/src/prompts/`. Carpeta de sesión HTTP: `src/middleware/` (una sola; no `middlewares`).
 - Admin semilla: usuario `Sebastian` / `123456` (migración `002_seed_admin.mjs`). Demo: explorador `Seroven` / `123456` con materias de primaria; guardián `Claudia` / `123456` vinculada a Seroven (`004_seed_demo_users.mjs`). Tropas demo: `005_seed_demo_troops.mjs` (~6 tropas, muchos exploradores + guardianes, niveles/XP variados, mismos cursos; password `123456`).
 - UI: Guardián / Explorador (no “padre” / “alumno” / “hijo” en superficies nuevas).
 - Naming: para el niño, **Taskia** es quien ayuda a estudiar (chat/pizarra). En código interno puede seguir diciéndose “tutor”; en copy visible al explorador, no.
@@ -33,7 +34,8 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 
 ## Pendiente
 
-- Reestructura de carpetas y capas, sin cambiar producto ni diseño: [PLAN_ESTRUCTURA.md](PLAN_ESTRUCTURA.md). Decisiones confirmadas. Backend ya parte auth, catalog, files, tasks, study, guardian y tropas. Siguen mundos, admin, XP en `modules/progression` y todo el frontend.
+- Reestructura de carpetas: [PLAN_ESTRUCTURA.md](PLAN_ESTRUCTURA.md). Hechos auth, catalog, files, tasks, study, guardian, tropas y `src/prompts/`. Mundos y admin se parten dentro del paso a TypeORM, no antes.
+- TypeORM de todo el acceso a datos, sin cambiar la API: [PLAN_TYPEORM.md](PLAN_TYPEORM.md). Aún no empezado. El frontend sigue después.
 - Retomar [ROADMAP_V2.md](ROADMAP_V2.md) cuando se decida (workers / WhatsApp / Flutter).
 - En Render / pd: `npm run db:reset:pd -- --yes` (borra el schema `taskia` y reaplica migraciones) si el schema viejo no cuadra.
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.
