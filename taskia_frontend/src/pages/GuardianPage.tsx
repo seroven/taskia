@@ -186,7 +186,7 @@ function GuardianChat({
             <>
               {messages.length === 0 && !sending && (
                 <p className="muted study-chat-empty">
-                  Aún no hay mensajes. Escribe la primera pregunta.
+                  Hoy todavía no hay mensajes. Escribe la primera pregunta.
                 </p>
               )}
               {messages.map((m) => (

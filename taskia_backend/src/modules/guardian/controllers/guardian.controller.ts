@@ -26,7 +26,11 @@ export const updateNotifyPrefs = asyncHandler(async (req, res) => {
 
 export const listChat = asyncHandler(async (req, res) => {
   res.json(
-    await guardianService.listChat(req.user!.id, Number(req.params.studentId)),
+    await guardianService.listChat(
+      req.user!.id,
+      Number(req.params.studentId),
+      viewerDates(req).today,
+    ),
   )
 })
 

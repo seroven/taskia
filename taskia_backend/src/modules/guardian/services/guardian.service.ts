@@ -119,9 +119,9 @@ export async function updateNotifyPrefs(parentId: number, body: Record<string, u
   return loadOrCreatePrefs(parentId)
 }
 
-export async function listChat(parentId: number, studentId: number) {
+export async function listChat(parentId: number, studentId: number, today: string) {
   await requireLinkedExplorer(parentId, studentId)
-  const rows = await guardian.listChatMessages(parentId, studentId)
+  const rows = await guardian.listChatMessages(parentId, studentId, today)
   return rows.map((row) => ({
     id: row.id,
     role: row.role,
@@ -142,13 +142,14 @@ export async function sendChat(
   const explorer = await requireLinkedExplorer(parentId, studentId)
   const message = parseGuardianChatMessage(body)
   const todaySummary = await guardian.findTodaySummary(studentId, today)
-  const history = todaySummary ? await guardian.recentChat(parentId, studentId) : []
+  const history = todaySummary ? await guardian.recentChat(parentId, studentId, today) : []
 
   await guardian.insertChatMessage({
     parentId,
     studentId,
     role: 'user',
     content: message,
+    chatDate: today,
   })
 
   let reply = NO_SUMMARY_REPLY
@@ -186,6 +187,7 @@ export async function sendChat(
     studentId,
     role: 'assistant',
     content: reply,
+    chatDate: today,
   })
 
   return {

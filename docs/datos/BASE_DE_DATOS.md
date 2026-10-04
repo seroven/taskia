@@ -90,7 +90,7 @@ El progreso dentro del nivel se deriva: `xp_into_level = xp_total % 1000` (1000 
 - `parent_student_links` — `(parent_id, student_id)`, `is_active` (desvínculo lógico).
 - `parent_notify_prefs` — una fila por Guardián: WhatsApp y toggles de eventos.
 - `student_daily_summaries` — resumen por explorador y día civil; el worker lo llenará después.
-- `parent_chat_messages` — chat Guardián ↔ IA por explorador.
+- `parent_chat_messages` — chat Guardián ↔ IA por explorador y día civil (`chat_date`, el día de quien mira).
 
 En `study_messages` y `study_mission_messages`: `reply_latency_seconds` e `is_pause` (pausa si el explorador tarda más de 30 minutos en responder al tutor).
 

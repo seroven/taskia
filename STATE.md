@@ -29,7 +29,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - Modales: shell único `ModalShell` con tamaños `sm` / `md` / `lg`; `WorldsModalShell` solo reexporta.
 - Tablas: componente `DataTable` (`taskia_frontend/src/components/ui/DataTable.tsx`); `flush` pega la tabla al borde del `admin-panel`.
 - Preferencias WhatsApp: una por cuenta Guardián.
-- Chat del Guardián usa `student_daily_summaries` del día civil del visor. Sin fila, responde un texto fijo y no llama a Gemini. Worker aún no escribe ahí.
+- Chat del Guardián es uno por explorador y día civil del visor (`parent_chat_messages.chat_date`). El día anterior queda guardado y no se muestra ni se manda a Gemini. El resumen sigue siendo el de ese día: sin fila, texto fijo y sin llamada. Worker aún no escribe ahí.
 - ROADMAP_V2 en pausa; plan Tripulación/XP/hub **cerrado** (oleadas 0–5): esquema, motor XP, hub, tripulación, Guardián lectura, pulido/docs.
 - La documentación larga vive en `docs/` ([índice](docs/README.md)): producto, datos y planes. `STATE.md` se queda en la raíz.
 - El trabajo del día se commitea y se sube a `staging`.

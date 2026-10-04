@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
-import { bigintTransformer } from '../column-types.js'
+import { bigintTransformer, civilDateTransformer } from '../column-types.js'
 
 @Entity({ name: 'parent_chat_messages' })
 export class ParentChatMessage {
@@ -17,6 +17,9 @@ export class ParentChatMessage {
 
   @Column({ type: 'text' })
   content!: string
+
+  @Column({ type: 'date', transformer: civilDateTransformer })
+  chatDate!: string
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean

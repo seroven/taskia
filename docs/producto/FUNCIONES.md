@@ -158,8 +158,8 @@ Una conversación entre el guardián y un **asistente** (no es el mismo chat que
 
 ### Cómo se usa
 
-- Ve el historial (mensajes suyos y del asistente).
-- Si aún no hay mensajes, la app invita a escribir la primera pregunta.
+- Ve el historial de **hoy** (mensajes suyos y del asistente). Cada día civil abre una conversación nueva; la de ayer queda guardada y no se muestra.
+- Si hoy aún no hay mensajes, la app invita a escribir la primera pregunta.
 - Escribe en el campo (placeholder del tipo “¿Cómo le fue hoy?”) y pulsa **Enviar**.
 
 ### De dónde saca información el asistente

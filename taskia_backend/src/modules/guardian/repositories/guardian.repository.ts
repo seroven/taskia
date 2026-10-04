@@ -244,9 +244,9 @@ export async function saveNotifyPrefs(
   )
 }
 
-export async function listChatMessages(parentId: number, studentId: number) {
+export async function listChatMessages(parentId: number, studentId: number, chatDate: string) {
   const rows = await AppDataSource.getRepository(ParentChatMessage).find({
-    where: { parentId, studentId, isActive: true },
+    where: { parentId, studentId, chatDate, isActive: true },
     order: { id: 'ASC' },
     take: 200,
   })
@@ -258,9 +258,9 @@ export async function listChatMessages(parentId: number, studentId: number) {
   }))
 }
 
-export async function recentChat(parentId: number, studentId: number) {
+export async function recentChat(parentId: number, studentId: number, chatDate: string) {
   const rows = await AppDataSource.getRepository(ParentChatMessage).find({
-    where: { parentId, studentId, isActive: true },
+    where: { parentId, studentId, chatDate, isActive: true },
     order: { id: 'DESC' },
     take: 20,
     select: { id: true, role: true, content: true },
@@ -273,6 +273,7 @@ export async function insertChatMessage(input: {
   studentId: number
   role: 'user' | 'assistant'
   content: string
+  chatDate: string
 }) {
   const repo = AppDataSource.getRepository(ParentChatMessage)
   const saved = await repo.save(
@@ -281,6 +282,7 @@ export async function insertChatMessage(input: {
       studentId: input.studentId,
       role: input.role,
       content: input.content,
+      chatDate: input.chatDate,
     }),
   )
   return saved.id
