@@ -22,7 +22,7 @@ Los templates traen stack y producto que Taskia no va a adoptar en este trabajo:
 
 | Del template | En Taskia |
 | --- | --- |
-| Codegen, `BaseRepository`, varias conexiones, driver MySQL | Un solo DataSource Postgres. El plan de entidades es [PLAN_TYPEORM.md](PLAN_TYPEORM.md). El DDL sigue en `db/migrations/` |
+| Codegen, `BaseRepository`, varias conexiones, driver MySQL | Un solo DataSource Postgres. El acceso a datos ya es TypeORM. El DDL sigue en `db/migrations/` |
 | Envelope `{ status, data }` y prefijo `/api` | JSON actual y rutas actuales (`/auth`, `/tasks`, `/worlds`, …) |
 | TanStack Query, React Router, shadcn, Tailwind, catálogo `/ui` | Fetch y navegación por estado actuales; CSS y componentes actuales |
 | Google OAuth, mailing CIA, PDF, tests de plantilla | No se copian |
@@ -243,7 +243,7 @@ Cuando B10 y F11 estén hechos, añadir en `.cursor/rules/` una regla corta con 
 3. Al partir un módulo del backend, la validación pasa a `schemas/` con Zod y acepta lo mismo que antes.
 4. Este plan no monta Vitest.
 5. Backend primero. Mundos y admin al final. Frontend desde F1 en paralelo cuando el cliente HTTP se extraiga.
-6. El acceso a datos pasa a TypeORM en [PLAN_TYPEORM.md](PLAN_TYPEORM.md). El envelope `{ status, data }`, el prefijo `/api`, shadcn y el catálogo UI siguen fuera. Mundos y admin no se parten a `pool.query`: se parten ya sobre el ORM.
+6. El acceso a datos ya es TypeORM. El envelope `{ status, data }`, el prefijo `/api`, shadcn y el catálogo UI siguen fuera. Mundos y admin no se parten a `pool.query`: se parten ya sobre el ORM.
 
 ## Avance
 
@@ -257,6 +257,6 @@ Hecho y compilado (`npm run build` en `taskia_backend`):
 - **B5.** `modules/study` (routes, controller, schema, service, repository).
 - **B6.** `modules/guardian`. El prefijo HTTP sigue siendo `/parent`.
 - **B7.** `modules/troops`. `planetParams` está en `modules/troops/lib/planet-params.ts`.
-- **Mundos y admin.** `modules/worlds/` y `modules/admin/`. El acceso a datos de todo el backend es TypeORM ([PLAN_TYPEORM.md](PLAN_TYPEORM.md), T0–T9).
+- **Mundos y admin.** `modules/worlds/` y `modules/admin/`. El acceso a datos de todo el backend es TypeORM.
 
 Siguiente: frontend, desde F1.

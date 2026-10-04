@@ -1,6 +1,6 @@
 # Taskia 2.0 — checklist
 
-> **En pausa.** El foco de core web pasó a [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md) (tropas, XP, hub). Este checklist (WhatsApp, workers, Flutter) se retoma cuando se decida.
+> **En pausa.** Tripulación, XP y hub ya están en el producto. Este checklist (WhatsApp, workers, Flutter) se retoma cuando se decida.
 
 Fuente de verdad de lo que falta para la versión 2.0. Se trabaja de a pocos; cada ítem grande tendrá su propio plan al tocarlo. El producto vivo hoy está en [PRODUCTO.md](../producto/PRODUCTO.md) y el esquema en [BASE_DE_DATOS.md](../datos/BASE_DE_DATOS.md).
 

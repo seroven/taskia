@@ -1,6 +1,6 @@
 # Taskia
 
-Guía funcional de lo que ven **Guardián** y **Explorador** hoy: [FUNCIONES.md](FUNCIONES.md). Plan de Tripulación/XP/hub: [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md).
+Guía funcional de lo que ven **Guardián** y **Explorador** hoy: [FUNCIONES.md](FUNCIONES.md).
 
 Taskia es a la vez la app y **quien ayuda a estudiar**: para el niño, Taskia es el nombre de su guía en el chat y la pizarra. El administrador configura cuentas y materias; el **guardián** acompaña desde su panel; el **explorador** entra a un hub (Tripulación | Mundos | Campamento), gana XP y puede unirse a una tripulación.
 

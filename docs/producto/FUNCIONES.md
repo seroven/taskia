@@ -624,13 +624,12 @@ Las **materias** son el puente: sin ellas no hay tareas ni cursos dentro de mund
 | Misión a Lista al dominar | Activo |
 | Desafíos | Activos (generar, jugar, historial) |
 
-Lo pendiente de avisos automáticos, resúmenes en segundo plano y app móvil del guardián está en [ROADMAP_V2.md](../planes/ROADMAP_V2.md). El plan Tripulación/XP ya cerrado por oleadas: [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md).
+Lo pendiente de avisos automáticos, resúmenes en segundo plano y app móvil del guardián está en [ROADMAP_V2.md](../planes/ROADMAP_V2.md). Tripulación, XP y hub ya están en el producto.
 
 ---
 
 ## 8. Dónde leer más
 
 - [PRODUCTO.md](PRODUCTO.md) — relato de producto más amplio (incluye mirada al administrador y el ciclo completo).
-- [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md) — Tripulación, XP, hub (hecho).
 - [ROADMAP_V2.md](../planes/ROADMAP_V2.md) — WhatsApp, workers, Flutter (en pausa).
 - [README.md](../../README.md) — cómo levantar la app en una máquina (orientado a quien desarrolla o despliega).
