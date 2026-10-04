@@ -1,5 +1,5 @@
-import type { ResultSetHeader, RowDataPacket } from '../infrastructure/database/pool.js'
-import { pool } from '../infrastructure/database/pool.js'
+import { AppDataSource } from '../infrastructure/database/data-source.js'
+import { Task, User, XpAward } from '../infrastructure/database/entities/index.js'
 import { civilDayFromInstant } from '../infrastructure/database/civil-date.js'
 import { AppError } from '../utils/helpers.js'
 
@@ -114,14 +114,16 @@ export function xpForChallenge(
 
 export async function countTasksCreatedToday(userId: number): Promise<number> {
   const day = todayProductCivil()
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT COUNT(*) AS c
-     FROM tasks
-     WHERE user_id = ?
-       AND to_char(created_at AT TIME ZONE ?, 'YYYY-MM-DD') = ?`,
-    [userId, PRODUCT_TZ, day],
-  )
-  return Number(rows[0]?.c ?? 0)
+  const row = await AppDataSource.getRepository(Task)
+    .createQueryBuilder('t')
+    .select('COUNT(*)', 'c')
+    .where('t.user_id = :userId', { userId })
+    .andWhere(`to_char(t.created_at AT TIME ZONE :tz, 'YYYY-MM-DD') = :day`, {
+      tz: PRODUCT_TZ,
+      day,
+    })
+    .getRawOne<{ c: string | number }>()
+  return Number(row?.c ?? 0)
 }
 
 export async function assertCanCreateTask(userId: number): Promise<void> {
@@ -134,11 +136,15 @@ export async function assertCanCreateTask(userId: number): Promise<void> {
 }
 
 export async function fetchUserProgress(userId: number): Promise<XpProgress> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT xp_total FROM users WHERE id = ? LIMIT 1`,
-    [userId],
-  )
-  return progressFromXpTotal(Number(rows[0]?.xp_total ?? 0))
+  const user = await AppDataSource.getRepository(User).findOne({
+    where: { id: userId },
+    select: { id: true, xpTotal: true },
+  })
+  return progressFromXpTotal(Number(user?.xpTotal ?? 0))
+}
+
+function insertedRowCount(raw: unknown) {
+  return Array.isArray(raw) ? raw.length : 0
 }
 
 /**
@@ -165,50 +171,46 @@ export async function awardXp(opts: {
       ? null
       : Math.min(100, Math.max(1, Math.round(opts.effortScore)))
 
-  const conn = await pool.getConnection()
-  try {
-    await conn.beginTransaction()
-
-    const [header] = await conn.query<ResultSetHeader>(
-      `INSERT INTO xp_awards
-         (user_id, source_type, source_id, amount, effort_score, reason, week_start)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT (user_id, source_type, source_id) DO NOTHING`,
-      [
-        opts.userId,
-        opts.sourceType,
-        opts.sourceId,
+  return AppDataSource.transaction(async (manager) => {
+    const inserted = await manager
+      .getRepository(XpAward)
+      .createQueryBuilder()
+      .insert()
+      .into(XpAward)
+      .values({
+        userId: opts.userId,
+        sourceType: opts.sourceType,
+        sourceId: opts.sourceId,
         amount,
-        effort,
-        opts.reason ?? null,
+        effortScore: effort,
+        reason: opts.reason ?? null,
         weekStart,
-      ],
-    )
+      })
+      .orIgnore()
+      .execute()
 
-    if (header.affectedRows === 0) {
-      await conn.commit()
-      const progress = await fetchUserProgress(opts.userId)
+    if (insertedRowCount(inserted.raw) === 0) {
+      const user = await manager.getRepository(User).findOne({
+        where: { id: opts.userId },
+        select: { id: true, xpTotal: true },
+      })
+      const progress = progressFromXpTotal(Number(user?.xpTotal ?? 0))
       return { ...progress, awarded: false, xp_gained: 0 }
     }
 
-    const [sumRows] = await conn.query<RowDataPacket[]>(
-      `SELECT COALESCE(SUM(amount), 0) AS s FROM xp_awards WHERE user_id = ?`,
-      [opts.userId],
+    const sumRow = await manager
+      .getRepository(XpAward)
+      .createQueryBuilder('a')
+      .select('COALESCE(SUM(a.amount), 0)', 's')
+      .where('a.user_id = :userId', { userId: opts.userId })
+      .getRawOne<{ s: string | number }>()
+    const progress = progressFromXpTotal(Number(sumRow?.s ?? 0))
+    await manager.getRepository(User).update(
+      { id: opts.userId },
+      { xpTotal: progress.xp_total, level: progress.level },
     )
-    const progress = progressFromXpTotal(Number(sumRows[0]?.s ?? 0))
-    await conn.query(`UPDATE users SET xp_total = ?, level = ? WHERE id = ?`, [
-      progress.xp_total,
-      progress.level,
-      opts.userId,
-    ])
-    await conn.commit()
     return { ...progress, awarded: true, xp_gained: amount }
-  } catch (err) {
-    await conn.rollback()
-    throw err
-  } finally {
-    conn.release()
-  }
+  })
 }
 
 /** Al pasar a Listo: 10 XP si no hubo estudio; si hubo visto, no paga de nuevo aquí. */
