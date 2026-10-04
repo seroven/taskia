@@ -2,7 +2,7 @@ import type { ValueTransformer } from 'typeorm'
 
 /** BIGINT de Postgres llega como string. La API de Taskia usa número. */
 export const bigintTransformer: ValueTransformer = {
-  to: (value: number | null | undefined) => value ?? null,
+  to: (value: number | null | undefined) => (value === undefined ? undefined : value),
   from: (value: string | number | null) => (value == null ? value : Number(value)),
 }
 
