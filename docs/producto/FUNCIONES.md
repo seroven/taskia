@@ -19,7 +19,7 @@ Taskia propone un tercer camino:
 2. **Taskia** (la guía dentro de la app) le ayuda a entender, practicando con preguntas y pistas, **sin regalar la solución de golpe**.
 3. Solo cuando hay evidencia de que entendió, Taskia da un **visto**.
 4. En temas más largos, después puede **ponerse a prueba** con un desafío.
-5. El guardián **mira cómo va** (nivel, XP, tropa y totales) y puede preguntar por el día, sin meterse en el Campamento ni contestar por el niño.
+5. El guardián **mira cómo va** (nivel, XP, tripulación y totales) y puede preguntar por el día, sin meterse en el Campamento ni contestar por el niño.
 
 En resumen: **el explorador estudia; Taskia guía; el guardián acompaña**.
 
@@ -50,18 +50,18 @@ Sin materias:
 
 Las materias son del explorador, no “del mundo”: el mismo curso de Ciencias puede usarse en tareas del día y, aparte, dentro de uno o más mundos.
 
-### Campamento, Mundos y Tropas
+### Campamento, Mundos y Tripulación
 
 Al entrar, el explorador ve un **hub** con tres puertas:
 
-| | **Campamento** | **Mundos** | **Tropas** |
+| | **Campamento** | **Mundos** | **Tripulación** |
 | --- | --- | --- | --- |
 | Para qué | Lo de hoy o de esta semana: deberes, ejercicios concretos | Aprender un **tema** de punta a punta y demostrarlo | Equipo de hasta 10 compañeros, roles y ranking |
-| Unidad | **Tarea** | **Misión** | **Tropa** (Capitán, Copiloto, exploradores) |
+| Unidad | **Tarea** | **Misión** | **Tripulación** (Capitán, Copiloto, exploradores) |
 | Cómo se cierra | Mueve la tarjeta a **Listo** (a veces hace falta el visto de Taskia) | Taskia marca la misión **Lista** cuando domina el tema | Se gana **XP** estudiando; el ranking semanal suma el XP del equipo |
-| Extra | Tope de **20 tareas creadas / día** | Después puede haber **desafíos** | Una sola tropa a la vez; invitaciones por nombre |
+| Extra | Tope de **20 tareas creadas / día** | Después puede haber **desafíos** | Una sola tripulación a la vez; invitaciones por nombre |
 
-Un explorador puede usar Campamento, Mundos, Tropas, o varios el mismo día.
+Un explorador puede usar Campamento, Mundos, Tripulación, o varios el mismo día.
 
 ### Nivel y XP
 
@@ -70,7 +70,7 @@ Cada explorador tiene **nivel** y **experiencia (XP)**. Cada **1000 XP** sube un
 ### Guardián vs Administrador
 
 - **Administrador:** crea cuentas, materias y el vínculo Guardián ↔ Explorador. Ve toda la plataforma.
-- **Guardián:** solo ve a **sus** exploradores vinculados. Consulta nivel/XP, tropa (solo lectura), totales de actividad, conversa sobre el avance y configura preferencias de aviso. **No edita** el Campamento ni gestiona la tropa.
+- **Guardián:** solo ve a **sus** exploradores vinculados. Consulta nivel/XP, tripulación (solo lectura), totales de actividad, conversa sobre el avance y configura preferencias de aviso. **No edita** el Campamento ni gestiona la tripulación.
 
 Si nadie vinculó al guardián con un explorador, el panel del guardián estará vacío hasta que el administrador lo haga.
 
@@ -91,13 +91,13 @@ Orden típico (lo hace el administrador; el guardián y el explorador solo recib
 2. Se crea la cuenta del **explorador** (usuario, correo, contraseña).
 3. Se le asignan **materias**.
 4. Se **vincula** al guardián con ese explorador (puede haber varios exploradores por guardián, p. ej. hermanos).
-5. El explorador inicia sesión → ve el **hub** (Tropas | Mundos | Campamento).
+5. El explorador inicia sesión → ve el **hub** (Tripulación | Mundos | Campamento).
 6. El guardián inicia sesión → ve su panel.
 
 A partir de ahí:
 
-- El explorador arma tareas en el Campamento y/o mundos, y puede unirse a una tropa.
-- El guardián entra de vez en cuando a preguntar cómo va o a mirar nivel, tropa y números.
+- El explorador arma tareas en el Campamento y/o mundos, y puede unirse a una tripulación.
+- El guardián entra de vez en cuando a preguntar cómo va o a mirar nivel, tripulación y números.
 
 ---
 
@@ -105,9 +105,9 @@ A partir de ahí:
 
 **Por la tarde, el explorador** abre Taskia, elige **Campamento**, arrastra “fracciones mixtas” a **Estudiando**. Elige estudiar con pizarra. Taskia plantea ejercicios, el niño dibuja respuestas, corrige errores y, cuando Taskia confirma que ya entiende, el niño **mueve** la tarjeta a **Listo** (y ve un toast de XP).
 
-Después vuelve al hub, abre **Mundos**, entra a un tema de Ciencias que todavía no termina, estudia un rato con Taskia y, si el tema ya quedó dominado, lanza un **calentamiento** (desafío corto) del curso. Si tiene tropa, puede mirar el ranking semanal en **Tropas**.
+Después vuelve al hub, abre **Mundos**, entra a un tema de Ciencias que todavía no termina, estudia un rato con Taskia y, si el tema ya quedó dominado, lanza un **calentamiento** (desafío corto) del curso. Si tiene tripulación, puede mirar el ranking semanal en **Tripulación**.
 
-**El guardián**, más tarde, abre su panel, elige al explorador, mira el **progreso** (nivel/XP, tropa, tareas, misiones, desafíos) y en el **chat** pregunta: “¿Cómo le fue hoy con matemáticas?”. El asistente responde con lo que haya del día. No necesita sentarse al lado durante el estudio.
+**El guardián**, más tarde, abre su panel, elige al explorador, mira el **progreso** (nivel/XP, tripulación, tareas, misiones, desafíos) y en el **chat** pregunta: “¿Cómo le fue hoy con matemáticas?”. El asistente responde con lo que haya del día. No necesita sentarse al lado durante el estudio.
 
 Nada de eso exige que el guardián escriba en el chat de estudio del niño: ese chat es solo entre explorador y Taskia.
 
@@ -132,7 +132,7 @@ No organiza tareas ni estudia por el niño.
 3. Tras entrar: título **Panel del guardián**.
 4. En la cabecera también puede abrir **Mi cuenta** (usuario, correo, cambiar contraseña) y **Salir**.
 
-No verá el Campamento, Mundos ni Tropas del explorador: esa es otra entrada, con otra cuenta.
+No verá el Campamento, Mundos ni Tripulación del explorador: esa es otra entrada, con otra cuenta.
 
 ## A.3 Elegir explorador
 
@@ -179,14 +179,14 @@ Cuando existe un **resumen del día** de ese explorador, el asistente se apoya e
 Vista de **solo lectura** del explorador elegido:
 
 1. **Nivel y experiencia** — nivel actual, barra hacia el siguiente (de 1000 XP) y XP total.
-2. **Tropa** — si pertenece a una: nombre, rol del niño (Capitán / Copiloto / Explorador), posición en el ranking interno, mención al ranking semanal de la tropa, y la lista de miembros con nivel y XP de la semana. Si no tiene tropa, se indica.
+2. **Tripulación** — si pertenece a una: nombre, rol del niño (Capitán / Copiloto / Explorador), posición en el ranking interno, mención al ranking semanal de la tripulación, y la lista de miembros con nivel y XP de la semana. Si no tiene tripulación, se indica.
 3. **Actividad** — totales:
    - **Tareas:** hechas sobre el total; si hay vencidas, también lo indica.
    - **Misiones:** temas de mundos dominados sobre el total.
    - **Mundos activos**
    - **Desafíos completados** y, si aplica, un promedio.
 
-No hay acciones para gestionar la tropa ni cambiar XP. No hay el desglose pregunta por pregunta del estudio. Para “¿cómo le fue en general?” alcanza; para “enséñame el chat de fracciones de ayer”, hoy el guardián no entra a ese historial desde aquí.
+No hay acciones para gestionar la tripulación ni cambiar XP. No hay el desglose pregunta por pregunta del estudio. Para “¿cómo le fue en general?” alcanza; para “enséñame el chat de fracciones de ayer”, hoy el guardián no entra a ese historial desde aquí.
 
 ## A.6 Pestaña Avisos (WhatsApp)
 
@@ -216,9 +216,9 @@ Las preferencias son **una por cuenta Guardián**, no una distinta por cada hijo
 
 El guardián **no puede**:
 
-- Entrar al Campamento, al estudio, a los mundos ni a las tropas del explorador
+- Entrar al Campamento, al estudio, a los mundos ni a la tripulación del explorador
 - Crear, editar o borrar tareas, misiones, mundos o desafíos
-- Gestionar tropa (invitar, sacar, cambiar roles) ni alterar XP/nivel
+- Gestionar tripulación (invitar, sacar, cambiar roles) ni alterar XP/nivel
 - Asignar materias ni crear usuarios
 - Vincular o desvincular exploradores (eso es del administrador)
 - Cambiar a mano el progreso (“marcar como dominado” sin que el niño estudie)
@@ -235,11 +235,11 @@ En una frase: **consulta, conversa y deja listas las preferencias de aviso**.
 
 El explorador necesita:
 
-1. Elegir a dónde ir desde el **hub** (Tropas, Mundos o Campamento).
+1. Elegir a dónde ir desde el **hub** (Tripulación, Mundos o Campamento).
 2. Ver **qué tiene pendiente** (Campamento).
 3. **Estudiar con ayuda** sin que le suelten la respuesta entera (Taskia).
 4. Trabajar **temas largos** y demostrarlos (mundos + desafíos).
-5. Formar o unirse a una **tropa** y ver rankings.
+5. Formar o unirse a una **tripulación** y ver rankings.
 6. Ajustar su cuenta y cómo se ve la app.
 
 El tono de botones y columnas está pensado para él: claro y cercano (Por hacer, Haciendo, Estudiando, Listo), no jerga de oficina.
@@ -255,7 +255,7 @@ El tono de botones y columnas está pensado para él: claro y cercano (Por hacer
 
 ### Después de entrar
 
-El explorador llega al **hub**, no directo al tablero. Tres puertas: **Tropas**, **Mundos**, **Campamento**. En la cabecera ve su **barra de nivel/XP**, apariencia, cuenta y salir.
+El explorador llega al **hub**, no directo al tablero. Tres puertas: **Tripulación**, **Mundos**, **Campamento**. En la cabecera ve su **barra de nivel/XP**, apariencia, cuenta y salir.
 
 Dentro de Campamento o Mundos:
 
@@ -473,11 +473,11 @@ También puede **editar** título, descripción y uso de pizarra de la misión d
 
 ---
 
-## B.6 Tropas
+## B.6 Tripulación
 
 ### Qué son
 
-Una **tropa** es el equipo del explorador: hasta **10** compañeros. Se ve como un **universo** de planetas (una tropa = un planeta). Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat.
+Una **tripulación** es el equipo del explorador: hasta **10** compañeros. Se ve como un **universo** de planetas (una tripulación = un planeta). Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat.
 
 ### Roles
 
@@ -485,30 +485,30 @@ Una **tropa** es el equipo del explorador: hasta **10** compañeros. Se ve como 
 | --- | --- |
 | **Capitán** | Invitar, sacar miembros, elegir o cambiar **Copiloto**, aceptar/rechazar pedidos de unión, personalizar el planeta (estilo o IA) |
 | **Copiloto** | Invitar, aceptar/rechazar pedidos de unión, personalizar el planeta |
-| **Explorador** | Ver el universo, su tropa y el ranking; pedir unirse si aún no tiene tropa; salir cuando quiera |
+| **Explorador** | Ver el universo, su tripulación y el ranking; pedir unirse si aún no tiene tripulación; salir cuando quiera |
 
-Quien crea la tropa es Capitán. Solo se puede estar en **una** tropa a la vez.
+Quien crea la tripulación es Capitán. Solo se puede estar en **una** tripulación a la vez.
 
 ### Universo, planeta y avatar
 
-- Al abrir **Tropas** entra al canvas: pan, zoom y toque en un planeta abre su ficha.
-- Mi tropa queda al centro; el Top 3 semanal lleva un aura; con la ficha abierta se ve el **nivel de tropa** (promedio) en una estrella.
+- Al abrir **Tripulación** entra al canvas: pan, zoom y toque en un planeta abre su ficha.
+- Mi tripulación queda al centro; el Top 3 semanal lleva un aura; con la ficha abierta se ve el **nivel de tripulación** (promedio) en una estrella.
 - Capitanía/copilotaje eligen un estilo de planeta del catálogo o piden a Taskia un diseño (vista previa → aplicar). No se sube foto del planeta.
 - Cada explorador elige **avatar** (preset o foto en serverfiles) y un **marco** (algunos solo Capitán/Copiloto).
 
 ### Qué puede hacer el explorador
 
-- Crear tropa (nombre limpio, 3–80 caracteres) o aceptar/rechazar invitaciones en la **campana**.
-- Sin tropa: pedir unirse desde la ficha de otra tropa (Capitán o Copiloto decide).
+- Crear tripulación (nombre limpio, 3–80 caracteres) o aceptar/rechazar invitaciones en la **campana**.
+- Sin tripulación: pedir unirse desde la ficha de otra tripulación (Capitán o Copiloto decide).
 - Buscar compañeros **por nombre** (global) e invitar (Capitán/Copiloto).
-- Ver miembros (avatar + marco + nivel) y el **ranking semanal** entre tropas (XP lun–dom, panel aparte).
+- Ver miembros (avatar + marco + nivel) y el **ranking semanal** entre tripulaciones (XP lun–dom, panel aparte).
 - Salir: si se va el Capitán, el mando pasa al Copiloto; si no hay, al de mayor nivel.
 
-Hay límites anti-abuso: pocas invitaciones pendientes por tropa y un tope de invitaciones enviadas por día.
+Hay límites anti-abuso: pocas invitaciones pendientes por tripulación y un tope de invitaciones enviadas por día.
 
 ### Qué no hace
 
-No mezcla el estudio grupal ni deja que el guardián gestione la tropa. No hay chat de tropa ni ranking en vivo por websockets.
+No mezcla el estudio grupal ni deja que el guardián gestione la tripulación. No hay chat de tripulación ni ranking en vivo por websockets.
 
 ---
 
@@ -569,7 +569,7 @@ El intento queda **abandonado** (no cuenta como completado limpio). Los completa
 - Entrar al panel del guardián o del administrador
 - Configurar avisos WhatsApp (eso es del guardián)
 - Hacer que una tarea difícil pase a Listo sin el visto de Taskia cuando las reglas lo exigen
-- Estar en más de una tropa a la vez ni saltarse el cupo de 10
+- Estar en más de una tripulación a la vez ni saltarse el cupo de 10
 
 ---
 
@@ -583,11 +583,11 @@ Administrador
         │
         ├── Guardián
         │     · Chat sobre el día
-        │     · Progreso (nivel/XP, tropa, números)
+        │     · Progreso (nivel/XP, tripulación, números)
         │     · Preferencias de avisos WhatsApp
         │
         └── Explorador → hub
-              ├── Tropas → equipo, invitaciones, rankings
+              ├── Tripulación → equipo, invitaciones, rankings
               ├── Campamento
               │     tarea → (opcional) estudio con Taskia → visto → Listo → XP
               └── Mundos
@@ -608,8 +608,8 @@ Las **materias** son el puente: sin ellas no hay tareas ni cursos dentro de mund
 
 | Rol | Para qué entra | Puede | No puede |
 | --- | --- | --- | --- |
-| **Guardián** | Acompañar | Ver exploradores, nivel/XP y tropa (lectura), chatear sobre el avance, guardar preferencias WhatsApp | Editar el Campamento, gestionar tropa, estudiar por el niño, vincular cuentas; WhatsApp aún no envía |
-| **Explorador** | Estudiar y organizarse | Hub, Campamento, Taskia, mundos, tropas, desafíos, su cuenta y apariencia | Crear su cuenta, asignarse materias, usar el panel del guardián |
+| **Guardián** | Acompañar | Ver exploradores, nivel/XP y tripulación (lectura), chatear sobre el avance, guardar preferencias WhatsApp | Editar el Campamento, gestionar tripulación, estudiar por el niño, vincular cuentas; WhatsApp aún no envía |
+| **Explorador** | Estudiar y organizarse | Hub, Campamento, Taskia, mundos, tripulación, desafíos, su cuenta y apariencia | Crear su cuenta, asignarse materias, usar el panel del guardián |
 
 ---
 
@@ -622,18 +622,18 @@ Las **materias** son el puente: sin ellas no hay tareas ni cursos dentro de mund
 | Preferencias WhatsApp | Se guardan |
 | Envío real de WhatsApp | Aún no |
 | Candado Listo / visto de Taskia | Activo en el Campamento |
-| Hub Tropas (universo) / Mundos / Campamento | Activo |
-| Nivel, XP y tropas | Activos (ranking semanal, Guardián solo lectura) |
+| Hub Tripulación (universo) / Mundos / Campamento | Activo |
+| Nivel, XP y tripulación | Activos (ranking semanal, Guardián solo lectura) |
 | Misión a Lista al dominar | Activo |
 | Desafíos | Activos (generar, jugar, historial) |
 
-Lo pendiente de avisos automáticos, resúmenes en segundo plano y app móvil del guardián está en [ROADMAP_V2.md](../planes/ROADMAP_V2.md). El plan Tropas/XP ya cerrado por oleadas: [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md).
+Lo pendiente de avisos automáticos, resúmenes en segundo plano y app móvil del guardián está en [ROADMAP_V2.md](../planes/ROADMAP_V2.md). El plan Tripulación/XP ya cerrado por oleadas: [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md).
 
 ---
 
 ## 8. Dónde leer más
 
 - [PRODUCTO.md](PRODUCTO.md) — relato de producto más amplio (incluye mirada al administrador y el ciclo completo).
-- [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md) — Tropas, XP, hub (hecho).
+- [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md) — Tripulación, XP, hub (hecho).
 - [ROADMAP_V2.md](../planes/ROADMAP_V2.md) — WhatsApp, workers, Flutter (en pausa).
 - [README.md](../../README.md) — cómo levantar la app en una máquina (orientado a quien desarrolla o despliega).

@@ -292,19 +292,19 @@ function GuardianProgress({ studentId }: { studentId: number }) {
 
       <section className="admin-panel">
         <div className="admin-section-head">
-          <h3>Tropa</h3>
+          <h3>Tripulación</h3>
         </div>
         {!troop ? (
-          <p className="muted">Este explorador aún no está en una tropa.</p>
+          <p className="muted">Este explorador aún no está en una tripulación.</p>
         ) : (
           <>
             <p className="guardian-troop-summary">
               <strong>{troop.name}</strong>
               {' · '}
               {troopRoleLabel(troop.my_role)}
-              {troop.my_rank != null ? ` · #${troop.my_rank} en la tropa` : ''}
+              {troop.my_rank != null ? ` · #${troop.my_rank} en la tripulación` : ''}
               {troop.weekly_rank != null
-                ? ` · tropa #${troop.weekly_rank} esta semana`
+                ? ` · tripulación #${troop.weekly_rank} esta semana`
                 : ''}
             </p>
             <div className="troops-table-wrap">

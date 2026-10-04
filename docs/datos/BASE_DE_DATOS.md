@@ -48,7 +48,7 @@ difficulties ─── tasks            (catálogo, no cuelga de users)
 study_challenge_presets           (catálogo suelto, sin claves foráneas)
 ```
 
-Los dos caminos del producto se ven en el mapa: `tasks` por un lado, `study_worlds` por el otro, y `courses` como la pieza que une ambos. La progresión (`xp_awards` / `users.level`) y las **tropas** son transversales al explorador.
+Los dos caminos del producto se ven en el mapa: `tasks` por un lado, `study_worlds` por el otro, y `courses` como la pieza que une ambos. La progresión (`xp_awards` / `users.level`) y la **tripulación** es transversal al explorador.
 
 ---
 
@@ -390,9 +390,9 @@ La cuarta columna es `label`, el nombre visible: Calentamiento, Aventura y Jefe 
 
 ---
 
-## 7. Progresión y tropas
+## 7. Progresión y tripulación
 
-Migración `003_tropas_xp.sql`. El motor que escribe XP y la UI de tropas llegan en oleadas posteriores; el esquema ya está listo.
+Migración `003_tropas_xp.sql`. El motor que escribe XP y la UI de tripulación llegan en oleadas posteriores; el esquema ya está listo.
 
 ### `xp_awards`
 
@@ -410,22 +410,22 @@ Log de cada otorgamiento de experiencia. Garantiza **una sola paga por actividad
 | `week_start` | date | lunes de la semana del award (zona producto `America/Lima`) |
 | `created_at` | timestamptz | |
 
-`UNIQUE (user_id, source_type, source_id)` evita doble pago. Índices `(user_id, week_start)` y `(week_start)` alimentan rankings semanales (suma de XP de miembros de una tropa en esa semana) sin tablas de agregado.
+`UNIQUE (user_id, source_type, source_id)` evita doble pago. Índices `(user_id, week_start)` y `(week_start)` alimentan rankings semanales (suma de XP de miembros de una tripulación en esa semana) sin tablas de agregado.
 
 ### `troops`
 
-Contenedor de la tropa. Cupo máximo **10** miembros activos: se valida en la app, no con un CHECK de fila.
+Contenedor de la tripulación. Cupo máximo **10** miembros activos: se valida en la app, no con un CHECK de fila.
 
 | Columna | Tipo | Nota |
 | --- | --- | --- |
 | `id` | bigint | PK |
 | `name` | varchar(80) | nombre visible |
-| `is_active` | boolean | baja lógica de la tropa |
+| `is_active` | boolean | baja lógica de la tripulación |
 | `created_at` / `updated_at` | timestamptz | |
 
 ### `troop_members`
 
-Quién está (o estuvo) en una tropa y con qué rol.
+Quién está (o estuvo) en una tripulación y con qué rol.
 
 | Columna | Tipo | Nota |
 | --- | --- | --- |
@@ -439,7 +439,7 @@ Quién está (o estuvo) en una tropa y con qué rol.
 Reglas con índices únicos parciales:
 
 - Un explorador solo puede tener **un** membership con `left_at IS NULL`.
-- Como máximo un `captain` activo y un `copilot` activo por tropa.
+- Como máximo un `captain` activo y un `copilot` activo por tripulación.
 - `UNIQUE (troop_id, user_id)` en el historial de ese par.
 
 Salir pone `left_at`; reentrar puede ser otra fila o reutilizar según la app (oleada 3).
@@ -573,7 +573,7 @@ Hay variantes por entorno (`db:migrate:qa`, `db:migrate:pd`), que solo cambian e
 
 **Cambios futuros:** se agrega un archivo nuevo (`004_…`) y se vuelve a correr `db:migrate`. No se edita una migración ya aplicada en bases compartidas.
 
-Sobre una base vacía, `001_initial.sql` arma tablas, índices, triggers y siembras de roles / dificultades / presets. `002_seed_admin.mjs` crea el admin `Sebastian` / `123456` si no existe. `003_tropas_xp.sql` agrega progresión, `xp_awards` y tropas. `004_seed_demo_users.mjs` crea el explorador `Seroven` (materias de primaria) y la guardián `Claudia` vinculada. `005_seed_demo_troops.mjs` llena ~6 tropas con exploradores de distinto nivel/XP, guardianes vinculados, mismos cursos de primaria y XP semanal sintético (para rankings); password común `123456`. Si una base ya había corrido el dump viejo `schema.pg.sql`, el runner marca `001_initial.sql` como aplicada y solo corre las siguientes.
+Sobre una base vacía, `001_initial.sql` arma tablas, índices, triggers y siembras de roles / dificultades / presets. `002_seed_admin.mjs` crea el admin `Sebastian` / `123456` si no existe. `003_tropas_xp.sql` agrega progresión, `xp_awards` y tripulación. `004_seed_demo_users.mjs` crea el explorador `Seroven` (materias de primaria) y la guardián `Claudia` vinculada. `005_seed_demo_troops.mjs` llena ~6 tripulaciones con exploradores de distinto nivel/XP, guardianes vinculados, mismos cursos de primaria y XP semanal sintético (para rankings); password común `123456`. Si una base ya había corrido el dump viejo `schema.pg.sql`, el runner marca `001_initial.sql` como aplicada y solo corre las siguientes.
 
 Si el schema viejo no cuadra (faltan columnas, FKs distintas), hay que vaciar antes. En local: `npm run db:reset`. En pd/qa: `npm run db:reset:pd -- --yes` (o `:qa`). Eso hace `DROP SCHEMA taskia CASCADE` y vuelve a correr todas las migraciones.
 
@@ -595,7 +595,7 @@ Las 28 tablas de aplicación tienen entidad. El `DataSource` usa `schema: PG_SCH
 
 **Sin `id` propio.** La clave es `@PrimaryColumn`: `study_sessions`, `study_boards`, `user_study_memory`, `study_mission_sessions`, `study_mission_boards`, `study_world_courses` (`world_id`, `course_id`), `study_challenge_presets` (`scope`, `difficulty`), `parent_student_links` (`parent_id`, `student_id`) y `parent_notify_prefs` (`parent_id`).
 
-**Índices parciales.** Están en las migraciones (por ejemplo un solo miembro activo por tropa). La entidad los documenta; el ORM no los recrea.
+**Índices parciales.** Están en las migraciones (por ejemplo un solo miembro activo por tripulación). La entidad los documenta; el ORM no los recrea.
 
 ## Trampas conocidas
 

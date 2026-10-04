@@ -3,7 +3,7 @@ name: redisenar-explorador
 description: >-
   Hace el rediseño visual completo de Taskia, con prioridad en el explorador
   (niños de unos 10 años): estilo Expedición, Tailwind y las pantallas hub,
-  Campamento, estudio, mundos, tropas, desafíos y barra de XP. Conserva
+  Campamento, estudio, mundos, tripulación, desafíos y barra de XP. Conserva
   reglas de producto y copy. Usar cuando pidan rediseñar, un estilo nuevo,
   Tailwind, hacer más divertida o más fácil la web o la vista del explorador.
 ---
@@ -36,7 +36,7 @@ Material:
 Forma:
 
 - **Hub:** tres lugares grandes, no tres ítems de menú. Cada puerta es una superficie con icono Phosphor duotone grande y una mancha del acento. Campamento puede pesar un poco más. Sin personajes ilustrados a medida en esta pasada.
-- **Fichas** (tarea, misión, miembro de tropa): tarjeta con radio amplio, una franja del acento y el dato importante arriba (materia, estado, rol).
+- **Fichas** (tarea, misión, miembro de tripulación): tarjeta con radio amplio, una franja del acento y el dato importante arriba (materia, estado, rol).
 - **Estudio y desafío:** hoja más plana y quieta, para leer y responder. Menos sombra, menos mancha.
 - **Guardián y Admin:** misma tinta y mismo papel, radio menor, sin fichas de juego. Las tablas siguen siendo tablas.
 
@@ -63,10 +63,10 @@ Sí:
 
 No:
 
-- Reglas de estudio, candado de Listo, `study_passed`, fórmulas de XP, cupo de tropa, roles ni el tope de 20 tareas/día.
+- Reglas de estudio, candado de Listo, `study_passed`, fórmulas de XP, cupo de tripulación, roles ni el tope de 20 tareas/día.
 - Saltar el hub al entrar.
 - Mover sola la tarea a Listo cuando Taskia da el visto. La misión sí pasa a Lista sola.
-- Inventar pantallas (estudio grupal, chat de tropa, registro público).
+- Inventar pantallas (estudio grupal, chat de tripulación, registro público).
 - Cambiar el backend salvo para mostrar un dato que la API ya devuelve.
 - Montar MUI, Chakra, Ant, shadcn u otra librería de componentes. Ya existen `ModalShell`, `DataTable`, dnd-kit, Recharts y Phosphor. Un hueco de UI se resuelve con Tailwind sobre esos componentes.
 - Sustituir `@dnd-kit` en el Campamento. El arrastre y el hueco donde cae la tarjeta se ven.
@@ -74,7 +74,7 @@ No:
 Copy fijado en la UI del explorador:
 
 - **Taskia** (la guía; en copy visible no se dice tutor, IA ni bot)
-- Puertas **Tropas**, **Mundos**, **Campamento**
+- Puertas **Tripulación**, **Mundos**, **Campamento**
 - Columnas **Por hacer / Haciendo / Estudiando / Listo**
 - Niveles **Bajo / Medio / Alto**
 - Fases **Entendiendo / Practicando / Repasando**
@@ -106,14 +106,14 @@ Un pedido de «rediseño» recorre las nueve puertas. Un pedido de una sola puer
 3. **Campamento** — `BoardPage`, `KanbanColumn`, `TaskCard`, `BoardFilters`, modales de tarea. Cuatro columnas. El chip de visto no parece el control que mueve la tarjeta.
 4. **Estudio** — `src/components/study/*`, `StudyPage`, `MissionStudyPage`. Fases, chat, voz y pizarra distinguibles. Volver al Campamento o al curso siempre a mano. En móvil, chat y pizarra se alternan; en escritorio pueden convivir.
 5. **Mundos** — `src/pages/worlds/*`, `src/components/worlds/*`. Casa → mundo → curso → misión. Progreso: Sin temas / Sin empezar / En marcha / Listo.
-6. **Tropas** — `src/pages/TroopsPage.tsx`. Mi tropa, roles, invitación, ranking interno por nivel y ranking semanal de tropas.
+6. **Tripulación** — `src/pages/TroopsPage.tsx`. Mi tripulación, roles, invitación, ranking interno por nivel y ranking semanal de tripulaciones.
 7. **Desafíos** — `ChallengePlayPage`, `ChallengeSetupModal`. Pregunta n de total, y el resultado (qué respondió / qué se esperaba) se lee solo.
 8. **Entrada** — `AuthPage`, `AppearanceTools`, `SessionActions`. La usan el niño y el adulto: clara, sin jerga.
 9. **Adultos** — `GuardianPage`, `AdminPage`, `src/pages/admin/*`. Misma base visual, densidad de herramienta. No conviertas el dashboard en el hub.
 
 `App.tsx` guarda la vista (`hub`, `troops`, `board`, `worlds`, `world`, `course`, `mission`, `study`, `challenge`). Conserva volver al hub. Cambia ese mapa solo si el rediseño no cabe en él.
 
-Estados a diseñar en la puerta que toques: sin materias, sin tropa, invitación pendiente, candado de Listo, Taskia pensando, desafío abandonado, ranking vacío.
+Estados a diseñar en la puerta que toques: sin materias, sin tripulación, invitación pendiente, candado de Listo, Taskia pensando, desafío abandonado, ranking vacío.
 
 Si un cambio de copy visible contradice FUNCIONES o STATE, actualiza el doc en el mismo turno.
 

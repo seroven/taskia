@@ -391,7 +391,7 @@ export async function replaceCopilot(troopId: number, captainId: number, nextId:
       throw new AppError('No puedes ser Capitán y Copiloto')
     }
     const member = await members.findOne({ where: { troopId, userId: nextId, leftAt: IsNull() } })
-    if (!member) throw new AppError('Ese explorador no está en tu tropa')
+    if (!member) throw new AppError('Ese explorador no está en tu tripulación')
     await members.update({ id: member.id }, { role: 'copilot' })
   })
 }

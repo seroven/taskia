@@ -100,7 +100,7 @@ function mapInvite(
 async function loadTroopDetail(troopId: number, viewerId: number) {
   const troop = await findTroop(troopId)
   if (!troop || Number(troop.isActive) === 0) {
-    throw new AppError('Tropa no encontrada', 404)
+    throw new AppError('Tripulación no encontrada', 404)
   }
 
   const weekStart = weekStartMonday()
@@ -128,7 +128,7 @@ async function loadTroopDetail(troopId: number, viewerId: number) {
   }
 }
 
-/** Mi tropa + invitaciones pendientes recibidas. */
+/** Mi tripulación + invitaciones pendientes recibidas. */
 export async function getMe(req: TroopReq) {
   const userId = req.user!.id
   const membership = await findActiveMembership(userId)
@@ -140,7 +140,7 @@ export async function getMe(req: TroopReq) {
   }
 }
 
-/** Bandeja: invitaciones recibidas + solicitudes a mi tropa (Capitán/Copiloto). */
+/** Bandeja: invitaciones recibidas + solicitudes a mi tripulación (Capitán/Copiloto). */
 export async function getInbox(req: TroopReq) {
   const userId = req.user!.id
   const membership = await findActiveMembership(userId)
@@ -157,7 +157,7 @@ export async function getInbox(req: TroopReq) {
   }
 }
 
-/** Ranking semanal de tropas (lun–dom America/Lima vía week_start). */
+/** Ranking semanal de tripulaciones (lun–dom America/Lima vía week_start). */
 export async function getRanking(req: TroopReq) {
   const weekStart = weekStartMonday()
   const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50))
@@ -179,8 +179,8 @@ export async function getRanking(req: TroopReq) {
 }
 
 /**
- * Tropas activas para el canvas espacial.
- * Mi tropa primero (si hay); el resto orden estable por id.
+ * Tripulaciones activas para el canvas espacial.
+ * Mi tripulación primero (si hay); el resto orden estable por id.
  */
 export async function getUniverse(req: TroopReq) {
   const userId = req.user!.id
@@ -234,7 +234,7 @@ export async function createTroop(req: TroopReq) {
   const userId = req.user!.id
   const name = parseTroopName(req.body.name)
   if (await findActiveMembership(userId)) {
-    throw new AppError('Ya estás en una tropa. Sal primero para crear otra.')
+    throw new AppError('Ya estás en una tripulación. Sal primero para crear otra.')
   }
   const troopId = await createTroopWithCaptain(name, userId)
   return loadTroopDetail(troopId, userId)
@@ -246,7 +246,7 @@ export async function inviteExplorer(req: TroopReq) {
   if (!Number.isFinite(toUserId)) throw new AppError('Explorador no válido')
 
   const membership = await findActiveMembership(userId)
-  if (!membership) throw new AppError('Primero crea o únete a una tropa')
+  if (!membership) throw new AppError('Primero crea o únete a una tripulación')
   const role = membership.role as TroopRole
   if (role !== 'captain' && role !== 'copilot') {
     throw new AppError('Solo el Capitán o el Copiloto pueden invitar')
@@ -254,7 +254,7 @@ export async function inviteExplorer(req: TroopReq) {
 
   const troopId = Number(membership.troop_id)
   if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
-    throw new AppError(`La tropa ya tiene ${MAX_MEMBERS} exploradores`)
+    throw new AppError(`La tripulación ya tiene ${MAX_MEMBERS} exploradores`)
   }
   if ((await countPendingInvites(troopId)) >= MAX_PENDING_INVITES_PER_TROOP) {
     throw new AppError('Hay demasiadas invitaciones pendientes. Espera a que respondan.')
@@ -266,7 +266,7 @@ export async function inviteExplorer(req: TroopReq) {
   }
   if (!(await findActiveExplorer(toUserId))) throw new AppError('Explorador no encontrado', 404)
   if (await findActiveMembership(toUserId)) {
-    throw new AppError('Ese explorador ya está en una tropa')
+    throw new AppError('Ese explorador ya está en una tripulación')
   }
 
   try {
@@ -282,29 +282,29 @@ export async function inviteExplorer(req: TroopReq) {
   }
 }
 
-/** Explorador sin tropa pide unirse a una tropa. */
+/** Explorador sin tripulación pide unirse a una tripulación. */
 export async function requestJoin(req: TroopReq) {
   const userId = req.user!.id
   const troopId = Number(req.params.id)
-  if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
+  if (!Number.isFinite(troopId)) throw new AppError('Tripulación no válida', 404)
   if (await findActiveMembership(userId)) {
-    throw new AppError('Ya estás en una tropa')
+    throw new AppError('Ya estás en una tripulación')
   }
 
   const troop = await findTroop(troopId)
   if (!troop || Number(troop.isActive) === 0) {
-    throw new AppError('Tropa no encontrada', 404)
+    throw new AppError('Tripulación no encontrada', 404)
   }
   if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
-    throw new AppError('Esa tropa ya está llena')
+    throw new AppError('Esa tripulación ya está llena')
   }
   if ((await countPendingInvites(troopId)) >= MAX_PENDING_INVITES_PER_TROOP) {
-    throw new AppError('Esa tropa tiene demasiadas invitaciones pendientes. Prueba luego.')
+    throw new AppError('Esa tripulación tiene demasiadas invitaciones pendientes. Prueba luego.')
   }
 
   const captainId = await findCaptainId(troopId)
   if (captainId == null || captainId === userId) {
-    throw new AppError('No se puede solicitar unirse a esa tropa')
+    throw new AppError('No se puede solicitar unirse a esa tripulación')
   }
 
   try {
@@ -316,7 +316,7 @@ export async function requestJoin(req: TroopReq) {
     })
     return { id: Number(id), ok: true }
   } catch {
-    throw new AppError('Ya pediste unirte a esa tropa')
+    throw new AppError('Ya pediste unirte a esa tripulación')
   }
 }
 
@@ -336,10 +336,10 @@ export async function acceptInvite(req: TroopReq) {
       throw new AppError('Invitación no válida', 404)
     }
     if (await findActiveMembership(userId)) {
-      throw new AppError('Ya estás en una tropa')
+      throw new AppError('Ya estás en una tripulación')
     }
     if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
-      throw new AppError('Esa tropa ya está llena')
+      throw new AppError('Esa tripulación ya está llena')
     }
     await setInviteStatus(inviteId, 'accepted')
     await joinTroopAsMember(troopId, userId)
@@ -358,10 +358,10 @@ export async function acceptInvite(req: TroopReq) {
   const joinerId = Number(row.from_user_id)
   if (await findActiveMembership(joinerId)) {
     await setInviteStatus(inviteId, 'cancelled')
-    throw new AppError('Ese explorador ya está en una tropa')
+    throw new AppError('Ese explorador ya está en una tripulación')
   }
   if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
-    throw new AppError('La tropa ya está llena')
+    throw new AppError('La tripulación ya está llena')
   }
   await setInviteStatus(inviteId, 'accepted')
   await joinTroopAsMember(troopId, joinerId)
@@ -418,7 +418,7 @@ export async function kickMember(req: TroopReq) {
     throw new AppError('Solo el Capitán puede sacar a alguien')
   }
   if (memberUserId === userId) {
-    throw new AppError('Para irte usa la opción de salir de la tropa')
+    throw new AppError('Para irte usa la opción de salir de la tripulación')
   }
   const troopId = Number(membership.troop_id)
   const affected = await markMemberLeft(troopId, memberUserId)
@@ -430,7 +430,7 @@ export async function kickMember(req: TroopReq) {
 export async function leaveTroop(req: TroopReq) {
   const userId = req.user!.id
   const membership = await findActiveMembership(userId)
-  if (!membership) throw new AppError('No estás en una tropa')
+  if (!membership) throw new AppError('No estás en una tripulación')
   await persistLeave(Number(membership.troop_id), userId, membership.role === 'captain')
   return { ok: true }
 }
@@ -496,6 +496,6 @@ export async function updatePlanet(req: TroopReq) {
 
 export async function getTroop(req: TroopReq) {
   const troopId = Number(req.params.id)
-  if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
+  if (!Number.isFinite(troopId)) throw new AppError('Tripulación no válida', 404)
   return loadTroopDetail(troopId, req.user!.id)
 }

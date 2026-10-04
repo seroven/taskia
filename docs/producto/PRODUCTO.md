@@ -1,8 +1,8 @@
 # Taskia
 
-Guía funcional de lo que ven **Guardián** y **Explorador** hoy: [FUNCIONES.md](FUNCIONES.md). Plan de Tropas/XP/hub: [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md).
+Guía funcional de lo que ven **Guardián** y **Explorador** hoy: [FUNCIONES.md](FUNCIONES.md). Plan de Tripulación/XP/hub: [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md).
 
-Taskia es a la vez la app y **quien ayuda a estudiar**: para el niño, Taskia es el nombre de su guía en el chat y la pizarra. El administrador configura cuentas y materias; el **guardián** acompaña desde su panel; el **explorador** entra a un hub (Tropas | Mundos | Campamento), gana XP y puede unirse a una tropa.
+Taskia es a la vez la app y **quien ayuda a estudiar**: para el niño, Taskia es el nombre de su guía en el chat y la pizarra. El administrador configura cuentas y materias; el **guardián** acompaña desde su panel; el **explorador** entra a un hub (Tripulación | Mundos | Campamento), gana XP y puede unirse a una tripulación.
 
 No es un chat suelto con una IA ni un kanban genérico. La idea es un ciclo cerrado: **materias → tareas o temas → estudiar con Taskia → demostrar que se entendió → (en mundos) ponerse a prueba con un desafío**. Taskia no regala la respuesta: guía, pregunta y solo da el visto cuando hay evidencia real.
 
@@ -14,11 +14,11 @@ El tono de la app está pensado para un niño de alrededor de 10 años: español
 
 Al iniciar sesión, cada rol entra a un mundo distinto.
 
-**El explorador** (`user`) ve el hub (Tropas | Mundos | Campamento), el modo estudio y la barra de nivel/XP. Puede cambiar su usuario, correo y contraseña, y elegir tema claro/oscuro y color de acento. No puede crearse la cuenta solo: el registro público está cerrado a propósito.
+**El explorador** (`user`) ve el hub (Tripulación | Mundos | Campamento), el modo estudio y la barra de nivel/XP. Puede cambiar su usuario, correo y contraseña, y elegir tema claro/oscuro y color de acento. No puede crearse la cuenta solo: el registro público está cerrado a propósito.
 
 **El administrador** (`admin`) no usa el Campamento. Entra al panel: dashboard de exploradores, fichas, materias, mundos, desafíos y el módulo de **guardianes** (crear, vincular, desvincular).
 
-**El guardián** (`parent`) acompaña a uno o más exploradores vinculados por el admin. Entra a un panel propio: chat con la IA sobre el resumen del día, progreso en solo lectura (nivel/XP, tropa y totales) y preferencias de avisos WhatsApp. No edita el Campamento ni la tropa del explorador.
+**El guardián** (`parent`) acompaña a uno o más exploradores vinculados por el admin. Entra a un panel propio: chat con la IA sobre el resumen del día, progreso en solo lectura (nivel/XP, tripulación y totales) y preferencias de avisos WhatsApp. No edita el Campamento ni la tripulación del explorador.
 
 Si el admin pausa una cuenta, esa persona no puede entrar hasta que la reactiven.
 
@@ -198,7 +198,7 @@ Adulto crea alumno y materias
         ▼
    Alumno entra → hub
         │
-        ├── Tropas ──► universo de planetas, equipo, campana, ranking, avatar/planeta
+        ├── Tripulación ──► universo de planetas, equipo, campana, ranking, avatar/planeta
         │
         ├── Campamento ──► tarea ──► (opcional) Taskia ──► visto ──► Listo ──► XP
         │
@@ -225,7 +225,7 @@ Nada de eso exige que el adulto esté sentado al lado en el chat. El adulto conf
 
 ## Apariencia
 
-Tema claro u oscuro y un color de acento (azul por defecto; también verde, ámbar, violeta, etc.). Vale para alumno y adulto. No cambia las reglas, solo cómo se ve. En **Tropas**, el universo 3D toma el fondo y el acento del tema; si el sistema pide menos movimiento (`prefers-reduced-motion`), se apagan estrellas, giro de planetas y animaciones fuertes del card.
+Tema claro u oscuro y un color de acento (azul por defecto; también verde, ámbar, violeta, etc.). Vale para alumno y adulto. No cambia las reglas, solo cómo se ve. En **Tripulación**, el universo 3D toma el fondo y el acento del tema; si el sistema pide menos movimiento (`prefers-reduced-motion`), se apagan estrellas, giro de planetas y animaciones fuertes del card.
 
 ---
 

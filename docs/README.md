@@ -17,8 +17,8 @@ Qué hace la app y cómo se usa.
 
 - [PLAN_ESTRUCTURA.md](planes/PLAN_ESTRUCTURA.md) — reestructura de carpetas. El backend ya está; sigue el frontend desde F1.
 - [PLAN_TYPEORM.md](planes/PLAN_TYPEORM.md) — paso del acceso a datos a TypeORM. Cerrado (T0–T9).
-- [ROADMAP_TROPAS.md](planes/ROADMAP_TROPAS.md) — tropas, XP y hub. Cerrado.
-- [ROADMAP_TROPAS_CANVAS.md](planes/ROADMAP_TROPAS_CANVAS.md) — universo de tropas en canvas. Cerrado.
+- [ROADMAP_TROPAS.md](planes/ROADMAP_TROPAS.md) — tripulación, XP y hub. Cerrado.
+- [ROADMAP_TROPAS_CANVAS.md](planes/ROADMAP_TROPAS_CANVAS.md) — universo de tripulación en canvas. Cerrado.
 - [ROADMAP_V2.md](planes/ROADMAP_V2.md) — WhatsApp, workers y Flutter. En pausa.
 
 ## Junto al código

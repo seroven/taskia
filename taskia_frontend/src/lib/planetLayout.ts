@@ -1,4 +1,4 @@
-/** Layout determinista de planetas en el universo (mi tropa en origen). */
+/** Layout determinista de planetas en el universo (mi tripulación en origen). */
 
 export interface PlanetLayoutPoint {
   id: number
@@ -25,7 +25,7 @@ const RING_STEP = 3.8
 
 /**
  * Coloca `myTroopId` en (0,0) si existe; el resto en anillos con jitter por id.
- * Las tropas ya posicionadas en `existing` se respetan.
+ * Las tripulaciones ya posicionadas en `existing` se respetan.
  */
 export function layoutPlanets(
   troopIds: number[],

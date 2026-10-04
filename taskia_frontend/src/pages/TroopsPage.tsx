@@ -206,14 +206,14 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                 onClick={() => setCreateOpen(true)}
               >
                 <Plus size={18} weight="bold" />
-                Crear tropa
+                Crear tripulación
               </button>
             )}
 
             <button
               type="button"
               className="space-bell-fab"
-              aria-label="Bandeja de tropas"
+              aria-label="Bandeja de tripulación"
               onClick={() => {
                 setInboxOpen(true)
                 void loadInbox().catch(() => undefined)
@@ -246,7 +246,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                   void selectTroop(myTroopId!)
                 }}
               >
-                Volver a mi tropa
+                Volver a mi tripulación
               </button>
             )}
 
@@ -286,12 +286,12 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                         ? () => {
                             if (
                               !window.confirm(
-                                '¿Salir de la tropa? Si eres Capitán, el mando pasa al Copiloto o al de mayor nivel.',
+                                '¿Salir de la tripulación? Si eres Capitán, el mando pasa al Copiloto o al de mayor nivel.',
                               )
                             ) {
                               return
                             }
-                            void runAction(() => api.leaveTroop(), 'Saliste de la tropa')
+                            void runAction(() => api.leaveTroop(), 'Saliste de la tripulación')
                           }
                         : undefined
                     }
@@ -525,7 +525,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
           setOpenDetail(created)
           showToast({
             tone: 'success',
-            title: '¡Tropa creada!',
+            title: '¡Tripulación creada!',
             subtitle: `Eres Capitán de ${created.name}`,
           })
         }}
@@ -965,7 +965,7 @@ function CreateTroopModal({
       open={open}
       onClose={onClose}
       titleId="create-troop-title"
-      title="Nueva tropa"
+      title="Nueva tripulación"
       lead="Tú serás el Capitán. Luego puedes invitar hasta 9 compañeros."
     >
       <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>
@@ -984,7 +984,7 @@ function CreateTroopModal({
           </button>
           <button type="submit" className="primary" disabled={submitting}>
             <Plus size={18} weight="bold" />
-            {submitting ? 'Creando…' : 'Crear tropa'}
+            {submitting ? 'Creando…' : 'Crear tripulación'}
           </button>
         </div>
       </form>
@@ -1044,7 +1044,7 @@ function InviteExplorerModal({
       onClose={onClose}
       titleId="invite-explorer-title"
       title="Invitar explorador"
-      lead="Busca por nombre. Solo quien no esté en otra tropa puede unirse."
+      lead="Busca por nombre. Solo quien no esté en otra tripulación puede unirse."
       icon={MagnifyingGlass}
     >
       <div className="modal-panel-body">
@@ -1064,7 +1064,7 @@ function InviteExplorerModal({
                 <strong>{hit.username}</strong>
                 <p className="troops-muted">
                   Nivel {hit.level}
-                  {hit.in_troop ? ' · ya en una tropa' : ''}
+                  {hit.in_troop ? ' · ya en una tripulación' : ''}
                 </p>
               </div>
               <button

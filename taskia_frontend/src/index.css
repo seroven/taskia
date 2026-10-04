@@ -1280,7 +1280,7 @@ input[type='checkbox']:active:not(:disabled) {
   }
 }
 
-/* Tropas */
+/* Tripulación */
 .troops-hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1422,7 +1422,7 @@ input[type='checkbox']:active:not(:disabled) {
   gap: 8px;
 }
 
-/* Universo de Tropas */
+/* Universo de Tripulación */
 .space-shell {
   min-height: 100%;
   display: flex;

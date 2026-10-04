@@ -38,7 +38,7 @@ export function HubPage({
             <span className="hub-door-icon" aria-hidden>
               <UsersThree size={36} weight="duotone" />
             </span>
-            <span className="hub-door-title">Tropas</span>
+            <span className="hub-door-title">Tripulación</span>
             <span className="hub-door-sub">Tu equipo y el ranking</span>
           </button>
           <button
