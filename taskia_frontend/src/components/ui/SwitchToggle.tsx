@@ -5,12 +5,14 @@ export function SwitchToggle({
   checked,
   onChange,
   title,
+  hint,
   disabled,
   className = '',
 }: {
   checked: boolean
   onChange: (next: boolean) => void
   title?: string
+  hint?: string
   disabled?: boolean
   className?: string
 }) {
@@ -26,8 +28,11 @@ export function SwitchToggle({
       <span className="study-board-toggle-track" aria-hidden>
         <span className="study-board-toggle-thumb" />
       </span>
-      {title ? (
-        <span className="study-board-toggle-title">{title}</span>
+      {title || hint ? (
+        <span className="study-board-toggle-copy">
+          {title ? <span className="study-board-toggle-title">{title}</span> : null}
+          {hint ? <span className="study-board-toggle-hint">{hint}</span> : null}
+        </span>
       ) : null}
     </button>
   )

@@ -2259,18 +2259,79 @@ input[type='checkbox']:active:not(:disabled) {
   outline-offset: 2px;
 }
 
-.guardian-facts {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
+.guardian-activity {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
-.guardian-facts li {
+.guardian-activity-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+}
+
+.guardian-activity-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.guardian-activity-value {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.guardian-activity-value span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.guardian-activity-track {
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  overflow: hidden;
+}
+
+.guardian-activity-hint {
   margin: 0;
-  line-height: 1.4;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.guardian-card-head {
+  margin: 0;
+}
+
+.guardian-card-head .study-phase-pill {
+  margin: 0;
+}
+
+.guardian-notices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.study-board-toggle.guardian-notice {
+  width: auto;
+  min-width: 0;
+  height: 100%;
+  align-items: flex-start;
 }
 
 @media (max-width: 900px) {
@@ -3453,13 +3514,27 @@ input[type='checkbox']:active:not(:disabled) {
   box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
-.study-board-toggle-title {
+.study-board-toggle-copy {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.study-board-toggle-title {
   font-size: 0.82rem;
   font-weight: 800;
   color: var(--ink);
   line-height: 1.2;
   transition: color 0.28s ease;
+}
+
+.study-board-toggle-hint {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--muted);
+  line-height: 1.3;
 }
 
 .study-board-toggle.is-on .study-board-toggle-title {

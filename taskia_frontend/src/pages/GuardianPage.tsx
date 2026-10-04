@@ -6,6 +6,7 @@ import { AppLoader } from '../components/AppLoader'
 import { EmptyState } from '../components/EmptyState'
 import { SessionActions } from '../components/SessionActions'
 import { TextField } from '../components/ui/Field'
+import { SwitchToggle } from '../components/ui/SwitchToggle'
 import { errorMessage } from '../lib/errors'
 import type {
   ParentChatMessage,
@@ -272,9 +273,7 @@ function GuardianProgress({ studentId }: { studentId: number }) {
   return (
     <div className="guardian-progress">
       <section className="admin-panel">
-        <div className="admin-section-head">
-          <h3>Nivel y experiencia</h3>
-        </div>
+        <SectionBadge>Nivel</SectionBadge>
         <div className="guardian-xp-card">
           <span className="guardian-xp-level">Nivel {data.xp.level}</span>
           <div
@@ -297,9 +296,7 @@ function GuardianProgress({ studentId }: { studentId: number }) {
       </section>
 
       <section className="admin-panel">
-        <div className="admin-section-head">
-          <h3>Tripulación</h3>
-        </div>
+        <SectionBadge>Tripulación</SectionBadge>
         {!troop ? (
           <p className="muted">Este explorador aún no está en una tripulación.</p>
         ) : (
@@ -353,26 +350,78 @@ function GuardianProgress({ studentId }: { studentId: number }) {
       </section>
 
       <section className="admin-panel">
-        <div className="admin-section-head">
-          <h3>Actividad</h3>
+        <SectionBadge>Actividad</SectionBadge>
+        <div className="guardian-activity">
+          <ActivityTile
+            label="Tareas"
+            value={data.tasks.done}
+            total={data.tasks.total}
+            hint={
+              data.tasks.overdue > 0
+                ? `${data.tasks.overdue} vencidas`
+                : 'Ninguna vencida'
+            }
+          />
+          <ActivityTile
+            label="Misiones"
+            value={data.missions.mastered}
+            total={data.missions.total}
+            hint="Temas dominados"
+          />
+          <ActivityTile
+            label="Mundos"
+            value={data.worlds_count}
+            hint="Activos ahora"
+          />
+          <ActivityTile
+            label="Desafíos"
+            value={data.challenges.completed_count}
+            hint={
+              data.challenges.avg_score != null
+                ? `Promedio ${Math.round(data.challenges.avg_score)}`
+                : 'Sin promedio aún'
+            }
+          />
         </div>
-        <ul className="guardian-facts">
-          <li>
-            Tareas: {data.tasks.done}/{data.tasks.total} hechas
-            {data.tasks.overdue > 0 ? ` · ${data.tasks.overdue} vencidas` : ''}
-          </li>
-          <li>
-            Misiones: {data.missions.mastered}/{data.missions.total} dominadas
-          </li>
-          <li>Mundos activos: {data.worlds_count}</li>
-          <li>
-            Desafíos completados: {data.challenges.completed_count}
-            {data.challenges.avg_score != null
-              ? ` · promedio ${Math.round(data.challenges.avg_score)}`
-              : ''}
-          </li>
-        </ul>
       </section>
+    </div>
+  )
+}
+
+function ActivityTile({
+  label,
+  value,
+  total,
+  hint,
+}: {
+  label: string
+  value: number
+  total?: number
+  hint: string
+}) {
+  const pct =
+    total != null && total > 0 ? Math.min(100, Math.round((value / total) * 100)) : null
+  return (
+    <article className="guardian-activity-tile">
+      <span className="guardian-activity-label">{label}</span>
+      <span className="guardian-activity-value">
+        {value}
+        {total != null ? <span>/{total}</span> : null}
+      </span>
+      {pct != null ? (
+        <div className="guardian-activity-track" aria-hidden>
+          <div className="xp-bar-fill" style={{ width: `${pct}%` }} />
+        </div>
+      ) : null}
+      <p className="guardian-activity-hint">{hint}</p>
+    </article>
+  )
+}
+
+function SectionBadge({ children }: { children: string }) {
+  return (
+    <div className="guardian-card-head">
+      <h3 className="study-phase-pill">{children}</h3>
     </div>
   )
 }
@@ -403,21 +452,19 @@ function GuardianPrefs({ onSaved }: { onSaved: () => void }) {
     }
   }
 
-  const toggles: Array<{ key: keyof ParentNotifyPrefs; label: string }> = [
-    { key: 'notify_task_done', label: 'Terminó una tarea' },
-    { key: 'notify_task_study_done', label: 'Terminó el estudio de una tarea' },
-    { key: 'notify_mission_done', label: 'Terminó el estudio de un tema' },
-    { key: 'notify_course_done', label: 'Terminó el estudio de un curso' },
-    { key: 'notify_world_done', label: 'Terminó el estudio de un mundo' },
-    { key: 'notify_challenge_done', label: 'Completó un desafío' },
-    { key: 'notify_inactivity', label: 'Alerta de inactividad (3 días)' },
+  const toggles: Array<{ key: keyof ParentNotifyPrefs; title: string; hint: string }> = [
+    { key: 'notify_task_done', title: 'Tarea lista', hint: 'Cuando la mueve a Listo.' },
+    { key: 'notify_task_study_done', title: 'Estudio de una tarea', hint: 'Cuando Taskia da el visto.' },
+    { key: 'notify_mission_done', title: 'Tema dominado', hint: 'Cuando una misión queda lista.' },
+    { key: 'notify_course_done', title: 'Curso terminado', hint: 'Cuando cierra todas las misiones de un curso.' },
+    { key: 'notify_world_done', title: 'Mundo terminado', hint: 'Cuando no queda nada pendiente en ese mundo.' },
+    { key: 'notify_challenge_done', title: 'Desafío completo', hint: 'Cuando termina un calentamiento, aventura o jefe.' },
+    { key: 'notify_inactivity', title: 'Sin actividad', hint: 'Si pasan 3 días sin un avance relevante.' },
   ]
 
   return (
     <section className="admin-panel">
-      <div className="admin-section-head">
-        <h3>Avisos</h3>
-      </div>
+      <SectionBadge>Avisos</SectionBadge>
       <TextField
         label="WhatsApp (E.164, ej. +51999…)"
         value={prefs.whatsapp_e164 ?? ''}
@@ -425,22 +472,19 @@ function GuardianPrefs({ onSaved }: { onSaved: () => void }) {
           setPrefs({ ...prefs, whatsapp_e164: e.target.value || null })
         }
       />
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {toggles.map(({ key, label }) => (
-          <li key={key}>
-            <label>
-              <input
-                type="checkbox"
-                checked={Boolean(prefs[key])}
-                onChange={(e) =>
-                  setPrefs({ ...prefs, [key]: e.target.checked })
-                }
-              />{' '}
-              {label}
-            </label>
-          </li>
+      <div className="guardian-notices">
+        {toggles.map(({ key, title, hint }) => (
+          <SwitchToggle
+            key={key}
+            className="guardian-notice"
+            title={title}
+            hint={hint}
+            checked={Boolean(prefs[key])}
+            disabled={saving}
+            onChange={(next) => setPrefs({ ...prefs, [key]: next })}
+          />
         ))}
-      </ul>
+      </div>
       <button
         type="button"
         className="primary"

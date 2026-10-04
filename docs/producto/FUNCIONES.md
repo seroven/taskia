@@ -180,11 +180,7 @@ A la derecha, en cards de **solo lectura** del explorador elegido:
 
 1. **Nivel y experiencia** — nivel actual, barra hacia el siguiente (de 1000 XP) y XP total.
 2. **Tripulación** — si pertenece a una: nombre, rol del niño (Capitán / Copiloto / Explorador), posición en el ranking interno, mención al ranking semanal de la tripulación, y la lista de miembros con nivel y XP de la semana. Si no tiene tripulación, se indica.
-3. **Actividad** — totales:
-   - **Tareas:** hechas sobre el total; si hay vencidas, también lo indica.
-   - **Misiones:** temas de mundos dominados sobre el total.
-   - **Mundos activos**
-   - **Desafíos completados** y, si aplica, un promedio.
+3. **Actividad** — cuatro piezas (tareas, misiones, mundos, desafíos). Cada una muestra el número grande, una barra si hay un total, y una línea corta (vencidas, temas dominados, mundos activos o el promedio del desafío).
 
 No hay acciones para gestionar la tripulación ni cambiar XP. No hay el desglose pregunta por pregunta del estudio. Para “¿cómo le fue en general?” alcanza; para “enséñame el chat de fracciones de ayer”, hoy el guardián no entra a ese historial desde aquí.
 
@@ -195,7 +191,7 @@ Aquí el guardián deja dicho **cómo quiere que lo avisen** cuando pasen cosas 
 ### Datos que configura
 
 1. **Número de WhatsApp** en formato internacional (ejemplo: `+51999…`).
-2. Casillas de qué eventos le importan:
+2. Interruptores, uno por evento, de qué le importa:
    - Terminó una tarea
    - Terminó el estudio de una tarea
    - Terminó el estudio de un tema (misión)
