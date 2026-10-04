@@ -6,7 +6,7 @@ Memoria corta del proyecto. El índice del resto está en [docs/README.md](docs/
 
 Un solo repo en la raíz. Backend en `taskia_backend/`, frontend en `taskia_frontend/`. Desde aquí: `npm run install:all`, `npm run dev`, `npm run build`.
 
-Roles en catálogo `roles`: Explorador (`user`), Administrador (`admin`), Guardián (`parent`). El admin afilia Guardianes y Exploradores. El Guardián ve el chat a la izquierda, con el mismo aspecto que el chat de estudio, y a la derecha cards de progreso y avisos. Latencia de respuesta se guarda en los chats de estudio. Guía funcional: [FUNCIONES.md](docs/producto/FUNCIONES.md).
+Roles en catálogo `roles`: Explorador (`user`), Administrador (`admin`), Guardián (`parent`). El admin afilia Guardianes y Exploradores. El Guardián ve el chat a la izquierda, con el mismo aspecto que el chat de estudio, y a la derecha cards de progreso y avisos. Los exploradores son chips en fila, uno solo activo; al tocarlo cambian el chat y el progreso. Latencia de respuesta se guarda en los chats de estudio. Guía funcional: [FUNCIONES.md](docs/producto/FUNCIONES.md).
 
 La puerta **Tripulación** del hub del explorador está cerrada a propósito: se ve, no se abre, y dice que ese lugar se está armando. La galaxia se dibuja en SVG (`GalaxyUniverse` + `PlanetRenderer`). El canvas R3F y `three` ya no están. `planet_config` guarda el dibujo; si falta, se arma desde `planet_style_id` y `planet_seed`. La IA de planeta devuelve ese JSON, con reintentos y huella para no repetir un dibujo. Queda fuera de este corte la barra de XP, el confeti, el audio y el rediseño de avisos. [ROADMAP_V2.md](docs/planes/ROADMAP_V2.md) en pausa. El plan de canvas ([ROADMAP_TROPAS_CANVAS.md](docs/planes/ROADMAP_TROPAS_CANVAS.md)) describe el universo anterior.
 

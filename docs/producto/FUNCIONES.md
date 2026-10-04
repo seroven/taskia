@@ -130,7 +130,7 @@ No organiza tareas ni estudia por el niño.
 1. Misma pantalla de login que el resto: marca Taskia, usuario y contraseña, botón para entrar.
 2. Puede elegir antes (o después) tema claro/oscuro y un color de acento: es solo apariencia.
 3. Tras entrar: título **Panel del guardián**.
-4. En la cabecera también puede abrir **Mi cuenta** (usuario, correo, cambiar contraseña) y **Salir**.
+4. En la cabecera hay un solo botón de **Mi cuenta** (usuario, correo, cambiar contraseña) y **Salir**.
 
 No verá el Campamento, Mundos ni Tripulación del explorador: esa es otra entrada, con otra cuenta.
 
@@ -139,8 +139,8 @@ No verá el Campamento, Mundos ni Tripulación del explorador: esa es otra entra
 | Situación | Qué ocurre |
 | --- | --- |
 | **Ningún** explorador vinculado | Mensaje vacío: pide al administrador que lo vincule. No hay más acciones. |
-| **Un** solo explorador | Entra directo a la ficha de ese explorador. |
-| **Varios** | Ve la lista *Tus exploradores* (nombre y correo). Al tocar uno, abre su ficha. Puede volver a la lista con *← Exploradores*. |
+| **Un** solo explorador | Arriba hay un chip con su nombre, ya activo. |
+| **Varios** | Los nombres van en chips, uno al lado del otro. Solo uno está activo. Al tocar otro, cambian el chat y el progreso. |
 
 Al elegir un explorador, la pantalla se parte en dos: el **chat a la izquierda** (el mismo ancho y aspecto que el chat de estudio del explorador, no toda la página) y, a la derecha, cards de **progreso** y de **avisos**.
 

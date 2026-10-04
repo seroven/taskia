@@ -5,7 +5,6 @@ import { AppearanceTools } from '../components/AppearanceTools'
 import { AppLoader } from '../components/AppLoader'
 import { EmptyState } from '../components/EmptyState'
 import { SessionActions } from '../components/SessionActions'
-import { UserChip } from '../components/UserChip'
 import { TextField } from '../components/ui/Field'
 import { errorMessage } from '../lib/errors'
 import type {
@@ -30,7 +29,7 @@ export function GuardianPage() {
       try {
         const list = await api.listParentExplorers()
         setExplorers(list)
-        if (list.length === 1) setSelectedId(list[0]!.id)
+        setSelectedId(list[0]?.id ?? null)
       } catch (err) {
         setError(errorMessage(err))
       } finally {
@@ -40,7 +39,6 @@ export function GuardianPage() {
   }, [])
 
   const selected = explorers.find((e) => e.id === selectedId) ?? null
-  const showList = explorers.length !== 1
 
   return (
     <div className="worlds-shell admin-shell">
@@ -51,7 +49,6 @@ export function GuardianPage() {
         </div>
         <div className="topbar-actions">
           <AppearanceTools />
-          <UserChip />
           <SessionActions />
         </div>
       </header>
@@ -69,44 +66,28 @@ export function GuardianPage() {
           />
         ) : (
           <div className="admin-view">
-            {showList && selectedId == null && (
-              <section className="admin-panel">
-                <div className="admin-section-head">
-                  <h2>Tus exploradores</h2>
-                </div>
-                <ul className="admin-followup">
-                  {explorers.map((e) => (
-                    <li key={e.id}>
-                      <button
-                        type="button"
-                        className="admin-followup-row"
-                        onClick={() => setSelectedId(e.id)}
-                      >
-                        <span className="admin-followup-name">{e.username}</span>
-                        <span className="muted">{e.email}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            <div className="guardian-explorer-row" role="tablist" aria-label="Exploradores">
+              {explorers.map((explorer) => {
+                const active = explorer.id === selectedId
+                return (
+                  <button
+                    key={explorer.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    className={`guardian-explorer-chip${active ? ' is-active' : ''}`}
+                    onClick={() => setSelectedId(explorer.id)}
+                  >
+                    {explorer.username}
+                  </button>
+                )
+              })}
+            </div>
 
             {selected && (
               <div className="guardian-stage">
                 <GuardianChat studentId={selected.id} username={selected.username} />
                 <div className="guardian-side">
-                  <div className="guardian-side-head">
-                    {showList && (
-                      <button
-                        type="button"
-                        className="ghost"
-                        onClick={() => setSelectedId(null)}
-                      >
-                        ← Exploradores
-                      </button>
-                    )}
-                    <h2>{selected.username}</h2>
-                  </div>
                   <GuardianProgress studentId={selected.id} />
                   <GuardianPrefs
                     onSaved={() =>
