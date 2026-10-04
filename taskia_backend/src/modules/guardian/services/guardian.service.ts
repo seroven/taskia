@@ -130,6 +130,9 @@ export async function listChat(parentId: number, studentId: number) {
   }))
 }
 
+const NO_SUMMARY_REPLY =
+  'Todavía no hay un resumen del día para este explorador. Cuando lo haya, podré contarte cómo le fue.'
+
 export async function sendChat(
   parentId: number,
   studentId: number,
@@ -139,7 +142,7 @@ export async function sendChat(
   const explorer = await requireLinkedExplorer(parentId, studentId)
   const message = parseGuardianChatMessage(body)
   const todaySummary = await guardian.findTodaySummary(studentId, today)
-  const history = await guardian.recentChat(parentId, studentId)
+  const history = todaySummary ? await guardian.recentChat(parentId, studentId) : []
 
   await guardian.insertChatMessage({
     parentId,
@@ -148,31 +151,34 @@ export async function sendChat(
     content: message,
   })
 
-  const system = guardianTutorSystem({
-    explorerName: explorer.username,
-    today,
-    todaySummary,
-  })
+  let reply = NO_SUMMARY_REPLY
+  if (todaySummary) {
+    const system = guardianTutorSystem({
+      explorerName: explorer.username,
+      today,
+      todaySummary,
+    })
 
-  const historyText = history
-    .map((item) => `${item.role === 'user' ? 'Guardián' : 'Asistente'}: ${item.content}`)
-    .join('\n')
+    const historyText = history
+      .map((item) => `${item.role === 'user' ? 'Guardián' : 'Asistente'}: ${item.content}`)
+      .join('\n')
 
-  const raw = await callGemini({
-    system,
-    user: `${historyText ? `Historial reciente:\n${historyText}\n\n` : ''}Nuevo mensaje del guardián:\n${message}`,
-    usage: { userId: parentId, kind: 'parent_tutor' },
-  })
+    const raw = await callGemini({
+      system,
+      user: `${historyText ? `Historial reciente:\n${historyText}\n\n` : ''}Nuevo mensaje del guardián:\n${message}`,
+      usage: { userId: parentId, kind: 'parent_tutor' },
+    })
 
-  let reply = ''
-  try {
-    const parsed = extractJson(raw) as { reply?: string }
-    reply = String(parsed.reply ?? '').trim()
-  } catch {
-    reply = raw.trim()
-  }
-  if (!reply) {
-    reply = 'No pude armar una respuesta ahora. Intenta de nuevo en un momento.'
+    reply = ''
+    try {
+      const parsed = JSON.parse(extractJson(raw)) as { reply?: string }
+      reply = String(parsed.reply ?? '').trim()
+    } catch {
+      reply = raw.trim()
+    }
+    if (!reply) {
+      reply = 'No pude armar una respuesta ahora. Intenta de nuevo en un momento.'
+    }
   }
 
   const id = await guardian.insertChatMessage({

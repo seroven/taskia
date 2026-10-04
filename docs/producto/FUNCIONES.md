@@ -164,9 +164,9 @@ Una conversación entre el guardián y un **asistente** (no es el mismo chat que
 
 ### De dónde saca información el asistente
 
-Cuando existe un **resumen del día** de ese explorador, el asistente se apoya en él. Si todavía no hay resumen, lo dice con claridad en lugar de inventar un día perfecto.
+Cuando existe un **resumen del día** de ese explorador, el asistente se apoya en él. Si todavía no hay resumen, no consulta a la IA: responde con un texto fijo que dice que aún no hay resumen del día.
 
-**Estado actual del producto:** el chat ya está disponible; el resumen automático del día **aún no se genera solo** en segundo plano. Mientras tanto, el asistente responde con lo que haya. Eso mejorará cuando se activen los trabajos automáticos de resumen (ver plan de la versión 2.0).
+**Estado actual del producto:** el chat ya está disponible; el resumen automático del día **aún no se genera solo** en segundo plano. Hasta que exista esa fila, cada mensaje recibe el mismo aviso. Eso cambia cuando se activen los trabajos automáticos de resumen (ver plan de la versión 2.0).
 
 ### Qué no hace este chat
 
