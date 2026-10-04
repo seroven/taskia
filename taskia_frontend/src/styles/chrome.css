@@ -190,7 +190,11 @@
   padding: 12px 16px;
   background: var(--panel-strong);
   color: var(--ink);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 0 0 0 var(--accent-soft);
+  transition:
+    border-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.2s ease;
 }
 
 button.field-control {
@@ -211,6 +215,12 @@ button.field-control {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-control {
+    transition: none;
+  }
 }
 
 input[type='checkbox'] {

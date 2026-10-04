@@ -687,11 +687,21 @@
   font-size: 0.95rem;
   padding: 10px 12px;
   outline: none;
+  box-shadow: 0 0 0 0 var(--accent-soft);
+  transition:
+    border-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .study-chat-form textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .study-chat-form textarea {
+    transition: none;
+  }
 }
 
 .study-chat-form .study-chat-send-row .study-send-btn {
