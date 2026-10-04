@@ -1,38 +1,54 @@
-import type { RowDataPacket } from '../../../infrastructure/database/pool.js'
-import { pool } from '../../../infrastructure/database/pool.js'
+import { IsNull, Not } from 'typeorm'
+import { AppDataSource } from '../../../infrastructure/database/data-source.js'
+import { Role, TroopMember, User } from '../../../infrastructure/database/entities/index.js'
+
+function users() {
+  return AppDataSource.getRepository(User)
+}
+
+async function withRole(user: User | null) {
+  if (!user) return null
+  const role = await AppDataSource.getRepository(Role).findOne({
+    where: { id: user.roleId },
+  })
+  if (!role) return null
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    password_hash: user.passwordHash,
+    is_active: user.isActive,
+    xp_total: user.xpTotal,
+    level: user.level,
+    avatar_kind: user.avatarKind,
+    avatar_preset_id: user.avatarPresetId,
+    avatar_file: user.avatarFile,
+    frame_id: user.frameId,
+    role: role.code,
+  }
+}
 
 export async function findLoginByUsername(username: string) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT u.id, u.username, u.email, u.password_hash, u.is_active, u.xp_total,
-            u.avatar_kind, u.avatar_preset_id, u.avatar_file, u.frame_id,
-            r.code AS role
-     FROM users u
-     INNER JOIN roles r ON r.id = u.role_id
-     WHERE u.username = ? LIMIT 1`,
-    [username],
-  )
-  return rows[0] ?? null
+  const user = await users().findOne({ where: { username } })
+  return withRole(user)
 }
 
 export async function findSessionById(userId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT u.username, u.email, u.xp_total, r.code AS role,
-            u.avatar_kind, u.avatar_preset_id, u.avatar_file, u.frame_id
-     FROM users u
-     INNER JOIN roles r ON r.id = u.role_id
-     WHERE u.id = ? LIMIT 1`,
-    [userId],
-  )
-  return rows[0] ?? null
+  const user = await users().findOne({ where: { id: userId } })
+  return withRole(user)
+}
+
+export async function findAuthById(userId: number) {
+  return findSessionById(userId)
 }
 
 export async function findActiveTroopRole(userId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT role FROM troop_members
-     WHERE user_id = ? AND left_at IS NULL LIMIT 1`,
-    [userId],
-  )
-  return (rows[0]?.role as 'captain' | 'copilot' | 'member' | undefined) ?? null
+  const member = await AppDataSource.getRepository(TroopMember).findOne({
+    where: { userId, leftAt: IsNull() },
+  })
+  const role = member?.role
+  if (role === 'captain' || role === 'copilot' || role === 'member') return role
+  return null
 }
 
 export async function updateAvatar(input: {
@@ -42,37 +58,27 @@ export async function updateAvatar(input: {
   fileName: string | null
   frameId?: string
 }) {
-  if (input.frameId !== undefined) {
-    await pool.query(
-      `UPDATE users
-       SET avatar_kind = ?, avatar_preset_id = ?, avatar_file = ?, frame_id = ?
-       WHERE id = ?`,
-      [input.avatarKind, input.presetId, input.fileName, input.frameId, input.userId],
-    )
-    return
+  const patch: Partial<User> = {
+    avatarKind: input.avatarKind,
+    avatarPresetId: input.presetId,
+    avatarFile: input.fileName,
   }
-  await pool.query(
-    `UPDATE users
-     SET avatar_kind = ?, avatar_preset_id = ?, avatar_file = ?
-     WHERE id = ?`,
-    [input.avatarKind, input.presetId, input.fileName, input.userId],
-  )
+  if (input.frameId !== undefined) patch.frameId = input.frameId
+  await users().update({ id: input.userId }, patch)
 }
 
 export async function findUserIdByUsername(username: string, exceptUserId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id FROM users WHERE username = ? AND id <> ? LIMIT 1',
-    [username, exceptUserId],
-  )
-  return rows[0] ?? null
+  return users().findOne({
+    where: { username, id: Not(exceptUserId) },
+    select: { id: true },
+  })
 }
 
 export async function findUserIdByEmail(email: string, exceptUserId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1',
-    [email, exceptUserId],
-  )
-  return rows[0] ?? null
+  return users().findOne({
+    where: { email, id: Not(exceptUserId) },
+    select: { id: true },
+  })
 }
 
 export async function updateProfile(input: {
@@ -81,25 +87,22 @@ export async function updateProfile(input: {
   email: string
   passwordHash?: string
 }) {
-  if (input.passwordHash) {
-    await pool.query(
-      `UPDATE users SET username = ?, email = ?, password_hash = ? WHERE id = ?`,
-      [input.username, input.email, input.passwordHash, input.userId],
-    )
-    return
+  const patch: Partial<User> = {
+    username: input.username,
+    email: input.email,
   }
-  await pool.query(`UPDATE users SET username = ?, email = ? WHERE id = ?`, [
-    input.username,
-    input.email,
-    input.userId,
-  ])
+  if (input.passwordHash) patch.passwordHash = input.passwordHash
+  await users().update({ id: input.userId }, patch)
 }
 
 export async function findAvatarRow(userId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT xp_total, avatar_kind, avatar_preset_id, avatar_file, frame_id
-     FROM users WHERE id = ? LIMIT 1`,
-    [userId],
-  )
-  return rows[0] ?? null
+  const user = await users().findOne({ where: { id: userId } })
+  if (!user) return null
+  return {
+    xp_total: user.xpTotal,
+    avatar_kind: user.avatarKind,
+    avatar_preset_id: user.avatarPresetId,
+    avatar_file: user.avatarFile,
+    frame_id: user.frameId,
+  }
 }

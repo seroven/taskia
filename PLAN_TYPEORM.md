@@ -228,4 +228,5 @@ No hace falta Vitest para cerrar el plan. Si un corte se pone frágil (XP o el r
 
 - **T0 hecho.** TypeORM 1 (`synchronize: false`), 28 entidades en `src/infrastructure/database/entities/`, transformers de bigint y de fecha civil, estrategia de nombres snake_case. `scripts/t0-check.ts` contra Postgres local, dentro de una transacción que hace rollback: `users.id` es número, `due_date` vuelve `YYYY-MM-DD`, `orIgnore()` devuelve 1 fila la primera vez y 0 en el conflicto. El pool viejo sigue atendiendo las consultas. El servidor abre el `DataSource` al arrancar.
 - Las relaciones `@ManyToOne` se declaran en el corte que haga el join. Ponerlas junto a la columna del id duplica el mapeo.
-- Siguiente: **T1** auth, catálogo, sesión, roles y `llm_usage`.
+- **T1 hecho.** Auth, catálogo, sesión (`requireAuth`, vínculo guardián), `roleIdByCode` y el `INSERT` de `llm_usage` leen y escriben por las entidades. `scripts/t1-check.ts` leyó a Sebastian (admin, id numérico, `is_active` boolean), las tres dificultades y el id del rol `user`. `roleCodeEquals` sigue siendo un fragmento SQL: lo usan admin y mundos, que todavía no se movieron.
+- Siguiente: **T2** tareas.

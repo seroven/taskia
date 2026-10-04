@@ -1,5 +1,6 @@
 import { env } from '../../config/env.js'
-import { pool } from '../database/pool.js'
+import { AppDataSource } from '../database/data-source.js'
+import { LlmUsage } from '../database/entities/index.js'
 import { TRANSCRIBE_SYSTEM } from '../../prompts/transcribe.js'
 import { AppError } from '../../shared/errors/app-error.js'
 
@@ -232,19 +233,14 @@ async function recordLlmUsage(
   usage: { prompt: number; output: number; total: number },
 ) {
   try {
-    await pool.query(
-      `INSERT INTO llm_usage
-         (user_id, kind, model, prompt_tokens, output_tokens, total_tokens)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        ctx.userId,
-        ctx.kind,
-        model,
-        Math.max(0, usage.prompt),
-        Math.max(0, usage.output),
-        Math.max(0, usage.total),
-      ],
-    )
+    await AppDataSource.getRepository(LlmUsage).insert({
+      userId: ctx.userId,
+      kind: ctx.kind,
+      model,
+      promptTokens: Math.max(0, usage.prompt),
+      outputTokens: Math.max(0, usage.output),
+      totalTokens: Math.max(0, usage.total),
+    })
   } catch {
     /* la tabla puede no existir aún; no cortar la sesión del niño */
   }

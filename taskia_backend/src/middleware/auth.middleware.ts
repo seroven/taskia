@@ -1,8 +1,9 @@
 import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env.js'
-import { pool } from '../infrastructure/database/pool.js'
-import type { RowDataPacket } from '../infrastructure/database/pool.js'
+import { AppDataSource } from '../infrastructure/database/data-source.js'
+import { ParentStudentLink } from '../infrastructure/database/entities/index.js'
+import { findAuthById } from '../modules/auth/repositories/user.repository.js'
 import { AppError } from '../shared/errors/app-error.js'
 import type { JwtPayload, PublicUser, UserRole } from '../utils/helpers.js'
 import { progressFromXpTotal } from '../services/xp.js'
@@ -66,17 +67,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       throw new AppError('Sesión inválida o expirada', 401)
     }
 
-    const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id, u.username, u.email, u.is_active, u.level, u.xp_total,
-              u.avatar_kind, u.avatar_preset_id, u.avatar_file, u.frame_id,
-              r.code AS role
-       FROM users u
-       INNER JOIN roles r ON r.id = u.role_id
-       WHERE u.id = ? LIMIT 1`,
-      [decoded.sub],
-    )
-
-    const user = rows[0]
+    const user = await findAuthById(decoded.sub)
     if (!user) throw new AppError('Debes iniciar sesión', 401)
     if (Number(user.is_active) === 0) {
       throw new AppError('Tu cuenta está pausada. Pídele ayuda a un adulto.', 403)
@@ -140,14 +131,10 @@ export function requireParent(req: Request, _res: Response, next: NextFunction) 
 }
 
 export async function assertParentLinked(parentId: number, studentId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT 1 AS ok
-     FROM parent_student_links
-     WHERE parent_id = ? AND student_id = ? AND is_active = 1
-     LIMIT 1`,
-    [parentId, studentId],
-  )
-  if (!rows[0]) {
+  const link = await AppDataSource.getRepository(ParentStudentLink).findOne({
+    where: { parentId, studentId, isActive: true },
+  })
+  if (!link) {
     throw new AppError('Ese explorador no está vinculado a tu cuenta', 403)
   }
 }
