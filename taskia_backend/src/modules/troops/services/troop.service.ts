@@ -1,17 +1,44 @@
-import type { ResultSetHeader, RowDataPacket } from '../../../infrastructure/database/pool.js'
-import { pool } from '../../../infrastructure/database/pool.js'
 import { civilDayFromInstant } from '../../../infrastructure/database/civil-date.js'
+import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
+import { PLANET_GENERATE_SYSTEM } from '../../../prompts/planet.js'
+import { PRODUCT_TZ, weekStartMonday } from '../../../services/xp.js'
 import { AppError, extractJson, toInstantISO } from '../../../utils/helpers.js'
 import { normalizePlanetParams } from '../lib/planet-params.js'
+import {
+  cancelPendingInvitesTo,
+  countActiveMembers,
+  countInvitesSentToday,
+  countPendingInvites,
+  createTroopWithCaptain,
+  findActiveExplorer,
+  findActiveMembership,
+  findCaptainId,
+  findPendingInvite,
+  findTroop,
+  insertInvite,
+  joinTroopAsMember,
+  leaveTroop as persistLeave,
+  listActiveMembers,
+  listIncomingInvites,
+  listTroopRequests,
+  markMemberLeft,
+  rankingPage,
+  replaceCopilot,
+  searchExplorers as searchExplorerRows,
+  setInviteStatus,
+  setPlanetParams,
+  setPlanetStyle,
+  troopWeekXp,
+  universePage,
+  weeklyRanks,
+  type MemberRow,
+} from '../repositories/troop.repository.js'
 import {
   parseExplorerSearch,
   parsePlanetPrompt,
   parsePlanetStyleId,
   parseTroopName,
 } from '../schemas/troop.schema.js'
-import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
-import { PLANET_GENERATE_SYSTEM } from '../../../prompts/planet.js'
-import { PRODUCT_TZ, weekStartMonday } from '../../../services/xp.js'
 
 type TroopReq = {
   user?: { id: number }
@@ -26,41 +53,20 @@ const MAX_INVITES_SENT_PER_DAY = 20
 
 type TroopRole = 'captain' | 'copilot' | 'member'
 
-function mapMember(r: RowDataPacket) {
+function mapMember(r: MemberRow) {
   return {
     user_id: Number(r.user_id),
-    username: r.username as string,
+    username: r.username,
     role: r.role as TroopRole,
     level: Number(r.level ?? 1),
     xp_total: Number(r.xp_total ?? 0),
     xp_week: Number(r.xp_week ?? 0),
-    joined_at: toInstantISO(r.joined_at as Date | string) ?? '',
+    joined_at: toInstantISO(r.joined_at) ?? '',
     avatar_kind: (r.avatar_kind as 'preset' | 'upload' | undefined) ?? 'preset',
-    avatar_preset_id: (r.avatar_preset_id as string | null) ?? 'rocket',
-    avatar_file: (r.avatar_file as string | null) ?? null,
-    frame_id: (r.frame_id as string | null) ?? 'none',
+    avatar_preset_id: r.avatar_preset_id ?? 'rocket',
+    avatar_file: r.avatar_file ?? null,
+    frame_id: r.frame_id ?? 'none',
   }
-}
-
-async function activeMembership(userId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT tm.id, tm.troop_id, tm.role, t.name AS troop_name, t.is_active
-     FROM troop_members tm
-     INNER JOIN troops t ON t.id = tm.troop_id
-     WHERE tm.user_id = ? AND tm.left_at IS NULL
-     LIMIT 1`,
-    [userId],
-  )
-  return rows[0] ?? null
-}
-
-async function countActiveMembers(troopId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT COUNT(*) AS c FROM troop_members
-     WHERE troop_id = ? AND left_at IS NULL`,
-    [troopId],
-  )
-  return Number(rows[0]?.c ?? 0)
 }
 
 function troopLevelFromMembers(members: { level: number }[]) {
@@ -69,257 +75,107 @@ function troopLevelFromMembers(members: { level: number }[]) {
   return Math.max(1, Math.round(sum / members.length))
 }
 
-async function weeklyRankByTroopId(weekStart: string): Promise<Map<number, number>> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT t.id,
-            COALESCE(SUM(a.amount), 0) AS xp_week
-     FROM troops t
-     INNER JOIN troop_members tm
-       ON tm.troop_id = t.id AND tm.left_at IS NULL
-     LEFT JOIN xp_awards a
-       ON a.user_id = tm.user_id AND a.week_start = ?
-     WHERE t.is_active = TRUE
-     GROUP BY t.id, t.name
-     ORDER BY xp_week DESC, t.name ASC`,
-    [weekStart],
-  )
-  const map = new Map<number, number>()
-  rows.forEach((r, i) => map.set(Number(r.id), i + 1))
-  return map
+function mapInvite(
+  i: {
+    id: number
+    troop_id: number
+    troop_name: string
+    from_user_id: number
+    from_username: string
+    created_at: Date
+  },
+  direction: 'invite' | 'request',
+) {
+  return {
+    id: Number(i.id),
+    troop_id: Number(i.troop_id),
+    troop_name: i.troop_name,
+    from_user_id: Number(i.from_user_id),
+    from_username: i.from_username,
+    direction,
+    created_at: toInstantISO(i.created_at) ?? '',
+  }
 }
 
 async function loadTroopDetail(troopId: number, viewerId: number) {
-  const [trows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, name, is_active, created_at,
-            planet_style_id, planet_seed, planet_params
-     FROM troops WHERE id = ? LIMIT 1`,
-    [troopId],
-  )
-  const troop = trows[0]
-  if (!troop || Number(troop.is_active) === 0) {
+  const troop = await findTroop(troopId)
+  if (!troop || Number(troop.isActive) === 0) {
     throw new AppError('Tropa no encontrada', 404)
   }
 
   const weekStart = weekStartMonday()
-  const [members] = await pool.query<RowDataPacket[]>(
-    `SELECT tm.user_id, u.username, tm.role, u.level, u.xp_total, tm.joined_at,
-            u.avatar_kind, u.avatar_preset_id, u.avatar_file, u.frame_id,
-            COALESCE((
-              SELECT SUM(a.amount) FROM xp_awards a
-              WHERE a.user_id = tm.user_id AND a.week_start = ?
-            ), 0) AS xp_week
-     FROM troop_members tm
-     INNER JOIN users u ON u.id = tm.user_id
-     WHERE tm.troop_id = ? AND tm.left_at IS NULL
-     ORDER BY u.level DESC, u.xp_total DESC, tm.joined_at ASC`,
-    [weekStart, troopId],
-  )
-
+  const members = await listActiveMembers(troopId, weekStart)
   const myRow = members.find((m) => Number(m.user_id) === viewerId)
   const ranked = members.map((m, i) => ({ ...mapMember(m), rank: i + 1 }))
   const level = troopLevelFromMembers(ranked)
-  const ranks = await weeklyRankByTroopId(weekStart)
-  const [xpRow] = await pool.query<RowDataPacket[]>(
-    `SELECT COALESCE(SUM(a.amount), 0) AS xp_week
-     FROM troop_members tm
-     LEFT JOIN xp_awards a
-       ON a.user_id = tm.user_id AND a.week_start = ?
-     WHERE tm.troop_id = ? AND tm.left_at IS NULL`,
-    [weekStart, troopId],
-  )
+  const ranks = await weeklyRanks(weekStart)
+  const xpWeek = await troopWeekXp(troopId, weekStart)
 
   return {
     id: Number(troop.id),
-    name: troop.name as string,
+    name: troop.name,
     member_count: ranked.length,
     max_members: MAX_MEMBERS,
     my_role: (myRow?.role as TroopRole | undefined) ?? null,
     members: ranked,
     level,
-    xp_week: Number(xpRow[0]?.xp_week ?? 0),
+    xp_week: xpWeek,
     rank: ranks.get(Number(troop.id)) ?? null,
-    planet_style_id: String(troop.planet_style_id ?? 'rocky_blue'),
-    planet_seed: Number(troop.planet_seed ?? troop.id),
-    planet_params: troop.planet_params ?? null,
-    created_at: toInstantISO(troop.created_at as Date) ?? '',
+    planet_style_id: String(troop.planetStyleId ?? 'rocky_blue'),
+    planet_seed: Number(troop.planetSeed ?? troop.id),
+    planet_params: troop.planetParams ?? null,
+    created_at: toInstantISO(troop.createdAt) ?? '',
   }
-}
-
-async function promoteSuccessor(troopId: number, conn: Awaited<ReturnType<typeof pool.getConnection>>) {
-  const [copilot] = await conn.query<RowDataPacket[]>(
-    `SELECT user_id FROM troop_members
-     WHERE troop_id = ? AND left_at IS NULL AND role = 'copilot'
-     LIMIT 1`,
-    [troopId],
-  )
-  if (copilot[0]) {
-    await conn.query(
-      `UPDATE troop_members SET role = 'captain'
-       WHERE troop_id = ? AND user_id = ? AND left_at IS NULL`,
-      [troopId, copilot[0].user_id],
-    )
-    return
-  }
-  const [next] = await conn.query<RowDataPacket[]>(
-    `SELECT tm.user_id
-     FROM troop_members tm
-     INNER JOIN users u ON u.id = tm.user_id
-     WHERE tm.troop_id = ? AND tm.left_at IS NULL
-     ORDER BY u.level DESC, u.xp_total DESC, tm.joined_at ASC
-     LIMIT 1`,
-    [troopId],
-  )
-  if (next[0]) {
-    await conn.query(
-      `UPDATE troop_members SET role = 'captain'
-       WHERE troop_id = ? AND user_id = ? AND left_at IS NULL`,
-      [troopId, next[0].user_id],
-    )
-  } else {
-    await conn.query(`UPDATE troops SET is_active = FALSE WHERE id = ?`, [troopId])
-  }
-}
-
-async function joinTroopAsMember(troopId: number, userId: number) {
-  // Reactivar fila histórica o insertar
-  const [existing] = await pool.query<RowDataPacket[]>(
-    `SELECT id, left_at FROM troop_members
-     WHERE troop_id = ? AND user_id = ? LIMIT 1`,
-    [troopId, userId],
-  )
-  if (existing[0]) {
-    if (existing[0].left_at == null) return
-    await pool.query(
-      `UPDATE troop_members
-       SET role = 'member', left_at = NULL, joined_at = NOW()
-       WHERE id = ?`,
-      [existing[0].id],
-    )
-    return
-  }
-  await pool.query(
-    `INSERT INTO troop_members (troop_id, user_id, role) VALUES (?, ?, 'member')`,
-    [troopId, userId],
-  )
 }
 
 /** Mi tropa + invitaciones pendientes recibidas. */
 export async function getMe(req: TroopReq) {
-    const userId = req.user!.id
-    const membership = await activeMembership(userId)
-    const troop = membership
-      ? await loadTroopDetail(Number(membership.troop_id), userId)
-      : null
-
-    const [invites] = await pool.query<RowDataPacket[]>(
-      `SELECT i.id, i.troop_id, t.name AS troop_name, i.from_user_id,
-              fu.username AS from_username, i.created_at, i.direction
-       FROM troop_invites i
-       INNER JOIN troops t ON t.id = i.troop_id AND t.is_active = TRUE
-       INNER JOIN users fu ON fu.id = i.from_user_id
-       WHERE i.to_user_id = ? AND i.status = 'pending' AND i.direction = 'invite'
-       ORDER BY i.id DESC`,
-      [userId],
-    )
-
-    return({
-      troop,
-      invites: invites.map((i) => ({
-        id: Number(i.id),
-        troop_id: Number(i.troop_id),
-        troop_name: i.troop_name as string,
-        from_user_id: Number(i.from_user_id),
-        from_username: i.from_username as string,
-        direction: 'invite' as const,
-        created_at: toInstantISO(i.created_at as Date) ?? '',
-      })),
-    })
+  const userId = req.user!.id
+  const membership = await findActiveMembership(userId)
+  const troop = membership ? await loadTroopDetail(Number(membership.troop_id), userId) : null
+  const invites = await listIncomingInvites(userId)
+  return {
+    troop,
+    invites: invites.map((i) => mapInvite(i, 'invite')),
+  }
 }
 
 /** Bandeja: invitaciones recibidas + solicitudes a mi tropa (Capitán/Copiloto). */
 export async function getInbox(req: TroopReq) {
-    const userId = req.user!.id
-    const membership = await activeMembership(userId)
+  const userId = req.user!.id
+  const membership = await findActiveMembership(userId)
+  const invites = await listIncomingInvites(userId)
+  const role = membership?.role as TroopRole | undefined
+  const requests =
+    membership && (role === 'captain' || role === 'copilot')
+      ? await listTroopRequests(Number(membership.troop_id))
+      : []
 
-    const [invites] = await pool.query<RowDataPacket[]>(
-      `SELECT i.id, i.troop_id, t.name AS troop_name, i.from_user_id,
-              fu.username AS from_username, i.created_at
-       FROM troop_invites i
-       INNER JOIN troops t ON t.id = i.troop_id AND t.is_active = TRUE
-       INNER JOIN users fu ON fu.id = i.from_user_id
-       WHERE i.to_user_id = ? AND i.status = 'pending' AND i.direction = 'invite'
-       ORDER BY i.id DESC`,
-      [userId],
-    )
-
-    let requests: RowDataPacket[] = []
-    const role = membership?.role as TroopRole | undefined
-    if (
-      membership &&
-      (role === 'captain' || role === 'copilot')
-    ) {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        `SELECT i.id, i.troop_id, t.name AS troop_name, i.from_user_id,
-                fu.username AS from_username, i.created_at
-         FROM troop_invites i
-         INNER JOIN troops t ON t.id = i.troop_id AND t.is_active = TRUE
-         INNER JOIN users fu ON fu.id = i.from_user_id
-         WHERE i.troop_id = ? AND i.status = 'pending' AND i.direction = 'request'
-         ORDER BY i.id DESC`,
-        [Number(membership.troop_id)],
-      )
-      requests = rows
-    }
-
-    const mapItem = (i: RowDataPacket, direction: 'invite' | 'request') => ({
-      id: Number(i.id),
-      troop_id: Number(i.troop_id),
-      troop_name: i.troop_name as string,
-      from_user_id: Number(i.from_user_id),
-      from_username: i.from_username as string,
-      direction,
-      created_at: toInstantISO(i.created_at as Date) ?? '',
-    })
-
-    return({
-      invites: invites.map((i) => mapItem(i, 'invite')),
-      requests: requests.map((i) => mapItem(i, 'request')),
-    })
+  return {
+    invites: invites.map((i) => mapInvite(i, 'invite')),
+    requests: requests.map((i) => mapInvite(i, 'request')),
+  }
 }
 
 /** Ranking semanal de tropas (lun–dom America/Lima vía week_start). */
 export async function getRanking(req: TroopReq) {
-    const weekStart = weekStartMonday()
-    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50))
-    const offset = Math.max(0, Number(req.query.offset) || 0)
-    const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT t.id, t.name,
-              COUNT(DISTINCT tm.user_id) AS member_count,
-              COALESCE(SUM(a.amount), 0) AS xp_week
-       FROM troops t
-       INNER JOIN troop_members tm
-         ON tm.troop_id = t.id AND tm.left_at IS NULL
-       LEFT JOIN xp_awards a
-         ON a.user_id = tm.user_id AND a.week_start = ?
-       WHERE t.is_active = TRUE
-       GROUP BY t.id, t.name
-       ORDER BY xp_week DESC, t.name ASC
-       LIMIT ? OFFSET ?`,
-      [weekStart, limit, offset],
-    )
-    return({
-      week_start: weekStart,
-      offset,
-      limit,
-      has_more: rows.length === limit,
-      troops: rows.map((r, i) => ({
-        rank: offset + i + 1,
-        id: Number(r.id),
-        name: r.name as string,
-        member_count: Number(r.member_count),
-        xp_week: Number(r.xp_week),
-      })),
-    })
+  const weekStart = weekStartMonday()
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50))
+  const offset = Math.max(0, Number(req.query.offset) || 0)
+  const rows = await rankingPage(weekStart, limit, offset)
+  return {
+    week_start: weekStart,
+    offset,
+    limit,
+    has_more: rows.length === limit,
+    troops: rows.map((r, i) => ({
+      rank: offset + i + 1,
+      id: Number(r.id),
+      name: r.name,
+      member_count: Number(r.member_count),
+      xp_week: Number(r.xp_week),
+    })),
+  }
 }
 
 /**
@@ -327,541 +183,319 @@ export async function getRanking(req: TroopReq) {
  * Mi tropa primero (si hay); el resto orden estable por id.
  */
 export async function getUniverse(req: TroopReq) {
-    const userId = req.user!.id
-    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50))
-    const offset = Math.max(0, Number(req.query.offset) || 0)
-    const weekStart = weekStartMonday()
-    const membership = await activeMembership(userId)
-    const myTroopId = membership ? Number(membership.troop_id) : null
-    const ranks = await weeklyRankByTroopId(weekStart)
+  const userId = req.user!.id
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50))
+  const offset = Math.max(0, Number(req.query.offset) || 0)
+  const weekStart = weekStartMonday()
+  const membership = await findActiveMembership(userId)
+  const myTroopId = membership ? Number(membership.troop_id) : null
+  const ranks = await weeklyRanks(weekStart)
+  const rows = await universePage(weekStart, myTroopId, limit, offset)
 
-    const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT t.id, t.name, t.planet_style_id, t.planet_seed, t.planet_params,
-              COUNT(DISTINCT tm.user_id) AS member_count,
-              COALESCE(AVG(u.level), 1) AS avg_level,
-              COALESCE(SUM(a.amount), 0) AS xp_week
-       FROM troops t
-       INNER JOIN troop_members tm
-         ON tm.troop_id = t.id AND tm.left_at IS NULL
-       INNER JOIN users u ON u.id = tm.user_id
-       LEFT JOIN xp_awards a
-         ON a.user_id = tm.user_id AND a.week_start = ?
-       WHERE t.is_active = TRUE
-       GROUP BY t.id, t.name, t.planet_style_id, t.planet_seed, t.planet_params
-       ORDER BY
-         CASE WHEN t.id = ? THEN 0 ELSE 1 END,
-         t.id ASC
-       LIMIT ? OFFSET ?`,
-      [weekStart, myTroopId ?? -1, limit, offset],
-    )
-
-    return({
-      week_start: weekStart,
-      my_troop_id: myTroopId,
-      offset,
-      limit,
-      has_more: rows.length === limit,
-      troops: rows.map((r) => {
-        const id = Number(r.id)
-        return {
-          id,
-          name: r.name as string,
-          member_count: Number(r.member_count),
-          level: Math.max(1, Math.round(Number(r.avg_level ?? 1))),
-          xp_week: Number(r.xp_week),
-          rank: ranks.get(id) ?? null,
-          is_mine: myTroopId != null && id === myTroopId,
-          planet_style_id: String(r.planet_style_id ?? 'rocky_blue'),
-          planet_seed: Number(r.planet_seed ?? id),
-          planet_params: r.planet_params ?? null,
-        }
-      }),
-    })
+  return {
+    week_start: weekStart,
+    my_troop_id: myTroopId,
+    offset,
+    limit,
+    has_more: rows.length === limit,
+    troops: rows.map((r) => {
+      const id = Number(r.id)
+      return {
+        id,
+        name: r.name,
+        member_count: Number(r.member_count),
+        level: Math.max(1, Math.round(Number(r.avg_level ?? 1))),
+        xp_week: Number(r.xp_week),
+        rank: ranks.get(id) ?? null,
+        is_mine: myTroopId != null && id === myTroopId,
+        planet_style_id: String(r.planet_style_id ?? 'rocky_blue'),
+        planet_seed: Number(r.planet_seed ?? id),
+        planet_params: r.planet_params ?? null,
+      }
+    }),
+  }
 }
 
 /** Buscar exploradores por nombre (global). */
 export async function searchExplorers(req: TroopReq) {
-    const q = parseExplorerSearch(req.query.q)
-    const userId = req.user!.id
-    const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id, u.username, u.level, u.xp_total,
-              (SELECT tm.troop_id FROM troop_members tm
-               WHERE tm.user_id = u.id AND tm.left_at IS NULL LIMIT 1) AS troop_id
-       FROM users u
-       INNER JOIN roles r ON r.id = u.role_id AND r.code = 'user'
-       WHERE u.is_active = TRUE
-         AND u.id <> ?
-         AND u.username ILIKE ?
-       ORDER BY u.username ASC
-       LIMIT 20`,
-      [userId, `%${q}%`],
-    )
-    return rows.map((r) => ({
-      id: Number(r.id),
-      username: r.username as string,
-      level: Number(r.level ?? 1),
-      xp_total: Number(r.xp_total ?? 0),
-      in_troop: r.troop_id != null,
-    }))
+  const q = parseExplorerSearch(req.query.q)
+  const userId = req.user!.id
+  const rows = await searchExplorerRows(userId, q)
+  return rows.map((r) => ({
+    id: Number(r.id),
+    username: r.username,
+    level: Number(r.level ?? 1),
+    xp_total: Number(r.xp_total ?? 0),
+    in_troop: r.troop_id != null,
+  }))
 }
 
 export async function createTroop(req: TroopReq) {
-    const userId = req.user!.id
-    const name = parseTroopName(req.body.name)
-    if (await activeMembership(userId)) {
-      throw new AppError('Ya estás en una tropa. Sal primero para crear otra.')
-    }
-
-    const conn = await pool.getConnection()
-    try {
-      await conn.beginTransaction()
-      const [ins] = await conn.query<ResultSetHeader>(
-        `INSERT INTO troops (name) VALUES (?)`,
-        [name],
-      )
-      const troopId = Number(ins.insertId)
-      await conn.query(
-        `UPDATE troops SET planet_seed = ? WHERE id = ?`,
-        [troopId % 2147483647, troopId],
-      )
-      await conn.query(
-        `INSERT INTO troop_members (troop_id, user_id, role) VALUES (?, ?, 'captain')`,
-        [troopId, userId],
-      )
-      await conn.commit()
-      return(await loadTroopDetail(troopId, userId))
-    } catch (err) {
-      await conn.rollback()
-      throw err
-    } finally {
-      conn.release()
-    }
+  const userId = req.user!.id
+  const name = parseTroopName(req.body.name)
+  if (await findActiveMembership(userId)) {
+    throw new AppError('Ya estás en una tropa. Sal primero para crear otra.')
+  }
+  const troopId = await createTroopWithCaptain(name, userId)
+  return loadTroopDetail(troopId, userId)
 }
 
 export async function inviteExplorer(req: TroopReq) {
-    const userId = req.user!.id
-    const toUserId = Number(req.body.to_user_id)
-    if (!Number.isFinite(toUserId)) throw new AppError('Explorador no válido')
+  const userId = req.user!.id
+  const toUserId = Number(req.body.to_user_id)
+  if (!Number.isFinite(toUserId)) throw new AppError('Explorador no válido')
 
-    const membership = await activeMembership(userId)
-    if (!membership) throw new AppError('Primero crea o únete a una tropa')
-    const role = membership.role as TroopRole
-    if (role !== 'captain' && role !== 'copilot') {
-      throw new AppError('Solo el Capitán o el Copiloto pueden invitar')
-    }
+  const membership = await findActiveMembership(userId)
+  if (!membership) throw new AppError('Primero crea o únete a una tropa')
+  const role = membership.role as TroopRole
+  if (role !== 'captain' && role !== 'copilot') {
+    throw new AppError('Solo el Capitán o el Copiloto pueden invitar')
+  }
 
-    const troopId = Number(membership.troop_id)
-    if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
-      throw new AppError(`La tropa ya tiene ${MAX_MEMBERS} exploradores`)
-    }
+  const troopId = Number(membership.troop_id)
+  if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
+    throw new AppError(`La tropa ya tiene ${MAX_MEMBERS} exploradores`)
+  }
+  if ((await countPendingInvites(troopId)) >= MAX_PENDING_INVITES_PER_TROOP) {
+    throw new AppError('Hay demasiadas invitaciones pendientes. Espera a que respondan.')
+  }
 
-    const [pendingCount] = await pool.query<RowDataPacket[]>(
-      `SELECT COUNT(*) AS c FROM troop_invites
-       WHERE troop_id = ? AND status = 'pending'`,
-      [troopId],
-    )
-    if (Number(pendingCount[0]?.c ?? 0) >= MAX_PENDING_INVITES_PER_TROOP) {
-      throw new AppError(
-        'Hay demasiadas invitaciones pendientes. Espera a que respondan.',
-      )
-    }
+  const today = civilDayFromInstant(new Date(), PRODUCT_TZ)
+  if ((await countInvitesSentToday(userId, today)) >= MAX_INVITES_SENT_PER_DAY) {
+    throw new AppError('Ya enviaste demasiadas invitaciones hoy. Prueba mañana.')
+  }
+  if (!(await findActiveExplorer(toUserId))) throw new AppError('Explorador no encontrado', 404)
+  if (await findActiveMembership(toUserId)) {
+    throw new AppError('Ese explorador ya está en una tropa')
+  }
 
-    const today = civilDayFromInstant(new Date(), PRODUCT_TZ)
-    const [sentToday] = await pool.query<RowDataPacket[]>(
-      `SELECT COUNT(*) AS c FROM troop_invites
-       WHERE from_user_id = ?
-         AND created_at >= (?::date AT TIME ZONE 'America/Lima')
-         AND created_at < ((?::date + 1) AT TIME ZONE 'America/Lima')`,
-      [userId, today, today],
-    )
-    if (Number(sentToday[0]?.c ?? 0) >= MAX_INVITES_SENT_PER_DAY) {
-      throw new AppError(
-        'Ya enviaste demasiadas invitaciones hoy. Prueba mañana.',
-      )
-    }
-
-    const [target] = await pool.query<RowDataPacket[]>(
-      `SELECT u.id FROM users u
-       INNER JOIN roles r ON r.id = u.role_id AND r.code = 'user'
-       WHERE u.id = ? AND u.is_active = TRUE LIMIT 1`,
-      [toUserId],
-    )
-    if (!target[0]) throw new AppError('Explorador no encontrado', 404)
-    if (await activeMembership(toUserId)) {
-      throw new AppError('Ese explorador ya está en una tropa')
-    }
-
-    try {
-      const [ins] = await pool.query<ResultSetHeader>(
-        `INSERT INTO troop_invites
-           (troop_id, from_user_id, to_user_id, status, direction)
-         VALUES (?, ?, ?, 'pending', 'invite')`,
-        [troopId, userId, toUserId],
-      )
-      return({ id: Number(ins.insertId), ok: true })
-    } catch {
-      throw new AppError('Ya hay una invitación pendiente para ese explorador')
-    }
+  try {
+    const id = await insertInvite({
+      troopId,
+      fromUserId: userId,
+      toUserId,
+      direction: 'invite',
+    })
+    return { id: Number(id), ok: true }
+  } catch {
+    throw new AppError('Ya hay una invitación pendiente para ese explorador')
+  }
 }
 
 /** Explorador sin tropa pide unirse a una tropa. */
 export async function requestJoin(req: TroopReq) {
-    const userId = req.user!.id
-    const troopId = Number(req.params.id)
-    if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
-    if (await activeMembership(userId)) {
-      throw new AppError('Ya estás en una tropa')
-    }
+  const userId = req.user!.id
+  const troopId = Number(req.params.id)
+  if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
+  if (await findActiveMembership(userId)) {
+    throw new AppError('Ya estás en una tropa')
+  }
 
-    const [trows] = await pool.query<RowDataPacket[]>(
-      `SELECT id, is_active FROM troops WHERE id = ? LIMIT 1`,
-      [troopId],
-    )
-    if (!trows[0] || Number(trows[0].is_active) === 0) {
-      throw new AppError('Tropa no encontrada', 404)
+  const troop = await findTroop(troopId)
+  if (!troop || Number(troop.isActive) === 0) {
+    throw new AppError('Tropa no encontrada', 404)
+  }
+  if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
+    throw new AppError('Esa tropa ya está llena')
+  }
+  if ((await countPendingInvites(troopId)) >= MAX_PENDING_INVITES_PER_TROOP) {
+    throw new AppError('Esa tropa tiene demasiadas invitaciones pendientes. Prueba luego.')
+  }
+
+  const captainId = await findCaptainId(troopId)
+  if (captainId == null || captainId === userId) {
+    throw new AppError('No se puede solicitar unirse a esa tropa')
+  }
+
+  try {
+    const id = await insertInvite({
+      troopId,
+      fromUserId: userId,
+      toUserId: captainId,
+      direction: 'request',
+    })
+    return { id: Number(id), ok: true }
+  } catch {
+    throw new AppError('Ya pediste unirte a esa tropa')
+  }
+}
+
+export async function acceptInvite(req: TroopReq) {
+  const userId = req.user!.id
+  const inviteId = Number(req.params.id)
+  const row = await findPendingInvite(inviteId)
+  if (!row || Number(row.is_active) === 0) {
+    throw new AppError('Invitación no válida', 404)
+  }
+
+  const troopId = Number(row.troop_id)
+  const direction = String(row.direction ?? 'invite')
+
+  if (direction === 'invite') {
+    if (Number(row.to_user_id) !== userId) {
+      throw new AppError('Invitación no válida', 404)
+    }
+    if (await findActiveMembership(userId)) {
+      throw new AppError('Ya estás en una tropa')
     }
     if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
       throw new AppError('Esa tropa ya está llena')
     }
+    await setInviteStatus(inviteId, 'accepted')
+    await joinTroopAsMember(troopId, userId)
+    return loadTroopDetail(troopId, userId)
+  }
 
-    const [pendingCount] = await pool.query<RowDataPacket[]>(
-      `SELECT COUNT(*) AS c FROM troop_invites
-       WHERE troop_id = ? AND status = 'pending'`,
-      [troopId],
-    )
-    if (Number(pendingCount[0]?.c ?? 0) >= MAX_PENDING_INVITES_PER_TROOP) {
-      throw new AppError(
-        'Esa tropa tiene demasiadas invitaciones pendientes. Prueba luego.',
-      )
-    }
-
-    const [captain] = await pool.query<RowDataPacket[]>(
-      `SELECT user_id FROM troop_members
-       WHERE troop_id = ? AND left_at IS NULL AND role = 'captain'
-       LIMIT 1`,
-      [troopId],
-    )
-    const captainId = Number(captain[0]?.user_id)
-    if (!Number.isFinite(captainId) || captainId === userId) {
-      throw new AppError('No se puede solicitar unirse a esa tropa')
-    }
-
-    try {
-      const [ins] = await pool.query<ResultSetHeader>(
-        `INSERT INTO troop_invites
-           (troop_id, from_user_id, to_user_id, status, direction)
-         VALUES (?, ?, ?, 'pending', 'request')`,
-        [troopId, userId, captainId],
-      )
-      return({ id: Number(ins.insertId), ok: true })
-    } catch {
-      throw new AppError('Ya pediste unirte a esa tropa')
-    }
-}
-
-export async function acceptInvite(req: TroopReq) {
-    const userId = req.user!.id
-    const inviteId = Number(req.params.id)
-
-    const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT i.id, i.troop_id, i.from_user_id, i.to_user_id, i.direction, t.is_active
-       FROM troop_invites i
-       INNER JOIN troops t ON t.id = i.troop_id
-       WHERE i.id = ? AND i.status = 'pending'
-       LIMIT 1`,
-      [inviteId],
-    )
-    const row = rows[0]
-    if (!row || Number(row.is_active) === 0) {
-      throw new AppError('Invitación no válida', 404)
-    }
-
-    const troopId = Number(row.troop_id)
-    const direction = String(row.direction ?? 'invite')
-
-    if (direction === 'invite') {
-      if (Number(row.to_user_id) !== userId) {
-        throw new AppError('Invitación no válida', 404)
-      }
-      if (await activeMembership(userId)) {
-        throw new AppError('Ya estás en una tropa')
-      }
-      if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
-        throw new AppError('Esa tropa ya está llena')
-      }
-      await pool.query(
-        `UPDATE troop_invites
-         SET status = 'accepted', responded_at = NOW()
-         WHERE id = ?`,
-        [inviteId],
-      )
-      await joinTroopAsMember(troopId, userId)
-      return(await loadTroopDetail(troopId, userId))
-      return
-    }
-
-    // request: Capitán o Copiloto acepta; entra from_user_id
-    const membership = await activeMembership(userId)
-    const role = membership?.role as TroopRole | undefined
-    if (
-      !membership ||
-      Number(membership.troop_id) !== troopId ||
-      (role !== 'captain' && role !== 'copilot')
-    ) {
-      throw new AppError('Solo el Capitán o el Copiloto pueden aceptar')
-    }
-    const joinerId = Number(row.from_user_id)
-    if (await activeMembership(joinerId)) {
-      await pool.query(
-        `UPDATE troop_invites
-         SET status = 'cancelled', responded_at = NOW()
-         WHERE id = ?`,
-        [inviteId],
-      )
-      throw new AppError('Ese explorador ya está en una tropa')
-    }
-    if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
-      throw new AppError('La tropa ya está llena')
-    }
-    await pool.query(
-      `UPDATE troop_invites
-       SET status = 'accepted', responded_at = NOW()
-       WHERE id = ?`,
-      [inviteId],
-    )
-    await joinTroopAsMember(troopId, joinerId)
-    return(await loadTroopDetail(troopId, userId))
+  const membership = await findActiveMembership(userId)
+  const role = membership?.role as TroopRole | undefined
+  if (
+    !membership ||
+    Number(membership.troop_id) !== troopId ||
+    (role !== 'captain' && role !== 'copilot')
+  ) {
+    throw new AppError('Solo el Capitán o el Copiloto pueden aceptar')
+  }
+  const joinerId = Number(row.from_user_id)
+  if (await findActiveMembership(joinerId)) {
+    await setInviteStatus(inviteId, 'cancelled')
+    throw new AppError('Ese explorador ya está en una tropa')
+  }
+  if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
+    throw new AppError('La tropa ya está llena')
+  }
+  await setInviteStatus(inviteId, 'accepted')
+  await joinTroopAsMember(troopId, joinerId)
+  return loadTroopDetail(troopId, userId)
 }
 
 export async function rejectInvite(req: TroopReq) {
-    const userId = req.user!.id
-    const inviteId = Number(req.params.id)
+  const userId = req.user!.id
+  const inviteId = Number(req.params.id)
+  const row = await findPendingInvite(inviteId)
+  if (!row) throw new AppError('Invitación no válida', 404)
 
-    const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT i.id, i.troop_id, i.to_user_id, i.direction
-       FROM troop_invites i
-       WHERE i.id = ? AND i.status = 'pending'
-       LIMIT 1`,
-      [inviteId],
-    )
-    const row = rows[0]
-    if (!row) throw new AppError('Invitación no válida', 404)
-
-    const direction = String(row.direction ?? 'invite')
-    if (direction === 'invite') {
-      if (Number(row.to_user_id) !== userId) {
-        throw new AppError('Invitación no válida', 404)
-      }
-    } else {
-      const membership = await activeMembership(userId)
-      const role = membership?.role as TroopRole | undefined
-      if (
-        !membership ||
-        Number(membership.troop_id) !== Number(row.troop_id) ||
-        (role !== 'captain' && role !== 'copilot')
-      ) {
-        throw new AppError('Solo el Capitán o el Copiloto pueden rechazar')
-      }
+  const direction = String(row.direction ?? 'invite')
+  if (direction === 'invite') {
+    if (Number(row.to_user_id) !== userId) {
+      throw new AppError('Invitación no válida', 404)
     }
+  } else {
+    const membership = await findActiveMembership(userId)
+    const role = membership?.role as TroopRole | undefined
+    if (
+      !membership ||
+      Number(membership.troop_id) !== Number(row.troop_id) ||
+      (role !== 'captain' && role !== 'copilot')
+    ) {
+      throw new AppError('Solo el Capitán o el Copiloto pueden rechazar')
+    }
+  }
 
-    await pool.query(
-      `UPDATE troop_invites
-       SET status = 'rejected', responded_at = NOW()
-       WHERE id = ?`,
-      [inviteId],
-    )
-    return({ ok: true })
+  await setInviteStatus(inviteId, 'rejected')
+  return { ok: true }
 }
 
 /** Capitán asigna o quita copiloto. */
 export async function setCopilot(req: TroopReq) {
-    const userId = req.user!.id
-    const membership = await activeMembership(userId)
-    if (!membership || membership.role !== 'captain') {
-      throw new AppError('Solo el Capitán puede elegir Copiloto')
-    }
-    const troopId = Number(membership.troop_id)
-    const nextId =
-      req.body.user_id === null || req.body.user_id === undefined
-        ? null
-        : Number(req.body.user_id)
-
-    const conn = await pool.getConnection()
-    try {
-      await conn.beginTransaction()
-      await conn.query(
-        `UPDATE troop_members SET role = 'member'
-         WHERE troop_id = ? AND role = 'copilot' AND left_at IS NULL`,
-        [troopId],
-      )
-      if (nextId != null) {
-        if (nextId === userId) throw new AppError('No puedes ser Capitán y Copiloto')
-        const [m] = await conn.query<RowDataPacket[]>(
-          `SELECT user_id FROM troop_members
-           WHERE troop_id = ? AND user_id = ? AND left_at IS NULL LIMIT 1`,
-          [troopId, nextId],
-        )
-        if (!m[0]) throw new AppError('Ese explorador no está en tu tropa')
-        await conn.query(
-          `UPDATE troop_members SET role = 'copilot'
-           WHERE troop_id = ? AND user_id = ? AND left_at IS NULL`,
-          [troopId, nextId],
-        )
-      }
-      await conn.commit()
-    } catch (err) {
-      await conn.rollback()
-      throw err
-    } finally {
-      conn.release()
-    }
-    return(await loadTroopDetail(troopId, userId))
+  const userId = req.user!.id
+  const membership = await findActiveMembership(userId)
+  if (!membership || membership.role !== 'captain') {
+    throw new AppError('Solo el Capitán puede elegir Copiloto')
+  }
+  const troopId = Number(membership.troop_id)
+  const nextId =
+    req.body.user_id === null || req.body.user_id === undefined ? null : Number(req.body.user_id)
+  await replaceCopilot(troopId, userId, nextId)
+  return loadTroopDetail(troopId, userId)
 }
 
 /** Capitán elimina a un miembro (no a sí mismo). */
 export async function kickMember(req: TroopReq) {
-    const userId = req.user!.id
-    const memberUserId = Number(req.params.memberUserId)
-    const membership = await activeMembership(userId)
-    if (!membership || membership.role !== 'captain') {
-      throw new AppError('Solo el Capitán puede sacar a alguien')
-    }
-    if (memberUserId === userId) {
-      throw new AppError('Para irte usa la opción de salir de la tropa')
-    }
-    const troopId = Number(membership.troop_id)
-    const [result] = await pool.query<ResultSetHeader>(
-      `UPDATE troop_members SET left_at = NOW(), role = 'member'
-       WHERE troop_id = ? AND user_id = ? AND left_at IS NULL`,
-      [troopId, memberUserId],
-    )
-    if (result.affectedRows === 0) throw new AppError('Miembro no encontrado', 404)
-    // Cancel pending invites to kicked user for this troop
-    await pool.query(
-      `UPDATE troop_invites SET status = 'cancelled', responded_at = NOW()
-       WHERE troop_id = ? AND to_user_id = ? AND status = 'pending'`,
-      [troopId, memberUserId],
-    )
-    return(await loadTroopDetail(troopId, userId))
+  const userId = req.user!.id
+  const memberUserId = Number(req.params.memberUserId)
+  const membership = await findActiveMembership(userId)
+  if (!membership || membership.role !== 'captain') {
+    throw new AppError('Solo el Capitán puede sacar a alguien')
+  }
+  if (memberUserId === userId) {
+    throw new AppError('Para irte usa la opción de salir de la tropa')
+  }
+  const troopId = Number(membership.troop_id)
+  const affected = await markMemberLeft(troopId, memberUserId)
+  if (affected === 0) throw new AppError('Miembro no encontrado', 404)
+  await cancelPendingInvitesTo(troopId, memberUserId)
+  return loadTroopDetail(troopId, userId)
 }
 
 export async function leaveTroop(req: TroopReq) {
-    const userId = req.user!.id
-    const membership = await activeMembership(userId)
-    if (!membership) throw new AppError('No estás en una tropa')
-    const troopId = Number(membership.troop_id)
-    const wasCaptain = membership.role === 'captain'
-
-    const conn = await pool.getConnection()
-    try {
-      await conn.beginTransaction()
-      await conn.query(
-        `UPDATE troop_members SET left_at = NOW(), role = 'member'
-         WHERE troop_id = ? AND user_id = ? AND left_at IS NULL`,
-        [troopId, userId],
-      )
-      if (wasCaptain) {
-        await promoteSuccessor(troopId, conn)
-      } else {
-        const [count] = await conn.query<RowDataPacket[]>(
-          `SELECT COUNT(*) AS c FROM troop_members
-           WHERE troop_id = ? AND left_at IS NULL`,
-          [troopId],
-        )
-        if (Number(count[0]?.c ?? 0) === 0) {
-          await conn.query(`UPDATE troops SET is_active = FALSE WHERE id = ?`, [
-            troopId,
-          ])
-        }
-      }
-      await conn.commit()
-    } catch (err) {
-      await conn.rollback()
-      throw err
-    } finally {
-      conn.release()
-    }
-    return({ ok: true })
+  const userId = req.user!.id
+  const membership = await findActiveMembership(userId)
+  if (!membership) throw new AppError('No estás en una tropa')
+  await persistLeave(Number(membership.troop_id), userId, membership.role === 'captain')
+  return { ok: true }
 }
 
 /** Capitán o Copiloto pide a la IA parámetros procedurales (preview, no guarda). */
 export async function generatePlanet(req: TroopReq) {
-    const userId = req.user!.id
-    const membership = await activeMembership(userId)
-    const role = membership?.role as TroopRole | undefined
-    if (
-      !membership ||
-      (role !== 'captain' && role !== 'copilot')
-    ) {
-      throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
-    }
-    const prompt = parsePlanetPrompt(req.body.prompt)
+  const userId = req.user!.id
+  const membership = await findActiveMembership(userId)
+  const role = membership?.role as TroopRole | undefined
+  if (!membership || (role !== 'captain' && role !== 'copilot')) {
+    throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
+  }
+  const prompt = parsePlanetPrompt(req.body.prompt)
 
-    const raw = await callGemini({
-      system: PLANET_GENERATE_SYSTEM,
-      user: `Pedido del explorador: ${prompt}`,
-      usage: { userId, kind: 'planet_generate' },
-    })
+  const raw = await callGemini({
+    system: PLANET_GENERATE_SYSTEM,
+    user: `Pedido del explorador: ${prompt}`,
+    usage: { userId, kind: 'planet_generate' },
+  })
 
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(extractJson(raw))
-    } catch {
-      throw new AppError('No pude diseñar ese planeta. Prueba con otras palabras.')
-    }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(extractJson(raw))
+  } catch {
+    throw new AppError('No pude diseñar ese planeta. Prueba con otras palabras.')
+  }
 
-    const preview = normalizePlanetParams(parsed)
-    return({ preview, prompt })
+  const preview = normalizePlanetParams(parsed)
+  return { preview, prompt }
 }
 
 /** Capitán o Copiloto cambia estilo de catálogo o aplica params IA. */
 export async function updatePlanet(req: TroopReq) {
-    const userId = req.user!.id
-    const membership = await activeMembership(userId)
-    const role = membership?.role as TroopRole | undefined
-    if (
-      !membership ||
-      (role !== 'captain' && role !== 'copilot')
-    ) {
-      throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
-    }
-    const troopId = Number(membership.troop_id)
-    const hasStyle = req.body.planet_style_id !== undefined
-    const hasParams = req.body.planet_params !== undefined
+  const userId = req.user!.id
+  const membership = await findActiveMembership(userId)
+  const role = membership?.role as TroopRole | undefined
+  if (!membership || (role !== 'captain' && role !== 'copilot')) {
+    throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
+  }
+  const troopId = Number(membership.troop_id)
+  const hasStyle = req.body.planet_style_id !== undefined
+  const hasParams = req.body.planet_params !== undefined
 
-    if (!hasStyle && !hasParams) {
-      throw new AppError('Indica un estilo o parámetros de planeta')
-    }
+  if (!hasStyle && !hasParams) {
+    throw new AppError('Indica un estilo o parámetros de planeta')
+  }
 
-    if (hasStyle) {
-      const styleId = parsePlanetStyleId(req.body.planet_style_id)
-      await pool.query(
-        `UPDATE troops SET planet_style_id = ?, planet_params = NULL WHERE id = ?`,
-        [styleId, troopId],
-      )
-    }
+  if (hasStyle) {
+    const styleId = parsePlanetStyleId(req.body.planet_style_id)
+    await setPlanetStyle(troopId, styleId)
+  }
 
-    if (hasParams) {
-      if (req.body.planet_params === null) {
-        await pool.query(
-          `UPDATE troops SET planet_params = NULL WHERE id = ?`,
-          [troopId],
-        )
-      } else {
-        const params = normalizePlanetParams(req.body.planet_params)
-        await pool.query(
-          `UPDATE troops SET planet_params = ?::jsonb WHERE id = ?`,
-          [JSON.stringify(params), troopId],
-        )
-      }
+  if (hasParams) {
+    if (req.body.planet_params === null) {
+      await setPlanetParams(troopId, null)
+    } else {
+      await setPlanetParams(troopId, normalizePlanetParams(req.body.planet_params))
     }
+  }
 
-    return(await loadTroopDetail(troopId, userId))
+  return loadTroopDetail(troopId, userId)
 }
 
 export async function getTroop(req: TroopReq) {
-    const troopId = Number(req.params.id)
-    if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
-    return(await loadTroopDetail(troopId, req.user!.id))
+  const troopId = Number(req.params.id)
+  if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
+  return loadTroopDetail(troopId, req.user!.id)
 }
-
