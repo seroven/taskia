@@ -4,9 +4,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
+import { withAppearanceTransition } from './lib/appearanceTransition'
 
 export type AccentId =
   | 'blue'
@@ -44,10 +46,19 @@ function getInitialAccent(): AccentId {
 
 export function AccentProvider({ children }: { children: ReactNode }) {
   const [accent, setAccentState] = useState<AccentId>(getInitialAccent)
+  const skipTransition = useRef(true)
 
   useEffect(() => {
-    document.documentElement.dataset.accent = accent
-    localStorage.setItem(STORAGE_KEY, accent)
+    const apply = () => {
+      document.documentElement.dataset.accent = accent
+      localStorage.setItem(STORAGE_KEY, accent)
+    }
+    if (skipTransition.current) {
+      skipTransition.current = false
+      apply()
+      return
+    }
+    withAppearanceTransition(apply)
   }, [accent])
 
   const setAccent = useCallback((id: AccentId) => {

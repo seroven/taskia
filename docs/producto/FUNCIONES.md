@@ -142,11 +142,11 @@ No verá el Campamento, Mundos ni Tripulación del explorador: esa es otra entra
 | **Un** solo explorador | Entra directo a la ficha de ese explorador. |
 | **Varios** | Ve la lista *Tus exploradores* (nombre y correo). Al tocar uno, abre su ficha. Puede volver a la lista con *← Exploradores*. |
 
-Todo lo que sigue (chat, progreso) es **por explorador**: si tiene dos niños, elige de cuál habla o mira.
+Al elegir un explorador, la pantalla se parte en dos: el **chat a la izquierda** (el mismo ancho y aspecto que el chat de estudio del explorador, no toda la página) y, a la derecha, cards de **progreso** y de **avisos**.
 
-La pestaña de **Avisos**, en cambio, es de la **cuenta del guardián** (una sola configuración para todos), aunque se abra desde la ficha de un explorador.
+El chat y el progreso son **por explorador**. Los avisos son de la **cuenta del guardián** (una sola configuración para todos) y se ven igual en la columna derecha.
 
-## A.4 Pestaña Chat
+## A.4 Chat
 
 ### Qué es
 
@@ -174,9 +174,9 @@ Cuando existe un **resumen del día** de ese explorador, el asistente se apoya e
 - No abre la pizarra del niño.
 - No reemplaza una llamada o estar presentes: es un apoyo para orientarse rápido.
 
-## A.5 Pestaña Progreso
+## A.5 Cards de progreso
 
-Vista de **solo lectura** del explorador elegido:
+A la derecha, en cards de **solo lectura** del explorador elegido:
 
 1. **Nivel y experiencia** — nivel actual, barra hacia el siguiente (de 1000 XP) y XP total.
 2. **Tripulación** — si pertenece a una: nombre, rol del niño (Capitán / Copiloto / Explorador), posición en el ranking interno, mención al ranking semanal de la tripulación, y la lista de miembros con nivel y XP de la semana. Si no tiene tripulación, se indica.
@@ -188,7 +188,7 @@ Vista de **solo lectura** del explorador elegido:
 
 No hay acciones para gestionar la tripulación ni cambiar XP. No hay el desglose pregunta por pregunta del estudio. Para “¿cómo le fue en general?” alcanza; para “enséñame el chat de fracciones de ayer”, hoy el guardián no entra a ese historial desde aquí.
 
-## A.6 Pestaña Avisos (WhatsApp)
+## A.6 Card de avisos (WhatsApp)
 
 Aquí el guardián deja dicho **cómo quiere que lo avisen** cuando pasen cosas importantes.
 
@@ -264,7 +264,7 @@ Dentro de Campamento o Mundos:
 - Volver al hub (Inicio)
 - **Mi cuenta** / **Salir** donde aplique
 
-La apariencia no cambia las reglas de estudio: solo colores y modo claro/oscuro.
+La apariencia no cambia las reglas de estudio: solo colores y modo claro/oscuro. Al cambiar el tema o el color, la pantalla se funde hacia el nuevo aspecto. Si el sistema pide menos movimiento, el cambio es inmediato.
 
 ---
 

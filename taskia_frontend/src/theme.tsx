@@ -4,9 +4,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
+import { withAppearanceTransition } from './lib/appearanceTransition'
 
 type Theme = 'light' | 'dark'
 
@@ -26,10 +28,19 @@ function getInitialTheme(): Theme {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
+  const skipTransition = useRef(true)
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    localStorage.setItem(STORAGE_KEY, theme)
+    const apply = () => {
+      document.documentElement.dataset.theme = theme
+      localStorage.setItem(STORAGE_KEY, theme)
+    }
+    if (skipTransition.current) {
+      skipTransition.current = false
+      apply()
+      return
+    }
+    withAppearanceTransition(apply)
   }, [theme])
 
   const toggleTheme = useCallback(() => {

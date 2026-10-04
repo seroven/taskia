@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { ChatCircle, ChartBar, GearSix, Shield } from '@phosphor-icons/react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Shield } from '@phosphor-icons/react'
 import { api } from '../api'
 import { AppearanceTools } from '../components/AppearanceTools'
 import { AppLoader } from '../components/AppLoader'
@@ -17,16 +17,12 @@ import type {
 import { troopRoleLabel } from '../lib/troopsTypes'
 import { useToast } from '../toast'
 
-type Tab = 'chat' | 'progress' | 'prefs'
-
 export function GuardianPage() {
   const { showToast } = useToast()
   const [explorers, setExplorers] = useState<ParentExplorer[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('chat')
-
   useEffect(() => {
     void (async () => {
       setLoading(true)
@@ -60,7 +56,7 @@ export function GuardianPage() {
         </div>
       </header>
 
-      <div className="admin-body">
+      <div className={`admin-body${selected ? ' admin-body--guardian' : ''}`}>
         {loading ? (
           <AppLoader message="Cargando exploradores…" />
         ) : error ? (
@@ -84,10 +80,7 @@ export function GuardianPage() {
                       <button
                         type="button"
                         className="admin-followup-row"
-                        onClick={() => {
-                          setSelectedId(e.id)
-                          setTab('chat')
-                        }}
+                        onClick={() => setSelectedId(e.id)}
                       >
                         <span className="admin-followup-name">{e.username}</span>
                         <span className="muted">{e.email}</span>
@@ -99,47 +92,22 @@ export function GuardianPage() {
             )}
 
             {selected && (
-              <>
-                {showList && (
-                  <button
-                    type="button"
-                    className="ghost"
-                    onClick={() => setSelectedId(null)}
-                  >
-                    ← Exploradores
-                  </button>
-                )}
-                <div className="admin-section-head">
-                  <h2>{selected.username}</h2>
-                  <div className="topbar-actions">
-                    <button
-                      type="button"
-                      className={tab === 'chat' ? 'primary' : 'ghost'}
-                      onClick={() => setTab('chat')}
-                    >
-                      <ChatCircle size={18} /> Chat
-                    </button>
-                    <button
-                      type="button"
-                      className={tab === 'progress' ? 'primary' : 'ghost'}
-                      onClick={() => setTab('progress')}
-                    >
-                      <ChartBar size={18} /> Progreso
-                    </button>
-                    <button
-                      type="button"
-                      className={tab === 'prefs' ? 'primary' : 'ghost'}
-                      onClick={() => setTab('prefs')}
-                    >
-                      <GearSix size={18} /> Avisos
-                    </button>
+              <div className="guardian-stage">
+                <GuardianChat studentId={selected.id} username={selected.username} />
+                <div className="guardian-side">
+                  <div className="guardian-side-head">
+                    {showList && (
+                      <button
+                        type="button"
+                        className="ghost"
+                        onClick={() => setSelectedId(null)}
+                      >
+                        ← Exploradores
+                      </button>
+                    )}
+                    <h2>{selected.username}</h2>
                   </div>
-                </div>
-                {tab === 'chat' && <GuardianChat studentId={selected.id} />}
-                {tab === 'progress' && (
                   <GuardianProgress studentId={selected.id} />
-                )}
-                {tab === 'prefs' && (
                   <GuardianPrefs
                     onSaved={() =>
                       showToast({
@@ -149,8 +117,8 @@ export function GuardianPage() {
                       })
                     }
                   />
-                )}
-              </>
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -159,16 +127,31 @@ export function GuardianPage() {
   )
 }
 
-function GuardianChat({ studentId }: { studentId: number }) {
+function GuardianChat({
+  studentId,
+  username,
+}: {
+  studentId: number
+  username: string
+}) {
   const [messages, setMessages] = useState<ParentChatMessage[]>([])
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+  }, [messages, sending, loading])
 
   useEffect(() => {
     void (async () => {
       setLoading(true)
+      setMessages([])
+      setError(null)
       try {
         setMessages(await api.listParentChat(studentId))
       } catch (err) {
@@ -205,36 +188,78 @@ function GuardianChat({ studentId }: { studentId: number }) {
     }
   }
 
-  if (loading) return <AppLoader message="Cargando chat…" variant="section" />
-
   return (
-    <section className="admin-panel admin-panel--wide">
-      <p className="muted">
-        Pregunta por el avance del explorador. El asistente usa el resumen del
-        día cuando exista.
-      </p>
-      <div className="challenge-review-list" style={{ maxHeight: 360, overflow: 'auto' }}>
-        {messages.length === 0 && (
-          <p className="muted">Aún no hay mensajes. Escribe la primera pregunta.</p>
-        )}
-        {messages.map((m) => (
-          <div key={m.id} className="admin-followup-row">
-            <strong>{m.role === 'user' ? 'Tú' : 'Asistente'}</strong>
-            <p style={{ margin: '4px 0 0' }}>{m.content}</p>
-          </div>
-        ))}
+    <section className="study-chat guardian-chat">
+      <div className="study-chat-stage">
+        <div className="study-chat-meta">
+          <span className="study-phase-pill">Hoy</span>
+          <p className="study-topic-summary">
+            Pregunta por el avance de {username}. Si hay un resumen del día, la respuesta se apoya en él.
+          </p>
+        </div>
+        <div className="study-chat-messages" ref={listRef}>
+          {loading ? (
+            <AppLoader message="Cargando chat…" variant="section" />
+          ) : (
+            <>
+              {messages.length === 0 && !sending && (
+                <p className="muted study-chat-empty">
+                  Aún no hay mensajes. Escribe la primera pregunta.
+                </p>
+              )}
+              {messages.map((m) => (
+                <div key={m.id} className={`study-bubble study-bubble-${m.role}`}>
+                  <span className="study-bubble-role">
+                    {m.role === 'user' ? 'Tú' : 'Taskia'}
+                  </span>
+                  <p>{m.content}</p>
+                </div>
+              ))}
+              {sending && (
+                <div className="study-bubble study-bubble-assistant is-typing">
+                  <span className="study-bubble-role">Taskia</span>
+                  <p>
+                    Pensando
+                    <span className="study-thinking-dots" aria-hidden>
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
       {error && <p className="form-error">{error}</p>}
-      <form onSubmit={(e) => void onSend(e)} className="modal-form">
-        <TextField
-          label="Mensaje"
+      <form className="study-chat-form" onSubmit={(e) => void onSend(e)}>
+        <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="¿Cómo le fue hoy?"
+          rows={3}
+          disabled={sending || loading}
         />
-        <button type="submit" className="primary" disabled={sending || !text.trim()}>
-          {sending ? 'Enviando…' : 'Enviar'}
-        </button>
+        <div className="study-chat-send-row">
+          <button
+            type="submit"
+            className={`primary study-send-btn${sending ? ' is-loading' : ''}`}
+            disabled={sending || loading || !text.trim()}
+            aria-busy={sending}
+          >
+            <span className="study-send-label">
+              {sending ? (
+                <>
+                  <span className="study-send-spinner" aria-hidden />
+                  Enviando…
+                </>
+              ) : (
+                'Enviar'
+              )}
+            </span>
+          </button>
+        </div>
       </form>
     </section>
   )
@@ -350,22 +375,22 @@ function GuardianProgress({ studentId }: { studentId: number }) {
         <div className="admin-section-head">
           <h3>Actividad</h3>
         </div>
-        <div className="admin-stat-grid">
-          <p>
+        <ul className="guardian-facts">
+          <li>
             Tareas: {data.tasks.done}/{data.tasks.total} hechas
             {data.tasks.overdue > 0 ? ` · ${data.tasks.overdue} vencidas` : ''}
-          </p>
-          <p>
+          </li>
+          <li>
             Misiones: {data.missions.mastered}/{data.missions.total} dominadas
-          </p>
-          <p>Mundos activos: {data.worlds_count}</p>
-          <p>
+          </li>
+          <li>Mundos activos: {data.worlds_count}</li>
+          <li>
             Desafíos completados: {data.challenges.completed_count}
             {data.challenges.avg_score != null
               ? ` · promedio ${Math.round(data.challenges.avg_score)}`
               : ''}
-          </p>
-        </div>
+          </li>
+        </ul>
       </section>
     </div>
   )
@@ -409,6 +434,9 @@ function GuardianPrefs({ onSaved }: { onSaved: () => void }) {
 
   return (
     <section className="admin-panel">
+      <div className="admin-section-head">
+        <h3>Avisos</h3>
+      </div>
       <TextField
         label="WhatsApp (E.164, ej. +51999…)"
         value={prefs.whatsapp_e164 ?? ''}
