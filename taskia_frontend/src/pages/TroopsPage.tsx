@@ -1,25 +1,25 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import {
   MagnifyingGlass,
   Plus,
-  SignOut,
-  UsersThree,
+  Trophy,
 } from '@phosphor-icons/react'
 import { api } from '../api'
 import { AppLoader } from '../components/AppLoader'
 import { ExplorerXpBar } from '../components/ExplorerXpBar'
 import { TextField } from '../components/ui/Field'
 import { ModalShell } from '../components/ui/ModalShell'
-import { WorldsEmptyState } from '../components/worlds/WorldsEmptyState'
-import { WorldsHero } from '../components/worlds/WorldsHero'
 import { WorldsNav } from '../components/worlds/WorldsNav'
+import { SpaceUniverse } from '../components/troops/space/SpaceUniverse'
+import { TroopSpaceCard } from '../components/troops/TroopSpaceCard'
 import { errorMessage } from '../lib/errors'
-import {
-  troopRoleLabel,
-  type TroopDetail,
-  type TroopInvite,
-  type TroopRankingRow,
-  type TroopSearchHit,
+import type {
+  TroopDetail,
+  TroopInvite,
+  TroopRankingRow,
+  TroopSearchHit,
+  UniverseTroop,
 } from '../lib/troopsTypes'
 import { useToast } from '../toast'
 
@@ -27,21 +27,44 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [troop, setTroop] = useState<TroopDetail | null>(null)
+  const [myTroop, setMyTroop] = useState<TroopDetail | null>(null)
   const [invites, setInvites] = useState<TroopInvite[]>([])
-  const [ranking, setRanking] = useState<TroopRankingRow[]>([])
+  const [universe, setUniverse] = useState<UniverseTroop[]>([])
+  const [myTroopId, setMyTroopId] = useState<number | null>(null)
+  const [universeOffset, setUniverseOffset] = useState(0)
+  const [universeHasMore, setUniverseHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [openId, setOpenId] = useState<number | null>(null)
+  const [openDetail, setOpenDetail] = useState<TroopDetail | null>(null)
+  const [focusToken, setFocusToken] = useState(0)
+  const [busy, setBusy] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
-  const [busy, setBusy] = useState(false)
+  const [rankingOpen, setRankingOpen] = useState(false)
+  const [ranking, setRanking] = useState<TroopRankingRow[]>([])
+  const [rankingHasMore, setRankingHasMore] = useState(true)
+  const [rankingLoading, setRankingLoading] = useState(false)
 
-  async function refresh() {
-    const [me, rank] = await Promise.all([
+  const showBackHome = myTroopId != null
+
+  async function loadCore() {
+    const [me, uni] = await Promise.all([
       api.getMyTroop(),
-      api.getTroopRanking(),
+      api.getTroopUniverse(0, 50),
     ])
-    setTroop(me.troop)
+    setMyTroop(me.troop)
     setInvites(me.invites)
-    setRanking(rank.troops)
+    setUniverse(uni.troops)
+    setMyTroopId(uni.my_troop_id)
+    setUniverseOffset(uni.troops.length)
+    setUniverseHasMore(uni.has_more)
+    const initialOpen = uni.my_troop_id ?? null
+    setOpenId(initialOpen)
+    if (initialOpen != null) {
+      setOpenDetail(me.troop)
+    } else {
+      setOpenDetail(null)
+    }
   }
 
   useEffect(() => {
@@ -49,7 +72,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
       setLoading(true)
       setError(null)
       try {
-        await refresh()
+        await loadCore()
       } catch (err) {
         setError(errorMessage(err))
       } finally {
@@ -58,19 +81,78 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
     })()
   }, [])
 
-  const canInvite =
-    troop?.my_role === 'captain' || troop?.my_role === 'copilot'
-  const isCaptain = troop?.my_role === 'captain'
-  const myRankInWeekly = troop
-    ? ranking.find((r) => r.id === troop.id)?.rank ?? null
-    : null
+  const selectTroop = useCallback(async (id: number) => {
+    setOpenId(id)
+    setBusy(true)
+    try {
+      const detail = await api.getTroop(id)
+      setOpenDetail(detail)
+      if (detail.my_role != null) setMyTroop(detail)
+    } catch (err) {
+      showToast({
+        tone: 'error',
+        title: 'No se pudo abrir',
+        subtitle: errorMessage(err),
+      })
+    } finally {
+      setBusy(false)
+    }
+  }, [showToast])
+
+  const requestMoreUniverse = useCallback(() => {
+    if (!universeHasMore || loadingMore) return
+    void (async () => {
+      setLoadingMore(true)
+      try {
+        const page = await api.getTroopUniverse(universeOffset, 50)
+        setUniverse((prev) => {
+          const seen = new Set(prev.map((t) => t.id))
+          const next = [...prev]
+          for (const t of page.troops) {
+            if (!seen.has(t.id)) next.push(t)
+          }
+          return next.slice(0, 200)
+        })
+        setUniverseOffset((o) => o + page.troops.length)
+        setUniverseHasMore(page.has_more && page.troops.length > 0)
+      } catch {
+        /* silencio: borde sin mensaje */
+      } finally {
+        setLoadingMore(false)
+      }
+    })()
+  }, [universeHasMore, loadingMore, universeOffset])
+
+  async function ensureRanking(reset = false) {
+    if (rankingLoading) return
+    if (!reset && ranking.length > 0 && !rankingHasMore) return
+    setRankingLoading(true)
+    try {
+      const offset = reset ? 0 : ranking.length
+      const page = await api.getTroopRanking(offset, 50)
+      setRanking((prev) => (reset ? page.troops : [...prev, ...page.troops]))
+      setRankingHasMore(page.has_more)
+    } catch (err) {
+      showToast({
+        tone: 'error',
+        title: 'Ranking',
+        subtitle: errorMessage(err),
+      })
+    } finally {
+      setRankingLoading(false)
+    }
+  }
 
   async function runAction(fn: () => Promise<void>, okTitle: string, okSub?: string) {
     setBusy(true)
     setError(null)
     try {
       await fn()
-      await refresh()
+      await loadCore()
+      if (openId != null) {
+        const detail = await api.getTroop(openId)
+        setOpenDetail(detail)
+      }
       showToast({ tone: 'success', title: okTitle, subtitle: okSub ?? '' })
     } catch (err) {
       const msg = errorMessage(err)
@@ -82,300 +164,196 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="worlds-shell">
+    <div className="space-shell">
       <WorldsNav backLabel="Inicio" onBack={onBack} trailing={<ExplorerXpBar />} />
 
       {error && <p className="form-error banner">{error}</p>}
 
-      <div className="worlds-content worlds-stage">
-        <WorldsHero
-          icon={UsersThree}
-          title="Tropas"
-          lead={
-            troop
-              ? `${troop.name} · ${troop.member_count}/${troop.max_members} exploradores`
-              : 'Crea tu tropa, invita compañeros y sube en el ranking semanal.'
-          }
-          actions={
-            troop ? (
-              <div className="troops-hero-actions">
-                {canInvite && (
-                  <button
-                    type="button"
-                    className="primary"
-                    disabled={busy || troop.member_count >= troop.max_members}
-                    onClick={() => setInviteOpen(true)}
-                  >
-                    <Plus size={18} weight="bold" />
-                    Invitar
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy}
-                  onClick={() => {
-                    if (
-                      !window.confirm(
-                        '¿Salir de la tropa? Si eres Capitán, el mando pasa al Copiloto o al de mayor nivel.',
-                      )
-                    ) {
-                      return
-                    }
-                    void runAction(
-                      () => api.leaveTroop(),
-                      'Saliste de la tropa',
-                    )
-                  }}
-                >
-                  <SignOut size={18} weight="bold" />
-                  Salir
-                </button>
-              </div>
-            ) : (
+      {loading ? (
+        <AppLoader message="Entrando al universo…" variant="section" />
+      ) : (
+        <div className="space-stage">
+          <SpaceUniverse
+            troops={universe}
+            myTroopId={myTroopId}
+            openId={openId}
+            onSelectTroop={(id) => void selectTroop(id)}
+            onRequestMore={requestMoreUniverse}
+            focusToken={focusToken}
+          />
+
+          <div className="space-overlays">
+            {!myTroop && (
               <button
                 type="button"
-                className="primary"
+                className="primary space-create-fab"
                 onClick={() => setCreateOpen(true)}
               >
                 <Plus size={18} weight="bold" />
                 Crear tropa
               </button>
-            )
-          }
-        />
+            )}
 
-        {loading && <AppLoader message="Cargando tropas…" variant="section" />}
+            <button
+              type="button"
+              className="space-rank-fab"
+              aria-label="Ranking semanal"
+              onClick={() => {
+                setRankingOpen(true)
+                void ensureRanking(ranking.length === 0)
+              }}
+            >
+              <Trophy size={22} weight="duotone" />
+            </button>
 
-        {!loading && !troop && (
-          <>
-            {invites.length === 0 ? (
-              <WorldsEmptyState
-                icon={UsersThree}
-                title="Aún no tienes tropa"
-                description="Crea una y sé Capitán, o espera una invitación de un compañero."
-                action={
-                  <button
-                    type="button"
-                    className="primary"
-                    onClick={() => setCreateOpen(true)}
-                  >
-                    <Plus size={20} weight="bold" />
-                    Crear tropa
-                  </button>
-                }
-              />
-            ) : (
-              <section className="troops-section">
-                <h2 className="troops-section-title">Invitaciones</h2>
-                <ul className="troops-invite-list">
-                  {invites.map((inv) => (
-                    <li key={inv.id} className="troops-invite-row">
-                      <div>
-                        <strong>{inv.troop_name}</strong>
-                        <p className="troops-muted">
-                          Te invita {inv.from_username}
-                        </p>
-                      </div>
-                      <div className="troops-invite-actions">
-                        <button
-                          type="button"
-                          className="ghost"
-                          disabled={busy}
-                          onClick={() =>
-                            void runAction(
-                              () => api.rejectTroopInvite(inv.id),
-                              'Invitación rechazada',
-                            )
+            {showBackHome && (
+              <button
+                type="button"
+                className="primary space-home-fab"
+                onClick={() => {
+                  setFocusToken((n) => n + 1)
+                  void selectTroop(myTroopId!)
+                }}
+              >
+                Volver a mi tropa
+              </button>
+            )}
+
+            <AnimatePresence mode="wait">
+              {openDetail && (
+                <div className="space-card-slot" key={openDetail.id}>
+                  <TroopSpaceCard
+                    detail={openDetail}
+                    busy={busy}
+                    onInvite={
+                      openDetail.my_role === 'captain' ||
+                      openDetail.my_role === 'copilot'
+                        ? () => setInviteOpen(true)
+                        : undefined
+                    }
+                    onLeave={
+                      openDetail.my_role
+                        ? () => {
+                            if (
+                              !window.confirm(
+                                '¿Salir de la tropa? Si eres Capitán, el mando pasa al Copiloto o al de mayor nivel.',
+                              )
+                            ) {
+                              return
+                            }
+                            void runAction(() => api.leaveTroop(), 'Saliste de la tropa')
                           }
-                        >
-                          No, gracias
-                        </button>
-                        <button
-                          type="button"
-                          className="primary"
-                          disabled={busy}
-                          onClick={() =>
+                        : undefined
+                    }
+                    onSetCopilot={
+                      openDetail.my_role === 'captain'
+                        ? (userId) =>
                             void runAction(
                               async () => {
-                                await api.acceptTroopInvite(inv.id)
+                                await api.setTroopCopilot(userId)
                               },
-                              '¡Te uniste!',
-                              inv.troop_name,
+                              userId == null ? 'Copiloto quitado' : 'Nuevo Copiloto',
                             )
-                          }
-                        >
-                          Unirme
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-          </>
-        )}
-
-        {!loading && troop && (
-          <section className="troops-section">
-            <div className="troops-section-head">
-              <h2 className="troops-section-title">Miembros</h2>
-              {myRankInWeekly != null && (
-                <p className="troops-muted">
-                  Tropa #{myRankInWeekly} esta semana
-                </p>
+                        : undefined
+                    }
+                    onKick={
+                      openDetail.my_role === 'captain'
+                        ? (userId) =>
+                            void runAction(async () => {
+                              await api.kickTroopMember(userId)
+                            }, 'Miembro sacado')
+                        : undefined
+                    }
+                  />
+                </div>
               )}
-            </div>
-            <div className="troops-table-wrap">
-              <table className="troops-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Explorador</th>
-                    <th>Rol</th>
-                    <th>Nivel</th>
-                    <th>XP sem.</th>
-                    {isCaptain ? <th /> : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {troop.members.map((m) => (
-                    <tr key={m.user_id}>
-                      <td>{m.rank}</td>
-                      <td>
-                        <strong>{m.username}</strong>
-                      </td>
-                      <td>
-                        <span
-                          className={`troops-role troops-role--${m.role}`}
-                        >
-                          {troopRoleLabel(m.role)}
-                        </span>
-                      </td>
-                      <td>{m.level}</td>
-                      <td>{m.xp_week}</td>
-                      {isCaptain ? (
-                        <td className="troops-row-actions">
-                          {m.role !== 'captain' && (
-                            <>
-                              {m.role === 'copilot' ? (
-                                <button
-                                  type="button"
-                                  className="ghost troops-mini"
-                                  disabled={busy}
-                                  onClick={() =>
-                                    void runAction(
-                                      async () => {
-                                        await api.setTroopCopilot(null)
-                                      },
-                                      'Copiloto quitado',
-                                    )
-                                  }
-                                >
-                                  Quitar copiloto
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="ghost troops-mini"
-                                  disabled={busy}
-                                  onClick={() =>
-                                    void runAction(
-                                      async () => {
-                                        await api.setTroopCopilot(m.user_id)
-                                      },
-                                      'Nuevo Copiloto',
-                                      m.username,
-                                    )
-                                  }
-                                >
-                                  Hacer copiloto
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                className="ghost troops-mini troops-mini--danger"
-                                disabled={busy}
-                                onClick={() => {
-                                  if (
-                                    !window.confirm(
-                                      `¿Sacar a ${m.username} de la tropa?`,
-                                    )
-                                  ) {
-                                    return
-                                  }
-                                  void runAction(
-                                    async () => {
-                                      await api.kickTroopMember(m.user_id)
-                                    },
-                                    'Miembro sacado',
-                                    m.username,
-                                  )
-                                }}
-                              >
-                                Sacar
-                              </button>
-                            </>
-                          )}
-                        </td>
-                      ) : null}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+            </AnimatePresence>
 
-        {!loading && (
-          <section className="troops-section">
-            <h2 className="troops-section-title">Ranking semanal</h2>
-            <p className="troops-muted troops-section-lead">
-              XP de lunes a domingo · top 50
-            </p>
-            {ranking.length === 0 ? (
-              <p className="troops-muted">Todavía no hay tropas activas.</p>
-            ) : (
-              <div className="troops-table-wrap">
-                <table className="troops-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Tropa</th>
-                      <th>Miembros</th>
-                      <th>XP sem.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+            {rankingOpen && (
+              <div
+                className="space-ranking-backdrop"
+                onClick={() => setRankingOpen(false)}
+                role="presentation"
+              >
+                <aside
+                  className="space-ranking-panel"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <header className="space-ranking-head">
+                    <h2>Ranking semanal</h2>
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => setRankingOpen(false)}
+                    >
+                      Cerrar
+                    </button>
+                  </header>
+                  <ul
+                    className="space-ranking-list"
+                    onScroll={(e) => {
+                      const el = e.currentTarget
+                      if (
+                        el.scrollTop + el.clientHeight >
+                        el.scrollHeight - 48
+                      ) {
+                        void ensureRanking(false)
+                      }
+                    }}
+                  >
                     {ranking.map((row) => (
-                      <tr
+                      <li
                         key={row.id}
                         className={
-                          troop?.id === row.id ? 'troops-row--mine' : undefined
+                          row.rank <= 3
+                            ? `space-ranking-row space-ranking-row--${row.rank}`
+                            : 'space-ranking-row'
                         }
                       >
-                        <td>{row.rank}</td>
-                        <td>
-                          <strong>{row.name}</strong>
-                        </td>
-                        <td>{row.member_count}</td>
-                        <td>{row.xp_week}</td>
-                      </tr>
+                        <span className="space-ranking-pos">#{row.rank}</span>
+                        <strong>{row.name}</strong>
+                        <span className="troops-muted">{row.xp_week} XP</span>
+                      </li>
                     ))}
-                  </tbody>
-                </table>
+                    {rankingLoading && (
+                      <li className="troops-muted">Cargando…</li>
+                    )}
+                  </ul>
+                  {myTroopId != null && (
+                    <button
+                      type="button"
+                      className="ghost space-ranking-jump"
+                      onClick={() => {
+                        const el = document.querySelector(
+                          `.space-ranking-row`,
+                        )
+                        void el
+                        const idx = ranking.findIndex((r) => r.id === myTroopId)
+                        if (idx >= 0) {
+                          document
+                            .querySelectorAll('.space-ranking-row')
+                            [idx]?.scrollIntoView({ block: 'center' })
+                        }
+                      }}
+                    >
+                      Ir a mi posición
+                    </button>
+                  )}
+                </aside>
               </div>
             )}
-          </section>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
       <CreateTroopModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreate={async (name) => {
           const created = await api.createTroop(name)
-          await refresh()
+          await loadCore()
+          setOpenId(created.id)
+          setOpenDetail(created)
           showToast({
             tone: 'success',
             title: '¡Tropa creada!',
@@ -396,6 +374,44 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
           })
         }}
       />
+
+      {/* invitaciones recibidas (sin tropa): chip simple hasta campana C2 */}
+      {!myTroop && invites.length > 0 && (
+        <div className="space-invites-strip">
+          {invites.map((inv) => (
+            <div key={inv.id} className="space-invite-chip">
+              <span>
+                {inv.troop_name} · {inv.from_username}
+              </span>
+              <button
+                type="button"
+                className="primary"
+                disabled={busy}
+                onClick={() =>
+                  void runAction(async () => {
+                    await api.acceptTroopInvite(inv.id)
+                  }, '¡Te uniste!', inv.troop_name)
+                }
+              >
+                Unirme
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                disabled={busy}
+                onClick={() =>
+                  void runAction(
+                    () => api.rejectTroopInvite(inv.id),
+                    'Invitación rechazada',
+                  )
+                }
+              >
+                No
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -445,7 +461,6 @@ function CreateTroopModal({
       titleId="create-troop-title"
       title="Nueva tropa"
       lead="Tú serás el Capitán. Luego puedes invitar hasta 9 compañeros."
-      icon={UsersThree}
     >
       <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>
         <TextField
@@ -498,7 +513,6 @@ function InviteExplorerModal({
     const trimmed = q.trim()
     if (trimmed.length < 2) {
       setHits([])
-      setError(null)
       return
     }
     const handle = window.setTimeout(() => {
@@ -526,7 +540,6 @@ function InviteExplorerModal({
       title="Invitar explorador"
       lead="Busca por nombre. Solo quien no esté en otra tropa puede unirse."
       icon={MagnifyingGlass}
-      size="md"
     >
       <div className="modal-panel-body">
         <TextField
@@ -538,9 +551,6 @@ function InviteExplorerModal({
         />
         {error && <p className="form-error">{error}</p>}
         {searching && <p className="troops-muted">Buscando…</p>}
-        {!searching && q.trim().length >= 2 && hits.length === 0 && !error && (
-          <p className="troops-muted">Nadie con ese nombre.</p>
-        )}
         <ul className="troops-search-list">
           {hits.map((hit) => (
             <li key={hit.id} className="troops-search-row">
@@ -558,7 +568,6 @@ function InviteExplorerModal({
                 onClick={() => {
                   void (async () => {
                     setInvitingId(hit.id)
-                    setError(null)
                     try {
                       await onInvite(hit.id, hit.username)
                       onClose()

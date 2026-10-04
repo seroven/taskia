@@ -45,6 +45,7 @@ import type {
   TroopMeResponse,
   TroopRankingResponse,
   TroopSearchHit,
+  UniverseResponse,
 } from './lib/troopsTypes'
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(
@@ -663,8 +664,18 @@ export const api = {
   getMyTroop() {
     return request<TroopMeResponse>('/troops/me')
   },
-  getTroopRanking() {
-    return request<TroopRankingResponse>('/troops/ranking')
+  getTroopRanking(offset = 0, limit = 50) {
+    return request<TroopRankingResponse>(
+      `/troops/ranking?offset=${offset}&limit=${limit}`,
+    )
+  },
+  getTroopUniverse(offset = 0, limit = 50) {
+    return request<UniverseResponse>(
+      `/troops/universe?offset=${offset}&limit=${limit}`,
+    )
+  },
+  getTroop(troop_id: number) {
+    return request<TroopDetail>(`/troops/${troop_id}`)
   },
   searchExplorers(q: string) {
     return request<TroopSearchHit[]>(

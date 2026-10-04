@@ -18,6 +18,12 @@ export interface TroopDetail {
   max_members: number
   my_role: TroopRole | null
   members: TroopMember[]
+  level: number
+  xp_week: number
+  rank: number | null
+  planet_style_id: string
+  planet_seed: number
+  planet_params: unknown
   created_at: string
 }
 
@@ -45,7 +51,32 @@ export interface TroopRankingRow {
 
 export interface TroopRankingResponse {
   week_start: string
+  offset: number
+  limit: number
+  has_more: boolean
   troops: TroopRankingRow[]
+}
+
+export interface UniverseTroop {
+  id: number
+  name: string
+  member_count: number
+  level: number
+  xp_week: number
+  rank: number | null
+  is_mine: boolean
+  planet_style_id: string
+  planet_seed: number
+  planet_params: unknown
+}
+
+export interface UniverseResponse {
+  week_start: string
+  my_troop_id: number | null
+  offset: number
+  limit: number
+  has_more: boolean
+  troops: UniverseTroop[]
 }
 
 export interface TroopSearchHit {

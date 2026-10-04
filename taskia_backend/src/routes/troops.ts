@@ -60,9 +60,36 @@ async function countActiveMembers(troopId: number) {
   return Number(rows[0]?.c ?? 0)
 }
 
+function troopLevelFromMembers(members: { level: number }[]) {
+  if (members.length === 0) return 1
+  const sum = members.reduce((acc, m) => acc + m.level, 0)
+  return Math.max(1, Math.round(sum / members.length))
+}
+
+async function weeklyRankByTroopId(weekStart: string): Promise<Map<number, number>> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT t.id,
+            COALESCE(SUM(a.amount), 0) AS xp_week
+     FROM troops t
+     INNER JOIN troop_members tm
+       ON tm.troop_id = t.id AND tm.left_at IS NULL
+     LEFT JOIN xp_awards a
+       ON a.user_id = tm.user_id AND a.week_start = ?
+     WHERE t.is_active = TRUE
+     GROUP BY t.id, t.name
+     ORDER BY xp_week DESC, t.name ASC`,
+    [weekStart],
+  )
+  const map = new Map<number, number>()
+  rows.forEach((r, i) => map.set(Number(r.id), i + 1))
+  return map
+}
+
 async function loadTroopDetail(troopId: number, viewerId: number) {
   const [trows] = await pool.query<RowDataPacket[]>(
-    `SELECT id, name, is_active, created_at FROM troops WHERE id = ? LIMIT 1`,
+    `SELECT id, name, is_active, created_at,
+            planet_style_id, planet_seed, planet_params
+     FROM troops WHERE id = ? LIMIT 1`,
     [troopId],
   )
   const troop = trows[0]
@@ -86,6 +113,16 @@ async function loadTroopDetail(troopId: number, viewerId: number) {
 
   const myRow = members.find((m) => Number(m.user_id) === viewerId)
   const ranked = members.map((m, i) => ({ ...mapMember(m), rank: i + 1 }))
+  const level = troopLevelFromMembers(ranked)
+  const ranks = await weeklyRankByTroopId(weekStart)
+  const [xpRow] = await pool.query<RowDataPacket[]>(
+    `SELECT COALESCE(SUM(a.amount), 0) AS xp_week
+     FROM troop_members tm
+     LEFT JOIN xp_awards a
+       ON a.user_id = tm.user_id AND a.week_start = ?
+     WHERE tm.troop_id = ? AND tm.left_at IS NULL`,
+    [weekStart, troopId],
+  )
 
   return {
     id: Number(troop.id),
@@ -94,6 +131,12 @@ async function loadTroopDetail(troopId: number, viewerId: number) {
     max_members: MAX_MEMBERS,
     my_role: (myRow?.role as TroopRole | undefined) ?? null,
     members: ranked,
+    level,
+    xp_week: Number(xpRow[0]?.xp_week ?? 0),
+    rank: ranks.get(Number(troop.id)) ?? null,
+    planet_style_id: String(troop.planet_style_id ?? 'rocky_blue'),
+    planet_seed: Number(troop.planet_seed ?? troop.id),
+    planet_params: troop.planet_params ?? null,
     created_at: toInstantISO(troop.created_at as Date) ?? '',
   }
 }
@@ -196,8 +239,10 @@ router.get(
 /** Ranking semanal de tropas (lun–dom America/Lima vía week_start). */
 router.get(
   '/ranking',
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
     const weekStart = weekStartMonday()
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50))
+    const offset = Math.max(0, Number(req.query.offset) || 0)
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT t.id, t.name,
               COUNT(DISTINCT tm.user_id) AS member_count,
@@ -209,19 +254,82 @@ router.get(
          ON a.user_id = tm.user_id AND a.week_start = ?
        WHERE t.is_active = TRUE
        GROUP BY t.id, t.name
-       ORDER BY xp_week DESC, member_count DESC, t.name ASC
-       LIMIT 50`,
-      [weekStart],
+       ORDER BY xp_week DESC, t.name ASC
+       LIMIT ? OFFSET ?`,
+      [weekStart, limit, offset],
     )
     res.json({
       week_start: weekStart,
+      offset,
+      limit,
+      has_more: rows.length === limit,
       troops: rows.map((r, i) => ({
-        rank: i + 1,
+        rank: offset + i + 1,
         id: Number(r.id),
         name: r.name as string,
         member_count: Number(r.member_count),
         xp_week: Number(r.xp_week),
       })),
+    })
+  }),
+)
+
+/**
+ * Tropas activas para el canvas espacial.
+ * Mi tropa primero (si hay); el resto orden estable por id.
+ */
+router.get(
+  '/universe',
+  asyncHandler(async (req, res) => {
+    const userId = req.user!.id
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50))
+    const offset = Math.max(0, Number(req.query.offset) || 0)
+    const weekStart = weekStartMonday()
+    const membership = await activeMembership(userId)
+    const myTroopId = membership ? Number(membership.troop_id) : null
+    const ranks = await weeklyRankByTroopId(weekStart)
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT t.id, t.name, t.planet_style_id, t.planet_seed, t.planet_params,
+              COUNT(DISTINCT tm.user_id) AS member_count,
+              COALESCE(AVG(u.level), 1) AS avg_level,
+              COALESCE(SUM(a.amount), 0) AS xp_week
+       FROM troops t
+       INNER JOIN troop_members tm
+         ON tm.troop_id = t.id AND tm.left_at IS NULL
+       INNER JOIN users u ON u.id = tm.user_id
+       LEFT JOIN xp_awards a
+         ON a.user_id = tm.user_id AND a.week_start = ?
+       WHERE t.is_active = TRUE
+       GROUP BY t.id, t.name, t.planet_style_id, t.planet_seed, t.planet_params
+       ORDER BY
+         CASE WHEN t.id = ? THEN 0 ELSE 1 END,
+         t.id ASC
+       LIMIT ? OFFSET ?`,
+      [weekStart, myTroopId ?? -1, limit, offset],
+    )
+
+    res.json({
+      week_start: weekStart,
+      my_troop_id: myTroopId,
+      offset,
+      limit,
+      has_more: rows.length === limit,
+      troops: rows.map((r) => {
+        const id = Number(r.id)
+        return {
+          id,
+          name: r.name as string,
+          member_count: Number(r.member_count),
+          level: Math.max(1, Math.round(Number(r.avg_level ?? 1))),
+          xp_week: Number(r.xp_week),
+          rank: ranks.get(id) ?? null,
+          is_mine: myTroopId != null && id === myTroopId,
+          planet_style_id: String(r.planet_style_id ?? 'rocky_blue'),
+          planet_seed: Number(r.planet_seed ?? id),
+          planet_params: r.planet_params ?? null,
+        }
+      }),
     })
   }),
 )
@@ -282,6 +390,10 @@ router.post(
         [name],
       )
       const troopId = Number(ins.insertId)
+      await conn.query(
+        `UPDATE troops SET planet_seed = ? WHERE id = ?`,
+        [troopId % 2147483647, troopId],
+      )
       await conn.query(
         `INSERT INTO troop_members (troop_id, user_id, role) VALUES (?, ?, 'captain')`,
         [troopId, userId],
@@ -534,6 +646,15 @@ router.post(
       conn.release()
     }
     res.json({ ok: true })
+  }),
+)
+
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const troopId = Number(req.params.id)
+    if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
+    res.json(await loadTroopDetail(troopId, req.user!.id))
   }),
 )
 
