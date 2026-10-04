@@ -9,7 +9,12 @@ import {
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { planetKindIndex, resolvePlanetFeatures } from '../../../lib/planetFeatures'
-import { planetFragmentShader, planetVertexShader } from './planetSurface'
+import {
+  planetFragmentShader,
+  planetVertexShader,
+  ringFragmentShader,
+  ringVertexShader,
+} from './planetSurface'
 import {
   layoutPlanets,
   universeBounds,
@@ -40,7 +45,13 @@ function mulberry32(seed: number) {
   }
 }
 
-function makeStarLayer(count: number, seed: number, minR: number, maxR: number) {
+function makeStarLayer(
+  count: number,
+  seed: number,
+  minR: number,
+  maxR: number,
+  dim = 1,
+) {
   const rand = mulberry32(seed)
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
@@ -53,9 +64,10 @@ function makeStarLayer(count: number, seed: number, minR: number, maxR: number) 
     positions[i * 3 + 1] = radius * Math.cos(phi)
     positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta)
     const tint = new THREE.Color(palette[Math.floor(rand() * palette.length)]!)
-    colors[i * 3] = tint.r
-    colors[i * 3 + 1] = tint.g
-    colors[i * 3 + 2] = tint.b
+    const bright = dim + rand() * (1 - dim)
+    colors[i * 3] = tint.r * bright
+    colors[i * 3 + 1] = tint.g * bright
+    colors[i * 3 + 2] = tint.b * bright
   }
   return { positions, colors }
 }
@@ -91,9 +103,11 @@ function StarField({ reducedMotion }: { reducedMotion: boolean }) {
   const farGeo = useMemo(() => starGeometry(makeStarLayer(900, 11, 52, 96)), [])
   const midGeo = useMemo(() => starGeometry(makeStarLayer(420, 29, 28, 70)), [])
   const dustGeo = useMemo(() => starGeometry(makeStarLayer(110, 47, 16, 46)), [])
+  const speckGeo = useMemo(() => starGeometry(makeStarLayer(6400, 83, 34, 120, 0.28)), [])
   const farRef = useRef<THREE.Points>(null)
   const midRef = useRef<THREE.Points>(null)
   const dustRef = useRef<THREE.Points>(null)
+  const speckRef = useRef<THREE.Points>(null)
 
   useEffect(() => {
     return () => {
@@ -101,8 +115,9 @@ function StarField({ reducedMotion }: { reducedMotion: boolean }) {
       farGeo.dispose()
       midGeo.dispose()
       dustGeo.dispose()
+      speckGeo.dispose()
     }
-  }, [sprite, farGeo, midGeo, dustGeo])
+  }, [sprite, farGeo, midGeo, dustGeo, speckGeo])
 
   useFrame((_, dt) => {
     if (reducedMotion) return
@@ -111,6 +126,7 @@ function StarField({ reducedMotion }: { reducedMotion: boolean }) {
       points.rotation.y += dt * speed
       points.rotation.x += dt * speed * 0.15
     }
+    spin(speckRef.current, 0.006)
     spin(farRef.current, 0.012)
     spin(midRef.current, 0.028)
     spin(dustRef.current, 0.05)
@@ -118,6 +134,17 @@ function StarField({ reducedMotion }: { reducedMotion: boolean }) {
 
   return (
     <>
+      <points ref={speckRef} geometry={speckGeo} raycast={() => null}>
+        <pointsMaterial
+          map={sprite}
+          size={0.22}
+          sizeAttenuation
+          vertexColors
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </points>
       <points ref={farRef} geometry={farGeo} raycast={() => null}>
         <pointsMaterial
           map={sprite}
@@ -199,7 +226,27 @@ function PlanetMesh({
     })
   }, [features, reducedMotion])
 
-  useEffect(() => () => material.dispose(), [material])
+  const ringMaterial = useMemo(() => {
+    if (features.rings <= 0) return null
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: new THREE.Color(features.ringColor) },
+        uSeed: { value: (features.seed % 97) / 10 },
+      },
+      vertexShader: ringVertexShader,
+      fragmentShader: ringFragmentShader,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    })
+  }, [features])
+
+  useEffect(() => {
+    return () => {
+      material.dispose()
+      ringMaterial?.dispose()
+    }
+  }, [material, ringMaterial])
 
   useFrame((_, dt) => {
     material.uniforms.uTime!.value += reducedMotion ? 0 : dt
@@ -221,11 +268,11 @@ function PlanetMesh({
         </mesh>
       )}
       <mesh raycast={() => null}>
-        <sphereGeometry args={[1.18, 32, 32]} />
+        <sphereGeometry args={[1.07, 32, 32]} />
         <meshBasicMaterial
           color={features.atmosphere}
           transparent
-          opacity={0.16}
+          opacity={0.07}
           depthWrite={false}
         />
       </mesh>
@@ -248,14 +295,8 @@ function PlanetMesh({
       </mesh>
       {features.rings > 0 && !selected && (
         <mesh raycast={() => null} rotation={[features.ringTilt, 0.4, 0.15]}>
-          <ringGeometry args={[1.38, features.rings === 2 ? 2.15 : 1.72, 72]} />
-          <meshBasicMaterial
-            color={features.ringColor}
-            side={THREE.DoubleSide}
-            transparent
-            opacity={0.78}
-            depthWrite={false}
-          />
+          <ringGeometry args={[1.38, features.rings === 2 ? 2.15 : 1.72, 96]} />
+          {ringMaterial && <primitive object={ringMaterial} attach="material" />}
         </mesh>
       )}
     </group>

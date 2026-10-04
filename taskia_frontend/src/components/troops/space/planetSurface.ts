@@ -99,17 +99,45 @@ void main() {
     surface = mix(surface, uC, smoothstep(0.55, 0.85, n1) * 0.5);
   }
 
+  float grain = noise(normalize(vWorld) * (16.0 + uScale * 2.0));
+  surface = mix(surface * 0.9, surface, grain);
+
   float clouds = fbm(normalize(vWorld) * (uScale * 1.4) + vec3(uTime * uCloudSpeed, 0.0, 0.0));
   clouds = smoothstep(0.48, 0.72, clouds) * uCloudAmt;
   surface = mix(surface, uCloud, clouds);
 
   vec3 L = normalize(vec3(0.45, 0.82, 0.35));
-  float lit = 0.46 + 0.54 * clamp(dot(n, L), 0.0, 1.0);
+  float ndl = clamp(dot(n, L), 0.0, 1.0);
+  float lit = mix(0.42, 1.0, smoothstep(0.0, 0.78, ndl));
   vec3 viewDir = normalize(vView);
   vec3 halfDir = normalize(L + viewDir);
-  float spec = pow(clamp(dot(n, halfDir), 0.0, 1.0), 28.0) * uGloss;
-  float fres = pow(1.0 - clamp(dot(n, viewDir), 0.0, 1.0), 2.4);
-  vec3 color = surface * lit + vec3(spec) + uAtmo * fres * 0.55;
+  float sheen = pow(clamp(dot(n, halfDir), 0.0, 1.0), 16.0) * uGloss * 0.18;
+  float fres = pow(1.0 - clamp(dot(n, viewDir), 0.0, 1.0), 3.1);
+  vec3 color = surface * lit + surface * sheen + uAtmo * fres * 0.32;
   gl_FragColor = vec4(color, 1.0);
+}
+`
+
+export const ringVertexShader = /* glsl */ `
+varying vec2 vUv;
+
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`
+
+export const ringFragmentShader = /* glsl */ `
+uniform vec3 uColor;
+uniform float uSeed;
+varying vec2 vUv;
+
+void main() {
+  float r = vUv.y;
+  float bands = sin(r * 46.0 + uSeed * 3.0) * 0.5 + 0.5;
+  float gap = smoothstep(0.38, 0.46, r) * (1.0 - smoothstep(0.54, 0.62, r));
+  float alpha = (0.22 + bands * 0.62) * (1.0 - gap * 0.8);
+  alpha *= smoothstep(0.0, 0.06, r) * smoothstep(1.0, 0.86, r);
+  gl_FragColor = vec4(uColor, alpha);
 }
 `
