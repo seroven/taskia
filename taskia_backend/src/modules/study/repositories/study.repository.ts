@@ -1,5 +1,11 @@
-import type { ResultSetHeader, RowDataPacket } from '../../../infrastructure/database/pool.js'
-import { pool } from '../../../infrastructure/database/pool.js'
+import { AppDataSource } from '../../../infrastructure/database/data-source.js'
+import {
+  StudyBoard,
+  StudyMessage,
+  StudySession,
+  Task,
+  UserStudyMemory,
+} from '../../../infrastructure/database/entities/index.js'
 import { toInstantISO } from '../../../utils/helpers.js'
 import { latencyForTaskReply } from '../../../utils/replyLatency.js'
 
@@ -25,51 +31,48 @@ export function coerceBoard(raw: unknown) {
 }
 
 export async function ensureSession(taskId: number) {
-  await pool.query(
-    `INSERT INTO study_sessions (task_id, tutor_phase, topic_summary, context_summary, hints_level)
-     VALUES (?, 'understanding', '', '', 0)
-     ON CONFLICT (task_id) DO NOTHING`,
-    [taskId],
-  )
+  await AppDataSource.getRepository(StudySession)
+    .createQueryBuilder()
+    .insert()
+    .into(StudySession)
+    .values({
+      taskId,
+      tutorPhase: 'understanding',
+      topicSummary: '',
+      contextSummary: '',
+      hintsLevel: 0,
+    })
+    .orIgnore()
+    .execute()
 }
 
 export async function loadContext(taskId: number) {
   await ensureSession(taskId)
-  const [sess] = await pool.query<RowDataPacket[]>(
-    `SELECT tutor_phase, topic_summary, context_summary, hints_level, updated_at
-     FROM study_sessions WHERE task_id = ?`,
-    [taskId],
-  )
-  const s = sess[0]
-  const [msgs] = await pool.query<RowDataPacket[]>(
-    `SELECT role, content, created_at FROM study_messages
-     WHERE task_id = ? ORDER BY created_at ASC, id ASC`,
-    [taskId],
-  )
+  const session = await AppDataSource.getRepository(StudySession).findOneByOrFail({ taskId })
+  const messages = await AppDataSource.getRepository(StudyMessage).find({
+    where: { taskId },
+    order: { createdAt: 'ASC', id: 'ASC' },
+  })
   return {
     task_id: taskId,
-    updated_at: toInstantISO(s.updated_at as Date) ?? '',
-    tutor_phase: s.tutor_phase as string,
-    topic_summary: s.topic_summary as string,
-    context_summary: s.context_summary as string,
-    hints_level: Number(s.hints_level),
-    messages: msgs.map((m) => ({
-      role: m.role as string,
-      content: m.content as string,
-      created_at: toInstantISO(m.created_at as Date) ?? '',
+    updated_at: toInstantISO(session.updatedAt) ?? '',
+    tutor_phase: session.tutorPhase,
+    topic_summary: session.topicSummary,
+    context_summary: session.contextSummary,
+    hints_level: session.hintsLevel,
+    messages: messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+      created_at: toInstantISO(message.createdAt) ?? '',
     })),
   }
 }
 
 export async function loadBoard(taskId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT board_json FROM study_boards WHERE task_id = ?',
-    [taskId],
-  )
-  if (rows[0]?.board_json) {
+  const row = await AppDataSource.getRepository(StudyBoard).findOne({ where: { taskId } })
+  if (row?.boardJson) {
     try {
-      const raw = rows[0].board_json
-      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+      const parsed = JSON.parse(row.boardJson) as unknown
       return coerceBoard(parsed)
     } catch {
       /* fallthrough */
@@ -81,11 +84,13 @@ export async function loadBoard(taskId: number) {
 }
 
 export async function saveBoard(taskId: number, board: unknown) {
-  await pool.query(
-    `INSERT INTO study_boards (task_id, board_json) VALUES (?, ?)
-     ON CONFLICT (task_id) DO UPDATE SET board_json = EXCLUDED.board_json`,
-    [taskId, JSON.stringify(board)],
-  )
+  await AppDataSource.getRepository(StudyBoard)
+    .createQueryBuilder()
+    .insert()
+    .into(StudyBoard)
+    .values({ taskId, boardJson: JSON.stringify(board) })
+    .orUpdate(['board_json'], ['task_id'])
+    .execute()
 }
 
 export async function insertMessage(
@@ -94,52 +99,42 @@ export async function insertMessage(
   content: string,
   fromVoice = false,
 ) {
-  let latency: { reply_latency_seconds: number | null; is_pause: boolean } = {
-    reply_latency_seconds: null,
-    is_pause: false,
-  }
-  if (role === 'user') {
-    latency = await latencyForTaskReply(taskId)
-  }
-  const [result] = await pool.query<ResultSetHeader>(
-    `INSERT INTO study_messages
-       (task_id, role, content, from_voice, reply_latency_seconds, is_pause)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [
+  const latency =
+    role === 'user'
+      ? await latencyForTaskReply(taskId)
+      : { reply_latency_seconds: null, is_pause: false }
+  const repo = AppDataSource.getRepository(StudyMessage)
+  const saved = await repo.save(
+    repo.create({
       taskId,
       role,
       content,
       fromVoice,
-      latency.reply_latency_seconds,
-      latency.is_pause,
-    ],
+      replyLatencySeconds: latency.reply_latency_seconds,
+      isPause: latency.is_pause,
+    }),
   )
-  const insertId = result.insertId
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT created_at FROM study_messages WHERE id = ?',
-    [insertId],
-  )
+  const createdAt = saved.createdAt ?? (await repo.findOneBy({ id: saved.id }))?.createdAt
   return {
     role,
     content,
-    created_at: toInstantISO(rows[0]?.created_at as Date) ?? '',
+    created_at: toInstantISO(createdAt) ?? '',
   }
 }
 
 export async function loadUserMemory(userId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT memory_summary FROM user_study_memory WHERE user_id = ?',
-    [userId],
-  )
-  return (rows[0]?.memory_summary as string) ?? ''
+  const row = await AppDataSource.getRepository(UserStudyMemory).findOne({ where: { userId } })
+  return row?.memorySummary ?? ''
 }
 
 export async function saveUserMemory(userId: number, summary: string) {
-  await pool.query(
-    `INSERT INTO user_study_memory (user_id, memory_summary) VALUES (?, ?)
-     ON CONFLICT (user_id) DO UPDATE SET memory_summary = EXCLUDED.memory_summary`,
-    [userId, summary],
-  )
+  await AppDataSource.getRepository(UserStudyMemory)
+    .createQueryBuilder()
+    .insert()
+    .into(UserStudyMemory)
+    .values({ userId, memorySummary: summary })
+    .orUpdate(['memory_summary'], ['user_id'])
+    .execute()
 }
 
 export async function saveSessionMeta(ctx: {
@@ -149,23 +144,20 @@ export async function saveSessionMeta(ctx: {
   context_summary: string
   hints_level: number
 }) {
-  await pool.query(
-    `UPDATE study_sessions
-     SET tutor_phase = ?, topic_summary = ?, context_summary = ?, hints_level = ?
-     WHERE task_id = ?`,
-    [
-      ctx.tutor_phase,
-      ctx.topic_summary,
-      ctx.context_summary,
-      ctx.hints_level,
-      ctx.task_id,
-    ],
+  await AppDataSource.getRepository(StudySession).update(
+    { taskId: ctx.task_id },
+    {
+      tutorPhase: ctx.tutor_phase,
+      topicSummary: ctx.topic_summary,
+      contextSummary: ctx.context_summary,
+      hintsLevel: ctx.hints_level,
+    },
   )
 }
 
 export async function markStudyPassed(taskId: number, userId: number) {
-  await pool.query('UPDATE tasks SET study_passed = TRUE WHERE id = ? AND user_id = ?', [
-    taskId,
-    userId,
-  ])
+  await AppDataSource.getRepository(Task).update(
+    { id: taskId, userId },
+    { studyPassed: true },
+  )
 }

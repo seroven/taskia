@@ -230,4 +230,5 @@ No hace falta Vitest para cerrar el plan. Si un corte se pone frágil (XP o el r
 - Las relaciones `@ManyToOne` se declaran en el corte que haga el join. Ponerlas junto a la columna del id duplica el mapeo.
 - **T1 hecho.** Auth, catálogo, sesión (`requireAuth`, vínculo guardián), `roleIdByCode` y el `INSERT` de `llm_usage` leen y escriben por las entidades. `scripts/t1-check.ts` leyó a Sebastian (admin, id numérico, `is_active` boolean), las tres dificultades y el id del rol `user`. `roleCodeEquals` sigue siendo un fragmento SQL: lo usan admin y mundos, que todavía no se movieron.
 - **T2 hecho.** El módulo de tareas (listar con filtros, crear, editar, mover y reordenar) usa las entidades. `scripts/t2-check.ts` creó una tarea diaria, la leyó con materia y dificultad, la filtró por `due_on` y la borró. El reorden sigue en una transacción del `DataSource`.
-- Siguiente: **T3** estudio de tarea.
+- **T3 hecho.** Estudio de tarea: sesión, mensajes, pizarra, memoria y `study_passed` van por entidades. Los `ON CONFLICT` de sesión, pizarra y memoria usan `orIgnore` / `orUpdate`. La latencia de respuesta (tarea y misión) también. `scripts/t3-check.ts` abrió sesión dos veces, reemplazó la pizarra, hizo upsert de memoria, guardó mensajes y marcó la tarea aprobada; después borró esa tarea de prueba y restauró la memoria previa.
+- Siguiente: **T4** guardián.
