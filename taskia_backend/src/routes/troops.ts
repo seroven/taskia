@@ -1,12 +1,12 @@
 import { Router } from 'express'
-import type { ResultSetHeader, RowDataPacket } from '../db/pool.js'
-import { pool } from '../db/pool.js'
-import { civilDayFromInstant } from '../db/civilDate.js'
-import { requireAuth, requireStudent } from '../middleware/auth.js'
-import { asyncHandler } from '../middleware/error.js'
+import type { ResultSetHeader, RowDataPacket } from '../infrastructure/database/pool.js'
+import { pool } from '../infrastructure/database/pool.js'
+import { civilDayFromInstant } from '../infrastructure/database/civil-date.js'
+import { requireAuth, requireStudent } from '../middlewares/auth.middleware.js'
+import { asyncHandler } from '../middlewares/error.middleware.js'
 import { AppError, extractJson, toInstantISO } from '../utils/helpers.js'
 import { normalizePlanetParams } from '../lib/planetParams.js'
-import { callGemini } from '../services/gemini.js'
+import { callGemini } from '../infrastructure/gemini/gemini.client.js'
 import { PRODUCT_TZ, weekStartMonday } from '../services/xp.js'
 
 const router = Router()

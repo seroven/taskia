@@ -1,5 +1,5 @@
-import type { RowDataPacket } from '../db/pool.js'
-import { pool } from '../db/pool.js'
+import type { RowDataPacket } from '../infrastructure/database/pool.js'
+import { pool } from '../infrastructure/database/pool.js'
 import { REPLY_PAUSE_SECONDS } from './helpers.js'
 
 export async function latencyForTaskReply(taskId: number) {

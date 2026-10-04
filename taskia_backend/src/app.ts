@@ -3,17 +3,8 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
 import { env } from './config/env.js'
-import { errorHandler } from './middleware/error.js'
-import authRoutes from './routes/auth.js'
-import coursesRoutes from './routes/courses.js'
-import difficultiesRoutes from './routes/difficulties.js'
-import tasksRoutes from './routes/tasks.js'
-import studyRoutes from './routes/study.js'
-import worldsRoutes from './routes/worlds.js'
-import adminRoutes from './routes/admin.js'
-import parentRoutes from './routes/parent.js'
-import troopsRoutes from './routes/troops.js'
-import filesRoutes from './routes/files.js'
+import { errorHandler } from './middlewares/error.middleware.js'
+import { registerRoutes } from './routes/index.js'
 
 export function createApp() {
   const app = express()
@@ -37,16 +28,7 @@ export function createApp() {
     res.json({ ok: true })
   })
 
-  app.use('/auth', authRoutes)
-  app.use('/courses', coursesRoutes)
-  app.use('/difficulties', difficultiesRoutes)
-  app.use('/tasks', tasksRoutes)
-  app.use('/study', studyRoutes)
-  app.use('/worlds', worldsRoutes)
-  app.use('/troops', troopsRoutes)
-  app.use('/files', filesRoutes)
-  app.use('/admin', adminRoutes)
-  app.use('/parent', parentRoutes)
+  registerRoutes(app)
 
   app.use(errorHandler)
   return app

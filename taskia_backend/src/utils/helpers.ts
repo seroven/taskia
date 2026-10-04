@@ -1,4 +1,8 @@
+import { AppError } from '../shared/errors/app-error.js'
+
 export type UserRole = 'user' | 'admin' | 'parent'
+
+export { AppError }
 
 /** Segundos: si el Explorador tarda más, cuenta como pausa, no pensamiento. */
 export const REPLY_PAUSE_SECONDS = 30 * 60
@@ -21,16 +25,6 @@ export interface PublicUser {
 export interface JwtPayload {
   sub: number
   role: UserRole
-}
-
-export class AppError extends Error {
-  status: number
-
-  constructor(message: string, status = 400) {
-    super(message)
-    this.status = status
-    this.name = 'AppError'
-  }
 }
 
 /**

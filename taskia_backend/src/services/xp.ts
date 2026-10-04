@@ -1,6 +1,6 @@
-import type { ResultSetHeader, RowDataPacket } from '../db/pool.js'
-import { pool } from '../db/pool.js'
-import { civilDayFromInstant } from '../db/civilDate.js'
+import type { ResultSetHeader, RowDataPacket } from '../infrastructure/database/pool.js'
+import { pool } from '../infrastructure/database/pool.js'
+import { civilDayFromInstant } from '../infrastructure/database/civil-date.js'
 import { AppError } from '../utils/helpers.js'
 
 /** Zona de producto para semana XP y tope diario de tareas. */

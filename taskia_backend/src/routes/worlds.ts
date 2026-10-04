@@ -1,9 +1,9 @@
-﻿import { Router } from 'express'
-import type { ResultSetHeader, RowDataPacket } from '../db/pool.js'
-import { pool } from '../db/pool.js'
-import { requireAuth, requireStudent } from '../middleware/auth.js'
-import { asyncHandler } from '../middleware/error.js'
-import { callGemini } from '../services/gemini.js'
+import { Router } from 'express'
+import type { ResultSetHeader, RowDataPacket } from '../infrastructure/database/pool.js'
+import { pool } from '../infrastructure/database/pool.js'
+import { requireAuth, requireStudent } from '../middlewares/auth.middleware.js'
+import { asyncHandler } from '../middlewares/error.middleware.js'
+import { callGemini } from '../infrastructure/gemini/gemini.client.js'
 import {
   AppError,
   extractJson,

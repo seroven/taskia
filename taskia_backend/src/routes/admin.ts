@@ -1,13 +1,13 @@
-﻿import { Router } from 'express'
+import { Router } from 'express'
 import bcrypt from 'bcryptjs'
-import type { ResultSetHeader, RowDataPacket } from '../db/pool.js'
-import { pool } from '../db/pool.js'
-import { requireAuth, requireAdmin } from '../middleware/auth.js'
-import { asyncHandler } from '../middleware/error.js'
+import type { ResultSetHeader, RowDataPacket } from '../infrastructure/database/pool.js'
+import { pool } from '../infrastructure/database/pool.js'
+import { requireAuth, requireAdmin } from '../middlewares/auth.middleware.js'
+import { asyncHandler } from '../middlewares/error.middleware.js'
 import { AppError, formatCivilDate, toInstantISO } from '../utils/helpers.js'
-import { roleIdByCode } from '../db/roles.js'
+import { roleIdByCode } from '../infrastructure/database/roles.js'
 import { getChallengeDetail } from './worlds.js'
-import { civilDayKey, viewerDates } from '../db/civilDate.js'
+import { civilDayKey, viewerDates } from '../infrastructure/database/civil-date.js'
 
 const router = Router()
 

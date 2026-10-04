@@ -1,6 +1,6 @@
 import { createApp } from './app.js'
 import { env } from './config/env.js'
-import { initDb } from './db/pool.js'
+import { initDb } from './infrastructure/database/pool.js'
 
 async function main() {
   await initDb()
