@@ -15,6 +15,7 @@ import { WorldsNav } from '../components/worlds/WorldsNav'
 import { SpaceUniverse } from '../components/troops/space/SpaceUniverse'
 import { TroopSpaceCard } from '../components/troops/TroopSpaceCard'
 import { errorMessage } from '../lib/errors'
+import { planetOrbBackground, featuresFromSeed, resolvePlanetFeatures } from '../lib/planetFeatures'
 import { PLANET_STYLES, type PlanetParams } from '../lib/planetStyles'
 import type {
   TroopDetail,
@@ -194,6 +195,10 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
             myTroopId={myTroopId}
             openId={openId}
             onSelectTroop={(id) => void selectTroop(id)}
+            onClearTroop={() => {
+              setOpenId(null)
+              setOpenDetail(null)
+            }}
             onRequestMore={requestMoreUniverse}
             focusToken={focusToken}
           />
@@ -828,7 +833,7 @@ function PlanetStyleModal({
               <span
                 className="planet-style-orb"
                 style={{
-                  background: `radial-gradient(circle at 35% 30%, ${style.atmosphere ?? style.color}, ${style.color} 50%, ${style.emissive})`,
+                  background: planetOrbBackground(featuresFromSeed(style.id, 17)),
                 }}
               />
               <span>{style.label}</span>
@@ -855,7 +860,9 @@ function PlanetStyleModal({
               <span
                 className="planet-style-orb"
                 style={{
-                  background: `radial-gradient(circle at 35% 30%, ${preview.atmosphere ?? preview.color}, ${preview.color} 50%, ${preview.emissive})`,
+                  background: planetOrbBackground(
+                    resolvePlanetFeatures(currentStyleId, 17, preview),
+                  ),
                 }}
                 aria-hidden
               />

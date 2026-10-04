@@ -7,9 +7,9 @@ import {
   useState,
 } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Stars } from '@react-three/drei'
 import * as THREE from 'three'
-import { resolvePlanetLook } from '../../../lib/planetStyles'
+import { planetKindIndex, resolvePlanetFeatures } from '../../../lib/planetFeatures'
+import { planetFragmentShader, planetVertexShader } from './planetSurface'
 import {
   layoutPlanets,
   universeBounds,
@@ -29,6 +29,132 @@ function rankAura(rank: number | null): string | null {
   return null
 }
 
+function mulberry32(seed: number) {
+  let a = seed >>> 0
+  return () => {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function makeStarLayer(count: number, seed: number, minR: number, maxR: number) {
+  const rand = mulberry32(seed)
+  const positions = new Float32Array(count * 3)
+  const colors = new Float32Array(count * 3)
+  const palette = ['#f8fafc', '#dbeafe', '#e0f2fe', '#fde68a']
+  for (let i = 0; i < count; i++) {
+    const theta = rand() * Math.PI * 2
+    const phi = Math.acos(2 * rand() - 1)
+    const radius = minR + rand() * (maxR - minR)
+    positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta)
+    positions[i * 3 + 1] = radius * Math.cos(phi)
+    positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta)
+    const tint = new THREE.Color(palette[Math.floor(rand() * palette.length)]!)
+    colors[i * 3] = tint.r
+    colors[i * 3 + 1] = tint.g
+    colors[i * 3 + 2] = tint.b
+  }
+  return { positions, colors }
+}
+
+function starGeometry(data: { positions: Float32Array; colors: Float32Array }) {
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(data.positions, 3))
+  geometry.setAttribute('color', new THREE.BufferAttribute(data.colors, 3))
+  return geometry
+}
+
+function makeStarSprite() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 64
+  canvas.height = 64
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return new THREE.Texture()
+  const glow = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
+  glow.addColorStop(0, 'rgba(255,255,255,1)')
+  glow.addColorStop(0.2, 'rgba(255,255,255,0.9)')
+  glow.addColorStop(0.45, 'rgba(255,255,255,0.28)')
+  glow.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = glow
+  ctx.fillRect(0, 0, 64, 64)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.NoColorSpace
+  texture.needsUpdate = true
+  return texture
+}
+
+function StarField({ reducedMotion }: { reducedMotion: boolean }) {
+  const sprite = useMemo(() => makeStarSprite(), [])
+  const farGeo = useMemo(() => starGeometry(makeStarLayer(900, 11, 52, 96)), [])
+  const midGeo = useMemo(() => starGeometry(makeStarLayer(420, 29, 28, 70)), [])
+  const dustGeo = useMemo(() => starGeometry(makeStarLayer(110, 47, 16, 46)), [])
+  const farRef = useRef<THREE.Points>(null)
+  const midRef = useRef<THREE.Points>(null)
+  const dustRef = useRef<THREE.Points>(null)
+
+  useEffect(() => {
+    return () => {
+      sprite.dispose()
+      farGeo.dispose()
+      midGeo.dispose()
+      dustGeo.dispose()
+    }
+  }, [sprite, farGeo, midGeo, dustGeo])
+
+  useFrame((_, dt) => {
+    if (reducedMotion) return
+    const spin = (points: THREE.Points | null, speed: number) => {
+      if (!points) return
+      points.rotation.y += dt * speed
+      points.rotation.x += dt * speed * 0.15
+    }
+    spin(farRef.current, 0.012)
+    spin(midRef.current, 0.028)
+    spin(dustRef.current, 0.05)
+  })
+
+  return (
+    <>
+      <points ref={farRef} geometry={farGeo} raycast={() => null}>
+        <pointsMaterial
+          map={sprite}
+          size={0.7}
+          sizeAttenuation
+          vertexColors
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </points>
+      <points ref={midRef} geometry={midGeo} raycast={() => null}>
+        <pointsMaterial
+          map={sprite}
+          size={1.15}
+          sizeAttenuation
+          vertexColors
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </points>
+      <points ref={dustRef} geometry={dustGeo} raycast={() => null}>
+        <pointsMaterial
+          map={sprite}
+          size={1.7}
+          sizeAttenuation
+          vertexColors
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </points>
+    </>
+  )
+}
+
 function PlanetMesh({
   troop,
   position,
@@ -42,19 +168,49 @@ function PlanetMesh({
   onSelect: (id: number) => void
   reducedMotion: boolean
 }) {
-  const style = resolvePlanetLook(troop.planet_style_id, troop.planet_params)
+  const features = useMemo(
+    () =>
+      resolvePlanetFeatures(troop.planet_style_id, troop.planet_seed, troop.planet_params),
+    [troop.planet_style_id, troop.planet_seed, troop.planet_params],
+  )
   const aura = rankAura(troop.rank)
   const meshRef = useRef<THREE.Mesh>(null)
+  const material = useMemo(() => {
+    const [base, detail, accent, cloud] = features.colors
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uSeed: { value: (features.seed % 997) / 17 },
+        uKind: { value: planetKindIndex(features.kind) },
+        uA: { value: new THREE.Color(base) },
+        uB: { value: new THREE.Color(detail) },
+        uC: { value: new THREE.Color(accent) },
+        uCloud: { value: new THREE.Color(cloud) },
+        uAtmo: { value: new THREE.Color(features.atmosphere) },
+        uScale: { value: features.scale },
+        uCoverage: { value: features.coverage },
+        uWarp: { value: features.warp },
+        uGloss: { value: features.gloss },
+        uCloudAmt: { value: features.cloud },
+        uCloudSpeed: { value: reducedMotion ? 0 : features.cloudSpeed },
+      },
+      vertexShader: planetVertexShader,
+      fragmentShader: planetFragmentShader,
+    })
+  }, [features, reducedMotion])
+
+  useEffect(() => () => material.dispose(), [material])
 
   useFrame((_, dt) => {
+    material.uniforms.uTime!.value += reducedMotion ? 0 : dt
     if (!meshRef.current || reducedMotion) return
-    meshRef.current.rotation.y += dt * 0.15
+    meshRef.current.rotation.y += dt * 0.12
   })
 
   return (
     <group position={position}>
       {aura && (
-        <mesh>
+        <mesh raycast={() => null}>
           <sphereGeometry args={[1.55, 24, 24]} />
           <meshBasicMaterial
             color={aura}
@@ -64,20 +220,19 @@ function PlanetMesh({
           />
         </mesh>
       )}
-      {style.atmosphere && (
-        <mesh>
-          <sphereGeometry args={[1.22, 24, 24]} />
-          <meshBasicMaterial
-            color={style.atmosphere}
-            transparent
-            opacity={0.12}
-            depthWrite={false}
-          />
-        </mesh>
-      )}
+      <mesh raycast={() => null}>
+        <sphereGeometry args={[1.18, 32, 32]} />
+        <meshBasicMaterial
+          color={features.atmosphere}
+          transparent
+          opacity={0.16}
+          depthWrite={false}
+        />
+      </mesh>
       <mesh
         ref={meshRef}
         scale={selected ? 1.12 : 1}
+        material={material}
         onClick={(e) => {
           e.stopPropagation()
           onSelect(troop.id)
@@ -89,15 +244,20 @@ function PlanetMesh({
           document.body.style.cursor = 'default'
         }}
       >
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshStandardMaterial
-          color={style.color}
-          emissive={style.emissive}
-          emissiveIntensity={selected ? 0.55 : 0.28}
-          roughness={style.roughness}
-          metalness={style.metalness}
-        />
+        <sphereGeometry args={[1, 48, 48]} />
       </mesh>
+      {features.rings > 0 && !selected && (
+        <mesh raycast={() => null} rotation={[features.ringTilt, 0.4, 0.15]}>
+          <ringGeometry args={[1.38, features.rings === 2 ? 2.15 : 1.72, 72]} />
+          <meshBasicMaterial
+            color={features.ringColor}
+            side={THREE.DoubleSide}
+            transparent
+            opacity={0.78}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
     </group>
   )
 }
@@ -107,11 +267,13 @@ function CameraRig({
   bounds,
   onNearEdge,
   reducedMotion,
+  pointerMoved,
 }: {
   focus: { x: number; z: number } | null
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number }
   onNearEdge: () => void
   reducedMotion: boolean
+  pointerMoved: { current: boolean }
 }) {
   const { camera, gl, size } = useThree()
   const target = useRef(new THREE.Vector3(0, 18, 22))
@@ -120,9 +282,13 @@ function CameraRig({
   const last = useRef({ x: 0, y: 0 })
   const edgeDir = useRef({ x: 0, z: 0 })
   const focusAnim = useRef<THREE.Vector3 | null>(null)
+  const downAt = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
-    if (!focus) return
+    if (!focus) {
+      focusAnim.current = null
+      return
+    }
     focusAnim.current = new THREE.Vector3(focus.x, 0, focus.z)
   }, [focus])
 
@@ -131,6 +297,8 @@ function CameraRig({
 
     const onDown = (e: PointerEvent) => {
       dragging.current = true
+      pointerMoved.current = false
+      downAt.current = { x: e.clientX, y: e.clientY }
       last.current = { x: e.clientX, y: e.clientY }
       el.setPointerCapture(e.pointerId)
     }
@@ -155,6 +323,9 @@ function CameraRig({
       edgeDir.current = { x: ex, z: ez }
 
       if (!dragging.current) return
+      const travelX = e.clientX - downAt.current.x
+      const travelY = e.clientY - downAt.current.y
+      if (travelX * travelX + travelY * travelY > 36) pointerMoved.current = true
       const dx = e.clientX - last.current.x
       const dy = e.clientY - last.current.y
       last.current = { x: e.clientX, y: e.clientY }
@@ -185,7 +356,7 @@ function CameraRig({
       el.removeEventListener('pointermove', onMove)
       el.removeEventListener('wheel', onWheel)
     }
-  }, [camera, gl, size])
+  }, [camera, gl, size, pointerMoved])
 
   useFrame((_, dt) => {
     if (focusAnim.current) {
@@ -235,6 +406,7 @@ function Scene({
   canvasBg,
   floorColor,
   accentColor,
+  pointerMoved,
 }: {
   troops: UniverseTroop[]
   layouts: PlanetLayoutPoint[]
@@ -247,6 +419,7 @@ function Scene({
   canvasBg: string
   floorColor: string
   accentColor: string
+  pointerMoved: { current: boolean }
 }) {
   const byId = useMemo(() => new Map(troops.map((t) => [t.id, t])), [troops])
 
@@ -256,14 +429,13 @@ function Scene({
       <ambientLight intensity={0.45} />
       <directionalLight position={[8, 14, 6]} intensity={1.1} />
       <pointLight position={[-10, 6, -8]} intensity={0.4} color={accentColor} />
-      {!reducedMotion && (
-        <Stars radius={80} depth={40} count={1200} factor={3} saturation={0} fade speed={0.4} />
-      )}
+      <StarField reducedMotion={reducedMotion} />
       <CameraRig
         focus={focus}
         bounds={bounds}
         onNearEdge={onNearEdge}
         reducedMotion={reducedMotion}
+        pointerMoved={pointerMoved}
       />
       {layouts.map((p) => {
         const troop = byId.get(p.id)
@@ -279,7 +451,7 @@ function Scene({
           />
         )
       })}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]}>
+      <mesh raycast={() => null} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]}>
         <circleGeometry args={[120, 48]} />
         <meshBasicMaterial color={floorColor} transparent opacity={0.55} />
       </mesh>
@@ -292,6 +464,7 @@ export function SpaceUniverse({
   myTroopId,
   openId,
   onSelectTroop,
+  onClearTroop,
   onRequestMore,
   focusToken,
 }: {
@@ -299,6 +472,7 @@ export function SpaceUniverse({
   myTroopId: number | null
   openId: number | null
   onSelectTroop: (id: number) => void
+  onClearTroop: () => void
   onRequestMore: () => void
   focusToken: number
 }) {
@@ -310,6 +484,7 @@ export function SpaceUniverse({
     accent: '#93c5fd',
   })
   const edgeCooldown = useRef(0)
+  const pointerMoved = useRef(false)
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -348,12 +523,12 @@ export function SpaceUniverse({
   const bounds = useMemo(() => universeBounds(layouts), [layouts])
 
   const focus = useMemo(() => {
-    if (openId == null) return myTroopId != null ? { x: 0, z: 0 } : { x: 0, z: 0 }
+    if (openId == null) return null
     const p = layoutMapRef.current.get(openId)
     return p ? { x: p.x, z: p.z } : { x: 0, z: 0 }
     // focusToken fuerza recentrar (botón volver)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openId, myTroopId, focusToken, layouts])
+  }, [openId, focusToken, layouts])
 
   const openLayout = openId != null ? layoutMapRef.current.get(openId) : null
 
@@ -370,6 +545,11 @@ export function SpaceUniverse({
         camera={{ position: [0, 18, 22], fov: 45, near: 0.1, far: 200 }}
         dpr={[1, 1.75]}
         gl={{ antialias: true, alpha: false }}
+        onPointerMissed={(event) => {
+          if (event.type !== 'click') return
+          if (pointerMoved.current) return
+          onClearTroop()
+        }}
       >
         <Suspense fallback={null}>
           <Scene
@@ -384,6 +564,7 @@ export function SpaceUniverse({
             canvasBg={sceneColors.bg}
             floorColor={sceneColors.floor}
             accentColor={sceneColors.accent}
+            pointerMoved={pointerMoved}
           />
         </Suspense>
       </Canvas>

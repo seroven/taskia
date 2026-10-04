@@ -421,6 +421,9 @@ Contenedor de la tripulación. Cupo máximo **10** miembros activos: se valida e
 | `id` | bigint | PK |
 | `name` | varchar(80) | nombre visible |
 | `is_active` | boolean | baja lógica de la tripulación |
+| `planet_style_id` | varchar(40) | familia del dibujo (`rocky_blue` por defecto) |
+| `planet_seed` | int | semilla fija del aspecto; no cambia al personalizar el estilo |
+| `planet_params` | jsonb | solo si Capitán o Copiloto aplican un diseño; si no, manda la semilla |
 | `created_at` / `updated_at` | timestamptz | |
 
 ### `troop_members`

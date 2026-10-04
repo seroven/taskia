@@ -1,5 +1,7 @@
 import { AppError } from '../../../utils/helpers.js'
 
+const KINDS = new Set(['terrestrial', 'gas', 'ice', 'lava', 'desert', 'cloud'])
+
 export interface PlanetParams {
   color: string
   emissive: string
@@ -7,6 +9,8 @@ export interface PlanetParams {
   metalness: number
   atmosphere: string | null
   label: string
+  kind: string | null
+  rings: 0 | 1 | 2 | null
 }
 
 const HEX = /^#([0-9a-fA-F]{6})$/
@@ -40,6 +44,10 @@ export function normalizePlanetParams(raw: unknown): PlanetParams {
       ? null
       : asHex(atmosphereRaw, '#60a5fa')
 
+  const kind = KINDS.has(String(o.kind)) ? String(o.kind) : null
+  const ringsRaw = Number(o.rings)
+  const rings = ringsRaw === 0 || ringsRaw === 1 || ringsRaw === 2 ? ringsRaw : null
+
   return {
     color: asHex(o.color, '#3b82f6'),
     emissive: asHex(o.emissive, '#1e3a8a'),
@@ -47,5 +55,7 @@ export function normalizePlanetParams(raw: unknown): PlanetParams {
     metalness: clamp01(Number(o.metalness)),
     atmosphere,
     label,
+    kind,
+    rings,
   }
 }

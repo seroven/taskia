@@ -93,6 +93,8 @@ export interface PlanetParams {
   metalness: number
   atmosphere?: string | null
   label?: string
+  kind?: string | null
+  rings?: 0 | 1 | 2 | null
 }
 
 const HEX = /^#([0-9a-fA-F]{6})$/

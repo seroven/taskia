@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { PaintBrush, Plus, SignOut, Star } from '@phosphor-icons/react'
-import { resolvePlanetLook } from '../../lib/planetStyles'
+import { planetOrbBackground, resolvePlanetFeatures } from '../../lib/planetFeatures'
 import {
   troopRoleLabel,
   type TroopDetail,
@@ -41,7 +41,11 @@ export function TroopSpaceCard({
   onSetCopilot?: (userId: number | null) => void
   onKick?: (userId: number) => void
 }) {
-  const style = resolvePlanetLook(detail.planet_style_id, detail.planet_params)
+  const planet = resolvePlanetFeatures(
+    detail.planet_style_id,
+    detail.planet_seed,
+    detail.planet_params,
+  )
   const reduceMotion = useReducedMotion()
   const isMine = detail.my_role != null
   const canInvite =
@@ -63,8 +67,8 @@ export function TroopSpaceCard({
       <div
         className="troop-space-card-planet"
         style={{
-          background: `radial-gradient(circle at 35% 30%, ${style.atmosphere ?? style.color}, ${style.color} 45%, ${style.emissive})`,
-          boxShadow: `0 0 24px ${style.atmosphere ?? style.color}66`,
+          background: planetOrbBackground(planet),
+          boxShadow: `0 0 24px ${planet.atmosphere}66`,
         }}
         aria-hidden
       >
