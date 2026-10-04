@@ -1,4 +1,4 @@
-import { AppError } from '../utils/helpers.js'
+import { AppError } from '../../../utils/helpers.js'
 
 export interface PlanetParams {
   color: string

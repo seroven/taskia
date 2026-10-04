@@ -33,7 +33,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 
 ## Pendiente
 
-- Reestructura de carpetas y capas, sin cambiar producto ni diseño: [PLAN_ESTRUCTURA.md](PLAN_ESTRUCTURA.md). Decisiones confirmadas. Backend ya parte auth, catalog, files, tasks, study y guardian. Siguen tropas, mundos, admin, XP en `modules/progression` y todo el frontend.
+- Reestructura de carpetas y capas, sin cambiar producto ni diseño: [PLAN_ESTRUCTURA.md](PLAN_ESTRUCTURA.md). Decisiones confirmadas. Backend ya parte auth, catalog, files, tasks, study, guardian y tropas. Siguen mundos, admin, XP en `modules/progression` y todo el frontend.
 - Retomar [ROADMAP_V2.md](ROADMAP_V2.md) cuando se decida (workers / WhatsApp / Flutter).
 - En Render / pd: `npm run db:reset:pd -- --yes` (borra el schema `taskia` y reaplica migraciones) si el schema viejo no cuadra.
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.

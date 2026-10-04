@@ -1,33 +1,29 @@
-import { Router } from 'express'
-import type { ResultSetHeader, RowDataPacket } from '../infrastructure/database/pool.js'
-import { pool } from '../infrastructure/database/pool.js'
-import { civilDayFromInstant } from '../infrastructure/database/civil-date.js'
-import { requireAuth, requireStudent } from '../middlewares/auth.middleware.js'
-import { asyncHandler } from '../middlewares/error.middleware.js'
-import { AppError, extractJson, toInstantISO } from '../utils/helpers.js'
-import { normalizePlanetParams } from '../lib/planetParams.js'
-import { callGemini } from '../infrastructure/gemini/gemini.client.js'
-import { PRODUCT_TZ, weekStartMonday } from '../services/xp.js'
+import type { ResultSetHeader, RowDataPacket } from '../../../infrastructure/database/pool.js'
+import { pool } from '../../../infrastructure/database/pool.js'
+import { civilDayFromInstant } from '../../../infrastructure/database/civil-date.js'
+import { AppError, extractJson, toInstantISO } from '../../../utils/helpers.js'
+import { normalizePlanetParams } from '../lib/planet-params.js'
+import {
+  parseExplorerSearch,
+  parsePlanetPrompt,
+  parsePlanetStyleId,
+  parseTroopName,
+} from '../schemas/troop.schema.js'
+import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
+import { PRODUCT_TZ, weekStartMonday } from '../../../services/xp.js'
 
-const router = Router()
+type TroopReq = {
+  user?: { id: number }
+  body: any
+  query: any
+  params: any
+}
+
 const MAX_MEMBERS = 10
 const MAX_PENDING_INVITES_PER_TROOP = 15
 const MAX_INVITES_SENT_PER_DAY = 20
 
 type TroopRole = 'captain' | 'copilot' | 'member'
-
-function normalizeTroopName(raw: string) {
-  return raw
-    .normalize('NFC')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function isReasonableTroopName(name: string) {
-  if (name.length < 3 || name.length > 80) return false
-  // Al menos una letra o número (evita solo símbolos / espacios raros)
-  return /[\p{L}\p{N}]/u.test(name)
-}
 
 function mapMember(r: RowDataPacket) {
   return {
@@ -206,12 +202,8 @@ async function joinTroopAsMember(troopId: number, userId: number) {
   )
 }
 
-router.use(requireAuth, requireStudent)
-
 /** Mi tropa + invitaciones pendientes recibidas. */
-router.get(
-  '/me',
-  asyncHandler(async (req, res) => {
+export async function getMe(req: TroopReq) {
     const userId = req.user!.id
     const membership = await activeMembership(userId)
     const troop = membership
@@ -229,7 +221,7 @@ router.get(
       [userId],
     )
 
-    res.json({
+    return({
       troop,
       invites: invites.map((i) => ({
         id: Number(i.id),
@@ -241,13 +233,10 @@ router.get(
         created_at: toInstantISO(i.created_at as Date) ?? '',
       })),
     })
-  }),
-)
+}
 
 /** Bandeja: invitaciones recibidas + solicitudes a mi tropa (Capitán/Copiloto). */
-router.get(
-  '/inbox',
-  asyncHandler(async (req, res) => {
+export async function getInbox(req: TroopReq) {
     const userId = req.user!.id
     const membership = await activeMembership(userId)
 
@@ -291,17 +280,14 @@ router.get(
       created_at: toInstantISO(i.created_at as Date) ?? '',
     })
 
-    res.json({
+    return({
       invites: invites.map((i) => mapItem(i, 'invite')),
       requests: requests.map((i) => mapItem(i, 'request')),
     })
-  }),
-)
+}
 
 /** Ranking semanal de tropas (lun–dom America/Lima vía week_start). */
-router.get(
-  '/ranking',
-  asyncHandler(async (req, res) => {
+export async function getRanking(req: TroopReq) {
     const weekStart = weekStartMonday()
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50))
     const offset = Math.max(0, Number(req.query.offset) || 0)
@@ -320,7 +306,7 @@ router.get(
        LIMIT ? OFFSET ?`,
       [weekStart, limit, offset],
     )
-    res.json({
+    return({
       week_start: weekStart,
       offset,
       limit,
@@ -333,16 +319,13 @@ router.get(
         xp_week: Number(r.xp_week),
       })),
     })
-  }),
-)
+}
 
 /**
  * Tropas activas para el canvas espacial.
  * Mi tropa primero (si hay); el resto orden estable por id.
  */
-router.get(
-  '/universe',
-  asyncHandler(async (req, res) => {
+export async function getUniverse(req: TroopReq) {
     const userId = req.user!.id
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 50))
     const offset = Math.max(0, Number(req.query.offset) || 0)
@@ -371,7 +354,7 @@ router.get(
       [weekStart, myTroopId ?? -1, limit, offset],
     )
 
-    res.json({
+    return({
       week_start: weekStart,
       my_troop_id: myTroopId,
       offset,
@@ -393,17 +376,11 @@ router.get(
         }
       }),
     })
-  }),
-)
+}
 
 /** Buscar exploradores por nombre (global). */
-router.get(
-  '/search',
-  asyncHandler(async (req, res) => {
-    const q = String(req.query.q ?? '').trim()
-    if (q.length < 2) {
-      throw new AppError('Escribe al menos 2 letras para buscar')
-    }
+export async function searchExplorers(req: TroopReq) {
+    const q = parseExplorerSearch(req.query.q)
     const userId = req.user!.id
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT u.id, u.username, u.level, u.xp_total,
@@ -418,28 +395,18 @@ router.get(
        LIMIT 20`,
       [userId, `%${q}%`],
     )
-    res.json(
-      rows.map((r) => ({
-        id: Number(r.id),
-        username: r.username as string,
-        level: Number(r.level ?? 1),
-        xp_total: Number(r.xp_total ?? 0),
-        in_troop: r.troop_id != null,
-      })),
-    )
-  }),
-)
+    return rows.map((r) => ({
+      id: Number(r.id),
+      username: r.username as string,
+      level: Number(r.level ?? 1),
+      xp_total: Number(r.xp_total ?? 0),
+      in_troop: r.troop_id != null,
+    }))
+}
 
-router.post(
-  '/',
-  asyncHandler(async (req, res) => {
+export async function createTroop(req: TroopReq) {
     const userId = req.user!.id
-    const name = normalizeTroopName(String(req.body.name ?? ''))
-    if (!isReasonableTroopName(name)) {
-      throw new AppError(
-        'Elige un nombre de 3 a 80 caracteres con al menos una letra o número',
-      )
-    }
+    const name = parseTroopName(req.body.name)
     if (await activeMembership(userId)) {
       throw new AppError('Ya estás en una tropa. Sal primero para crear otra.')
     }
@@ -461,19 +428,16 @@ router.post(
         [troopId, userId],
       )
       await conn.commit()
-      res.json(await loadTroopDetail(troopId, userId))
+      return(await loadTroopDetail(troopId, userId))
     } catch (err) {
       await conn.rollback()
       throw err
     } finally {
       conn.release()
     }
-  }),
-)
+}
 
-router.post(
-  '/invites',
-  asyncHandler(async (req, res) => {
+export async function inviteExplorer(req: TroopReq) {
     const userId = req.user!.id
     const toUserId = Number(req.body.to_user_id)
     if (!Number.isFinite(toUserId)) throw new AppError('Explorador no válido')
@@ -533,17 +497,14 @@ router.post(
          VALUES (?, ?, ?, 'pending', 'invite')`,
         [troopId, userId, toUserId],
       )
-      res.json({ id: Number(ins.insertId), ok: true })
+      return({ id: Number(ins.insertId), ok: true })
     } catch {
       throw new AppError('Ya hay una invitación pendiente para ese explorador')
     }
-  }),
-)
+}
 
 /** Explorador sin tropa pide unirse a una tropa. */
-router.post(
-  '/:id/request',
-  asyncHandler(async (req, res) => {
+export async function requestJoin(req: TroopReq) {
     const userId = req.user!.id
     const troopId = Number(req.params.id)
     if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
@@ -591,16 +552,13 @@ router.post(
          VALUES (?, ?, ?, 'pending', 'request')`,
         [troopId, userId, captainId],
       )
-      res.json({ id: Number(ins.insertId), ok: true })
+      return({ id: Number(ins.insertId), ok: true })
     } catch {
       throw new AppError('Ya pediste unirte a esa tropa')
     }
-  }),
-)
+}
 
-router.post(
-  '/invites/:id/accept',
-  asyncHandler(async (req, res) => {
+export async function acceptInvite(req: TroopReq) {
     const userId = req.user!.id
     const inviteId = Number(req.params.id)
 
@@ -637,7 +595,7 @@ router.post(
         [inviteId],
       )
       await joinTroopAsMember(troopId, userId)
-      res.json(await loadTroopDetail(troopId, userId))
+      return(await loadTroopDetail(troopId, userId))
       return
     }
 
@@ -671,13 +629,10 @@ router.post(
       [inviteId],
     )
     await joinTroopAsMember(troopId, joinerId)
-    res.json(await loadTroopDetail(troopId, userId))
-  }),
-)
+    return(await loadTroopDetail(troopId, userId))
+}
 
-router.post(
-  '/invites/:id/reject',
-  asyncHandler(async (req, res) => {
+export async function rejectInvite(req: TroopReq) {
     const userId = req.user!.id
     const inviteId = Number(req.params.id)
 
@@ -714,14 +669,11 @@ router.post(
        WHERE id = ?`,
       [inviteId],
     )
-    res.json({ ok: true })
-  }),
-)
+    return({ ok: true })
+}
 
 /** Capitán asigna o quita copiloto. */
-router.post(
-  '/copilot',
-  asyncHandler(async (req, res) => {
+export async function setCopilot(req: TroopReq) {
     const userId = req.user!.id
     const membership = await activeMembership(userId)
     if (!membership || membership.role !== 'captain') {
@@ -762,14 +714,11 @@ router.post(
     } finally {
       conn.release()
     }
-    res.json(await loadTroopDetail(troopId, userId))
-  }),
-)
+    return(await loadTroopDetail(troopId, userId))
+}
 
 /** Capitán elimina a un miembro (no a sí mismo). */
-router.delete(
-  '/members/:memberUserId',
-  asyncHandler(async (req, res) => {
+export async function kickMember(req: TroopReq) {
     const userId = req.user!.id
     const memberUserId = Number(req.params.memberUserId)
     const membership = await activeMembership(userId)
@@ -792,13 +741,10 @@ router.delete(
        WHERE troop_id = ? AND to_user_id = ? AND status = 'pending'`,
       [troopId, memberUserId],
     )
-    res.json(await loadTroopDetail(troopId, userId))
-  }),
-)
+    return(await loadTroopDetail(troopId, userId))
+}
 
-router.post(
-  '/leave',
-  asyncHandler(async (req, res) => {
+export async function leaveTroop(req: TroopReq) {
     const userId = req.user!.id
     const membership = await activeMembership(userId)
     if (!membership) throw new AppError('No estás en una tropa')
@@ -834,20 +780,8 @@ router.post(
     } finally {
       conn.release()
     }
-    res.json({ ok: true })
-  }),
-)
-
-const PLANET_STYLE_IDS = new Set([
-  'rocky_blue',
-  'gas_teal',
-  'lava_amber',
-  'neon_violet',
-  'ice_cyan',
-  'forest_green',
-  'rose_dust',
-  'shadow_slate',
-])
+    return({ ok: true })
+}
 
 const PLANET_GENERATE_SYSTEM = `Eres un diseñador de planetas para Taskia, una app infantil de exploración espacial (español latinoamericano).
 Devuelve SOLO un JSON con esta forma exacta:
@@ -866,9 +800,7 @@ Reglas:
 - No agregues texto fuera del JSON.`
 
 /** Capitán o Copiloto pide a la IA parámetros procedurales (preview, no guarda). */
-router.post(
-  '/planet/generate',
-  asyncHandler(async (req, res) => {
+export async function generatePlanet(req: TroopReq) {
     const userId = req.user!.id
     const membership = await activeMembership(userId)
     const role = membership?.role as TroopRole | undefined
@@ -878,13 +810,7 @@ router.post(
     ) {
       throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
     }
-    const prompt = String(req.body.prompt ?? '')
-      .normalize('NFC')
-      .replace(/\s+/g, ' ')
-      .trim()
-    if (prompt.length < 3 || prompt.length > 200) {
-      throw new AppError('Cuéntame el planeta en 3 a 200 caracteres')
-    }
+    const prompt = parsePlanetPrompt(req.body.prompt)
 
     const raw = await callGemini({
       system: PLANET_GENERATE_SYSTEM,
@@ -900,14 +826,11 @@ router.post(
     }
 
     const preview = normalizePlanetParams(parsed)
-    res.json({ preview, prompt })
-  }),
-)
+    return({ preview, prompt })
+}
 
 /** Capitán o Copiloto cambia estilo de catálogo o aplica params IA. */
-router.patch(
-  '/planet',
-  asyncHandler(async (req, res) => {
+export async function updatePlanet(req: TroopReq) {
     const userId = req.user!.id
     const membership = await activeMembership(userId)
     const role = membership?.role as TroopRole | undefined
@@ -926,10 +849,7 @@ router.patch(
     }
 
     if (hasStyle) {
-      const styleId = String(req.body.planet_style_id ?? '').trim()
-      if (!PLANET_STYLE_IDS.has(styleId)) {
-        throw new AppError('Estilo de planeta no válido')
-      }
+      const styleId = parsePlanetStyleId(req.body.planet_style_id)
       await pool.query(
         `UPDATE troops SET planet_style_id = ?, planet_params = NULL WHERE id = ?`,
         [styleId, troopId],
@@ -951,17 +871,12 @@ router.patch(
       }
     }
 
-    res.json(await loadTroopDetail(troopId, userId))
-  }),
-)
+    return(await loadTroopDetail(troopId, userId))
+}
 
-router.get(
-  '/:id',
-  asyncHandler(async (req, res) => {
+export async function getTroop(req: TroopReq) {
     const troopId = Number(req.params.id)
     if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
-    res.json(await loadTroopDetail(troopId, req.user!.id))
-  }),
-)
+    return(await loadTroopDetail(troopId, req.user!.id))
+}
 
-export default router

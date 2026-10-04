@@ -7,7 +7,7 @@ import studyRoutes from '../modules/study/study.routes.js'
 import worldsRoutes from './worlds.js'
 import adminRoutes from './admin.js'
 import parentRoutes from '../modules/guardian/guardian.routes.js'
-import troopsRoutes from './troops.js'
+import troopsRoutes from '../modules/troops/troops.routes.js'
 import filesRoutes from '../modules/files/files.routes.js'
 
 /** Monta los routers. Los paths HTTP se quedan como están. */

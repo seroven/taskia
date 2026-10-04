@@ -254,5 +254,6 @@ Hecho y compilado (`npm run build` en `taskia_backend`):
 - **B4.** `modules/tasks`.
 - **B5.** `modules/study` (routes, controller, schema, service, repository).
 - **B6.** `modules/guardian`. El prefijo HTTP sigue siendo `/parent`. El SQL de este módulo todavía vive en el service.
+- **B7.** `modules/troops`. El SQL sigue en el service. `planetParams` pasó a `modules/troops/lib/planet-params.ts`.
 
-Siguiente corte: **B7 tropas**, después mundos, admin, mover XP a `modules/progression`, y recién el frontend (F1 en adelante). `src/routes/` todavía tiene `troops.ts`, `worlds.ts` y `admin.ts`.
+Siguiente corte: **B8 mundos**, después admin, mover XP a `modules/progression`, y recién el frontend (F1 en adelante). `src/routes/` todavía tiene `worlds.ts` y `admin.ts`.
