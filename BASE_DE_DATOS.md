@@ -4,7 +4,7 @@ Taskia usa **PostgreSQL**. Son **28 tablas** de aplicación (más `schema_migrat
 
 Este documento explica para qué sirve cada tabla y cómo se relacionan. Si buscas el *qué hace la app*, eso está en [PRODUCTO.md](PRODUCTO.md); acá está el *dónde se guarda*.
 
-La fuente de verdad del esquema son las migraciones en [`taskia_backend/db/migrations/`](taskia_backend/db/migrations/) (`001_initial.sql`, `003_tropas_xp.sql`, …). Se aplican con `npm run db:migrate`. No hay ORM: el backend escribe SQL a mano.
+La fuente de verdad del esquema son las migraciones en [`taskia_backend/db/migrations/`](taskia_backend/db/migrations/) (`001_initial.sql`, `003_tropas_xp.sql`, …). Se aplican con `npm run db:migrate`. En runtime el backend lee y escribe con TypeORM: una entidad por tabla en `taskia_backend/src/infrastructure/database/entities/`. `schema_migrations` no es entidad. `synchronize` y `dropSchema` están apagados: un cambio de columna es una migración SQL nueva y, en el mismo cambio, la entidad.
 
 ---
 
@@ -583,14 +583,24 @@ Las migraciones MySQL históricas están en `db/migrations_mysql_legacy/` y **no
 
 ---
 
+## Entidades y transformers
+
+Las 28 tablas de aplicación tienen entidad. El `DataSource` usa `schema: PG_SCHEMA`, así que TypeORM califica las tablas (`"taskia"."users"`). Un fragmento SQL suelto (`FROM xp_awards` dentro de un subquery) no hereda ese schema: el join tiene que ser contra la entidad.
+
+**Bigint.** Postgres lo devuelve como string. `bigintTransformer` lo deja como número en la API. Un campo omitido (`undefined`) no se escribe: vale el default de la columna. `null` explícito sí se inserta como `NULL`. Por eso un alta de `users` manda `xpTotal: 0` (la columna no acepta nulo).
+
+**Fecha civil.** `due_date`, `summary_date` y `week_start` se leen y escriben como `YYYY-MM-DD`. No pasan por `Date` de JS.
+
+**Instantes.** `created_at` y `updated_at` los pone la base (default y trigger `set_updated_at`). Las entidades no usan `@CreateDateColumn` ni `@UpdateDateColumn`.
+
+**Sin `id` propio.** La clave es `@PrimaryColumn`: `study_sessions`, `study_boards`, `user_study_memory`, `study_mission_sessions`, `study_mission_boards`, `study_world_courses` (`world_id`, `course_id`), `study_challenge_presets` (`scope`, `difficulty`), `parent_student_links` (`parent_id`, `student_id`) y `parent_notify_prefs` (`parent_id`).
+
+**Índices parciales.** Están en las migraciones (por ejemplo un solo miembro activo por tropa). La entidad los documenta; el ORM no los recrea.
+
 ## Trampas conocidas
 
-Cosas que ya nos mordieron y conviene tener presentes al escribir SQL nuevo.
+**Migraciones.** Siguen siendo SQL de Postgres. El borrado multi-tabla de MySQL (`DELETE a FROM tabla a JOIN ...`) no existe: se escribe con un subquery o con `USING`. La columna `role` es palabra reservada: en SQL crudo va entre comillas (`"role"`). TypeORM la cita solo.
 
-**El traductor de dialecto.** El backend escribe SQL con `?` y algo de sabor MySQL, y `src/db/sql.ts` lo reescribe a Postgres (`$1`, `ON CONFLICT`, `RETURNING`, booleanos). Traduce los booleanos **por nombre de columna**, y la lista es `is_active`, `from_voice`, `study_passed` y `uses_board`. Si escribes una condición sobre `requires_board`, `is_correct` o `study_mode_chosen`, usa `TRUE` / `FALSE` directamente, porque esas no están en la lista y `= 1` fallaría.
+**Booleanos.** En la base son `TRUE` / `FALSE`. Un `SUM(status = 'x')` o `SUM(is_active = 1)` no se usa: el conteo es `SUM(CASE WHEN … THEN 1 ELSE 0 END)`.
 
-**Sintaxis que no cruza.** El borrado multi-tabla de MySQL (`DELETE a FROM tabla a JOIN ...`) no existe en Postgres y da un `syntax error` poco claro. Se escribe con un subquery o con `USING`.
-
-**`role` es palabra reservada.** Siempre entre comillas dobles: `"role"`.
-
-**Las tablas 1 a 1 no tienen `id`.** `study_sessions`, `study_boards`, `study_mission_sessions`, `study_mission_boards` y `user_study_memory` se buscan por la clave de su dueño. No hay un `session_id` que usar.
+**`orIgnore`.** El resultado crudo es un array de filas devueltas: longitud 1 si insertó, 0 si chocó con la unique. No trae `affectedRows`. XP lo usa así en `(user_id, source_type, source_id)`.

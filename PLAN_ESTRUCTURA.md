@@ -255,7 +255,8 @@ Hecho y compilado (`npm run build` en `taskia_backend`):
 - **B3.** `modules/catalog` (cursos y dificultades) y `modules/files` (descarga de avatares).
 - **B4.** `modules/tasks`.
 - **B5.** `modules/study` (routes, controller, schema, service, repository).
-- **B6.** `modules/guardian`. El prefijo HTTP sigue siendo `/parent`. El SQL de este módulo todavía vive en el service.
-- **B7.** `modules/troops`. El SQL sigue en el service. `planetParams` pasó a `modules/troops/lib/planet-params.ts`.
+- **B6.** `modules/guardian`. El prefijo HTTP sigue siendo `/parent`.
+- **B7.** `modules/troops`. `planetParams` está en `modules/troops/lib/planet-params.ts`.
+- **Mundos y admin.** `modules/worlds/` y `modules/admin/`. El acceso a datos de todo el backend es TypeORM ([PLAN_TYPEORM.md](PLAN_TYPEORM.md), T0–T9).
 
-Siguiente trabajo de backend: [PLAN_TYPEORM.md](PLAN_TYPEORM.md) (T0 en adelante). Mundos y admin salen de `src/routes/` dentro de ese plan. El frontend (F1 en adelante) espera a que el ORM cierre.
+Siguiente: frontend, desde F1.

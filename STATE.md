@@ -35,7 +35,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 ## Pendiente
 
 - Reestructura de carpetas: [PLAN_ESTRUCTURA.md](PLAN_ESTRUCTURA.md). Hechos auth, catalog, files, tasks, study, guardian, tropas, mundos, admin y `src/prompts/`.
-- TypeORM de todo el acceso a datos, sin cambiar la API: [PLAN_TYPEORM.md](PLAN_TYPEORM.md). T0–T8 hechos (hasta admin). Siguiente: T9, borrar el pool MySQL (`mysqlToPg`, `pool.query`) y `roleCodeEquals`, que ya no tiene llamadores. El frontend sigue después.
+- TypeORM de todo el acceso a datos, sin cambiar la API: [PLAN_TYPEORM.md](PLAN_TYPEORM.md). T0–T9 hechos. El runtime entra solo por el `DataSource`; `mysqlToPg` y el pool MySQL ya no están. Siguiente: frontend, [PLAN_ESTRUCTURA.md](PLAN_ESTRUCTURA.md) desde F1.
 - Retomar [ROADMAP_V2.md](ROADMAP_V2.md) cuando se decida (workers / WhatsApp / Flutter).
 - En Render / pd: `npm run db:reset:pd -- --yes` (borra el schema `taskia` y reaplica migraciones) si el schema viejo no cuadra.
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.

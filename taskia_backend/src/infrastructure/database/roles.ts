@@ -16,8 +16,3 @@ export async function roleIdByCode(code: UserRole): Promise<number> {
   CACHE.set(code, id)
   return id
 }
-
-/** Filtro SQL: la fila de users (alias) es un Explorador / Guardián / Admin. */
-export function roleCodeEquals(userAlias: string, code: UserRole) {
-  return `EXISTS (SELECT 1 FROM roles _r WHERE _r.id = ${userAlias}.role_id AND _r.code = '${code}')`
-}

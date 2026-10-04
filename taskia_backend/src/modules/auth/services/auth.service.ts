@@ -1,5 +1,4 @@
 import bcrypt from 'bcryptjs'
-import type { RowDataPacket } from '../../../infrastructure/database/pool.js'
 import { saveAvatarUpload } from '../../../infrastructure/storage/local-file-storage.js'
 import { AppError } from '../../../shared/errors/app-error.js'
 import { progressFromXpTotal } from '../../../services/xp.js'
@@ -27,7 +26,15 @@ function avatarFields(row: {
 
 function toPublicUser(
   id: number,
-  row: RowDataPacket,
+  row: {
+    username: string
+    email: string
+    xp_total: number
+    avatar_kind: string
+    avatar_preset_id: string | null
+    avatar_file: string | null
+    frame_id: string | null
+  },
   role: UserRole,
 ): PublicUser {
   const progress = progressFromXpTotal(Number(row.xp_total ?? 0))
