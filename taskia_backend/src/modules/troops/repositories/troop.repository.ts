@@ -214,6 +214,7 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
     .addSelect('t.planet_style_id', 'planet_style_id')
     .addSelect('t.planet_seed', 'planet_seed')
     .addSelect('t.planet_params', 'planet_params')
+    .addSelect('t.planet_config', 'planet_config')
     .addSelect('COUNT(DISTINCT tm.user_id)', 'member_count')
     .addSelect('COALESCE(AVG(u.level), 1)', 'avg_level')
     .addSelect('COALESCE(SUM(a.amount), 0)', 'xp_week')
@@ -223,6 +224,7 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
     .addGroupBy('t.planet_style_id')
     .addGroupBy('t.planet_seed')
     .addGroupBy('t.planet_params')
+    .addGroupBy('t.planet_config')
     .addSelect(`CASE WHEN t.id = ${mine} THEN 0 ELSE 1 END`, 'mine_sort')
     .orderBy('mine_sort', 'ASC')
     .addOrderBy('t.id', 'ASC')
@@ -234,6 +236,7 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
       planet_style_id: string
       planet_seed: number
       planet_params: unknown
+      planet_config: unknown
       member_count: string
       avg_level: string
       xp_week: string
@@ -475,9 +478,37 @@ export async function setPlanetStyle(troopId: number, styleId: string) {
   await AppDataSource.getRepository(Troop)
     .createQueryBuilder()
     .update()
-    .set({ planetStyleId: styleId, planetParams: () => 'NULL' })
+    .set({
+      planetStyleId: styleId,
+      planetParams: () => 'NULL',
+      planetConfig: () => 'NULL',
+    })
     .where('id = :id', { id: troopId })
     .execute()
+}
+
+export async function setPlanetConfig(troopId: number, config: unknown | null) {
+  const update = AppDataSource.getRepository(Troop)
+    .createQueryBuilder()
+    .update()
+    .where('id = :id', { id: troopId })
+  if (config == null) {
+    await update.set({ planetConfig: () => 'NULL' }).execute()
+    return
+  }
+  await update
+    .set({ planetConfig: () => 'CAST(:config AS jsonb)' })
+    .setParameter('config', JSON.stringify(config))
+    .execute()
+}
+
+export async function listPlanetConfigs(exceptId: number) {
+  return AppDataSource.getRepository(Troop)
+    .createQueryBuilder('t')
+    .select('t.planet_config', 'planet_config')
+    .where('t.planet_config IS NOT NULL')
+    .andWhere('t.id <> :id', { id: exceptId })
+    .getRawMany<{ planet_config: unknown }>()
 }
 
 export async function setPlanetParams(troopId: number, params: unknown | null) {

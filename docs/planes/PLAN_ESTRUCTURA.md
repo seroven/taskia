@@ -127,7 +127,7 @@ El repository envuelve el `pool.query` que ya existe. El service no importa Expr
 
 Gemini y archivos son infraestructura: los services los llaman, no al revés. XP vive en `modules/progression` porque es dominio. Otros services pueden importar ese service. No importan sus repositories.
 
-`db/migrations/`, `db/migrate.mjs` y `db/reset.mjs` no se mueven.
+`db/migrations/`, `db/migrate.ts` y `db/reset.mjs` no se mueven.
 
 ### Frontend
 

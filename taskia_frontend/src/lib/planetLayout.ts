@@ -19,9 +19,9 @@ function unitFloat(seed: number, salt: number): number {
   return (n % 10_000) / 10_000
 }
 
-const MIN_GAP = 5.4
-const RING_BASE = 8.4
-const RING_STEP = 4.8
+const MIN_GAP = 7.2
+const RING_BASE = 11
+const RING_STEP = 6.2
 
 /**
  * Coloca `myTroopId` en (0,0) si existe; el resto en anillos con jitter por id.

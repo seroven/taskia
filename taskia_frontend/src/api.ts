@@ -20,7 +20,7 @@ import type {
   StudyWorld,
   StudyWorldCourse,
 } from './lib/worldsTypes'
-import type { PlanetParams } from './lib/planetStyles'
+import type { PlanetConfig } from './lib/planet/engine'
 import type { StudyBoardScene, StudyChatResponse, StudySession } from './lib/studyProtocol'
 import type {
   AdminCourse,
@@ -749,7 +749,7 @@ export const api = {
     })
   },
   generateTroopPlanet(prompt: string) {
-    return request<{ preview: PlanetParams; prompt: string }>(
+    return request<{ preview: PlanetConfig; prompt: string }>(
       '/troops/planet/generate',
       {
         method: 'POST',
@@ -757,10 +757,10 @@ export const api = {
       },
     )
   },
-  applyTroopPlanetParams(planet_params: PlanetParams) {
+  applyTroopPlanetConfig(planet_config: PlanetConfig) {
     return request<TroopDetail>('/troops/planet', {
       method: 'PATCH',
-      body: JSON.stringify({ planet_params }),
+      body: JSON.stringify({ planet_config }),
     })
   },
 }

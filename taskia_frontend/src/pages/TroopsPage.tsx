@@ -12,11 +12,13 @@ import { ExplorerXpBar } from '../components/ExplorerXpBar'
 import { TextField } from '../components/ui/Field'
 import { ModalShell } from '../components/ui/ModalShell'
 import { WorldsNav } from '../components/worlds/WorldsNav'
-import { SpaceUniverse } from '../components/troops/space/SpaceUniverse'
+import { GalaxyUniverse } from '../components/troops/space/GalaxyUniverse'
+import { PlanetLab } from '../components/planet/PlanetLab'
 import { TroopSpaceCard } from '../components/troops/TroopSpaceCard'
 import { errorMessage } from '../lib/errors'
-import { planetOrbBackground, featuresFromSeed, resolvePlanetFeatures } from '../lib/planetFeatures'
-import { PLANET_STYLES, type PlanetParams } from '../lib/planetStyles'
+import { PLANET_STYLES } from '../lib/planetStyles'
+import { generateFromSeed, type PlanetConfig } from '../lib/planet/engine'
+import { PlanetRenderer } from '../components/planet/PlanetRenderer'
 import type {
   TroopDetail,
   TroopInvite,
@@ -42,6 +44,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
   const [openId, setOpenId] = useState<number | null>(null)
   const [openDetail, setOpenDetail] = useState<TroopDetail | null>(null)
   const [focusToken, setFocusToken] = useState(0)
+  const [labOpen, setLabOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -190,7 +193,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
         <AppLoader message="Entrando al universo…" variant="section" />
       ) : (
         <div className="space-stage">
-          <SpaceUniverse
+          <GalaxyUniverse
             troops={universe}
             myTroopId={myTroopId}
             openId={openId}
@@ -241,6 +244,12 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
             >
               <Trophy size={22} weight="duotone" />
             </button>
+
+            {import.meta.env.DEV && (
+              <button type="button" className="ghost space-lab-fab" onClick={() => setLabOpen(true)}>
+                Lab
+              </button>
+            )}
 
             {showBackHome && (
               <button
@@ -564,6 +573,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                     ...t,
                     planet_style_id: updated.planet_style_id,
                     planet_params: updated.planet_params,
+                    planet_config: updated.planet_config,
                   }
                 : t,
             ),
@@ -575,8 +585,8 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
           })
         }}
         onGenerate={async (prompt) => api.generateTroopPlanet(prompt)}
-        onApplyAi={async (params) => {
-          const updated = await api.applyTroopPlanetParams(params)
+        onApplyAi={async (config) => {
+          const updated = await api.applyTroopPlanetConfig(config)
           setOpenDetail(updated)
           setMyTroop(updated)
           setUniverse((prev) =>
@@ -586,6 +596,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                     ...t,
                     planet_style_id: updated.planet_style_id,
                     planet_params: updated.planet_params,
+                    planet_config: updated.planet_config,
                   }
                 : t,
             ),
@@ -616,6 +627,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
         }}
       />
 
+      {labOpen && <PlanetLab onClose={() => setLabOpen(false)} />}
     </div>
   )
 }
@@ -776,13 +788,13 @@ function PlanetStyleModal({
   currentStyleId?: string
   onClose: () => void
   onPick: (styleId: string) => Promise<void>
-  onGenerate: (prompt: string) => Promise<{ preview: PlanetParams; prompt: string }>
-  onApplyAi: (params: PlanetParams) => Promise<void>
+  onGenerate: (prompt: string) => Promise<{ preview: PlanetConfig; prompt: string }>
+  onApplyAi: (config: PlanetConfig) => Promise<void>
 }) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [prompt, setPrompt] = useState('')
-  const [preview, setPreview] = useState<PlanetParams | null>(null)
+  const [preview, setPreview] = useState<PlanetConfig | null>(null)
   const [aiBusy, setAiBusy] = useState(false)
 
   useEffect(() => {
@@ -830,12 +842,14 @@ function PlanetStyleModal({
                 })()
               }}
             >
-              <span
-                className="planet-style-orb"
-                style={{
-                  background: planetOrbBackground(featuresFromSeed(style.id, 17)),
-                }}
-              />
+              <span className="planet-style-orb">
+                <PlanetRenderer
+                  config={generateFromSeed(`estilo:${style.id}`, style.id)}
+                  size={56}
+                  showRings={false}
+                  animate={false}
+                />
+              </span>
               <span>{style.label}</span>
             </button>
           ))}
@@ -857,17 +871,11 @@ function PlanetStyleModal({
           />
           {preview && (
             <div className="planet-ai-preview">
-              <span
-                className="planet-style-orb"
-                style={{
-                  background: planetOrbBackground(
-                    resolvePlanetFeatures(currentStyleId, 17, preview),
-                  ),
-                }}
-                aria-hidden
-              />
+              <span className="planet-style-orb">
+                <PlanetRenderer config={preview} size={56} showRings animate={false} />
+              </span>
               <div>
-                <strong>{preview.label ?? 'Vista previa'}</strong>
+                <strong>Vista previa</strong>
                 <p>Así se vería en el universo.</p>
               </div>
             </div>

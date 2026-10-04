@@ -20,6 +20,9 @@ export class Troop {
   @Column({ type: 'jsonb', nullable: true })
   planetParams!: unknown | null
 
+  @Column({ type: 'jsonb', nullable: true })
+  planetConfig!: unknown | null
+
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   createdAt!: Date
 

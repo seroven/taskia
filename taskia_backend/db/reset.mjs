@@ -6,9 +6,9 @@
  *   npm run db:reset:pd -- --yes  → igual con .env.pd (obligatorio --yes)
  *
  * No borra la base Postgres entera: solo el schema PG_SCHEMA (por defecto
- * "taskia"). Luego corre migrate.mjs para volver a crear tablas y seeds.
+ * "taskia"). Luego corre migrate.ts para volver a crear tablas y seeds.
  *
- * Env: igual que migrate.mjs (--env=pd / TASKIA_ENV).
+ * Env: igual que migrate.ts (--env=pd / TASKIA_ENV).
  */
 import fs from 'node:fs'
 import { spawn } from 'node:child_process'
@@ -88,10 +88,11 @@ function clientConfig() {
 
 function runMigrate() {
   return new Promise((resolve, reject) => {
-    const migratePath = path.join(__dirname, 'migrate.mjs')
+    const tsxCli = path.join(root, 'node_modules', 'tsx', 'dist', 'cli.mjs')
+    const migratePath = path.join(__dirname, 'migrate.ts')
     const child = spawn(
       process.execPath,
-      [migratePath, `--env=${envName}`],
+      [tsxCli, migratePath, `--env=${envName}`],
       {
         cwd: root,
         stdio: 'inherit',
@@ -100,7 +101,7 @@ function runMigrate() {
     )
     child.on('exit', (code) => {
       if (code === 0) resolve()
-      else reject(new Error(`migrate.mjs salió con código ${code}`))
+      else reject(new Error(`migrate.ts salió con código ${code}`))
     })
     child.on('error', reject)
   })

@@ -32,14 +32,14 @@ export function HubPage({
         <div className="hub-doors">
           <button
             type="button"
-            className="hub-door"
-            onClick={() => onOpen('troops')}
+            className="hub-door hub-door--soon"
+            disabled
           >
             <span className="hub-door-icon" aria-hidden>
               <UsersThree size={36} weight="duotone" />
             </span>
             <span className="hub-door-title">Tripulación</span>
-            <span className="hub-door-sub">Tu equipo y el ranking</span>
+            <span className="hub-door-sub">Estamos armando este lugar. Vuelve pronto.</span>
           </button>
           <button
             type="button"

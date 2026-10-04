@@ -1235,10 +1235,17 @@ input[type='checkbox']:active:not(:disabled) {
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.hub-door:hover {
+.hub-door:hover:not(:disabled) {
   transform: translateY(-3px);
   border-color: var(--accent);
   box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.hub-door--soon:disabled {
+  cursor: default;
+  opacity: 1;
+  color: var(--ink);
+  border-style: dashed;
 }
 
 .hub-door--accent {
@@ -1467,6 +1474,242 @@ input[type='checkbox']:active:not(:disabled) {
   pointer-events: auto;
 }
 
+.space-planet-name {
+  margin: 0;
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+  color: rgba(248, 250, 252, 0.78);
+  white-space: nowrap;
+  text-shadow: 0 2px 10px rgba(2, 6, 23, 0.85);
+  cursor: pointer;
+}
+
+.space-planet-name.is-hot {
+  color: #fff;
+}
+
+.space-rank-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.5),
+    0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.space-lab-fab {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 5;
+}
+
+.planet-lab {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow: auto;
+  background: #070b18;
+  color: #f8fafc;
+  padding: 20px;
+}
+
+.planet-lab header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.planet-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 88px);
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.planet-lab-grid button,
+.planet-lab-edit button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.planet-lab-edit {
+  display: grid;
+  gap: 10px;
+  max-width: 280px;
+}
+
+.galaxy-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #070b18;
+  cursor: grab;
+  touch-action: none;
+}
+
+.galaxy-stage:active {
+  cursor: grabbing;
+}
+
+.galaxy-sky {
+  position: absolute;
+  inset: -8%;
+  pointer-events: none;
+}
+
+.galaxy-nebula {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(8px);
+}
+
+.nebula-a {
+  width: 46%;
+  height: 38%;
+  left: 8%;
+  top: 12%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.35), transparent 70%);
+}
+
+.nebula-b {
+  width: 40%;
+  height: 34%;
+  right: 6%;
+  bottom: 10%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.28), transparent 70%);
+}
+
+.nebula-c {
+  width: 28%;
+  height: 24%;
+  left: 40%;
+  top: 42%;
+  background: radial-gradient(circle, rgba(251, 113, 133, 0.18), transparent 70%);
+}
+
+.galaxy-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #f8fafc;
+  opacity: 0.75;
+}
+
+.galaxy-star.is-twinkle {
+  animation: galaxy-twinkle 3.4s ease-in-out infinite;
+}
+
+.galaxy-star.is-big {
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.65);
+}
+
+.galaxy-shooting {
+  position: absolute;
+  top: 18%;
+  left: -10%;
+  width: 80px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fff);
+  animation: galaxy-shoot 1.3s linear forwards;
+}
+
+.galaxy-world {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+
+.galaxy-planet {
+  position: absolute;
+  width: var(--planet-size);
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: galaxy-bob 4.8s ease-in-out infinite;
+}
+
+.galaxy-planet.personality-sleepy { animation-duration: 7s; }
+.galaxy-planet.personality-energetic,
+.galaxy-planet.personality-bouncy { animation-duration: 2.8s; }
+.galaxy-planet.personality-shy { animation-duration: 6.2s; }
+.galaxy-planet.is-still { animation: none; }
+.galaxy-planet.is-hot { z-index: 2; }
+.galaxy-planet.is-hot .planet-svg { transform: scale(1.06); }
+
+.galaxy-planet-hit {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.galaxy-home-ring {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 78%;
+  height: 22%;
+  transform: translate(-50%, -50%);
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.galaxy-medal {
+  position: absolute;
+  top: -6px;
+  right: 8px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #1c1917;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+
+.planet-moon-spin {
+  transform-origin: 50px 50px;
+  animation: galaxy-orbit 14s linear infinite;
+}
+
+@keyframes galaxy-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+@keyframes galaxy-shoot {
+  to { transform: translate(70vw, 28vh); opacity: 0; }
+}
+
+@keyframes galaxy-bob {
+  0%, 100% { margin-top: 0; }
+  50% { margin-top: -8px; }
+}
+
+@keyframes galaxy-orbit {
+  to { transform: rotate(360deg); }
+}
+
 .space-card-slot {
   position: absolute;
   left: 50%;
@@ -1495,6 +1738,7 @@ input[type='checkbox']:active:not(:disabled) {
   border-radius: 50%;
   transform: translate(-50%, -52%);
   border: 3px solid color-mix(in srgb, #fff 35%, transparent);
+  overflow: hidden;
 }
 
 .troop-space-card-planet-star {

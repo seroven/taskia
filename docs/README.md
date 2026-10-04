@@ -23,7 +23,7 @@ Qué hace la app y cómo se usa.
 
 ## Junto al código
 
-No están aquí a propósito: el README de cada app, las migraciones MySQL históricas y el script de conversión viven al lado de lo que documentan.
+No están aquí a propósito: el README de cada app y el script de conversión viven al lado de lo que documentan.
 
 - [README.md](../README.md) — cómo levantar el repo.
 - [taskia_frontend/README.md](../taskia_frontend/README.md)

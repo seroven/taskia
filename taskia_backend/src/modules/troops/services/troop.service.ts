@@ -5,6 +5,11 @@ import { PRODUCT_TZ, weekStartMonday } from '../../../services/xp.js'
 import { AppError, extractJson, toInstantISO } from '../../../utils/helpers.js'
 import { normalizePlanetParams } from '../lib/planet-params.js'
 import {
+  generateFromSeed,
+  planetFingerprint,
+  sanitizePlanetConfig,
+} from '../lib/planet-config.js'
+import {
   cancelPendingInvitesTo,
   countActiveMembers,
   countInvitesSentToday,
@@ -28,6 +33,8 @@ import {
   setInviteStatus,
   setPlanetParams,
   setPlanetStyle,
+  setPlanetConfig,
+  listPlanetConfigs,
   troopWeekXp,
   universePage,
   weeklyRanks,
@@ -124,6 +131,7 @@ async function loadTroopDetail(troopId: number, viewerId: number) {
     planet_style_id: String(troop.planetStyleId ?? 'rocky_blue'),
     planet_seed: Number(troop.planetSeed ?? troop.id),
     planet_params: troop.planetParams ?? null,
+    planet_config: troop.planetConfig ?? null,
     created_at: toInstantISO(troop.createdAt) ?? '',
   }
 }
@@ -211,6 +219,7 @@ export async function getUniverse(req: TroopReq) {
         planet_style_id: String(r.planet_style_id ?? 'rocky_blue'),
         planet_seed: Number(r.planet_seed ?? id),
         planet_params: r.planet_params ?? null,
+        planet_config: r.planet_config ?? null,
       }
     }),
   }
@@ -435,7 +444,7 @@ export async function leaveTroop(req: TroopReq) {
   return { ok: true }
 }
 
-/** Capitán o Copiloto pide a la IA parámetros procedurales (preview, no guarda). */
+/** Capitán o Copiloto pide a la IA un planeta (vista previa, no guarda). */
 export async function generatePlanet(req: TroopReq) {
   const userId = req.user!.id
   const membership = await findActiveMembership(userId)
@@ -444,21 +453,39 @@ export async function generatePlanet(req: TroopReq) {
     throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
   }
   const prompt = parsePlanetPrompt(req.body.prompt)
-
-  const raw = await callGemini({
-    system: PLANET_GENERATE_SYSTEM,
-    user: `Pedido del explorador: ${prompt}`,
-    usage: { userId, kind: 'planet_generate' },
-  })
-
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(extractJson(raw))
-  } catch {
-    throw new AppError('No pude diseñar ese planeta. Prueba con otras palabras.')
+  const troopId = Number(membership.troop_id)
+  let note = ''
+  let preview = null as ReturnType<typeof sanitizePlanetConfig> | null
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const raw = await callGemini({
+        system: PLANET_GENERATE_SYSTEM,
+        user: `Pedido del explorador: ${prompt}\n${note}`,
+        usage: { userId, kind: 'planet_generate' },
+      })
+      preview = sanitizePlanetConfig(JSON.parse(extractJson(raw)), `${prompt}:${attempt}`)
+      break
+    } catch (err) {
+      note = `El intento anterior no era un JSON válido (${err instanceof Error ? err.message : 'error'}). Devuelve solo el JSON del esquema.`
+    }
   }
+  if (!preview) preview = generateFromSeed(prompt)
 
-  const preview = normalizePlanetParams(parsed)
+  const taken = new Set(
+    (await listPlanetConfigs(troopId)).map((row) => {
+      try {
+        return planetFingerprint(sanitizePlanetConfig(row.planet_config, 'otro'))
+      } catch {
+        return ''
+      }
+    }),
+  )
+  if (taken.has(planetFingerprint(preview))) {
+    preview = sanitizePlanetConfig(
+      { ...preview, accessory: preview.accessory === 'leaf' ? 'crown' : 'leaf' },
+      preview.seed,
+    )
+  }
   return { preview, prompt }
 }
 
@@ -473,8 +500,9 @@ export async function updatePlanet(req: TroopReq) {
   const troopId = Number(membership.troop_id)
   const hasStyle = req.body.planet_style_id !== undefined
   const hasParams = req.body.planet_params !== undefined
+  const hasConfig = req.body.planet_config !== undefined
 
-  if (!hasStyle && !hasParams) {
+  if (!hasStyle && !hasParams && !hasConfig) {
     throw new AppError('Indica un estilo o parámetros de planeta')
   }
 
@@ -488,6 +516,14 @@ export async function updatePlanet(req: TroopReq) {
       await setPlanetParams(troopId, null)
     } else {
       await setPlanetParams(troopId, normalizePlanetParams(req.body.planet_params))
+    }
+  }
+
+  if (hasConfig) {
+    if (req.body.planet_config === null) {
+      await setPlanetConfig(troopId, null)
+    } else {
+      await setPlanetConfig(troopId, sanitizePlanetConfig(req.body.planet_config, String(troopId)))
     }
   }
 

@@ -28,6 +28,7 @@ export interface TroopDetail {
   planet_style_id: string
   planet_seed: number
   planet_params: unknown
+  planet_config?: unknown
   created_at: string
 }
 
@@ -78,6 +79,7 @@ export interface UniverseTroop {
   planet_style_id: string
   planet_seed: number
   planet_params: unknown
+  planet_config?: unknown
 }
 
 export interface UniverseResponse {

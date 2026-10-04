@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { PaintBrush, Plus, SignOut, Star } from '@phosphor-icons/react'
-import { planetOrbBackground, resolvePlanetFeatures } from '../../lib/planetFeatures'
+import { PlanetRenderer } from '../planet/PlanetRenderer'
+import { resolveTroopPlanet } from '../../lib/planet/engine'
 import {
   troopRoleLabel,
   type TroopDetail,
@@ -41,11 +42,7 @@ export function TroopSpaceCard({
   onSetCopilot?: (userId: number | null) => void
   onKick?: (userId: number) => void
 }) {
-  const planet = resolvePlanetFeatures(
-    detail.planet_style_id,
-    detail.planet_seed,
-    detail.planet_params,
-  )
+  const planet = resolveTroopPlanet(detail)
   const reduceMotion = useReducedMotion()
   const isMine = detail.my_role != null
   const canInvite =
@@ -64,14 +61,8 @@ export function TroopSpaceCard({
           : { type: 'spring', stiffness: 320, damping: 26 }
       }
     >
-      <div
-        className="troop-space-card-planet"
-        style={{
-          background: planetOrbBackground(planet),
-          boxShadow: `0 0 24px ${planet.atmosphere}66`,
-        }}
-        aria-hidden
-      >
+      <div className="troop-space-card-planet" aria-hidden>
+        <PlanetRenderer config={planet} size={64} showRings={false} animate={false} />
         <span className="troop-space-card-planet-star">
           <LevelStar level={detail.level} />
         </span>

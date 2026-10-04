@@ -108,9 +108,8 @@ function AppRouter() {
           {view === 'hub' ? (
             <HubPage
               onOpen={(door) => {
-                if (door === 'troops') setView('troops')
-                else if (door === 'worlds') setView('worlds')
-                else setView('board')
+                if (door === 'worlds') setView('worlds')
+                else if (door === 'camp') setView('board')
               }}
             />
           ) : view === 'troops' ? (

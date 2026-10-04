@@ -1,0 +1,23 @@
+---
+description: Migraciones Postgres en TypeScript, incrementales sobre la base existente
+alwaysApply: true
+---
+
+# Migraciones
+
+El esquema vivo está en `taskia_backend/db/migrations/` y se aplica con `npm run db:migrate`. Cada archivo es TypeScript y exporta `up(client)`. `synchronize` y `dropSchema` siguen apagados.
+
+- `001_baseline.ts` es la foto inicial (tablas, triggers, catálogo y semillas demo). No se edita.
+- Un cambio posterior —columna, tabla, índice, check o semilla— es un archivo nuevo `NNN_motivo.ts`. El número sigue al último archivo de esa carpeta. No se reescribe el baseline ni se borra un archivo ya aplicado.
+- Ese archivo solo toca lo que falta. No hace `DROP SCHEMA` ni recrea tablas que ya tienen datos.
+
+```typescript
+import type { Client } from 'pg'
+
+export async function up(client: Client): Promise<void> {
+  await client.query(`ALTER TABLE troops ADD COLUMN IF NOT EXISTS motto VARCHAR(80)`)
+}
+```
+
+- En el mismo cambio se actualiza la entidad TypeORM. `npm run db:migrate` aplica el archivo nuevo sobre la base que ya existe.
+- `db:reset` borra el schema entero. No se usa para aplicar un cambio. Solo si el usuario pide vaciar una base local desechable.

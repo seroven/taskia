@@ -4,7 +4,7 @@ Taskia usa **PostgreSQL**. Son **28 tablas** de aplicación (más `schema_migrat
 
 Este documento explica para qué sirve cada tabla y cómo se relacionan. Si buscas el *qué hace la app*, eso está en [PRODUCTO.md](../producto/PRODUCTO.md); acá está el *dónde se guarda*.
 
-La fuente de verdad del esquema son las migraciones en [`taskia_backend/db/migrations/`](../../taskia_backend/db/migrations/) (`001_initial.sql`, `003_tropas_xp.sql`, …). Se aplican con `npm run db:migrate`. En runtime el backend lee y escribe con TypeORM: una entidad por tabla en `taskia_backend/src/infrastructure/database/entities/`. `schema_migrations` no es entidad. `synchronize` y `dropSchema` están apagados: un cambio de columna es una migración SQL nueva y, en el mismo cambio, la entidad.
+La fuente de verdad del esquema son las migraciones TypeScript en [`taskia_backend/db/migrations/`](../../taskia_backend/db/migrations/). `001_baseline.ts` es la foto inicial. Se aplican con `npm run db:migrate`. En runtime el backend lee y escribe con TypeORM: una entidad por tabla en `taskia_backend/src/infrastructure/database/entities/`. `schema_migrations` no es entidad. `synchronize` y `dropSchema` están apagados: un cambio de columna es un archivo `NNN_motivo.ts` nuevo (no se edita el baseline) y, en el mismo cambio, la entidad.
 
 ---
 
@@ -392,7 +392,7 @@ La cuarta columna es `label`, el nombre visible: Calentamiento, Aventura y Jefe 
 
 ## 7. Progresión y tripulación
 
-Migración `003_tropas_xp.sql`. El motor que escribe XP y la UI de tripulación llegan en oleadas posteriores; el esquema ya está listo.
+El esquema de progresión y tripulación vive en `001_baseline.ts`. El motor que escribe XP y la UI de tripulación ya están en la app.
 
 ### `xp_awards`
 
@@ -572,17 +572,15 @@ npm run db:migrate    # crea PG_SCHEMA si falta y aplica migraciones pendientes
 npm run db:setup      # alias de db:migrate
 ```
 
-Hay variantes por entorno (`db:migrate:qa`, `db:migrate:pd`), que solo cambian el `--env-file`. El runner es `db/migrate.mjs`; los archivos viven en `db/migrations/` (`NNN_nombre.sql` o `.mjs` con `export async function up(client)`). Cada una se registra en `schema_migrations`.
+Hay variantes por entorno (`db:migrate:qa`, `db:migrate:pd`), que solo cambian el `--env-file`. El runner es `db/migrate.ts` (tsx). Los archivos viven en `db/migrations/` y exportan `async function up(client)`. Cada una se registra en `schema_migrations` con el nombre del archivo.
 
-**Cambios futuros:** se agrega un archivo nuevo (`004_…`) y se vuelve a correr `db:migrate`. No se edita una migración ya aplicada en bases compartidas.
+**Cambios futuros:** un archivo nuevo `NNN_motivo.ts` que altera la base existente, y otra vez `db:migrate`. No se edita `001_baseline.ts` ni una migración ya aplicada.
 
-Sobre una base vacía, `001_initial.sql` arma tablas, índices, triggers y siembras de roles / dificultades / presets. `002_seed_admin.mjs` crea el admin `Sebastian` / `123456` si no existe. `003_tropas_xp.sql` agrega progresión, `xp_awards` y tripulación. `004_seed_demo_users.mjs` crea el explorador `Seroven` (materias de primaria) y la guardián `Claudia` vinculada. `005_seed_demo_troops.mjs` llena ~6 tripulaciones con exploradores de distinto nivel/XP, guardianes vinculados, mismos cursos de primaria y XP semanal sintético (para rankings); password común `123456`. Si una base ya había corrido el dump viejo `schema.pg.sql`, el runner marca `001_initial.sql` como aplicada y solo corre las siguientes.
+Sobre una base vacía, `001_baseline.ts` arma el esquema actual (tablas, índices, triggers, roles, dificultades, presets) y las semillas: admin `Sebastian` / `123456`, explorador `Seroven` / `123456` con materias de primaria, guardián `Claudia` / `123456` vinculada, y ~6 tripulaciones con exploradores de distinto nivel/XP (password común `123456`). Si la base ya tenía ese esquema por las migraciones anteriores, el runner marca `001_baseline.ts` como aplicada y no recrea las tablas.
 
-Si el schema viejo no cuadra (faltan columnas, FKs distintas), hay que vaciar antes. En local: `npm run db:reset`. En pd/qa: `npm run db:reset:pd -- --yes` (o `:qa`). Eso hace `DROP SCHEMA taskia CASCADE` y vuelve a correr todas las migraciones.
+`npm run db:reset` (en pd/qa, con `--yes`) hace `DROP SCHEMA taskia CASCADE` y vuelve a correr las migraciones. Sirve para vaciar una base desechable, no para aplicar un cambio de columna.
 
 El schema se elige con `PG_SCHEMA` (por defecto `taskia`) y la conexión con `PG_DSN`, o bien `PG_HOST` / `PG_PORT` / `PG_USER` / `PG_PASSWORD` / `PG_DATABASE`. En hosting va además `PG_SSLMODE=require`.
-
-Las migraciones MySQL históricas están en `db/migrations_mysql_legacy/` y **no** se aplican.
 
 ---
 

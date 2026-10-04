@@ -90,7 +90,7 @@ Montadas en `src/app.ts`:
 ## Carpetas
 
 ```
-db/              migrate.mjs, migrations/ (Postgres), migrations_mysql_legacy/
+db/              migrate.ts, migrations/ (TypeScript)
 src/index.ts     Arranque
 src/app.ts       Express, CORS, rutas
 src/config/      Entorno

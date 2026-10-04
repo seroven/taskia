@@ -61,7 +61,7 @@ Al entrar, el explorador ve un **hub** con tres puertas:
 | Cómo se cierra | Mueve la tarjeta a **Listo** (a veces hace falta el visto de Taskia) | Taskia marca la misión **Lista** cuando domina el tema | Se gana **XP** estudiando; el ranking semanal suma el XP del equipo |
 | Extra | Tope de **20 tareas creadas / día** | Después puede haber **desafíos** | Una sola tripulación a la vez; invitaciones por nombre |
 
-Un explorador puede usar Campamento, Mundos, Tripulación, o varios el mismo día.
+Un explorador puede usar Campamento y Mundos el mismo día. La puerta **Tripulación** se ve en el hub, pero no abre: dice que ese lugar se está armando.
 
 ### Nivel y XP
 
@@ -105,7 +105,7 @@ A partir de ahí:
 
 **Por la tarde, el explorador** abre Taskia, elige **Campamento**, arrastra “fracciones mixtas” a **Estudiando**. Elige estudiar con pizarra. Taskia plantea ejercicios, el niño dibuja respuestas, corrige errores y, cuando Taskia confirma que ya entiende, el niño **mueve** la tarjeta a **Listo** (y ve un toast de XP).
 
-Después vuelve al hub, abre **Mundos**, entra a un tema de Ciencias que todavía no termina, estudia un rato con Taskia y, si el tema ya quedó dominado, lanza un **calentamiento** (desafío corto) del curso. Si tiene tripulación, puede mirar el ranking semanal en **Tripulación**.
+Después vuelve al hub, abre **Mundos**, entra a un tema de Ciencias que todavía no termina, estudia un rato con Taskia y, si el tema ya quedó dominado, lanza un **calentamiento** (desafío corto) del curso. La puerta de **Tripulación** sigue a la vista, cerrada.
 
 **El guardián**, más tarde, abre su panel, elige al explorador, mira el **progreso** (nivel/XP, tripulación, tareas, misiones, desafíos) y en el **chat** pregunta: “¿Cómo le fue hoy con matemáticas?”. El asistente responde con lo que haya del día. No necesita sentarse al lado durante el estudio.
 
@@ -235,7 +235,7 @@ En una frase: **consulta, conversa y deja listas las preferencias de aviso**.
 
 El explorador necesita:
 
-1. Elegir a dónde ir desde el **hub** (Tripulación, Mundos o Campamento).
+1. Elegir a dónde ir desde el **hub** (Mundos o Campamento; Tripulación se ve cerrada).
 2. Ver **qué tiene pendiente** (Campamento).
 3. **Estudiar con ayuda** sin que le suelten la respuesta entera (Taskia).
 4. Trabajar **temas largos** y demostrarlos (mundos + desafíos).
@@ -255,7 +255,7 @@ El tono de botones y columnas está pensado para él: claro y cercano (Por hacer
 
 ### Después de entrar
 
-El explorador llega al **hub**, no directo al tablero. Tres puertas: **Tripulación**, **Mundos**, **Campamento**. En la cabecera ve su **barra de nivel/XP**, apariencia, cuenta y salir.
+El explorador llega al **hub**, no directo al tablero. Tres puertas: **Tripulación** (cerrada, con el aviso de que se está armando), **Mundos**, **Campamento**. En la cabecera ve su **barra de nivel/XP**, apariencia, cuenta y salir.
 
 Dentro de Campamento o Mundos:
 
@@ -477,7 +477,7 @@ También puede **editar** título, descripción y uso de pizarra de la misión d
 
 ### Qué son
 
-Una **tripulación** es el equipo del explorador: hasta **10** compañeros. Se ve como un **universo** de planetas (una tripulación = un planeta). Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat.
+Una **tripulación** es el equipo del explorador: hasta **10** compañeros. Se ve como un **universo** de planetas (una tripulación = un planeta). Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat. Hoy el explorador no entra: la puerta del hub está cerrada. El Guardián sí puede ver la tripulación en lectura.
 
 ### Roles
 
@@ -491,8 +491,8 @@ Quien crea la tripulación es Capitán. Solo se puede estar en **una** tripulaci
 
 ### Universo, planeta y avatar
 
-- Al abrir **Tripulación** entra al canvas: pan, zoom y toque en un planeta abre su ficha. El cielo tiene un campo denso de estrellas muy pequeñas y otras más grandes, en movimiento. El planeta sale de una semilla fija y se dibuja como ilustración: manchas grandes, pocas franjas, luz en bandas y borde de tinta; a veces anillos anchos. Los anillos se ocultan mientras la ficha está abierta.
-- Mi tripulación queda al centro; el Top 3 semanal lleva un aura; con la ficha abierta se ve el **nivel de tripulación** (promedio) en una estrella.
+- Al abrir **Tripulación** entra a la galaxia dibujada: se arrastra para mover la vista, la rueda hace zoom y un toque en un planeta abre su ficha. El cursor en el borde no desplaza la vista. El cielo tiene nebulosa y estrellas. El planeta sale de `planet_config` o de la semilla: cara simple, motivo, a veces anillos y como máximo una luna. Los anillos se ocultan mientras la ficha está abierta.
+- Cada planeta muestra el nombre de la tripulación. La propia se marca con un aro del color elegido. El Top 3 semanal lleva una medalla con su puesto. Con la ficha abierta se ve el **nivel de tripulación** (promedio) en una estrella.
 - Capitanía/copilotaje eligen un estilo de planeta del catálogo o piden a Taskia un diseño (vista previa → aplicar). No se sube foto del planeta.
 - Cada explorador elige **avatar** (preset o foto en serverfiles) y un **marco** (algunos solo Capitán/Copiloto).
 
@@ -622,7 +622,8 @@ Las **materias** son el puente: sin ellas no hay tareas ni cursos dentro de mund
 | Preferencias WhatsApp | Se guardan |
 | Envío real de WhatsApp | Aún no |
 | Candado Listo / visto de Taskia | Activo en el Campamento |
-| Hub Tripulación (universo) / Mundos / Campamento | Activo |
+| Hub Tripulación | Visible y cerrada (aviso de que se está armando) |
+| Hub Mundos / Campamento | Activo |
 | Nivel, XP y tripulación | Activos (ranking semanal, Guardián solo lectura) |
 | Misión a Lista al dominar | Activo |
 | Desafíos | Activos (generar, jugar, historial) |

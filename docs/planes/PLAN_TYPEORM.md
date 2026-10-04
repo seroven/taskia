@@ -6,7 +6,7 @@ Este plan reemplaza la decisión “no hay ORM” de [PLAN_ESTRUCTURA.md](PLAN_E
 
 ## Por qué
 
-El backend habla un dialecto que ya no usa ningún servidor. Cada `pool.query` reescribe el texto en `mysqlToPg` (`taskia_backend/src/infrastructure/database/sql.ts`) y recién entonces lo ejecuta `pg`. Postgres es el único gestor. Las migraciones de `db/migrations/` ya son SQL de Postgres. Las de `db/migrations_mysql_legacy/` no se aplican.
+El backend habla un dialecto que ya no usa ningún servidor. Cada `pool.query` reescribe el texto en `mysqlToPg` (`taskia_backend/src/infrastructure/database/sql.ts`) y recién entonces lo ejecuta `pg`. Postgres es el único gestor. Las migraciones de `db/migrations/` son TypeScript (`001_baseline.ts` y, hacia adelante, archivos chicos).
 
 El costo a largo plazo es ese traductor: lista cerrada de booleanos, comillas a `"role"`, `RETURNING *` para simular `insertId`, y fragmentos de zona horaria interpolados. Una columna booleana nueva que se compare con `= 1` falla en Postgres si no está en la lista.
 
@@ -17,13 +17,13 @@ El costo a largo plazo es ese traductor: lista cerrada de booleanos, comillas a 
 - Archivo de mundos y vínculos (`is_active = false`). El descarte de un desafío a medias sigue siendo el único borrado duro de ese flujo.
 - Prompts en `src/prompts/`. Gemini no se toca salvo el `INSERT` de `llm_usage`.
 - `PG_SCHEMA` (por defecto `taskia`), `PG_DSN` o `PG_HOST` / `PG_PORT` / `PG_USER` / `PG_PASSWORD` / `PG_DATABASE`, y `PG_SSLMODE`.
-- El runner `db/migrate.mjs` y la tabla `schema_migrations`.
+- El runner `db/migrate.ts` y la tabla `schema_migrations`.
 
 ## Decisiones de este plan
 
 1. **Un solo `DataSource` de Postgres.** No se copia el template (varias conexiones, codegen, driver MySQL).
 2. **`synchronize: false` y `dropSchema: false` siempre**, en todos los entornos. El esquema lo siguen creando las migraciones. TypeORM no crea ni altera tablas.
-3. **El DDL sigue en `db/migrations/`.** Esos archivos ya son Postgres (triggers `set_updated_at`, FKs `DEFERRABLE`, índices únicos parciales, checks, semillas `.mjs` con bcrypt). TypeORM no los expresa bien y rehacer el historial en bases ya migradas no aporta. Un cambio de columna futuro es dos archivos en el mismo corte: la migración SQL nueva y la entidad.
+3. **El DDL sigue en `db/migrations/`, en TypeScript.** TypeORM no expresa bien triggers `set_updated_at`, FKs `DEFERRABLE`, índices únicos parciales ni checks. `001_baseline.ts` es la foto inicial y no se edita. Un cambio de columna futuro es un archivo `NNN_motivo.ts` nuevo (suma sobre la base existente) y, en el mismo corte, la entidad.
 4. **`schema_migrations` no es una entidad.**
 5. **Las entidades no salen por HTTP.** El repository de cada módulo mapea a los mismos objetos que hoy devuelve `mapTask` y el resto. Un controller no hace `res.json(entity)`.
 6. **Relaciones declaradas, `eager: false`, `cascade` de TypeORM apagado.** Los `ON DELETE` los sigue aplicando Postgres. Cargar un grafo es un `QueryBuilder` explícito, igual que el `JOIN` de hoy.
@@ -219,8 +219,7 @@ No hace falta Vitest para cerrar el plan. Si un corte se pone frágil (XP o el r
 ## Fuera de este plan
 
 - Frontend, React Router, TanStack Query.
-- Reescribir `001_initial.sql` como migraciones de TypeORM.
-- Borrar `migrations_mysql_legacy/` (sigue como historia, sin aplicarse).
+- Reescribir `001_baseline.ts` como migraciones de TypeORM.
 - Workers, WhatsApp y Flutter de [ROADMAP_V2.md](ROADMAP_V2.md).
 - Cambiar nombres de tablas o de columnas para que “queden más ORM”.
 
