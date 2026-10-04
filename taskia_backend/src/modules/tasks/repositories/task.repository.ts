@@ -1,115 +1,206 @@
-import type { ResultSetHeader, RowDataPacket } from '../../../infrastructure/database/pool.js'
-import { pool } from '../../../infrastructure/database/pool.js'
+import {
+  And,
+  In,
+  LessThan,
+  MoreThanOrEqual,
+  type EntityManager,
+  type FindOptionsWhere,
+} from 'typeorm'
+import { AppDataSource } from '../../../infrastructure/database/data-source.js'
+import { Course, Difficulty, Task } from '../../../infrastructure/database/entities/index.js'
 import { AppError } from '../../../shared/errors/app-error.js'
 import { formatCivilDate, toInstantISO } from '../../../utils/helpers.js'
 
-const TASK_SELECT = `
-  SELECT
-    t.id, t.user_id, t.course_id, c.name AS course_name,
-    t.difficulty_id, d.code AS difficulty_code, d.name AS difficulty_name,
-    t.title, t.description, t.task_kind, t.status, t.board_order,
-    t.study_passed, t.uses_board, t.study_mode_chosen, t.due_date, t.created_at, t.updated_at
-  FROM tasks t
-  INNER JOIN courses c ON c.id = t.course_id
-  INNER JOIN difficulties d ON d.id = t.difficulty_id
-`
+export type TaskRecord = {
+  id: number
+  user_id: number
+  course_id: number
+  course_name: string
+  difficulty_id: number
+  difficulty_code: string
+  difficulty_name: string
+  title: string
+  description: string | null
+  task_kind: string
+  status: string
+  board_order: number
+  study_passed: boolean
+  uses_board: boolean
+  study_mode_chosen: boolean
+  due_date: string
+  created_at: string
+  updated_at: string
+}
 
-export function mapTask(row: RowDataPacket) {
+function tasksOf(manager?: EntityManager) {
+  return (manager ?? AppDataSource.manager).getRepository(Task)
+}
+
+function mapTask(task: Task, course: Course, difficulty: Difficulty): TaskRecord {
   return {
-    id: Number(row.id),
-    user_id: Number(row.user_id),
-    course_id: Number(row.course_id),
-    course_name: row.course_name as string,
-    difficulty_id: Number(row.difficulty_id),
-    difficulty_code: row.difficulty_code as string,
-    difficulty_name: row.difficulty_name as string,
-    title: row.title as string,
-    description: (row.description as string | null) ?? null,
-    task_kind: row.task_kind as string,
-    status: row.status as string,
-    board_order: Number(row.board_order),
-    study_passed: Boolean(row.study_passed),
-    uses_board: Number(row.uses_board) !== 0,
-    study_mode_chosen: Number(row.study_mode_chosen) !== 0,
-    due_date: formatCivilDate(row.due_date as Date | string),
-    created_at: toInstantISO(row.created_at as Date) ?? '',
-    updated_at: toInstantISO(row.updated_at as Date) ?? '',
+    id: task.id,
+    user_id: task.userId,
+    course_id: task.courseId,
+    course_name: course.name,
+    difficulty_id: task.difficultyId,
+    difficulty_code: difficulty.code,
+    difficulty_name: difficulty.name,
+    title: task.title,
+    description: task.description,
+    task_kind: task.taskKind,
+    status: task.status,
+    board_order: task.boardOrder,
+    study_passed: task.studyPassed,
+    uses_board: task.usesBoard,
+    study_mode_chosen: task.studyModeChosen,
+    due_date: formatCivilDate(task.dueDate),
+    created_at: toInstantISO(task.createdAt) ?? '',
+    updated_at: toInstantISO(task.updatedAt) ?? '',
   }
 }
 
-export type TaskRecord = ReturnType<typeof mapTask>
-
-export async function findTask(taskId: number, userId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `${TASK_SELECT} WHERE t.id = ? AND t.user_id = ? LIMIT 1`,
-    [taskId, userId],
-  )
-  return rows[0] ? mapTask(rows[0]) : null
+async function hydrate(rows: Task[], manager?: EntityManager): Promise<TaskRecord[]> {
+  if (rows.length === 0) return []
+  const db = manager ?? AppDataSource.manager
+  const courseIds = [...new Set(rows.map((row) => row.courseId))]
+  const difficultyIds = [...new Set(rows.map((row) => row.difficultyId))]
+  const [courses, difficulties] = await Promise.all([
+    db.getRepository(Course).find({ where: { id: In(courseIds) } }),
+    db.getRepository(Difficulty).find({ where: { id: In(difficultyIds) } }),
+  ])
+  const courseById = new Map(courses.map((course) => [course.id, course]))
+  const difficultyById = new Map(difficulties.map((difficulty) => [difficulty.id, difficulty]))
+  return rows.map((row) => {
+    const course = courseById.get(row.courseId)
+    const difficulty = difficultyById.get(row.difficultyId)
+    if (!course || !difficulty) {
+      throw new AppError('Tarea no encontrada', 404)
+    }
+    return mapTask(row, course, difficulty)
+  })
 }
 
-export async function listTasks(sql: string, params: unknown[]) {
-  const [rows] = await pool.query<RowDataPacket[]>(sql, params)
-  return rows.map(mapTask)
+export async function findTask(taskId: number, userId: number, manager?: EntityManager) {
+  const task = await tasksOf(manager).findOne({ where: { id: taskId, userId } })
+  if (!task) return null
+  const [mapped] = await hydrate([task], manager)
+  return mapped ?? null
 }
 
-export function taskListSql() {
-  return `${TASK_SELECT} WHERE t.user_id = ?`
+export async function listTasks(
+  userId: number,
+  filter: {
+    createdFrom?: Date
+    createdTo?: Date
+    dueOn?: string
+    courseId?: number
+    status?: string
+  },
+) {
+  const where: FindOptionsWhere<Task> = { userId }
+  if (filter.createdFrom && filter.createdTo) {
+    where.createdAt = And(MoreThanOrEqual(filter.createdFrom), LessThan(filter.createdTo))
+  }
+  if (filter.dueOn) where.dueDate = filter.dueOn
+  if (filter.courseId) where.courseId = filter.courseId
+  if (filter.status) where.status = filter.status
+
+  const rows = await tasksOf().find({
+    where,
+    order: { status: 'ASC', boardOrder: 'ASC', id: 'ASC' },
+  })
+  return hydrate(rows)
 }
 
 export async function findOwnedCourse(courseId: number, userId: number, mustBeActive: boolean) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    mustBeActive
-      ? 'SELECT id FROM courses WHERE id = ? AND user_id = ? AND is_active = 1 LIMIT 1'
-      : 'SELECT id FROM courses WHERE id = ? AND user_id = ? LIMIT 1',
-    [courseId, userId],
-  )
-  return rows[0] ?? null
+  const where: FindOptionsWhere<Course> = { id: courseId, userId }
+  if (mustBeActive) where.isActive = true
+  return AppDataSource.getRepository(Course).findOne({
+    where,
+    select: { id: true },
+  })
 }
 
 export async function findDifficulty(difficultyId: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id, code FROM difficulties WHERE id = ? LIMIT 1',
-    [difficultyId],
-  )
-  return rows[0] ?? null
+  return AppDataSource.getRepository(Difficulty).findOne({
+    where: { id: difficultyId },
+    select: { id: true, code: true },
+  })
 }
 
 export async function nextBoardOrder(userId: number, status: string) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT MAX(board_order) AS m FROM tasks WHERE user_id = ? AND status = ?`,
-    [userId, status],
-  )
-  return rows[0]?.m == null ? 0 : Number(rows[0].m) + 1
+  const row = await tasksOf()
+    .createQueryBuilder('t')
+    .select('MAX(t.board_order)', 'm')
+    .where('t.user_id = :userId AND t.status = :status', { userId, status })
+    .getRawOne<{ m: string | number | null }>()
+  return row?.m == null ? 0 : Number(row.m) + 1
 }
 
-export async function insertTask(values: unknown[]) {
-  const [result] = await pool.query<ResultSetHeader>(
-    `INSERT INTO tasks (
-      user_id, course_id, difficulty_id, title, description,
-      task_kind, status, board_order, uses_board, due_date
-    ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
-    values,
+export async function insertTask(input: {
+  userId: number
+  courseId: number
+  difficultyId: number
+  title: string
+  description: string | null
+  taskKind: string
+  boardOrder: number
+  usesBoard: boolean
+  dueDate: string
+}) {
+  const repo = tasksOf()
+  const saved = await repo.save(
+    repo.create({
+      userId: input.userId,
+      courseId: input.courseId,
+      difficultyId: input.difficultyId,
+      title: input.title,
+      description: input.description,
+      taskKind: input.taskKind,
+      status: 'pending',
+      boardOrder: input.boardOrder,
+      usesBoard: input.usesBoard,
+      dueDate: input.dueDate,
+    }),
   )
-  return result.insertId
+  return saved.id
 }
 
-export async function updateTask(values: unknown[]) {
-  const [result] = await pool.query<ResultSetHeader>(
-    `UPDATE tasks SET title = ?, description = ?, course_id = ?, difficulty_id = ?,
-      task_kind = ?, due_date = ?, status = ?, board_order = ?, uses_board = ?,
-      study_mode_chosen = ?
-     WHERE id = ? AND user_id = ?`,
-    values,
+export async function updateTask(input: {
+  taskId: number
+  userId: number
+  title: string
+  description: string | null
+  courseId: number
+  difficultyId: number
+  taskKind: string
+  dueDate: string
+  status: string
+  boardOrder: number
+  usesBoard: boolean
+  studyModeChosen: boolean
+}) {
+  const result = await tasksOf().update(
+    { id: input.taskId, userId: input.userId },
+    {
+      title: input.title,
+      description: input.description,
+      courseId: input.courseId,
+      difficultyId: input.difficultyId,
+      taskKind: input.taskKind,
+      dueDate: input.dueDate,
+      status: input.status,
+      boardOrder: input.boardOrder,
+      usesBoard: input.usesBoard,
+      studyModeChosen: input.studyModeChosen,
+    },
   )
-  return result.affectedRows
+  return result.affected ?? 0
 }
 
 export async function moveTask(status: string, boardOrder: number, taskId: number, userId: number) {
-  const [result] = await pool.query<ResultSetHeader>(
-    `UPDATE tasks SET status = ?, board_order = ? WHERE id = ? AND user_id = ?`,
-    [status, boardOrder, taskId, userId],
-  )
-  return result.affectedRows
+  const result = await tasksOf().update({ id: taskId, userId }, { status, boardOrder })
+  return result.affected ?? 0
 }
 
 export async function reorderInTransaction(
@@ -117,26 +208,20 @@ export async function reorderInTransaction(
   items: Array<{ taskId: number; status: string; boardOrder: number }>,
   assertCanChange: (current: TaskRecord, nextStatus: string) => void,
 ) {
-  const conn = await pool.getConnection()
-  const doneAwards: Array<{
-    taskId: number
-    previousStatus: string
-    nextStatus: string
-    studyPassed: boolean
-  }> = []
-  try {
-    await conn.beginTransaction()
+  return AppDataSource.transaction(async (manager) => {
+    const doneAwards: Array<{
+      taskId: number
+      previousStatus: string
+      nextStatus: string
+      studyPassed: boolean
+    }> = []
     for (const item of items) {
-      const [rows] = await conn.query<RowDataPacket[]>(
-        `${TASK_SELECT} WHERE t.id = ? AND t.user_id = ? LIMIT 1`,
-        [item.taskId, userId],
-      )
-      if (!rows[0]) throw new AppError(`Tarea ${item.taskId} no encontrada`, 404)
-      const current = mapTask(rows[0])
+      const current = await findTask(item.taskId, userId, manager)
+      if (!current) throw new AppError(`Tarea ${item.taskId} no encontrada`, 404)
       assertCanChange(current, item.status)
-      await conn.query(
-        `UPDATE tasks SET status = ?, board_order = ? WHERE id = ? AND user_id = ?`,
-        [item.status, item.boardOrder, item.taskId, userId],
+      await tasksOf(manager).update(
+        { id: item.taskId, userId },
+        { status: item.status, boardOrder: item.boardOrder },
       )
       doneAwards.push({
         taskId: item.taskId,
@@ -145,12 +230,6 @@ export async function reorderInTransaction(
         studyPassed: current.study_passed,
       })
     }
-    await conn.commit()
     return doneAwards
-  } catch (err) {
-    await conn.rollback()
-    throw err
-  } finally {
-    conn.release()
-  }
+  })
 }

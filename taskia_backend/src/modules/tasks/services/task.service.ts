@@ -47,37 +47,19 @@ export async function listTasks(
     status?: unknown
   },
 ) {
-  const params: unknown[] = [userId]
-  let sql = tasks.taskListSql()
-
   const createdFrom = String(query.created_from ?? '').trim()
   const createdTo = String(query.created_to ?? '').trim()
   const dueOn = query.due_on as string | undefined
   const courseId = query.course_id ? Number(query.course_id) : undefined
   const status = query.status as string | undefined
 
-  if (createdFrom || createdTo) {
-    const start = parseInstant(createdFrom, 'created_from')
-    const end = parseInstant(createdTo, 'created_to')
-    sql += ' AND t.created_at >= ? AND t.created_at < ?'
-    params.push(start, end)
-  }
-  if (dueOn) {
-    parseDueOn(dueOn)
-    sql += ' AND t.due_date = ?'
-    params.push(dueOn)
-  }
-  if (courseId) {
-    sql += ' AND t.course_id = ?'
-    params.push(courseId)
-  }
-  if (status) {
-    parseStatus(status)
-    sql += ' AND t.status = ?'
-    params.push(status)
-  }
-  sql += ' ORDER BY t.status ASC, t.board_order ASC, t.id ASC'
-  return tasks.listTasks(sql, params)
+  return tasks.listTasks(userId, {
+    createdFrom: createdFrom || createdTo ? parseInstant(createdFrom, 'created_from') : undefined,
+    createdTo: createdFrom || createdTo ? parseInstant(createdTo, 'created_to') : undefined,
+    dueOn: dueOn ? parseDueOn(dueOn) : undefined,
+    courseId,
+    status: status ? parseStatus(status) : undefined,
+  })
 }
 
 function readDescription(value: unknown) {
@@ -104,17 +86,17 @@ export async function createTask(userId: number, body: Record<string, unknown>, 
   await assertCanCreateTask(userId)
 
   const nextOrder = await tasks.nextBoardOrder(userId, 'pending')
-  const taskId = await tasks.insertTask([
+  const taskId = await tasks.insertTask({
     userId,
     courseId,
     difficultyId,
     title,
     description,
-    kind,
-    nextOrder,
+    taskKind: kind,
+    boardOrder: nextOrder,
     usesBoard,
     dueDate,
-  ])
+  })
   return requireTask(taskId, userId)
 }
 
@@ -147,7 +129,7 @@ export async function updateTask(
   if (difficultyId !== current.difficulty_id) {
     const difficulty = await tasks.findDifficulty(difficultyId)
     if (!difficulty) throw new AppError('Dificultad no válida')
-    nextDifficultyCode = difficulty.code as string
+    nextDifficultyCode = difficulty.code
   }
 
   ensureCanMarkDone(nextDifficultyCode, current.study_passed, current.status, status)
@@ -163,20 +145,20 @@ export async function updateTask(
       ? current.study_mode_chosen
       : Boolean(body.study_mode_chosen)
 
-  const affected = await tasks.updateTask([
+  const affected = await tasks.updateTask({
+    taskId,
+    userId,
     title,
     description,
     courseId,
     difficultyId,
-    kind,
+    taskKind: kind,
     dueDate,
     status,
     boardOrder,
-    nextUsesBoard,
-    nextModeChosen,
-    taskId,
-    userId,
-  ])
+    usesBoard: nextUsesBoard,
+    studyModeChosen: nextModeChosen,
+  })
   if (affected === 0) throw new AppError('Tarea no encontrada', 404)
   const xp = await maybeAwardTaskDoneXp({
     userId,
