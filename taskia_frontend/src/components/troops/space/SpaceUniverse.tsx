@@ -267,15 +267,6 @@ function PlanetMesh({
           />
         </mesh>
       )}
-      <mesh raycast={() => null}>
-        <sphereGeometry args={[1.07, 32, 32]} />
-        <meshBasicMaterial
-          color={features.atmosphere}
-          transparent
-          opacity={0.07}
-          depthWrite={false}
-        />
-      </mesh>
       <mesh
         ref={meshRef}
         scale={selected ? 1.12 : 1}

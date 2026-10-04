@@ -187,10 +187,10 @@ export function resolvePlanetFeatures(
 }
 
 export function planetOrbBackground(features: PlanetFeatures) {
-  const [base, detail, accent, cloud] = features.colors
+  const [base, detail, accent] = features.colors
   return [
-    `radial-gradient(circle at 30% 26%, ${cloud} 0%, transparent 40%)`,
-    `radial-gradient(circle at 64% 60%, ${detail} 0%, transparent 48%)`,
-    `radial-gradient(circle at 42% 42%, ${accent} 0%, ${base} 68%)`,
+    `radial-gradient(circle at 32% 32%, ${detail} 0 26%, transparent 28%)`,
+    `radial-gradient(circle at 66% 62%, ${accent} 0 16%, transparent 18%)`,
+    `radial-gradient(circle at 50% 48%, ${base} 0 78%, #172033 80% 100%)`,
   ].join(', ')
 }

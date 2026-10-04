@@ -57,63 +57,57 @@ float noise(vec3 p) {
   );
 }
 
-float fbm(vec3 p) {
-  float s = 0.0;
-  float a = 0.5;
-  s += a * noise(p); p = p * 2.02 + vec3(uSeed); a *= 0.5;
-  s += a * noise(p); p = p * 2.03 + 1.7; a *= 0.5;
-  s += a * noise(p); p = p * 2.01 + 3.1; a *= 0.5;
-  s += a * noise(p);
-  return s;
+float shape(vec3 p) {
+  return noise(p) * 0.7 + noise(p * 2.0 + vec3(uSeed)) * 0.3;
 }
 
 void main() {
   vec3 n = normalize(vNormal);
-  vec3 p = normalize(vWorld) * uScale;
-  float n1 = fbm(p + vec3(fbm(p + vec3(uWarp)) * uWarp));
-  float bands = sin((normalize(vWorld).y * (6.0 + uScale) + n1 * 2.4));
-  bands = bands * 0.5 + 0.5;
+  vec3 dir = normalize(vWorld);
+  vec3 p = dir * (1.15 + mod(uScale, 1.4)) + vec3(uWarp * 0.2, uSeed * 0.05, 0.0);
+  float n1 = shape(p);
+  float y = dir.y;
 
   vec3 surface = uA;
   if (uKind < 0.5) {
-    float land = smoothstep(uCoverage, uCoverage + 0.12, n1);
+    float land = smoothstep(uCoverage, uCoverage + 0.05, n1);
     surface = mix(uA, uB, land);
-    surface = mix(surface, uC, smoothstep(0.72, 0.9, n1) * 0.65);
+    float spot = smoothstep(0.64, 0.7, n1);
+    surface = mix(surface, uC, spot);
   } else if (uKind < 1.5) {
-    surface = mix(uA, uB, bands);
-    surface = mix(surface, uC, smoothstep(0.65, 0.92, n1) * 0.45);
+    float wave = sin(y * 2.8 + uSeed);
+    surface = mix(uA, uB, smoothstep(-0.08, 0.08, wave));
+    float belt = smoothstep(0.12, 0.18, y) * (1.0 - smoothstep(0.34, 0.42, y));
+    surface = mix(surface, uC, belt);
   } else if (uKind < 2.5) {
-    float crack = 1.0 - smoothstep(0.08, 0.2, abs(n1 - 0.5));
-    surface = mix(uA, uB, n1);
-    surface = mix(surface, uC, crack * 0.35);
+    surface = mix(uA, uB, smoothstep(0.4, 0.48, abs(y)));
+    surface = mix(surface, uC, smoothstep(0.6, 0.67, shape(p + vec3(1.7))));
   } else if (uKind < 3.5) {
-    float crack = 1.0 - smoothstep(0.04, 0.16, abs(n1 - 0.48));
-    surface = mix(uA, uB, n1 * 0.65);
-    surface = mix(surface, uC, crack);
+    float river = 1.0 - smoothstep(0.0, 0.08, abs(shape(vec3(p.x * 0.65, p.y * 1.35, p.z * 0.65)) - 0.5));
+    surface = mix(uA, uC, river);
+    surface = mix(surface, uB, smoothstep(0.62, 0.68, n1) * (1.0 - river));
   } else if (uKind < 4.5) {
-    float dune = fbm(vec3(p.x * 0.45, p.y * 1.8, p.z * 0.45));
+    float dune = smoothstep(-0.04, 0.04, sin(y * 2.15 + n1));
     surface = mix(uA, uB, dune);
-    surface = mix(surface, uC, smoothstep(0.7, 0.95, dune) * 0.4);
+    surface = mix(surface, uC, smoothstep(0.66, 0.72, n1));
   } else {
-    surface = mix(uA, uB, n1);
-    surface = mix(surface, uC, smoothstep(0.55, 0.85, n1) * 0.5);
+    surface = mix(uA, uB, smoothstep(0.5, 0.57, n1));
+    surface = mix(surface, uC, smoothstep(0.62, 0.68, shape(p + vec3(2.4, 0.6, 1.1))));
   }
 
-  float grain = noise(normalize(vWorld) * (16.0 + uScale * 2.0));
-  surface = mix(surface * 0.9, surface, grain);
-
-  float clouds = fbm(normalize(vWorld) * (uScale * 1.4) + vec3(uTime * uCloudSpeed, 0.0, 0.0));
-  clouds = smoothstep(0.48, 0.72, clouds) * uCloudAmt;
-  surface = mix(surface, uCloud, clouds);
+  float drift = noise(dir * 1.3 + vec3(uTime * uCloudSpeed, 0.0, uSeed));
+  float puff = smoothstep(0.58, 0.66, drift);
+  surface = mix(surface, uCloud, puff * clamp(uCloudAmt, 0.0, 0.8));
 
   vec3 L = normalize(vec3(0.45, 0.82, 0.35));
   float ndl = clamp(dot(n, L), 0.0, 1.0);
-  float lit = mix(0.42, 1.0, smoothstep(0.0, 0.78, ndl));
+  float lit = 0.58;
+  lit = mix(lit, 0.82, step(0.42, ndl));
+  lit = mix(lit, 1.0, step(0.74, ndl));
   vec3 viewDir = normalize(vView);
-  vec3 halfDir = normalize(L + viewDir);
-  float sheen = pow(clamp(dot(n, halfDir), 0.0, 1.0), 16.0) * uGloss * 0.18;
-  float fres = pow(1.0 - clamp(dot(n, viewDir), 0.0, 1.0), 3.1);
-  vec3 color = surface * lit + surface * sheen + uAtmo * fres * 0.32;
+  float facing = clamp(dot(n, viewDir), 0.0, 1.0);
+  float ink = 1.0 - smoothstep(0.16, 0.3, facing);
+  vec3 color = mix(surface * lit, vec3(0.09, 0.12, 0.22), ink);
   gl_FragColor = vec4(color, 1.0);
 }
 `
@@ -134,10 +128,9 @@ varying vec2 vUv;
 
 void main() {
   float r = vUv.y;
-  float bands = sin(r * 46.0 + uSeed * 3.0) * 0.5 + 0.5;
-  float gap = smoothstep(0.38, 0.46, r) * (1.0 - smoothstep(0.54, 0.62, r));
-  float alpha = (0.22 + bands * 0.62) * (1.0 - gap * 0.8);
-  alpha *= smoothstep(0.0, 0.06, r) * smoothstep(1.0, 0.86, r);
-  gl_FragColor = vec4(uColor, alpha);
+  float shift = fract(uSeed * 0.17) * 0.06;
+  float band = smoothstep(0.04, 0.1, r) * (1.0 - smoothstep(0.3 + shift, 0.38 + shift, r));
+  band += smoothstep(0.56, 0.64, r) * (1.0 - smoothstep(0.88, 0.96, r));
+  gl_FragColor = vec4(uColor, band * 0.95);
 }
 `

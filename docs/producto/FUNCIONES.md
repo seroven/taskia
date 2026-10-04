@@ -491,7 +491,7 @@ Quien crea la tripulación es Capitán. Solo se puede estar en **una** tripulaci
 
 ### Universo, planeta y avatar
 
-- Al abrir **Tripulación** entra al canvas: pan, zoom y toque en un planeta abre su ficha. El cielo tiene un campo denso de estrellas muy pequeñas y otras más grandes, en movimiento. El planeta sale de una semilla fija (textura, nubes y, a veces, anillos con franjas). Los anillos se ocultan mientras la ficha está abierta.
+- Al abrir **Tripulación** entra al canvas: pan, zoom y toque en un planeta abre su ficha. El cielo tiene un campo denso de estrellas muy pequeñas y otras más grandes, en movimiento. El planeta sale de una semilla fija y se dibuja como ilustración: manchas grandes, pocas franjas, luz en bandas y borde de tinta; a veces anillos anchos. Los anillos se ocultan mientras la ficha está abierta.
 - Mi tripulación queda al centro; el Top 3 semanal lleva un aura; con la ficha abierta se ve el **nivel de tripulación** (promedio) en una estrella.
 - Capitanía/copilotaje eligen un estilo de planeta del catálogo o piden a Taskia un diseño (vista previa → aplicar). No se sube foto del planeta.
 - Cada explorador elige **avatar** (preset o foto en serverfiles) y un **marco** (algunos solo Capitán/Copiloto).
