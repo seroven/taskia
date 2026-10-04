@@ -15,7 +15,7 @@ import { WorldsNav } from '../components/worlds/WorldsNav'
 import { SpaceUniverse } from '../components/troops/space/SpaceUniverse'
 import { TroopSpaceCard } from '../components/troops/TroopSpaceCard'
 import { errorMessage } from '../lib/errors'
-import { PLANET_STYLES } from '../lib/planetStyles'
+import { PLANET_STYLES, type PlanetParams } from '../lib/planetStyles'
 import type {
   TroopDetail,
   TroopInvite,
@@ -555,13 +555,39 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
           setUniverse((prev) =>
             prev.map((t) =>
               t.id === updated.id
-                ? { ...t, planet_style_id: updated.planet_style_id }
+                ? {
+                    ...t,
+                    planet_style_id: updated.planet_style_id,
+                    planet_params: updated.planet_params,
+                  }
                 : t,
             ),
           )
           showToast({
             tone: 'success',
             title: 'Planeta actualizado',
+            subtitle: updated.name,
+          })
+        }}
+        onGenerate={async (prompt) => api.generateTroopPlanet(prompt)}
+        onApplyAi={async (params) => {
+          const updated = await api.applyTroopPlanetParams(params)
+          setOpenDetail(updated)
+          setMyTroop(updated)
+          setUniverse((prev) =>
+            prev.map((t) =>
+              t.id === updated.id
+                ? {
+                    ...t,
+                    planet_style_id: updated.planet_style_id,
+                    planet_params: updated.planet_params,
+                  }
+                : t,
+            ),
+          )
+          showToast({
+            tone: 'success',
+            title: 'Planeta con IA aplicado',
             subtitle: updated.name,
           })
         }}
@@ -738,14 +764,30 @@ function PlanetStyleModal({
   currentStyleId,
   onClose,
   onPick,
+  onGenerate,
+  onApplyAi,
 }: {
   open: boolean
   currentStyleId?: string
   onClose: () => void
   onPick: (styleId: string) => Promise<void>
+  onGenerate: (prompt: string) => Promise<{ preview: PlanetParams; prompt: string }>
+  onApplyAi: (params: PlanetParams) => Promise<void>
 }) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [prompt, setPrompt] = useState('')
+  const [preview, setPreview] = useState<PlanetParams | null>(null)
+  const [aiBusy, setAiBusy] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setPrompt('')
+    setPreview(null)
+    setError(null)
+    setBusyId(null)
+    setAiBusy(false)
+  }, [open])
 
   return (
     <ModalShell
@@ -753,7 +795,7 @@ function PlanetStyleModal({
       onClose={onClose}
       titleId="planet-style-title"
       title="Estilo del planeta"
-      lead="Elige cómo se ve tu tropa en el universo."
+      lead="Elige un estilo o pídele a Taskia uno a tu medida."
       size="md"
     >
       <div className="modal-panel-body">
@@ -767,7 +809,7 @@ function PlanetStyleModal({
                   ? 'planet-style-swatch is-selected'
                   : 'planet-style-swatch'
               }
-              disabled={busyId != null}
+              disabled={busyId != null || aiBusy}
               onClick={() => {
                 void (async () => {
                   setBusyId(style.id)
@@ -793,6 +835,82 @@ function PlanetStyleModal({
             </button>
           ))}
         </div>
+
+        <div className="planet-ai-block">
+          <p className="planet-ai-title">Diseño con IA</p>
+          <p className="planet-ai-lead">
+            Describe el planeta (colores, clima, vibe). Verás una vista previa antes de
+            aplicarlo.
+          </p>
+          <TextField
+            label="Pedido"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Ej. un planeta de cristal azul con anillos suaves"
+            maxLength={200}
+            disabled={aiBusy || busyId != null}
+          />
+          {preview && (
+            <div className="planet-ai-preview">
+              <span
+                className="planet-style-orb"
+                style={{
+                  background: `radial-gradient(circle at 35% 30%, ${preview.atmosphere ?? preview.color}, ${preview.color} 50%, ${preview.emissive})`,
+                }}
+                aria-hidden
+              />
+              <div>
+                <strong>{preview.label ?? 'Vista previa'}</strong>
+                <p>Así se vería en el universo.</p>
+              </div>
+            </div>
+          )}
+          <div className="planet-ai-actions">
+            <button
+              type="button"
+              className="ghost"
+              disabled={aiBusy || busyId != null || prompt.trim().length < 3}
+              onClick={() => {
+                void (async () => {
+                  setAiBusy(true)
+                  setError(null)
+                  try {
+                    const res = await onGenerate(prompt.trim())
+                    setPreview(res.preview)
+                  } catch (err) {
+                    setError(errorMessage(err))
+                  } finally {
+                    setAiBusy(false)
+                  }
+                })()
+              }}
+            >
+              {aiBusy ? 'Diseñando…' : 'Generar vista previa'}
+            </button>
+            <button
+              type="button"
+              disabled={!preview || aiBusy || busyId != null}
+              onClick={() => {
+                if (!preview) return
+                void (async () => {
+                  setAiBusy(true)
+                  setError(null)
+                  try {
+                    await onApplyAi(preview)
+                    onClose()
+                  } catch (err) {
+                    setError(errorMessage(err))
+                  } finally {
+                    setAiBusy(false)
+                  }
+                })()
+              }}
+            >
+              Aplicar al planeta
+            </button>
+          </div>
+        </div>
+
         {error && <p className="form-error">{error}</p>}
         <div className="modal-actions">
           <button type="button" className="ghost" onClick={onClose}>

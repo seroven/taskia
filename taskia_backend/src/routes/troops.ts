@@ -4,7 +4,9 @@ import { pool } from '../db/pool.js'
 import { civilDayFromInstant } from '../db/civilDate.js'
 import { requireAuth, requireStudent } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/error.js'
-import { AppError, toInstantISO } from '../utils/helpers.js'
+import { AppError, extractJson, toInstantISO } from '../utils/helpers.js'
+import { normalizePlanetParams } from '../lib/planetParams.js'
+import { callGemini } from '../services/gemini.js'
 import { PRODUCT_TZ, weekStartMonday } from '../services/xp.js'
 
 const router = Router()
@@ -847,7 +849,62 @@ const PLANET_STYLE_IDS = new Set([
   'shadow_slate',
 ])
 
-/** Capitán o Copiloto cambia el estilo del planeta. */
+const PLANET_GENERATE_SYSTEM = `Eres un diseñador de planetas para Taskia, una app infantil de exploración espacial (español latinoamericano).
+Devuelve SOLO un JSON con esta forma exacta:
+{
+  "color": "#rrggbb",
+  "emissive": "#rrggbb",
+  "atmosphere": "#rrggbb" o null,
+  "roughness": número entre 0 y 1,
+  "metalness": número entre 0 y 1,
+  "label": "nombre corto en español (máx 24 caracteres)"
+}
+Reglas:
+- Colores vivos y legibles sobre fondo oscuro del espacio.
+- Sin violencia, miedo extremo ni contenido adulto.
+- Interpreta el pedido del niño de forma amable y creativa.
+- No agregues texto fuera del JSON.`
+
+/** Capitán o Copiloto pide a la IA parámetros procedurales (preview, no guarda). */
+router.post(
+  '/planet/generate',
+  asyncHandler(async (req, res) => {
+    const userId = req.user!.id
+    const membership = await activeMembership(userId)
+    const role = membership?.role as TroopRole | undefined
+    if (
+      !membership ||
+      (role !== 'captain' && role !== 'copilot')
+    ) {
+      throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
+    }
+    const prompt = String(req.body.prompt ?? '')
+      .normalize('NFC')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (prompt.length < 3 || prompt.length > 200) {
+      throw new AppError('Cuéntame el planeta en 3 a 200 caracteres')
+    }
+
+    const raw = await callGemini({
+      system: PLANET_GENERATE_SYSTEM,
+      user: `Pedido del explorador: ${prompt}`,
+      usage: { userId, kind: 'planet_generate' },
+    })
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(extractJson(raw))
+    } catch {
+      throw new AppError('No pude diseñar ese planeta. Prueba con otras palabras.')
+    }
+
+    const preview = normalizePlanetParams(parsed)
+    res.json({ preview, prompt })
+  }),
+)
+
+/** Capitán o Copiloto cambia estilo de catálogo o aplica params IA. */
 router.patch(
   '/planet',
   asyncHandler(async (req, res) => {
@@ -860,15 +917,40 @@ router.patch(
     ) {
       throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
     }
-    const styleId = String(req.body.planet_style_id ?? '').trim()
-    if (!PLANET_STYLE_IDS.has(styleId)) {
-      throw new AppError('Estilo de planeta no válido')
-    }
     const troopId = Number(membership.troop_id)
-    await pool.query(
-      `UPDATE troops SET planet_style_id = ? WHERE id = ?`,
-      [styleId, troopId],
-    )
+    const hasStyle = req.body.planet_style_id !== undefined
+    const hasParams = req.body.planet_params !== undefined
+
+    if (!hasStyle && !hasParams) {
+      throw new AppError('Indica un estilo o parámetros de planeta')
+    }
+
+    if (hasStyle) {
+      const styleId = String(req.body.planet_style_id ?? '').trim()
+      if (!PLANET_STYLE_IDS.has(styleId)) {
+        throw new AppError('Estilo de planeta no válido')
+      }
+      await pool.query(
+        `UPDATE troops SET planet_style_id = ?, planet_params = NULL WHERE id = ?`,
+        [styleId, troopId],
+      )
+    }
+
+    if (hasParams) {
+      if (req.body.planet_params === null) {
+        await pool.query(
+          `UPDATE troops SET planet_params = NULL WHERE id = ?`,
+          [troopId],
+        )
+      } else {
+        const params = normalizePlanetParams(req.body.planet_params)
+        await pool.query(
+          `UPDATE troops SET planet_params = ?::jsonb WHERE id = ?`,
+          [JSON.stringify(params), troopId],
+        )
+      }
+    }
+
     res.json(await loadTroopDetail(troopId, userId))
   }),
 )

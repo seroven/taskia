@@ -9,7 +9,7 @@ import {
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
 import * as THREE from 'three'
-import { getPlanetStyle } from '../../../lib/planetStyles'
+import { resolvePlanetLook } from '../../../lib/planetStyles'
 import {
   layoutPlanets,
   universeBounds,
@@ -34,18 +34,20 @@ function PlanetMesh({
   position,
   selected,
   onSelect,
+  reducedMotion,
 }: {
   troop: UniverseTroop
   position: [number, number, number]
   selected: boolean
   onSelect: (id: number) => void
+  reducedMotion: boolean
 }) {
-  const style = getPlanetStyle(troop.planet_style_id)
+  const style = resolvePlanetLook(troop.planet_style_id, troop.planet_params)
   const aura = rankAura(troop.rank)
   const meshRef = useRef<THREE.Mesh>(null)
 
   useFrame((_, dt) => {
-    if (!meshRef.current) return
+    if (!meshRef.current || reducedMotion) return
     meshRef.current.rotation.y += dt * 0.15
   })
 
@@ -230,6 +232,9 @@ function Scene({
   onSelect,
   onNearEdge,
   reducedMotion,
+  canvasBg,
+  floorColor,
+  accentColor,
 }: {
   troops: UniverseTroop[]
   layouts: PlanetLayoutPoint[]
@@ -239,15 +244,18 @@ function Scene({
   onSelect: (id: number) => void
   onNearEdge: () => void
   reducedMotion: boolean
+  canvasBg: string
+  floorColor: string
+  accentColor: string
 }) {
   const byId = useMemo(() => new Map(troops.map((t) => [t.id, t])), [troops])
 
   return (
     <>
-      <color attach="background" args={['#050816']} />
+      <color attach="background" args={[canvasBg]} />
       <ambientLight intensity={0.45} />
       <directionalLight position={[8, 14, 6]} intensity={1.1} />
-      <pointLight position={[-10, 6, -8]} intensity={0.4} color="#93c5fd" />
+      <pointLight position={[-10, 6, -8]} intensity={0.4} color={accentColor} />
       {!reducedMotion && (
         <Stars radius={80} depth={40} count={1200} factor={3} saturation={0} fade speed={0.4} />
       )}
@@ -267,12 +275,13 @@ function Scene({
             position={[p.x, 0, p.z]}
             selected={openId === p.id}
             onSelect={onSelect}
+            reducedMotion={reducedMotion}
           />
         )
       })}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]}>
         <circleGeometry args={[120, 48]} />
-        <meshBasicMaterial color="#0a1024" transparent opacity={0.55} />
+        <meshBasicMaterial color={floorColor} transparent opacity={0.55} />
       </mesh>
     </>
   )
@@ -295,6 +304,11 @@ export function SpaceUniverse({
 }) {
   const layoutMapRef = useRef(new Map<number, { x: number; z: number }>())
   const [reducedMotion, setReducedMotion] = useState(false)
+  const [sceneColors, setSceneColors] = useState({
+    bg: '#050816',
+    floor: '#0a1024',
+    accent: '#93c5fd',
+  })
   const edgeCooldown = useRef(0)
 
   useEffect(() => {
@@ -303,6 +317,25 @@ export function SpaceUniverse({
     const onChange = () => setReducedMotion(mq.matches)
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  useEffect(() => {
+    const root = document.documentElement
+    const read = () => {
+      const cs = getComputedStyle(root)
+      setSceneColors({
+        bg: cs.getPropertyValue('--space-canvas-bg').trim() || '#050816',
+        floor: cs.getPropertyValue('--space-floor').trim() || '#0a1024',
+        accent: cs.getPropertyValue('--accent').trim() || '#93c5fd',
+      })
+    }
+    read()
+    const obs = new MutationObserver(read)
+    obs.observe(root, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'data-accent'],
+    })
+    return () => obs.disconnect()
   }, [])
 
   const layouts = useMemo(() => {
@@ -348,6 +381,9 @@ export function SpaceUniverse({
             onSelect={onSelectTroop}
             onNearEdge={onNearEdge}
             reducedMotion={reducedMotion}
+            canvasBg={sceneColors.bg}
+            floorColor={sceneColors.floor}
+            accentColor={sceneColors.accent}
           />
         </Suspense>
       </Canvas>

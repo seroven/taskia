@@ -85,3 +85,53 @@ export const PLANET_STYLES: PlanetStyle[] = [
 export function getPlanetStyle(id: string | null | undefined): PlanetStyle {
   return PLANET_STYLES.find((s) => s.id === id) ?? PLANET_STYLES[0]!
 }
+
+export interface PlanetParams {
+  color: string
+  emissive: string
+  roughness: number
+  metalness: number
+  atmosphere?: string | null
+  label?: string
+}
+
+const HEX = /^#([0-9a-fA-F]{6})$/
+
+function asHex(raw: unknown, fallback: string): string {
+  const s = String(raw ?? '').trim()
+  return HEX.test(s) ? s.toLowerCase() : fallback
+}
+
+function clamp01(n: number, fallback: number) {
+  if (!Number.isFinite(n)) return fallback
+  return Math.min(1, Math.max(0, n))
+}
+
+/** Catálogo + overrides IA (`planet_params`). */
+export function resolvePlanetLook(
+  styleId: string | null | undefined,
+  params: unknown,
+): PlanetStyle {
+  const base = getPlanetStyle(styleId)
+  if (!params || typeof params !== 'object') return base
+  const o = params as Record<string, unknown>
+  const label =
+    typeof o.label === 'string' && o.label.trim()
+      ? o.label.trim().slice(0, 24)
+      : base.label
+  const atmosphere =
+    o.atmosphere === null || o.atmosphere === ''
+      ? undefined
+      : o.atmosphere === undefined
+        ? base.atmosphere
+        : asHex(o.atmosphere, base.atmosphere ?? base.color)
+  return {
+    id: base.id,
+    label,
+    color: asHex(o.color, base.color),
+    emissive: asHex(o.emissive, base.emissive),
+    roughness: clamp01(Number(o.roughness), base.roughness),
+    metalness: clamp01(Number(o.metalness), base.metalness),
+    atmosphere,
+  }
+}

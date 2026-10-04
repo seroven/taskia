@@ -1,6 +1,6 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { PaintBrush, Plus, SignOut, Star } from '@phosphor-icons/react'
-import { getPlanetStyle } from '../../lib/planetStyles'
+import { resolvePlanetLook } from '../../lib/planetStyles'
 import {
   troopRoleLabel,
   type TroopDetail,
@@ -41,7 +41,8 @@ export function TroopSpaceCard({
   onSetCopilot?: (userId: number | null) => void
   onKick?: (userId: number) => void
 }) {
-  const style = getPlanetStyle(detail.planet_style_id)
+  const style = resolvePlanetLook(detail.planet_style_id, detail.planet_params)
+  const reduceMotion = useReducedMotion()
   const isMine = detail.my_role != null
   const canInvite =
     detail.my_role === 'captain' || detail.my_role === 'copilot'
@@ -50,10 +51,14 @@ export function TroopSpaceCard({
   return (
     <motion.article
       className="troop-space-card"
-      initial={{ opacity: 0, y: 16, scale: 0.94 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 16, scale: 0.94 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 10, scale: 0.96 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+      exit={reduceMotion ? undefined : { opacity: 0, y: 10, scale: 0.96 }}
+      transition={
+        reduceMotion
+          ? { duration: 0 }
+          : { type: 'spring', stiffness: 320, damping: 26 }
+      }
     >
       <div
         className="troop-space-card-planet"

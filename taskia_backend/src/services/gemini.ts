@@ -9,6 +9,7 @@ export type LlmUsageKind =
   | 'challenge_generate'
   | 'challenge_grade'
   | 'parent_tutor'
+  | 'planet_generate'
 
 export interface LlmUsageContext {
   userId: number

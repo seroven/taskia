@@ -198,7 +198,7 @@ Adulto crea alumno y materias
         ▼
    Alumno entra → hub
         │
-        ├── Tropas ──► equipo, invitaciones, rankings
+        ├── Tropas ──► universo de planetas, equipo, campana, ranking, avatar/planeta
         │
         ├── Campamento ──► tarea ──► (opcional) Taskia ──► visto ──► Listo ──► XP
         │
@@ -225,7 +225,7 @@ Nada de eso exige que el adulto esté sentado al lado en el chat. El adulto conf
 
 ## Apariencia
 
-Tema claro u oscuro y un color de acento (azul por defecto; también verde, ámbar, violeta, etc.). Vale para alumno y adulto. No cambia las reglas, solo cómo se ve.
+Tema claro u oscuro y un color de acento (azul por defecto; también verde, ámbar, violeta, etc.). Vale para alumno y adulto. No cambia las reglas, solo cómo se ve. En **Tropas**, el universo 3D toma el fondo y el acento del tema; si el sistema pide menos movimiento (`prefers-reduced-motion`), se apagan estrellas, giro de planetas y animaciones fuertes del card.
 
 ---
 

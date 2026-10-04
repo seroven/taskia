@@ -43,6 +43,8 @@ function weekStartMondayLima(instant = new Date()) {
 const TROOPS = [
   {
     name: ANCHOR_TROOP,
+    planet_style_id: 'rocky_blue',
+    planet_seed: 1001,
     members: [
       { username: 'Seroven', role: 'captain', level: 4, xpInto: 320, xpWeek: 480 },
       { username: 'MateoR', role: 'copilot', level: 5, xpInto: 110, xpWeek: 620 },
@@ -56,6 +58,8 @@ const TROOPS = [
   },
   {
     name: 'Estrellas del Norte',
+    planet_style_id: 'neon_violet',
+    planet_seed: 1002,
     members: [
       { username: 'CamilaT', role: 'captain', level: 7, xpInto: 220, xpWeek: 890 },
       { username: 'JoaquinB', role: 'copilot', level: 6, xpInto: 640, xpWeek: 540 },
@@ -70,6 +74,8 @@ const TROOPS = [
   },
   {
     name: 'Guardianes del Saber',
+    planet_style_id: 'forest_green',
+    planet_seed: 1003,
     members: [
       { username: 'RenataA', role: 'captain', level: 9, xpInto: 400, xpWeek: 1020 },
       { username: 'LucasE', role: 'copilot', level: 7, xpInto: 50, xpWeek: 700 },
@@ -85,6 +91,8 @@ const TROOPS = [
   },
   {
     name: 'Rayos Azules',
+    planet_style_id: 'ice_cyan',
+    planet_seed: 1004,
     members: [
       { username: 'DanielaY', role: 'captain', level: 3, xpInto: 150, xpWeek: 200 },
       { username: 'GabrielX', role: 'copilot', level: 2, xpInto: 800, xpWeek: 140 },
@@ -96,6 +104,8 @@ const TROOPS = [
   },
   {
     name: 'Cometas del Sur',
+    planet_style_id: 'lava_amber',
+    planet_seed: 1005,
     members: [
       { username: 'ElenaD', role: 'captain', level: 6, xpInto: 450, xpWeek: 580 },
       { username: 'PabloF', role: 'copilot', level: 5, xpInto: 200, xpWeek: 440 },
@@ -108,6 +118,8 @@ const TROOPS = [
   },
   {
     name: 'Pioneros',
+    planet_style_id: 'rose_dust',
+    planet_seed: 1006,
     members: [
       { username: 'BrunoL', role: 'captain', level: 2, xpInto: 50, xpWeek: 60 },
       { username: 'OliviaM', role: 'copilot', level: 1, xpInto: 700, xpWeek: 45 },
@@ -331,13 +343,19 @@ export async function up(client) {
     )
     if (existingTroop.rows[0]) {
       troopId = Number(existingTroop.rows[0].id)
-      await client.query(`UPDATE troops SET is_active = TRUE WHERE id = $1`, [
-        troopId,
-      ])
+      await client.query(
+        `UPDATE troops
+         SET is_active = TRUE,
+             planet_style_id = $2,
+             planet_seed = $3
+         WHERE id = $1`,
+        [troopId, troop.planet_style_id, troop.planet_seed],
+      )
     } else {
       const ins = await client.query(
-        `INSERT INTO troops (name) VALUES ($1) RETURNING id`,
-        [troop.name],
+        `INSERT INTO troops (name, planet_style_id, planet_seed)
+         VALUES ($1, $2, $3) RETURNING id`,
+        [troop.name, troop.planet_style_id, troop.planet_seed],
       )
       troopId = Number(ins.rows[0].id)
     }

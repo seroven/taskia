@@ -251,19 +251,19 @@ Investigar y elegir **una** pila. Criterios: React 19 + Vite, móvil real, ~50�
 
 ### Oleada C0 — Spike técnico (libs)
 
-- [ ] PoC canvas (§5)
-- [ ] Decisión escrita: 3D vs 2D + lista de deps a instalar
-- [ ] Seed de posiciones: algoritmo documentado (poisson-ish / jitter en anillos)
+- [x] PoC canvas (§5 / §12)
+- [x] Decisión escrita: 3D vs 2D + lista de deps a instalar
+- [x] Seed de posiciones: algoritmo documentado (poisson-ish / jitter en anillos)
 
 ### Oleada C1 — Universo mínimo + datos
 
-- [ ] API ranking paginado + desempate alfabético
-- [ ] API detail de tropa por id (lectura para cualquier explorador autenticado)
-- [ ] Campos `planet_*` en `troops` + defaults
-- [ ] Canvas: 50 planetas, pan, edge pan, zoom rueda, clamp, click → focus
-- [ ] Card abierto (lectura) con miembros + badges estrella de nivel de **usuario**
-- [ ] Mi tropa abierta al entrar; “Volver a mi tropa”
-- [ ] Sin tropa: entra al universo; CTA crear tropa
+- [x] API ranking paginado + desempate alfabético
+- [x] API detail de tropa por id (lectura para cualquier explorador autenticado)
+- [x] Campos `planet_*` en `troops` + defaults
+- [x] Canvas: 50 planetas, pan, edge pan, zoom rueda, clamp, click → focus
+- [x] Card abierto (lectura) con miembros + badges estrella de nivel de **usuario**
+- [x] Mi tropa abierta al entrar; “Volver a mi tropa”
+- [x] Sin tropa: entra al universo; CTA crear tropa
 
 ### Oleada C2 — Gestión en el card + ranking UI
 
@@ -296,16 +296,16 @@ Investigar y elegir **una** pila. Criterios: React 19 + Vite, móvil real, ~50�
 
 ### Oleada C6 — IA Planet Builder
 
-- [ ] Prompt → servicio → preview → aplicar
-- [ ] Sin rate limit (temporal)
-- [ ] Docs de costo / uso Gemini image o params
+- [x] Prompt → servicio → preview → aplicar (`POST /troops/planet/generate` + `PATCH` con `planet_params`)
+- [x] Sin rate limit (temporal)
+- [x] Docs de costo / uso: **params JSON procedurales** vía `gemini-2.0-flash` (mismo `callGemini` + `llm_usage.kind = planet_generate`); no genera PNG. Costo ≈ 1 llamada texto/JSON por preview; aplicar no vuelve a llamar a Gemini.
 
 ### Oleada C7 — Pulido y docs
 
-- [ ] Tema claro/oscuro + acento en el universo
-- [ ] Reduced motion
-- [ ] FUNCIONES / PRODUCTO / STATE
-- [ ] Seed demo: `planet_*` variados en tropas 005
+- [x] Tema claro/oscuro + acento en el universo (`--space-*` + canvas)
+- [x] Reduced motion (estrellas/giro/card)
+- [x] FUNCIONES / PRODUCTO / STATE
+- [x] Seed demo: `planet_*` variados en tropas 005 + `010_seed_demo_planet_styles.sql`
 
 ---
 

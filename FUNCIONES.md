@@ -477,30 +477,38 @@ También puede **editar** título, descripción y uso de pizarra de la misión d
 
 ### Qué son
 
-Una **tropa** es el equipo del explorador: hasta **10** compañeros. Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat.
+Una **tropa** es el equipo del explorador: hasta **10** compañeros. Se ve como un **universo** de planetas (una tropa = un planeta). Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat.
 
 ### Roles
 
 | Rol | Puede |
 | --- | --- |
-| **Capitán** | Invitar, sacar miembros, elegir o cambiar **Copiloto** |
-| **Copiloto** | Invitar |
-| **Explorador** | Ver la tropa y el ranking; salir cuando quiera |
+| **Capitán** | Invitar, sacar miembros, elegir o cambiar **Copiloto**, aceptar/rechazar pedidos de unión, personalizar el planeta (estilo o IA) |
+| **Copiloto** | Invitar, aceptar/rechazar pedidos de unión, personalizar el planeta |
+| **Explorador** | Ver el universo, su tropa y el ranking; pedir unirse si aún no tiene tropa; salir cuando quiera |
 
 Quien crea la tropa es Capitán. Solo se puede estar en **una** tropa a la vez.
 
+### Universo, planeta y avatar
+
+- Al abrir **Tropas** entra al canvas: pan, zoom y toque en un planeta abre su ficha.
+- Mi tropa queda al centro; el Top 3 semanal lleva un aura; con la ficha abierta se ve el **nivel de tropa** (promedio) en una estrella.
+- Capitanía/copilotaje eligen un estilo de planeta del catálogo o piden a Taskia un diseño (vista previa → aplicar). No se sube foto del planeta.
+- Cada explorador elige **avatar** (preset o foto en serverfiles) y un **marco** (algunos solo Capitán/Copiloto).
+
 ### Qué puede hacer el explorador
 
-- Crear tropa (nombre limpio, 3–80 caracteres) o aceptar/rechazar invitaciones.
+- Crear tropa (nombre limpio, 3–80 caracteres) o aceptar/rechazar invitaciones en la **campana**.
+- Sin tropa: pedir unirse desde la ficha de otra tropa (Capitán o Copiloto decide).
 - Buscar compañeros **por nombre** (global) e invitar (Capitán/Copiloto).
-- Ver miembros ordenados por nivel (ranking interno) y el **ranking semanal** entre tropas (XP lun–dom).
+- Ver miembros (avatar + marco + nivel) y el **ranking semanal** entre tropas (XP lun–dom, panel aparte).
 - Salir: si se va el Capitán, el mando pasa al Copiloto; si no hay, al de mayor nivel.
 
 Hay límites anti-abuso: pocas invitaciones pendientes por tropa y un tope de invitaciones enviadas por día.
 
 ### Qué no hace
 
-No mezcla el estudio grupal ni deja que el guardián gestione la tropa.
+No mezcla el estudio grupal ni deja que el guardián gestione la tropa. No hay chat de tropa ni ranking en vivo por websockets.
 
 ---
 
@@ -614,7 +622,7 @@ Las **materias** son el puente: sin ellas no hay tareas ni cursos dentro de mund
 | Preferencias WhatsApp | Se guardan |
 | Envío real de WhatsApp | Aún no |
 | Candado Listo / visto de Taskia | Activo en el Campamento |
-| Hub Tropas / Mundos / Campamento | Activo |
+| Hub Tropas (universo) / Mundos / Campamento | Activo |
 | Nivel, XP y tropas | Activos (ranking semanal, Guardián solo lectura) |
 | Misión a Lista al dominar | Activo |
 | Desafíos | Activos (generar, jugar, historial) |
