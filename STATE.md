@@ -29,7 +29,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - Modales: shell único `ModalShell` con tamaños `sm` / `md` / `lg`; `WorldsModalShell` solo reexporta.
 - Tablas: componente `DataTable` (`taskia_frontend/src/components/ui/DataTable.tsx`); `flush` pega la tabla al borde del `admin-panel`.
 - Preferencias WhatsApp: una por cuenta Guardián.
-- Chat del Guardián es uno por explorador y día civil del visor (`parent_chat_messages.chat_date`). El día anterior queda guardado y no se muestra ni se manda a Gemini. El resumen sigue siendo el de ese día: sin fila, texto fijo y sin llamada. Worker aún no escribe ahí.
+- Chat del Guardián es uno por explorador y día civil del visor (`parent_chat_messages.chat_date`). El día anterior queda guardado y no se muestra ni se manda a Gemini. El resumen es el de ese día. Sin fila, texto fijo y sin llamada. Lo escribe `scripts/daily-summary.ts` (ayer en `America/Lima`). GitHub Actions lo dispara con `.github/workflows/daily-summary.yml`. Sin actividad no llama a Gemini. Los avisos y la inactividad tienen workflow, y el envío espera al proveedor de WhatsApp.
 - Tripulación, XP y hub ya están en el producto. [ROADMAP_V2.md](docs/planes/ROADMAP_V2.md) sigue en pausa.
 - La documentación larga vive en `docs/` ([índice](docs/README.md)): producto, datos y planes. `STATE.md` se queda en la raíz.
 - El trabajo del día se commitea y se sube a `staging`.
@@ -37,7 +37,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 ## Pendiente
 
 - Reestructura de carpetas: [PLAN_ESTRUCTURA.md](docs/planes/PLAN_ESTRUCTURA.md). Hechos auth, catalog, files, tasks, study, guardian, tripulación, mundos, admin y `src/prompts/`. El acceso a datos ya es TypeORM. Siguiente: frontend, desde F1.
-- Retomar [ROADMAP_V2.md](docs/planes/ROADMAP_V2.md) cuando se decida (workers / WhatsApp / Flutter).
+- Retomar [ROADMAP_V2.md](docs/planes/ROADMAP_V2.md) cuando se decida (WhatsApp y Flutter). El resumen diario ya es un script de una pasada.
 - En Render / pd: `npm run db:reset:pd -- --yes` (borra el schema `taskia` y reaplica migraciones) si el schema viejo no cuadra.
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.
 

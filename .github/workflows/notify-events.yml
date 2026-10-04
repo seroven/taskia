@@ -1,0 +1,39 @@
+name: Avisos de eventos
+
+# El cron queda listo para cuando el script envíe de verdad.
+# Hasta entonces solo se lanza a mano, para no marcar una corrida verde que no avisa.
+# Cada hora al minuto 15. El desfase de Lima no mueve el minuto: cron '15 * * * *'
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notify-events
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: taskia_backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: taskia_backend/package-lock.json
+      - run: npm ci
+      - name: Avisar eventos nuevos
+        env:
+          PG_DSN: ${{ secrets.PG_DSN }}
+          PG_SCHEMA: taskia
+          PG_SSLMODE: require
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: npx tsx scripts/notify-events.ts

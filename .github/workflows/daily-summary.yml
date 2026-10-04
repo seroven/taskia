@@ -1,0 +1,49 @@
+name: Resumen del día
+
+on:
+  schedule:
+    # 00:15 en Lima = 05:15 UTC. Actions solo entiende UTC.
+    - cron: '15 5 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'YYYY-MM-DD. Vacío resume ayer en Lima.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-summary
+  cancel-in-progress: false
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: taskia_backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: taskia_backend/package-lock.json
+      - run: npm ci
+      - name: Escribir resúmenes
+        env:
+          SUMMARY_DATE: ${{ inputs.date }}
+          PG_DSN: ${{ secrets.PG_DSN }}
+          PG_SCHEMA: taskia
+          PG_SSLMODE: require
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          if [ -n "$SUMMARY_DATE" ]; then
+            npx tsx scripts/daily-summary.ts --date="$SUMMARY_DATE"
+          else
+            npx tsx scripts/daily-summary.ts
+          fi

@@ -166,7 +166,7 @@ Una conversación entre el guardián y un **asistente** (no es el mismo chat que
 
 Cuando existe un **resumen del día** de ese explorador, el asistente se apoya en él. Si todavía no hay resumen, no consulta a la IA: responde con un texto fijo que dice que aún no hay resumen del día.
 
-**Estado actual del producto:** el chat ya está disponible; el resumen automático del día **aún no se genera solo** en segundo plano. Hasta que exista esa fila, cada mensaje recibe el mismo aviso. Eso cambia cuando se activen los trabajos automáticos de resumen (ver plan de la versión 2.0).
+El resumen lo escribe un script de una sola pasada (`npm run job:daily-summary` en el backend). Por defecto cubre el día anterior en Lima. No queda corriendo: GitHub Actions es quien lo dispara. Si ese día no hubo actividad, guarda una frase fija y no llama a la IA.
 
 ### Qué no hace este chat
 

@@ -16,7 +16,7 @@ Qué hace la app y cómo se usa.
 ## Planes
 
 - [PLAN_ESTRUCTURA.md](planes/PLAN_ESTRUCTURA.md) — reestructura de carpetas. El backend ya está; sigue el frontend desde F1.
-- [ROADMAP_V2.md](planes/ROADMAP_V2.md) — WhatsApp, workers y Flutter. En pausa.
+- [ROADMAP_V2.md](planes/ROADMAP_V2.md) — workers de una pasada en GitHub Actions; WhatsApp y Flutter en pausa. Los YAML están en `.github/workflows/`.
 
 ## Junto al código
 

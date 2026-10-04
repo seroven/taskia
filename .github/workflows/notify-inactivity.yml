@@ -1,0 +1,39 @@
+name: Alerta de inactividad
+
+# El cron queda listo para cuando el script envíe de verdad.
+# Hasta entonces solo se lanza a mano.
+# 00:30 en Lima = 05:30 UTC: cron '30 5 * * *'
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notify-inactivity
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: taskia_backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: taskia_backend/package-lock.json
+      - run: npm ci
+      - name: Avisar inactividad
+        env:
+          PG_DSN: ${{ secrets.PG_DSN }}
+          PG_SCHEMA: taskia
+          PG_SSLMODE: require
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: npx tsx scripts/notify-inactivity.ts

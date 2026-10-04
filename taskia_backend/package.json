@@ -21,7 +21,9 @@
     "db:reset:qa": "node --env-file=.env.qa db/reset.mjs --env=qa",
     "db:setup:pd": "tsx --env-file=.env.pd db/migrate.ts",
     "db:migrate:pd": "tsx --env-file=.env.pd db/migrate.ts",
-    "db:reset:pd": "node --env-file=.env.pd db/reset.mjs --env=pd"
+    "db:reset:pd": "node --env-file=.env.pd db/reset.mjs --env=pd",
+    "job:daily-summary": "tsx --env-file=.env.development scripts/daily-summary.ts",
+    "job:daily-summary:pd": "tsx --env-file=.env.pd scripts/daily-summary.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

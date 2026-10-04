@@ -8,4 +8,5 @@ export {
   challengeGenerateSystem,
 } from './challenge.js'
 export { guardianTutorSystem } from './guardian.js'
+export { dailySummarySystem } from './daily-summary.js'
 export { PLANET_GENERATE_SYSTEM } from './planet.js'
