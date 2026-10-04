@@ -8,7 +8,7 @@ Un solo repo en la raíz. Backend en `taskia_backend/`, frontend en `taskia_fron
 
 Roles en catálogo `roles`: Explorador (`user`), Administrador (`admin`), Guardián (`parent`). El admin afilia Guardianes y Exploradores. El Guardián entra a la web (chat con resumen diario, progreso, avisos WhatsApp). Latencia de respuesta se guarda en los chats de estudio. Guía funcional: [FUNCIONES.md](FUNCIONES.md).
 
-Siguiente foco: rediseño **Universo de Tropas** ([ROADMAP_TROPAS_CANVAS.md](ROADMAP_TROPAS_CANVAS.md)) — canvas espacial en curso (C0/C1). [ROADMAP_V2.md](ROADMAP_V2.md) sigue en pausa.
+Siguiente foco: rediseño **Universo de Tropas** ([ROADMAP_TROPAS_CANVAS.md](ROADMAP_TROPAS_CANVAS.md)) — C0–C4 hechas (canvas, campana, solicitudes, skins); faltan avatares/IA/docs. [ROADMAP_V2.md](ROADMAP_V2.md) en pausa.
 
 La base de Postgres guarda instantes en UTC. La web los muestra en la zona de quien mira con `formatWhen` / `formatDay` en `taskia_frontend/src/lib/datetime.ts`. `tasks.due_date` es un día de calendario, sin zona. XP semanal y tope de tareas/día usan día civil `America/Lima`.
 

@@ -33,7 +33,13 @@ export interface TroopInvite {
   troop_name: string
   from_user_id: number
   from_username: string
+  direction?: 'invite' | 'request'
   created_at: string
+}
+
+export interface TroopInboxResponse {
+  invites: TroopInvite[]
+  requests: TroopInvite[]
 }
 
 export interface TroopMeResponse {

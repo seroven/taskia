@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Plus, SignOut, Star } from '@phosphor-icons/react'
+import { PaintBrush, Plus, SignOut, Star } from '@phosphor-icons/react'
 import { getPlanetStyle } from '../../lib/planetStyles'
 import {
   troopRoleLabel,
@@ -18,16 +18,20 @@ export function LevelStar({ level }: { level: number }) {
 export function TroopSpaceCard({
   detail,
   busy,
-  onCloseHint,
+  canRequestJoin,
+  onRequestJoin,
   onInvite,
+  onCustomizePlanet,
   onLeave,
   onSetCopilot,
   onKick,
 }: {
   detail: TroopDetail
   busy: boolean
-  onCloseHint?: string
+  canRequestJoin?: boolean
+  onRequestJoin?: () => void
   onInvite?: () => void
+  onCustomizePlanet?: () => void
   onLeave?: () => void
   onSetCopilot?: (userId: number | null) => void
   onKick?: (userId: number) => void
@@ -64,11 +68,10 @@ export function TroopSpaceCard({
         <p className="troops-muted">
           {detail.rank != null ? `#${detail.rank} esta semana · ` : ''}
           {detail.xp_week} XP sem. · {detail.member_count}/{detail.max_members}
-          {onCloseHint ? ` · ${onCloseHint}` : ''}
         </p>
       </header>
 
-      {isMine && (
+      {(isMine || canRequestJoin) && (
         <div className="troop-space-card-actions">
           {canInvite && (
             <button
@@ -81,6 +84,17 @@ export function TroopSpaceCard({
               Invitar
             </button>
           )}
+          {onCustomizePlanet && (
+            <button
+              type="button"
+              className="ghost"
+              disabled={busy}
+              onClick={onCustomizePlanet}
+            >
+              <PaintBrush size={16} weight="bold" />
+              Planeta
+            </button>
+          )}
           {onLeave && (
             <button
               type="button"
@@ -90,6 +104,16 @@ export function TroopSpaceCard({
             >
               <SignOut size={16} weight="bold" />
               Salir
+            </button>
+          )}
+          {canRequestJoin && onRequestJoin && (
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || detail.member_count >= detail.max_members}
+              onClick={onRequestJoin}
+            >
+              Pedir unirme
             </button>
           )}
         </div>

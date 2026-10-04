@@ -42,6 +42,7 @@ import { adminQuery } from './lib/adminTypes'
 import { viewerTimeZone } from './lib/datetime'
 import type {
   TroopDetail,
+  TroopInboxResponse,
   TroopMeResponse,
   TroopRankingResponse,
   TroopSearchHit,
@@ -677,6 +678,14 @@ export const api = {
   getTroop(troop_id: number) {
     return request<TroopDetail>(`/troops/${troop_id}`)
   },
+  getTroopInbox() {
+    return request<TroopInboxResponse>('/troops/inbox')
+  },
+  requestJoinTroop(troop_id: number) {
+    return request<{ id: number; ok: boolean }>(`/troops/${troop_id}/request`, {
+      method: 'POST',
+    })
+  },
   searchExplorers(q: string) {
     return request<TroopSearchHit[]>(
       `/troops/search?q=${encodeURIComponent(q)}`,
@@ -719,5 +728,11 @@ export const api = {
     return request<{ ok: boolean }>('/troops/leave', { method: 'POST' }).then(
       () => undefined,
     )
+  },
+  setTroopPlanetStyle(planet_style_id: string) {
+    return request<TroopDetail>('/troops/planet', {
+      method: 'PATCH',
+      body: JSON.stringify({ planet_style_id }),
+    })
   },
 }

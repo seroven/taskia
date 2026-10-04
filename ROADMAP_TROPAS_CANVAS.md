@@ -267,24 +267,25 @@ Investigar y elegir **una** pila. Criterios: React 19 + Vite, móvil real, ~50�
 
 ### Oleada C2 — Gestión en el card + ranking UI
 
-- [ ] Portar acciones actuales al card de mi tropa (invitar, salir, copiloto, kick)
-- [ ] Ranking overlay desktop + botón trofeo móvil
-- [ ] Infinite scroll ranking + “Ir a mi posición”
-- [ ] Top 3 glow en canvas
-- [ ] Badge nivel-tropa en planeta (tras definir fórmula §11)
+- [x] Portar acciones actuales al card de mi tropa (invitar, salir, copiloto, kick)
+- [x] Ranking overlay + botón trofeo
+- [x] Infinite scroll ranking + “Ir a mi posición”
+- [x] Top 3 glow en canvas
+- [x] Badge nivel-tropa en planeta (promedio; solo card abierto)
+- [x] Campana flotante (bandeja)
 
-### Oleada C3 — Solicitudes de unión + bandeja Capitán
+### Oleada C3 — Solicitudes de unión + bandeja
 
-- [ ] Modelo invite/request
-- [ ] CTA “Pedir unirme” en card ajeno (solo sin tropa)
-- [ ] UI Capitán para aceptar/rechazar solicitudes (lugar §11)
-- [ ] Mantener invitaciones por búsqueda
+- [x] Modelo invite/request (`007_troop_invite_direction.sql`)
+- [x] CTA “Pedir unirme” en card ajeno (solo sin tropa)
+- [x] UI Capitán/Copiloto en campana para aceptar/rechazar
+- [x] Mantener invitaciones por búsqueda
 
 ### Oleada C4 — Skins de planeta (catálogo)
 
-- [ ] Catálogo 8–12 estilos procedurales
-- [ ] UI personalizar (solo Capitán ⚠)
-- [ ] Persistencia `planet_style_id` / seed / params
+- [x] Catálogo 8 estilos procedurales
+- [x] UI personalizar (Capitán y Copiloto)
+- [x] Persistencia `planet_style_id` (`PATCH /troops/planet`)
 
 ### Oleada C5 — Avatares + marcos (datos + UI mínima)
 

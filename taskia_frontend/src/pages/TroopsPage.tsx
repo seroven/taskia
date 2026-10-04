@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import {
+  Bell,
   MagnifyingGlass,
   Plus,
   Trophy,
@@ -14,6 +15,7 @@ import { WorldsNav } from '../components/worlds/WorldsNav'
 import { SpaceUniverse } from '../components/troops/space/SpaceUniverse'
 import { TroopSpaceCard } from '../components/troops/TroopSpaceCard'
 import { errorMessage } from '../lib/errors'
+import { PLANET_STYLES } from '../lib/planetStyles'
 import type {
   TroopDetail,
   TroopInvite,
@@ -28,7 +30,6 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [myTroop, setMyTroop] = useState<TroopDetail | null>(null)
-  const [invites, setInvites] = useState<TroopInvite[]>([])
   const [universe, setUniverse] = useState<UniverseTroop[]>([])
   const [myTroopId, setMyTroopId] = useState<number | null>(null)
   const [universeOffset, setUniverseOffset] = useState(0)
@@ -40,12 +41,23 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
   const [busy, setBusy] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [planetOpen, setPlanetOpen] = useState(false)
   const [rankingOpen, setRankingOpen] = useState(false)
   const [ranking, setRanking] = useState<TroopRankingRow[]>([])
   const [rankingHasMore, setRankingHasMore] = useState(true)
   const [rankingLoading, setRankingLoading] = useState(false)
+  const [inboxOpen, setInboxOpen] = useState(false)
+  const [inboxInvites, setInboxInvites] = useState<TroopInvite[]>([])
+  const [inboxRequests, setInboxRequests] = useState<TroopInvite[]>([])
 
   const showBackHome = myTroopId != null
+  const inboxCount = inboxInvites.length + inboxRequests.length
+
+  async function loadInbox() {
+    const box = await api.getTroopInbox()
+    setInboxInvites(box.invites)
+    setInboxRequests(box.requests)
+  }
 
   async function loadCore() {
     const [me, uni] = await Promise.all([
@@ -53,7 +65,6 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
       api.getTroopUniverse(0, 50),
     ])
     setMyTroop(me.troop)
-    setInvites(me.invites)
     setUniverse(uni.troops)
     setMyTroopId(uni.my_troop_id)
     setUniverseOffset(uni.troops.length)
@@ -65,6 +76,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
     } else {
       setOpenDetail(null)
     }
+    await loadInbox()
   }
 
   useEffect(() => {
@@ -196,6 +208,21 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
 
             <button
               type="button"
+              className="space-bell-fab"
+              aria-label="Bandeja de tropas"
+              onClick={() => {
+                setInboxOpen(true)
+                void loadInbox().catch(() => undefined)
+              }}
+            >
+              <Bell size={22} weight="duotone" />
+              {inboxCount > 0 && (
+                <span className="space-bell-badge">{inboxCount}</span>
+              )}
+            </button>
+
+            <button
+              type="button"
               className="space-rank-fab"
               aria-label="Ranking semanal"
               onClick={() => {
@@ -225,10 +252,27 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                   <TroopSpaceCard
                     detail={openDetail}
                     busy={busy}
+                    canRequestJoin={!myTroop && openDetail.my_role == null}
+                    onRequestJoin={() =>
+                      void runAction(
+                        async () => {
+                          await api.requestJoinTroop(openDetail.id)
+                          await loadInbox()
+                        },
+                        'Solicitud enviada',
+                        openDetail.name,
+                      )
+                    }
                     onInvite={
                       openDetail.my_role === 'captain' ||
                       openDetail.my_role === 'copilot'
                         ? () => setInviteOpen(true)
+                        : undefined
+                    }
+                    onCustomizePlanet={
+                      openDetail.my_role === 'captain' ||
+                      openDetail.my_role === 'copilot'
+                        ? () => setPlanetOpen(true)
                         : undefined
                     }
                     onLeave={
@@ -268,6 +312,125 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                 </div>
               )}
             </AnimatePresence>
+
+            {inboxOpen && (
+              <div
+                className="space-ranking-backdrop"
+                onClick={() => setInboxOpen(false)}
+                role="presentation"
+              >
+                <aside
+                  className="space-ranking-panel space-inbox-panel"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <header className="space-ranking-head">
+                    <h2>Bandeja</h2>
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => setInboxOpen(false)}
+                    >
+                      Cerrar
+                    </button>
+                  </header>
+                  <div className="space-inbox-body">
+                    {inboxInvites.length === 0 && inboxRequests.length === 0 && (
+                      <p className="troops-muted">No hay nada pendiente.</p>
+                    )}
+                    {inboxInvites.length > 0 && (
+                      <section>
+                        <h3>Invitaciones</h3>
+                        <ul className="space-inbox-list">
+                          {inboxInvites.map((inv) => (
+                            <li key={inv.id}>
+                              <div>
+                                <strong>{inv.troop_name}</strong>
+                                <p className="troops-muted">
+                                  Te invita {inv.from_username}
+                                </p>
+                              </div>
+                              <div className="troops-invite-actions">
+                                <button
+                                  type="button"
+                                  className="ghost"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    void runAction(async () => {
+                                      await api.rejectTroopInvite(inv.id)
+                                      await loadInbox()
+                                    }, 'Invitación rechazada')
+                                  }
+                                >
+                                  No
+                                </button>
+                                <button
+                                  type="button"
+                                  className="primary"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    void runAction(async () => {
+                                      await api.acceptTroopInvite(inv.id)
+                                      await loadInbox()
+                                    }, '¡Te uniste!', inv.troop_name)
+                                  }
+                                >
+                                  Unirme
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                    {inboxRequests.length > 0 && (
+                      <section>
+                        <h3>Solicitudes</h3>
+                        <ul className="space-inbox-list">
+                          {inboxRequests.map((req) => (
+                            <li key={req.id}>
+                              <div>
+                                <strong>{req.from_username}</strong>
+                                <p className="troops-muted">
+                                  Quiere unirse a {req.troop_name}
+                                </p>
+                              </div>
+                              <div className="troops-invite-actions">
+                                <button
+                                  type="button"
+                                  className="ghost"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    void runAction(async () => {
+                                      await api.rejectTroopInvite(req.id)
+                                      await loadInbox()
+                                    }, 'Solicitud rechazada')
+                                  }
+                                >
+                                  Rechazar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="primary"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    void runAction(async () => {
+                                      await api.acceptTroopInvite(req.id)
+                                      await loadInbox()
+                                    }, 'Explorador aceptado', req.from_username)
+                                  }
+                                >
+                                  Aceptar
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                  </div>
+                </aside>
+              </div>
+            )}
 
             {rankingOpen && (
               <div
@@ -375,44 +538,101 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
         }}
       />
 
-      {/* invitaciones recibidas (sin tropa): chip simple hasta campana C2 */}
-      {!myTroop && invites.length > 0 && (
-        <div className="space-invites-strip">
-          {invites.map((inv) => (
-            <div key={inv.id} className="space-invite-chip">
-              <span>
-                {inv.troop_name} · {inv.from_username}
-              </span>
-              <button
-                type="button"
-                className="primary"
-                disabled={busy}
-                onClick={() =>
-                  void runAction(async () => {
-                    await api.acceptTroopInvite(inv.id)
-                  }, '¡Te uniste!', inv.troop_name)
-                }
-              >
-                Unirme
-              </button>
-              <button
-                type="button"
-                className="ghost"
-                disabled={busy}
-                onClick={() =>
-                  void runAction(
-                    () => api.rejectTroopInvite(inv.id),
-                    'Invitación rechazada',
-                  )
-                }
-              >
-                No
-              </button>
-            </div>
+      <PlanetStyleModal
+        open={planetOpen}
+        currentStyleId={openDetail?.planet_style_id ?? myTroop?.planet_style_id}
+        onClose={() => setPlanetOpen(false)}
+        onPick={async (styleId) => {
+          const updated = await api.setTroopPlanetStyle(styleId)
+          setOpenDetail(updated)
+          setMyTroop(updated)
+          setUniverse((prev) =>
+            prev.map((t) =>
+              t.id === updated.id
+                ? { ...t, planet_style_id: updated.planet_style_id }
+                : t,
+            ),
+          )
+          showToast({
+            tone: 'success',
+            title: 'Planeta actualizado',
+            subtitle: updated.name,
+          })
+        }}
+      />
+
+    </div>
+  )
+}
+
+function PlanetStyleModal({
+  open,
+  currentStyleId,
+  onClose,
+  onPick,
+}: {
+  open: boolean
+  currentStyleId?: string
+  onClose: () => void
+  onPick: (styleId: string) => Promise<void>
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  return (
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      titleId="planet-style-title"
+      title="Estilo del planeta"
+      lead="Elige cómo se ve tu tropa en el universo."
+      size="md"
+    >
+      <div className="modal-panel-body">
+        <div className="planet-style-grid">
+          {PLANET_STYLES.map((style) => (
+            <button
+              key={style.id}
+              type="button"
+              className={
+                style.id === currentStyleId
+                  ? 'planet-style-swatch is-selected'
+                  : 'planet-style-swatch'
+              }
+              disabled={busyId != null}
+              onClick={() => {
+                void (async () => {
+                  setBusyId(style.id)
+                  setError(null)
+                  try {
+                    await onPick(style.id)
+                    onClose()
+                  } catch (err) {
+                    setError(errorMessage(err))
+                  } finally {
+                    setBusyId(null)
+                  }
+                })()
+              }}
+            >
+              <span
+                className="planet-style-orb"
+                style={{
+                  background: `radial-gradient(circle at 35% 30%, ${style.atmosphere ?? style.color}, ${style.color} 50%, ${style.emissive})`,
+                }}
+              />
+              <span>{style.label}</span>
+            </button>
           ))}
         </div>
-      )}
-    </div>
+        {error && <p className="form-error">{error}</p>}
+        <div className="modal-actions">
+          <button type="button" className="ghost" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </ModalShell>
   )
 }
 

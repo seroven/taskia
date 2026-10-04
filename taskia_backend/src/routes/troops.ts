@@ -213,11 +213,11 @@ router.get(
 
     const [invites] = await pool.query<RowDataPacket[]>(
       `SELECT i.id, i.troop_id, t.name AS troop_name, i.from_user_id,
-              fu.username AS from_username, i.created_at
+              fu.username AS from_username, i.created_at, i.direction
        FROM troop_invites i
        INNER JOIN troops t ON t.id = i.troop_id AND t.is_active = TRUE
        INNER JOIN users fu ON fu.id = i.from_user_id
-       WHERE i.to_user_id = ? AND i.status = 'pending'
+       WHERE i.to_user_id = ? AND i.status = 'pending' AND i.direction = 'invite'
        ORDER BY i.id DESC`,
       [userId],
     )
@@ -230,8 +230,63 @@ router.get(
         troop_name: i.troop_name as string,
         from_user_id: Number(i.from_user_id),
         from_username: i.from_username as string,
+        direction: 'invite' as const,
         created_at: toInstantISO(i.created_at as Date) ?? '',
       })),
+    })
+  }),
+)
+
+/** Bandeja: invitaciones recibidas + solicitudes a mi tropa (Capitán/Copiloto). */
+router.get(
+  '/inbox',
+  asyncHandler(async (req, res) => {
+    const userId = req.user!.id
+    const membership = await activeMembership(userId)
+
+    const [invites] = await pool.query<RowDataPacket[]>(
+      `SELECT i.id, i.troop_id, t.name AS troop_name, i.from_user_id,
+              fu.username AS from_username, i.created_at
+       FROM troop_invites i
+       INNER JOIN troops t ON t.id = i.troop_id AND t.is_active = TRUE
+       INNER JOIN users fu ON fu.id = i.from_user_id
+       WHERE i.to_user_id = ? AND i.status = 'pending' AND i.direction = 'invite'
+       ORDER BY i.id DESC`,
+      [userId],
+    )
+
+    let requests: RowDataPacket[] = []
+    const role = membership?.role as TroopRole | undefined
+    if (
+      membership &&
+      (role === 'captain' || role === 'copilot')
+    ) {
+      const [rows] = await pool.query<RowDataPacket[]>(
+        `SELECT i.id, i.troop_id, t.name AS troop_name, i.from_user_id,
+                fu.username AS from_username, i.created_at
+         FROM troop_invites i
+         INNER JOIN troops t ON t.id = i.troop_id AND t.is_active = TRUE
+         INNER JOIN users fu ON fu.id = i.from_user_id
+         WHERE i.troop_id = ? AND i.status = 'pending' AND i.direction = 'request'
+         ORDER BY i.id DESC`,
+        [Number(membership.troop_id)],
+      )
+      requests = rows
+    }
+
+    const mapItem = (i: RowDataPacket, direction: 'invite' | 'request') => ({
+      id: Number(i.id),
+      troop_id: Number(i.troop_id),
+      troop_name: i.troop_name as string,
+      from_user_id: Number(i.from_user_id),
+      from_username: i.from_username as string,
+      direction,
+      created_at: toInstantISO(i.created_at as Date) ?? '',
+    })
+
+    res.json({
+      invites: invites.map((i) => mapItem(i, 'invite')),
+      requests: requests.map((i) => mapItem(i, 'request')),
     })
   }),
 )
@@ -466,8 +521,9 @@ router.post(
 
     try {
       const [ins] = await pool.query<ResultSetHeader>(
-        `INSERT INTO troop_invites (troop_id, from_user_id, to_user_id, status)
-         VALUES (?, ?, ?, 'pending')`,
+        `INSERT INTO troop_invites
+           (troop_id, from_user_id, to_user_id, status, direction)
+         VALUES (?, ?, ?, 'pending', 'invite')`,
         [troopId, userId, toUserId],
       )
       res.json({ id: Number(ins.insertId), ok: true })
@@ -477,38 +533,137 @@ router.post(
   }),
 )
 
+/** Explorador sin tropa pide unirse a una tropa. */
+router.post(
+  '/:id/request',
+  asyncHandler(async (req, res) => {
+    const userId = req.user!.id
+    const troopId = Number(req.params.id)
+    if (!Number.isFinite(troopId)) throw new AppError('Tropa no válida', 404)
+    if (await activeMembership(userId)) {
+      throw new AppError('Ya estás en una tropa')
+    }
+
+    const [trows] = await pool.query<RowDataPacket[]>(
+      `SELECT id, is_active FROM troops WHERE id = ? LIMIT 1`,
+      [troopId],
+    )
+    if (!trows[0] || Number(trows[0].is_active) === 0) {
+      throw new AppError('Tropa no encontrada', 404)
+    }
+    if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
+      throw new AppError('Esa tropa ya está llena')
+    }
+
+    const [pendingCount] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) AS c FROM troop_invites
+       WHERE troop_id = ? AND status = 'pending'`,
+      [troopId],
+    )
+    if (Number(pendingCount[0]?.c ?? 0) >= MAX_PENDING_INVITES_PER_TROOP) {
+      throw new AppError(
+        'Esa tropa tiene demasiadas invitaciones pendientes. Prueba luego.',
+      )
+    }
+
+    const [captain] = await pool.query<RowDataPacket[]>(
+      `SELECT user_id FROM troop_members
+       WHERE troop_id = ? AND left_at IS NULL AND role = 'captain'
+       LIMIT 1`,
+      [troopId],
+    )
+    const captainId = Number(captain[0]?.user_id)
+    if (!Number.isFinite(captainId) || captainId === userId) {
+      throw new AppError('No se puede solicitar unirse a esa tropa')
+    }
+
+    try {
+      const [ins] = await pool.query<ResultSetHeader>(
+        `INSERT INTO troop_invites
+           (troop_id, from_user_id, to_user_id, status, direction)
+         VALUES (?, ?, ?, 'pending', 'request')`,
+        [troopId, userId, captainId],
+      )
+      res.json({ id: Number(ins.insertId), ok: true })
+    } catch {
+      throw new AppError('Ya pediste unirte a esa tropa')
+    }
+  }),
+)
+
 router.post(
   '/invites/:id/accept',
   asyncHandler(async (req, res) => {
     const userId = req.user!.id
     const inviteId = Number(req.params.id)
-    if (await activeMembership(userId)) {
-      throw new AppError('Ya estás en una tropa')
-    }
 
     const [rows] = await pool.query<RowDataPacket[]>(
-      `SELECT i.id, i.troop_id, t.is_active
+      `SELECT i.id, i.troop_id, i.from_user_id, i.to_user_id, i.direction, t.is_active
        FROM troop_invites i
        INNER JOIN troops t ON t.id = i.troop_id
-       WHERE i.id = ? AND i.to_user_id = ? AND i.status = 'pending'
+       WHERE i.id = ? AND i.status = 'pending'
        LIMIT 1`,
-      [inviteId, userId],
+      [inviteId],
     )
-    if (!rows[0] || Number(rows[0].is_active) === 0) {
+    const row = rows[0]
+    if (!row || Number(row.is_active) === 0) {
       throw new AppError('Invitación no válida', 404)
     }
-    const troopId = Number(rows[0].troop_id)
-    if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
-      throw new AppError('Esa tropa ya está llena')
+
+    const troopId = Number(row.troop_id)
+    const direction = String(row.direction ?? 'invite')
+
+    if (direction === 'invite') {
+      if (Number(row.to_user_id) !== userId) {
+        throw new AppError('Invitación no válida', 404)
+      }
+      if (await activeMembership(userId)) {
+        throw new AppError('Ya estás en una tropa')
+      }
+      if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
+        throw new AppError('Esa tropa ya está llena')
+      }
+      await pool.query(
+        `UPDATE troop_invites
+         SET status = 'accepted', responded_at = NOW()
+         WHERE id = ?`,
+        [inviteId],
+      )
+      await joinTroopAsMember(troopId, userId)
+      res.json(await loadTroopDetail(troopId, userId))
+      return
     }
 
+    // request: Capitán o Copiloto acepta; entra from_user_id
+    const membership = await activeMembership(userId)
+    const role = membership?.role as TroopRole | undefined
+    if (
+      !membership ||
+      Number(membership.troop_id) !== troopId ||
+      (role !== 'captain' && role !== 'copilot')
+    ) {
+      throw new AppError('Solo el Capitán o el Copiloto pueden aceptar')
+    }
+    const joinerId = Number(row.from_user_id)
+    if (await activeMembership(joinerId)) {
+      await pool.query(
+        `UPDATE troop_invites
+         SET status = 'cancelled', responded_at = NOW()
+         WHERE id = ?`,
+        [inviteId],
+      )
+      throw new AppError('Ese explorador ya está en una tropa')
+    }
+    if ((await countActiveMembers(troopId)) >= MAX_MEMBERS) {
+      throw new AppError('La tropa ya está llena')
+    }
     await pool.query(
       `UPDATE troop_invites
        SET status = 'accepted', responded_at = NOW()
        WHERE id = ?`,
       [inviteId],
     )
-    await joinTroopAsMember(troopId, userId)
+    await joinTroopAsMember(troopId, joinerId)
     res.json(await loadTroopDetail(troopId, userId))
   }),
 )
@@ -518,13 +673,40 @@ router.post(
   asyncHandler(async (req, res) => {
     const userId = req.user!.id
     const inviteId = Number(req.params.id)
-    const [result] = await pool.query<ResultSetHeader>(
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT i.id, i.troop_id, i.to_user_id, i.direction
+       FROM troop_invites i
+       WHERE i.id = ? AND i.status = 'pending'
+       LIMIT 1`,
+      [inviteId],
+    )
+    const row = rows[0]
+    if (!row) throw new AppError('Invitación no válida', 404)
+
+    const direction = String(row.direction ?? 'invite')
+    if (direction === 'invite') {
+      if (Number(row.to_user_id) !== userId) {
+        throw new AppError('Invitación no válida', 404)
+      }
+    } else {
+      const membership = await activeMembership(userId)
+      const role = membership?.role as TroopRole | undefined
+      if (
+        !membership ||
+        Number(membership.troop_id) !== Number(row.troop_id) ||
+        (role !== 'captain' && role !== 'copilot')
+      ) {
+        throw new AppError('Solo el Capitán o el Copiloto pueden rechazar')
+      }
+    }
+
+    await pool.query(
       `UPDATE troop_invites
        SET status = 'rejected', responded_at = NOW()
-       WHERE id = ? AND to_user_id = ? AND status = 'pending'`,
-      [inviteId, userId],
+       WHERE id = ?`,
+      [inviteId],
     )
-    if (result.affectedRows === 0) throw new AppError('Invitación no válida', 404)
     res.json({ ok: true })
   }),
 )
@@ -646,6 +828,43 @@ router.post(
       conn.release()
     }
     res.json({ ok: true })
+  }),
+)
+
+const PLANET_STYLE_IDS = new Set([
+  'rocky_blue',
+  'gas_teal',
+  'lava_amber',
+  'neon_violet',
+  'ice_cyan',
+  'forest_green',
+  'rose_dust',
+  'shadow_slate',
+])
+
+/** Capitán o Copiloto cambia el estilo del planeta. */
+router.patch(
+  '/planet',
+  asyncHandler(async (req, res) => {
+    const userId = req.user!.id
+    const membership = await activeMembership(userId)
+    const role = membership?.role as TroopRole | undefined
+    if (
+      !membership ||
+      (role !== 'captain' && role !== 'copilot')
+    ) {
+      throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
+    }
+    const styleId = String(req.body.planet_style_id ?? '').trim()
+    if (!PLANET_STYLE_IDS.has(styleId)) {
+      throw new AppError('Estilo de planeta no válido')
+    }
+    const troopId = Number(membership.troop_id)
+    await pool.query(
+      `UPDATE troops SET planet_style_id = ? WHERE id = ?`,
+      [styleId, troopId],
+    )
+    res.json(await loadTroopDetail(troopId, userId))
   }),
 )
 
