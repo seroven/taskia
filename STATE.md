@@ -16,7 +16,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 
 ## Decisiones vigentes
 
-- Esquema vivo: migraciones Postgres en `taskia_backend/db/migrations/` (`npm run db:migrate`). El acceso en runtime pasa a TypeORM ([PLAN_TYPEORM.md](PLAN_TYPEORM.md)): entidades, sin `mysqlToPg`, `synchronize` apagado. El DDL no se regenera con el ORM.
+- Esquema vivo: migraciones Postgres en `taskia_backend/db/migrations/` (`npm run db:migrate`). El acceso en runtime es TypeORM ([PLAN_TYPEORM.md](PLAN_TYPEORM.md)): entidades, sin `mysqlToPg`, `synchronize` apagado. El DDL no se regenera con el ORM. Cada conexión fija `search_path` a `PG_SCHEMA` para que los triggers diferidos encuentren las tablas.
 - Prompts de Gemini: `taskia_backend/src/prompts/`. Carpeta de sesión HTTP: `src/middleware/` (una sola; no `middlewares`).
 - Admin semilla: usuario `Sebastian` / `123456` (migración `002_seed_admin.mjs`). Demo: explorador `Seroven` / `123456` con materias de primaria; guardián `Claudia` / `123456` vinculada a Seroven (`004_seed_demo_users.mjs`). Tropas demo: `005_seed_demo_troops.mjs` (~6 tropas, muchos exploradores + guardianes, niveles/XP variados, mismos cursos; password `123456`).
 - UI: Guardián / Explorador (no “padre” / “alumno” / “hijo” en superficies nuevas).

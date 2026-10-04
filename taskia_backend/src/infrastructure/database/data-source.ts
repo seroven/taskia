@@ -25,6 +25,11 @@ export const AppDataSource = new DataSource({
   password: env.pg.dsn ? undefined : env.pg.password,
   database: env.pg.dsn ? undefined : env.pg.database,
   schema: env.pg.schema,
+  // Los triggers diferidos nombran tablas sin schema (assert_active_mission_link).
+  // Sin este search_path, el COMMIT no encuentra study_worlds.
+  extra: {
+    options: `-c search_path=${env.pg.schema},public`,
+  },
   ssl: postgresSsl(),
   namingStrategy: new SnakeNamingStrategy(),
   synchronize: false,

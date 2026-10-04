@@ -585,7 +585,7 @@ Las migraciones MySQL históricas están en `db/migrations_mysql_legacy/` y **no
 
 ## Entidades y transformers
 
-Las 28 tablas de aplicación tienen entidad. El `DataSource` usa `schema: PG_SCHEMA`, así que TypeORM califica las tablas (`"taskia"."users"`). Un fragmento SQL suelto (`FROM xp_awards` dentro de un subquery) no hereda ese schema: el join tiene que ser contra la entidad.
+Las 28 tablas de aplicación tienen entidad. El `DataSource` usa `schema: PG_SCHEMA`, así que TypeORM califica las tablas (`"taskia"."users"`). Cada conexión también fija `search_path` a ese schema: los triggers diferidos, como `assert_active_mission_link`, nombran `study_worlds` sin schema y fallan si la sesión mira solo `public`. Un fragmento SQL suelto (`FROM xp_awards` dentro de un subquery) tampoco hereda el schema del ORM: el join tiene que ser contra la entidad.
 
 **Bigint.** Postgres lo devuelve como string. `bigintTransformer` lo deja como número en la API. Un campo omitido (`undefined`) no se escribe: vale el default de la columna. `null` explícito sí se inserta como `NULL`. Por eso un alta de `users` manda `xpTotal: 0` (la columna no acepta nulo).
 
