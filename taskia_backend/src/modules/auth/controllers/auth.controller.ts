@@ -2,8 +2,8 @@ import {
   clearAuthCookie,
   setAuthCookie,
   signToken,
-} from '../../../middlewares/auth.middleware.js'
-import { asyncHandler } from '../../../middlewares/error.middleware.js'
+} from '../../../middleware/auth.middleware.js'
+import { asyncHandler } from '../../../middleware/error.middleware.js'
 import { AppError } from '../../../shared/errors/app-error.js'
 import { parseLoginBody, parseProfileBody, readAvatarBody } from '../schemas/auth.schema.js'
 import * as authService from '../services/auth.service.js'

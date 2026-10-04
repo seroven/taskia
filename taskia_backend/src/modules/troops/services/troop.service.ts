@@ -10,6 +10,7 @@ import {
   parseTroopName,
 } from '../schemas/troop.schema.js'
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
+import { PLANET_GENERATE_SYSTEM } from '../../../prompts/planet.js'
 import { PRODUCT_TZ, weekStartMonday } from '../../../services/xp.js'
 
 type TroopReq = {
@@ -782,22 +783,6 @@ export async function leaveTroop(req: TroopReq) {
     }
     return({ ok: true })
 }
-
-const PLANET_GENERATE_SYSTEM = `Eres un diseñador de planetas para Taskia, una app infantil de exploración espacial (español latinoamericano).
-Devuelve SOLO un JSON con esta forma exacta:
-{
-  "color": "#rrggbb",
-  "emissive": "#rrggbb",
-  "atmosphere": "#rrggbb" o null,
-  "roughness": número entre 0 y 1,
-  "metalness": número entre 0 y 1,
-  "label": "nombre corto en español (máx 24 caracteres)"
-}
-Reglas:
-- Colores vivos y legibles sobre fondo oscuro del espacio.
-- Sin violencia, miedo extremo ni contenido adulto.
-- Interpreta el pedido del niño de forma amable y creativa.
-- No agregues texto fuera del JSON.`
 
 /** Capitán o Copiloto pide a la IA parámetros procedurales (preview, no guarda). */
 export async function generatePlanet(req: TroopReq) {

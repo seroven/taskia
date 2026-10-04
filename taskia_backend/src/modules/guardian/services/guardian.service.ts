@@ -1,9 +1,10 @@
 import type { ResultSetHeader, RowDataPacket } from '../../../infrastructure/database/pool.js'
 import { pool } from '../../../infrastructure/database/pool.js'
-import { assertParentLinked } from '../../../middlewares/auth.middleware.js'
+import { assertParentLinked } from '../../../middleware/auth.middleware.js'
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
 import { progressFromXpTotal, weekStartMonday } from '../../../services/xp.js'
 import { AppError, extractJson, toInstantISO } from '../../../utils/helpers.js'
+import { guardianTutorSystem } from '../../../prompts/guardian.js'
 import { parseGuardianChatMessage } from '../schemas/guardian.schema.js'
 
 function mapExplorer(r: RowDataPacket) {
@@ -309,19 +310,11 @@ export async function sendChat(
       [parentId, studentId, message],
     )
 
-    const summaryBlock = todaySummary
-      ? `Resumen del progreso de hoy (${today}) para el explorador ${explorer.username}:\n${todaySummary}`
-      : `NO hay resumen diario del día ${today} para el explorador ${explorer.username}. Si el guardián pregunta por el avance de hoy o en general, dilo con claridad: todavía no hay un resumen elaborado para hoy. No inventes datos de progreso.`
-
-    const system = `Eres un asistente para el guardián de Taskia (español latinoamericano, tono adulto, claro y breve).
-El guardián acompaña al explorador "${explorer.username}" pero no juega el tablero.
-${summaryBlock}
-
-Reglas:
-- Habla al guardián, no al explorador.
-- Usa "explorador" y "guardián"; no digas alumno, hijo ni padre.
-- Si no hay resumen de hoy, no inventes métricas ni eventos.
-- Responde en JSON: { "reply": "texto para el guardián" }.`
+    const system = guardianTutorSystem({
+      explorerName: explorer.username,
+      today,
+      todaySummary,
+    })
 
     const historyText = history
       .map((m) => `${m.role === 'user' ? 'Guardián' : 'Asistente'}: ${m.content}`)

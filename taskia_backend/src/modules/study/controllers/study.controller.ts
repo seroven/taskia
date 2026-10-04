@@ -1,4 +1,4 @@
-import { asyncHandler } from '../../../middlewares/error.middleware.js'
+import { asyncHandler } from '../../../middleware/error.middleware.js'
 import * as studyService from '../services/study.service.js'
 
 export const transcribe = asyncHandler(async (req, res) => {

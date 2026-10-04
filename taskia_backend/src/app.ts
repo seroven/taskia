@@ -3,7 +3,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
 import { env } from './config/env.js'
-import { errorHandler } from './middlewares/error.middleware.js'
+import { errorHandler } from './middleware/error.middleware.js'
 import { registerRoutes } from './routes/index.js'
 
 export function createApp() {

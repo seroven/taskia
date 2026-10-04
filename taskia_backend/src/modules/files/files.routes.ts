@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { requireAuth } from '../../middlewares/auth.middleware.js'
+import { requireAuth } from '../../middleware/auth.middleware.js'
 import { sendAvatar } from './controllers/files.controller.js'
 
 const router = Router()

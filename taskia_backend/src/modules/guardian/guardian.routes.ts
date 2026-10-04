@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { requireAuth, requireParent } from '../../middlewares/auth.middleware.js'
+import { requireAuth, requireParent } from '../../middleware/auth.middleware.js'
 import * as guardianController from './controllers/guardian.controller.js'
 
 const router = Router()

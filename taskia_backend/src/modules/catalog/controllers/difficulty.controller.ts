@@ -1,4 +1,4 @@
-import { asyncHandler } from '../../../middlewares/error.middleware.js'
+import { asyncHandler } from '../../../middleware/error.middleware.js'
 import { listDifficulties } from '../repositories/difficulty.repository.js'
 
 export const list = asyncHandler(async (_req, res) => {

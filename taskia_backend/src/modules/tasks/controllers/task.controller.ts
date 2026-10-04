@@ -1,4 +1,4 @@
-import { asyncHandler } from '../../../middlewares/error.middleware.js'
+import { asyncHandler } from '../../../middleware/error.middleware.js'
 import { viewerDates } from '../../../infrastructure/database/civil-date.js'
 import * as taskService from '../services/task.service.js'
 

@@ -1,5 +1,5 @@
 import { viewerDates } from '../../../infrastructure/database/civil-date.js'
-import { asyncHandler } from '../../../middlewares/error.middleware.js'
+import { asyncHandler } from '../../../middleware/error.middleware.js'
 import * as guardianService from '../services/guardian.service.js'
 
 export const listExplorers = asyncHandler(async (req, res) => {
