@@ -6,7 +6,7 @@ import { requireAuth, requireAdmin } from '../middleware/auth.middleware.js'
 import { asyncHandler } from '../middleware/error.middleware.js'
 import { AppError, formatCivilDate, toInstantISO } from '../utils/helpers.js'
 import { roleIdByCode } from '../infrastructure/database/roles.js'
-import { getChallengeDetail } from './worlds.js'
+import { getChallengeDetail } from '../modules/worlds/services/challenge.service.js'
 import { civilDayKey, viewerDates } from '../infrastructure/database/civil-date.js'
 
 const router = Router()

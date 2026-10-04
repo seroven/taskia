@@ -34,8 +34,8 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 
 ## Pendiente
 
-- Reestructura de carpetas: [PLAN_ESTRUCTURA.md](PLAN_ESTRUCTURA.md). Hechos auth, catalog, files, tasks, study, guardian, tropas y `src/prompts/`. Mundos y admin se parten dentro del paso a TypeORM, no antes.
-- TypeORM de todo el acceso a datos, sin cambiar la API: [PLAN_TYPEORM.md](PLAN_TYPEORM.md). T0–T6 hechos (hasta tropas). Siguiente: T7 mundos. Admin sigue en el pool. El frontend sigue después.
+- Reestructura de carpetas: [PLAN_ESTRUCTURA.md](PLAN_ESTRUCTURA.md). Hechos auth, catalog, files, tasks, study, guardian, tropas, mundos y `src/prompts/`. Admin se parte dentro del paso a TypeORM, no antes.
+- TypeORM de todo el acceso a datos, sin cambiar la API: [PLAN_TYPEORM.md](PLAN_TYPEORM.md). T0–T7 hechos (hasta mundos y desafíos). Siguiente: T8 admin, que sigue en el pool. El frontend sigue después.
 - Retomar [ROADMAP_V2.md](ROADMAP_V2.md) cuando se decida (workers / WhatsApp / Flutter).
 - En Render / pd: `npm run db:reset:pd -- --yes` (borra el schema `taskia` y reaplica migraciones) si el schema viejo no cuadra.
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.
