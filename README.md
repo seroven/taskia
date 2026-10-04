@@ -1,6 +1,6 @@
 # Taskia (web)
 
-Qué es y cómo se usa: [PRODUCTO.md](PRODUCTO.md).
+Qué es y cómo se usa: [PRODUCTO.md](docs/producto/PRODUCTO.md). El resto de la documentación está en [docs/README.md](docs/README.md).
 
 - `taskia_frontend` — React + Vite
 - `taskia_backend` — Express + TypeScript (API + Gemini)

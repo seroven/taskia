@@ -2,7 +2,7 @@
 
 Fuente de verdad de la gran update de **core web**: tropas, experiencia, niveles, hub de entrada y barra de progreso. Se trabaja por oleadas; cada oleada grande puede abrir un plan fino al tocarla.
 
-**Relación con otros docs:** [ROADMAP_V2.md](ROADMAP_V2.md) (WhatsApp, workers, Flutter) queda **en pausa**. El producto vivo sigue en [PRODUCTO.md](PRODUCTO.md) / [FUNCIONES.md](FUNCIONES.md); al cerrar oleadas, actualizar [STATE.md](STATE.md) y esos docs de producto.
+**Relación con otros docs:** [ROADMAP_V2.md](ROADMAP_V2.md) (WhatsApp, workers, Flutter) queda **en pausa**. El producto vivo sigue en [PRODUCTO.md](../producto/PRODUCTO.md) / [FUNCIONES.md](../producto/FUNCIONES.md); al cerrar oleadas, actualizar [STATE.md](../../STATE.md) y esos docs de producto.
 
 **Marcado:** `- [ ]` pendiente · `- [x]` hecho.
 
@@ -95,7 +95,7 @@ Vista de **solo lectura**: su explorador (nivel, XP/progreso) y la **tropa** en 
 - [x] Tablas de tropas: tropa, miembros, rol (`captain` / `copilot` / `member`), bajas lógicas si aplica
 - [x] XP semanal agregable (por usuario y por tropa; semana lun–dom vía `xp_awards.week_start`)
 - [x] Contador o regla de **máx. 20 tareas creadas / día / explorador** (documentada; enforce en API oleada 1)
-- [x] Migración `003_tropas_xp.sql` + notas en [BASE_DE_DATOS.md](BASE_DE_DATOS.md)
+- [x] Migración `003_tropas_xp.sql` + notas en [BASE_DE_DATOS.md](../datos/BASE_DE_DATOS.md)
 
 ### Oleada 1 — Motor de XP (sin tropas aún)
 
@@ -137,7 +137,7 @@ Vista de **solo lectura**: su explorador (nivel, XP/progreso) y la **tropa** en 
 ### Oleada 5 — Pulido y docs
 
 - [x] Anti-abuso básico (límites de invitaciones, nombres)
-- [x] Actualizar [FUNCIONES.md](FUNCIONES.md) / [PRODUCTO.md](PRODUCTO.md) / [STATE.md](STATE.md)
+- [x] Actualizar [FUNCIONES.md](../producto/FUNCIONES.md) / [PRODUCTO.md](../producto/PRODUCTO.md) / [STATE.md](../../STATE.md)
 - [x] Revisar copy Capitán / Copiloto / Campamento en tono explorador
 
 ---

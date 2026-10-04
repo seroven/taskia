@@ -2,9 +2,9 @@
 
 Taskia usa **PostgreSQL**. Son **28 tablas** de aplicación (más `schema_migrations`) y viven todas en el schema `taskia`, no en `public`.
 
-Este documento explica para qué sirve cada tabla y cómo se relacionan. Si buscas el *qué hace la app*, eso está en [PRODUCTO.md](PRODUCTO.md); acá está el *dónde se guarda*.
+Este documento explica para qué sirve cada tabla y cómo se relacionan. Si buscas el *qué hace la app*, eso está en [PRODUCTO.md](../producto/PRODUCTO.md); acá está el *dónde se guarda*.
 
-La fuente de verdad del esquema son las migraciones en [`taskia_backend/db/migrations/`](taskia_backend/db/migrations/) (`001_initial.sql`, `003_tropas_xp.sql`, …). Se aplican con `npm run db:migrate`. En runtime el backend lee y escribe con TypeORM: una entidad por tabla en `taskia_backend/src/infrastructure/database/entities/`. `schema_migrations` no es entidad. `synchronize` y `dropSchema` están apagados: un cambio de columna es una migración SQL nueva y, en el mismo cambio, la entidad.
+La fuente de verdad del esquema son las migraciones en [`taskia_backend/db/migrations/`](../../taskia_backend/db/migrations/) (`001_initial.sql`, `003_tropas_xp.sql`, …). Se aplican con `npm run db:migrate`. En runtime el backend lee y escribe con TypeORM: una entidad por tabla en `taskia_backend/src/infrastructure/database/entities/`. `schema_migrations` no es entidad. `synchronize` y `dropSchema` están apagados: un cambio de columna es una migración SQL nueva y, en el mismo cambio, la entidad.
 
 ---
 

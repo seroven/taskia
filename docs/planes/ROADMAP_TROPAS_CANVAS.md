@@ -2,7 +2,7 @@
 
 Fuente de verdad del rediseño del módulo **Tropas** como minijuego espacial interactivo.  
 Producto base (roles, cupo, XP, ranking semanal) sigue en [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md).  
-Al cerrar oleadas de este plan, actualizar [STATE.md](STATE.md), [FUNCIONES.md](FUNCIONES.md) y [PRODUCTO.md](PRODUCTO.md).
+Al cerrar oleadas de este plan, actualizar [STATE.md](../../STATE.md), [FUNCIONES.md](../producto/FUNCIONES.md) y [PRODUCTO.md](../producto/PRODUCTO.md).
 
 **Marcado:** `- [ ]` pendiente · `- [x]` hecho.
 

@@ -16,8 +16,8 @@ Cambia cómo se ve y se recorre. No cambia qué puede hacer cada rol.
 
 ## Antes de tocar UI
 
-1. [FUNCIONES.md](../../../FUNCIONES.md) — Parte B. Si el cambio toca al adulto, también Parte A.
-2. [ROADMAP_TROPAS.md](../../../ROADMAP_TROPAS.md) — «Decisiones cerradas». Las oleadas ya están cerradas.
+1. [FUNCIONES.md](../../../docs/producto/FUNCIONES.md) — Parte B. Si el cambio toca al adulto, también Parte A.
+2. [ROADMAP_TROPAS.md](../../../docs/planes/ROADMAP_TROPAS.md) — «Decisiones cerradas». Las oleadas ya están cerradas.
 3. [STATE.md](../../../STATE.md) — copy y UI vigentes.
 
 Si el código y esos docs se contradicen, manda el código.

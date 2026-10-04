@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Contexto en STATE.md
 
-`STATE.md` en la raíz es la memoria del proyecto. Léelo al empezar una tarea, antes de recorrer el repo. No reemplaza al código: si el archivo y el código se contradicen, manda el código y corrige `STATE.md`.
+`STATE.md` en la raíz es la memoria del proyecto. Léelo al empezar una tarea, antes de recorrer el repo. No reemplaza al código: si el archivo y el código se contradicen, manda el código y corrige `STATE.md`. El resto de la documentación está en `docs/` ([índice](../../docs/README.md)); ábrela solo si la tarea lo necesita.
 
 ## Cuándo actualizarlo
 

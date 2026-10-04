@@ -2,11 +2,11 @@
 
 > **En pausa.** El foco de core web pasó a [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md) (tropas, XP, hub). Este checklist (WhatsApp, workers, Flutter) se retoma cuando se decida.
 
-Fuente de verdad de lo que falta para la versión 2.0. Se trabaja de a pocos; cada ítem grande tendrá su propio plan al tocarlo. El producto vivo hoy está en [PRODUCTO.md](PRODUCTO.md) y el esquema en [BASE_DE_DATOS.md](BASE_DE_DATOS.md).
+Fuente de verdad de lo que falta para la versión 2.0. Se trabaja de a pocos; cada ítem grande tendrá su propio plan al tocarlo. El producto vivo hoy está en [PRODUCTO.md](../producto/PRODUCTO.md) y el esquema en [BASE_DE_DATOS.md](../datos/BASE_DE_DATOS.md).
 
 **Orden de plataforma:** primero web (incluyendo funciones del padre), después reflejo en Flutter.
 
-**Marcado:** `- [ ]` pendiente · `- [x]` hecho. Al cerrar un ítem, actualizar también [STATE.md](STATE.md) si cambia el comportamiento vigente.
+**Marcado:** `- [ ]` pendiente · `- [x]` hecho. Al cerrar un ítem, actualizar también [STATE.md](../../STATE.md) si cambia el comportamiento vigente.
 
 ---
 

@@ -1,6 +1,6 @@
 # Taskia
 
-Guía funcional de lo que ven **Guardián** y **Explorador** hoy: [FUNCIONES.md](FUNCIONES.md). Plan de Tropas/XP/hub: [ROADMAP_TROPAS.md](ROADMAP_TROPAS.md).
+Guía funcional de lo que ven **Guardián** y **Explorador** hoy: [FUNCIONES.md](FUNCIONES.md). Plan de Tropas/XP/hub: [ROADMAP_TROPAS.md](../planes/ROADMAP_TROPAS.md).
 
 Taskia es a la vez la app y **quien ayuda a estudiar**: para el niño, Taskia es el nombre de su guía en el chat y la pizarra. El administrador configura cuentas y materias; el **guardián** acompaña desde su panel; el **explorador** entra a un hub (Tropas | Mundos | Campamento), gana XP y puede unirse a una tropa.
 
@@ -236,4 +236,4 @@ Tema claro u oscuro y un color de acento (azul por defecto; también verde, ámb
 - No hay registro libre en internet: si un niño llega a la pantalla de login sin cuenta, tiene que pedirle a un adulto que lo dé de alta.
 - La app de escritorio (`taskia_desktop`) quedó congelada; el producto vivo es la web.
 
-Para cómo levantarlo en una máquina, ver el [README de la raíz](README.md). Para el detalle de cada paquete, [frontend](taskia_frontend/README.md) y [backend](taskia_backend/README.md). El plan de la versión 2.0 (padres, WhatsApp, workers, Flutter) está en [ROADMAP_V2.md](ROADMAP_V2.md).
+Para cómo levantarlo en una máquina, ver el [README de la raíz](../../README.md). Para el detalle de cada paquete, [frontend](../../taskia_frontend/README.md) y [backend](../../taskia_backend/README.md). El plan de la versión 2.0 (padres, WhatsApp, workers, Flutter) está en [ROADMAP_V2.md](../planes/ROADMAP_V2.md).
