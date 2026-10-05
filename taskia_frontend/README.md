@@ -42,7 +42,7 @@ La navegación no usa React Router: `App.tsx` cambia de vista (`board`, `study`,
 
 ## Cómo correrlo
 
-1. Copia `.env.example` a `.env.development`.
+1. Copia `.env.example` a `.env`.
 2. Asegúrate de que el backend esté en marcha (por defecto `http://localhost:3001`).
 3. Instala y arranca:
 
@@ -51,12 +51,12 @@ npm install
 npm run dev
 ```
 
-Vite usa `--mode development` y lee `.env.development`.
+`npm run dev` lee `.env`. QA y producción usan `.env.qa` y `.env.pd`.
 
 
 | Script                                    | Qué hace                                                           |
 | ----------------------------------------- | ------------------------------------------------------------------ |
-| `npm run dev`                             | Desarrollo local (`.env.development`)                              |
+| `npm run dev`                             | Desarrollo local (`.env`)                                          |
 | `npm run dev:pd`                          | Mismo Vite con `.env.pd`                                           |
 | `npm run build` / `build:qa` / `build:pd` | Build según modo (`qa` o `pd` congela `VITE_API_URL` en el bundle) |
 | `npm run preview` / `preview:pd`          | Sirve el build                                                     |

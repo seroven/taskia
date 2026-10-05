@@ -27,7 +27,7 @@ Gemini vive en `src/services/gemini.ts` (tutor, transcripciones, generación y c
 
 ## Cómo correrlo
 
-1. Copia `.env.example` a `.env.development` y completa Postgres (`PG_*` / `PG_DSN`), `JWT_SECRET` y `GEMINI_API_KEY`.
+1. Copia `.env.example` a `.env` y completa Postgres (`PG_*` / `PG_DSN`), `JWT_SECRET` y `GEMINI_API_KEY`.
 2. `CORS_ORIGIN` debe ser el origen exacto del front (en local, `http://localhost:5173`).
 3. Base de datos (PostgreSQL):
 
@@ -35,7 +35,7 @@ Gemini vive en `src/services/gemini.ts` (tutor, transcripciones, generación y c
 npm install
 npm run db:migrate    # crea PG_SCHEMA + migraciones pendientes
 npm run db:reset      # DROP SCHEMA taskia + vuelve a migrar (local; borra datos)
-npm run dev           # tsx watch + .env.development  (puerto 3001)
+npm run dev           # tsx watch + .env  (puerto 3001)
 ```
 
 Tras migrar en vacío queda el admin `Sebastian` / `123456`, el explorador `Seroven` / `123456` (con materias de primaria) y la guardián `Claudia` / `123456` (vinculada a Seroven). Cámbialos en cuanto puedas.
@@ -43,12 +43,12 @@ Tras migrar en vacío queda el admin `Sebastian` / `123456`, el explorador `Sero
 
 | Script                                  | Env                                                              |
 | --------------------------------------- | ---------------------------------------------------------------- |
-| `npm run dev`                           | `.env.development`                                               |
+| `npm run dev`                           | `.env`                                                           |
 | `npm run dev:pd`                        | `.env.pd` (watch)                                                |
 | `npm run build` / `build:pd`            | Compila a `dist/`                                                |
 | `npm start`                             | `node dist/index.js` (usa el env del proceso; típico en hosting) |
 | `npm run start:pd`                      | `dist/` + `.env.pd` en disco                                     |
-| `npm run db:migrate` / `db:setup`       | Migraciones con `.env.development`                               |
+| `npm run db:migrate` / `db:setup`       | Migraciones con `.env`                                           |
 | `npm run db:reset`                      | Borra schema `taskia` y reaplica migraciones (desarrollo)        |
 | `npm run db:migrate:pd` / `:qa`         | Igual con `.env.pd` / `.env.qa`                                  |
 | `npm run db:reset:pd -- --yes`          | Reset en pd (obligatorio `--yes`; borra datos)                   |

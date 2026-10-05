@@ -42,10 +42,9 @@ const args = process.argv.slice(2)
 const envArg = args.find((a) => a.startsWith('--env='))?.slice('--env='.length)
 const envName = envArg || process.env.TASKIA_ENV || 'development'
 const envFiles: Record<string, string> = {
-  development: '.env.development',
+  development: '.env',
   qa: '.env.qa',
   pd: '.env.pd',
-  production: '.env.production',
 }
 const envFile = envFiles[envName] ?? `.env.${envName}`
 

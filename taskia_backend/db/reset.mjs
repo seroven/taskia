@@ -1,7 +1,7 @@
 /**
  * Taskia — reset del schema de app (borra y recrea).
  *
- *   npm run db:reset              → DROP SCHEMA + migraciones (.env.development)
+ *   npm run db:reset              → DROP SCHEMA + migraciones (.env)
  *   npm run db:reset:qa -- --yes  → igual con .env.qa (pide --yes)
  *   npm run db:reset:pd -- --yes  → igual con .env.pd (obligatorio --yes)
  *
@@ -25,10 +25,9 @@ const forceYes = args.includes('--yes') || args.includes('-y')
 const envArg = args.find((a) => a.startsWith('--env='))?.slice('--env='.length)
 const envName = envArg || process.env.TASKIA_ENV || 'development'
 const envFiles = {
-  development: '.env.development',
+  development: '.env',
   qa: '.env.qa',
   pd: '.env.pd',
-  production: '.env.production',
 }
 const envFile = envFiles[envName] ?? `.env.${envName}`
 

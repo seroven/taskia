@@ -9,8 +9,8 @@ Qué es y cómo se usa: [PRODUCTO.md](docs/producto/PRODUCTO.md). El resto de la
 ## Desarrollo local
 
 1. Copia envs:
-   - `taskia_backend/.env.example` → `.env.development` (completa Postgres, JWT, Gemini)
-   - `taskia_frontend/.env.example` → `.env.development`
+   - `taskia_backend/.env.example` → `.env` (completa Postgres, JWT, Gemini)
+   - `taskia_frontend/.env.example` → `.env`
 2. Base de datos (desde la raíz o `taskia_backend`):
    - `npm run db:migrate` — crea el schema y aplica migraciones pendientes
    - Admin semilla: usuario `Sebastian` / contraseña `123456`

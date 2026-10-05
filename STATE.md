@@ -50,4 +50,4 @@ npm run dev
 npm run build
 ```
 
-Variantes: `dev:pd`, `build:qa`, `build:pd`.
+Local, en front y back, lee `.env`. Los otros archivos son `.env.qa` y `.env.pd`. Variantes: `dev:pd`, `build:qa`, `build:pd`.
