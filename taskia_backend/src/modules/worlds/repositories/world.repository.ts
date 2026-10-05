@@ -470,6 +470,7 @@ export async function loadMissionSession(missionId: number) {
     messages: messages.map((message) => ({
       role: message.role,
       content: message.content,
+      image_url: message.imageUrl,
       created_at: toInstantISO(message.createdAt) ?? '',
     })),
   }
@@ -566,6 +567,7 @@ export async function insertMissionMessage(
   role: string,
   content: string,
   fromVoice = false,
+  imageUrl: string | null = null,
 ) {
   const latency =
     role === 'user'
@@ -578,6 +580,7 @@ export async function insertMissionMessage(
       role,
       content,
       fromVoice,
+      imageUrl,
       replyLatencySeconds: latency.reply_latency_seconds,
       isPause: latency.is_pause,
     }),
@@ -586,6 +589,7 @@ export async function insertMissionMessage(
   return {
     role,
     content,
+    image_url: imageUrl,
     created_at: toInstantISO(createdAt) ?? '',
   }
 }

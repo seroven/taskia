@@ -1,3 +1,4 @@
+import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
 import { callGemini, callGeminiTranscribe } from '../../../infrastructure/gemini/gemini.client.js'
 import { AppError } from '../../../shared/errors/app-error.js'
 import {
@@ -139,7 +140,10 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       )
     }
 
-    const message = parseChatMessage(body)
+    const parsedTurn = parseChatMessage(body)
+    const message = parsedTurn.message
+    const photo = parsedTurn.photoRaw ? decodeStudyPhoto(parsedTurn.photoRaw) : null
+    const imageUrl = photo ? await uploadStudyPhoto(photo) : null
     const allowAiDraw =
       Boolean(body.allow_ai_draw ?? body.allowAiDraw) && task.uses_board
     const boardDescription = task.uses_board
@@ -152,7 +156,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
 
     const context = await loadContext(taskId)
     const userMemory = await loadUserMemory(userId)
-    context.messages.push(await insertMessage(taskId, 'user', message, fromVoice))
+    context.messages.push(await insertMessage(taskId, 'user', message, fromVoice, imageUrl))
     const userTurns = context.messages.filter((m) => m.role === 'user').length
     const updateUserMemory = userTurns % 3 === 0
 
@@ -180,6 +184,10 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       instruction +=
         ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
     }
+    if (photo) {
+      instruction +=
+        ' El niño adjuntó una foto de un ejercicio resuelto en papel. Léela y úsala como referencia. No es la pizarra.'
+    }
 
     const payload = {
       instruction,
@@ -201,6 +209,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       user_memory_summary: truncateChars(userMemory, MAX_MEMORY),
       hints_level: context.hints_level,
       board_has_drawing: boardHas,
+      photo_attached: Boolean(photo),
       child_message: truncateChars(message, fromVoice ? 4000 : 800),
       ...(allowAiDraw ? { allow_ai_draw: true } : {}),
       // Texto de coords solo si no hay imagen (fallback).
@@ -213,6 +222,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       system: tutorSystemPrompt(allowAiDraw),
       user: JSON.stringify(payload),
       boardImageBase64: boardImageRaw || null,
+      photoBase64: photo ? `data:${photo.mime};base64,${photo.base64}` : null,
       usage: { userId, kind: 'task_tutor' },
     })
 

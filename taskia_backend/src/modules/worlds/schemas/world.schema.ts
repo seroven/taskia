@@ -23,12 +23,17 @@ export function parseMissionBody(body: Record<string, unknown>) {
   }
 }
 
+const PHOTO_ONLY = 'Mira la foto de mi ejercicio.'
+
 export function parseMissionChat(body: Record<string, unknown>) {
   const message = String(body.user_message ?? '').trim()
-  const parsed = z.string().min(1, 'Escribe un mensaje').safeParse(message)
-  if (!parsed.success) throw new AppError('Escribe un mensaje')
+  const photoRaw = String(body.photo_base64 ?? body.photoBase64 ?? '').trim()
+  if (!message && !photoRaw) throw new AppError('Escribe un mensaje o manda una foto')
+  const parsed = z.string().min(1).safeParse(message || PHOTO_ONLY)
+  if (!parsed.success) throw new AppError('Escribe un mensaje o manda una foto')
   return {
     message: parsed.data,
+    photoRaw,
     allowAiDraw: Boolean(body.allow_ai_draw),
     fromVoice: Boolean(body.from_voice),
     boardDescription: typeof body.board_description === 'string' ? body.board_description : null,

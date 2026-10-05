@@ -3,6 +3,7 @@ export type TutorPhase = 'understanding' | 'practicing' | 'reviewing'
 export interface StudyMessage {
   role: string
   content: string
+  image_url?: string | null
   created_at: string
 }
 

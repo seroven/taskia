@@ -1,3 +1,4 @@
+import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
 import { missionTutorPrompt } from '../../../prompts/mission-tutor.js'
 import { awardXp, clampEffortScore, xpForMission } from '../../../services/xp.js'
@@ -209,8 +210,16 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     mission.status = 'studying'
   }
   const allowAiDraw = parsed.allowAiDraw && mission.uses_board
+  const photo = parsed.photoRaw ? decodeStudyPhoto(parsed.photoRaw) : null
+  const imageUrl = photo ? await uploadStudyPhoto(photo) : null
   const context = await loadMissionSession(missionId)
-  const userMsg = await insertMissionMessage(missionId, 'user', parsed.message, parsed.fromVoice)
+  const userMsg = await insertMissionMessage(
+    missionId,
+    'user',
+    parsed.message,
+    parsed.fromVoice,
+    imageUrl,
+  )
   context.messages.push(userMsg)
   const userTurns = context.messages.filter((message) => message.role === 'user').length
   if (!mission.uses_board && !context.notebook_context.trim() && userTurns === 1) {
@@ -231,6 +240,10 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   if (parsed.fromVoice) {
     instruction +=
       ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
+  }
+  if (photo) {
+    instruction +=
+      ' El niño adjuntó una foto de un ejercicio resuelto en papel. Léela y úsala como referencia. No es la pizarra.'
   }
 
   const payload = JSON.stringify({
@@ -254,6 +267,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     hints_level: context.hints_level,
     ...(allowAiDraw ? { allow_ai_draw: true } : {}),
     board_has_drawing: boardHas,
+    photo_attached: Boolean(photo),
     ...(!boardImageRaw && parsed.boardDescription?.trim()
       ? { board_drawing: truncateChars(parsed.boardDescription, 500) }
       : {}),
@@ -267,6 +281,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     system: missionTutorPrompt(allowAiDraw),
     user: payload,
     boardImageBase64: boardImageRaw || null,
+    photoBase64: photo ? `data:${photo.mime};base64,${photo.base64}` : null,
     usage: { userId, kind: 'mission_tutor' },
   })
 

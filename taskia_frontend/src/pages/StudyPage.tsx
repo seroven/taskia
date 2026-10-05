@@ -101,7 +101,12 @@ export function StudyPage({ taskId, onBack }: Props) {
 
   async function onSend(
     message: string,
-    options: { includeBoard: boolean; allowAiDraw: boolean; fromVoice?: boolean },
+    options: {
+      includeBoard: boolean
+      allowAiDraw: boolean
+      fromVoice?: boolean
+      photoBase64?: string | null
+    },
   ) {
     setSending(true)
     setChatError(null)
@@ -124,6 +129,7 @@ export function StudyPage({ taskId, onBack }: Props) {
         boardAttach,
         options.allowAiDraw && Boolean(task?.uses_board),
         Boolean(options.fromVoice),
+        options.photoBase64 ?? null,
       )
       setContext(result.context)
       setPhase(result.reply.phase)

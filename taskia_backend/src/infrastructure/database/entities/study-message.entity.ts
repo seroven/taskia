@@ -18,6 +18,9 @@ export class StudyMessage {
   @Column({ type: 'boolean', default: false })
   fromVoice!: boolean
 
+  @Column({ type: 'text', nullable: true })
+  imageUrl!: string | null
+
   @Column({ type: 'int', nullable: true })
   replyLatencySeconds!: number | null
 

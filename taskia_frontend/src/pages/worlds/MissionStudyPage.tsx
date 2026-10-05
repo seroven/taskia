@@ -92,7 +92,12 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
 
   async function onSend(
     message: string,
-    options: { includeBoard: boolean; allowAiDraw: boolean; fromVoice?: boolean },
+    options: {
+      includeBoard: boolean
+      allowAiDraw: boolean
+      fromVoice?: boolean
+      photoBase64?: string | null
+    },
   ) {
     setSending(true)
     setChatError(null)
@@ -114,6 +119,7 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         boardAttach,
         options.allowAiDraw,
         Boolean(options.fromVoice),
+        options.photoBase64 ?? null,
       )
       setContext(result.context)
       setPhase(result.reply.phase)

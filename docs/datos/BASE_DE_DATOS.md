@@ -92,7 +92,7 @@ El progreso dentro del nivel se deriva: `xp_into_level = xp_total % 1000` (1000 
 - `student_daily_summaries` — resumen por explorador y día civil; el worker lo llenará después.
 - `parent_chat_messages` — chat Guardián ↔ IA por explorador y día civil (`chat_date`, el día de quien mira).
 
-En `study_messages` y `study_mission_messages`: `reply_latency_seconds` e `is_pause` (pausa si el explorador tarda más de 30 minutos en responder al tutor).
+En `study_messages` y `study_mission_messages`: `reply_latency_seconds` e `is_pause` (pausa si el explorador tarda más de 30 minutos en responder al tutor). `image_url` guarda la URL de Cloudinary cuando el explorador manda una foto del ejercicio; el archivo no se guarda en Postgres.
 
 ### `courses`
 
@@ -193,6 +193,7 @@ El chat, un mensaje por fila.
 | `role` | text | `user` o `assistant` |
 | `content` | text | |
 | `from_voice` | boolean | se dictó por voz |
+| `image_url` | text | URL de Cloudinary, si mandó una foto. Nulo en el resto |
 | `created_at` | timestamptz | |
 
 Se lee siempre ordenado por `(task_id, created_at)`, que es justo el índice que existe. `from_voice` es lo que permite contar transcripciones aparte en el panel.
@@ -294,7 +295,7 @@ La diferencia con `study_sessions` son dos columnas: acá está `notebook_contex
 
 ### `study_mission_messages`
 
-Igual que `study_messages` pero con `mission_id`: `id`, `mission_id`, `role`, `content`, `from_voice`, `created_at`. Su índice es `(mission_id, id)` en lugar de `(mission_id, created_at)`, así el orden de lectura es estable incluso entre mensajes del mismo segundo.
+Igual que `study_messages` pero con `mission_id`: `id`, `mission_id`, `role`, `content`, `from_voice`, `image_url`, `created_at`. Su índice es `(mission_id, id)` en lugar de `(mission_id, created_at)`, así el orden de lectura es estable incluso entre mensajes del mismo segundo.
 
 ### `study_mission_boards`
 

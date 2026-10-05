@@ -24,9 +24,13 @@ export function parseTranscribeBody(body: Record<string, unknown>) {
   }
 }
 
+const PHOTO_ONLY = 'Mira la foto de mi ejercicio.'
+
 export function parseChatMessage(body: Record<string, unknown>) {
   const message = String(body.user_message ?? body.userMessage ?? '').trim()
-  const parsed = z.string().min(1, 'Escribe un mensaje').safeParse(message)
-  if (!parsed.success) throw new AppError('Escribe un mensaje')
-  return parsed.data
+  const photoRaw = String(body.photo_base64 ?? body.photoBase64 ?? '').trim()
+  if (!message && !photoRaw) throw new AppError('Escribe un mensaje o manda una foto')
+  const parsed = z.string().min(1).safeParse(message || PHOTO_ONLY)
+  if (!parsed.success) throw new AppError('Escribe un mensaje o manda una foto')
+  return { message: parsed.data, photoRaw }
 }

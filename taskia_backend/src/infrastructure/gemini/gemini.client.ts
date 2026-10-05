@@ -19,17 +19,20 @@ export interface LlmUsageContext {
   kind: LlmUsageKind
 }
 
-function stripImageDataUrl(raw: string) {
-  return raw
-    .replace(/^data:image\/png;base64,/, '')
-    .replace(/^data:image\/jpeg;base64,/, '')
+function readInlineImage(raw: string, fallbackMime = 'image/png') {
+  const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/.exec(raw.trim())
+  if (match) {
+    return { mime: match[1] === 'image/jpg' ? 'image/jpeg' : match[1], data: match[2].replace(/\s/g, '') }
+  }
+  return { mime: fallbackMime, data: raw.trim().replace(/\s/g, '') }
 }
 
 export async function callGemini(opts: {
   system: string
   user: string
   boardImageBase64?: string | null
-  boardImages?: Array<{ data: string; caption?: string }>
+  boardImages?: Array<{ data: string; caption?: string; mimeType?: string }>
+  photoBase64?: string | null
   usage?: LlmUsageContext
 }): Promise<string> {
   const apiKey = env.gemini.apiKey.trim().replace(/^["']|["']$/g, '')
@@ -37,22 +40,29 @@ export async function callGemini(opts: {
   const model = env.gemini.model.trim().replace(/^["']|["']$/g, '') || 'gemini-2.0-flash'
 
   const parts: Array<Record<string, unknown>> = [{ text: opts.user }]
-  const images =
-    opts.boardImages && opts.boardImages.length > 0
-      ? opts.boardImages
-      : opts.boardImageBase64?.trim()
-        ? [
-            {
-              data: opts.boardImageBase64,
-              caption:
-                'Imagen de la pizarra del niño. Es la fuente de verdad de lo que dibujó; úsala para entender su respuesta. Si debes dibujar, hazlo con draw_ops/coordenadas de grilla, no a partir de la foto.',
-            },
-          ]
-        : []
+  const images: Array<{ data: string; caption?: string; mimeType?: string }> = []
+  if (opts.boardImages && opts.boardImages.length > 0) {
+    images.push(...opts.boardImages)
+  } else if (opts.boardImageBase64?.trim()) {
+    images.push({
+      data: opts.boardImageBase64,
+      mimeType: 'image/png',
+      caption:
+        'Imagen de la pizarra del niño. Es la fuente de verdad de lo que dibujó; úsala para entender su respuesta. Si debes dibujar, hazlo con draw_ops/coordenadas de grilla, no a partir de la foto.',
+    })
+  }
+  if (opts.photoBase64?.trim()) {
+    images.push({
+      data: opts.photoBase64,
+      mimeType: 'image/jpeg',
+      caption:
+        'Foto que mandó el niño de un ejercicio resuelto en papel. Úsala como referencia de lo que hizo. No es la pizarra: no la copies con draw_ops.',
+    })
+  }
   for (const image of images) {
-    const data = stripImageDataUrl(image.data.trim())
-    if (!data) continue
-    parts.push({ inline_data: { mime_type: 'image/png', data } })
+    const inline = readInlineImage(image.data, image.mimeType || 'image/png')
+    if (!inline.data) continue
+    parts.push({ inline_data: { mime_type: inline.mime, data: inline.data } })
     if (image.caption) {
       parts.push({ text: image.caption })
     }

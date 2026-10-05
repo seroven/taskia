@@ -122,8 +122,8 @@ Cada una es un plan aparte. Dependen del cimiento.
 
 ### 2.6 Fotos en el chat de estudio (alumno)
 
-- [ ] El alumno puede adjuntar imagen en el chat del tutor (tarea y/o misión)
-- [ ] Almacenamiento, límites de tamaño/tipo, envío al modelo
+- [x] El explorador puede adjuntar una foto en el chat de tarea y de misión
+- [x] La foto se sube a Cloudinary y en la base queda `image_url`. Ese turno se la manda a Gemini. JPG, PNG o WebP, achicada antes de enviar
 - [ ] El adulto/padre puede ver esas imágenes donde corresponda en la ficha o el chat del padre (definir en el plan de ese ítem)
 
 ### 2.7 Tutor de tema: cuaderno primero y explicación

@@ -368,6 +368,7 @@ Taskia no debería saltar a “ya terminaste” en la primera frase: el recorrid
 - Burbujas **Tú** y **Taskia**.
 - Mientras Taskia piensa, se nota que está elaborando la respuesta.
 - Campo para escribir la duda o la respuesta y **Enviar**.
+- **Foto:** puede adjuntar una imagen de un ejercicio que ya resolvió, o pegarla con Ctrl+V. Taskia la mira en ese turno. La imagen queda en Cloudinary; en la base solo se guarda la ruta.
 - Puede aparecer el ejercicio activo (título e instrucciones) como parte de la guía.
 
 ### Voz (solo en estudio sin pizarra)
@@ -385,8 +386,8 @@ Así puede dictar el relato del cuaderno o explicar un razonamiento con más com
 Es una grilla de **formas** (cuadros, círculos, triángulos, líneas, texto, sellos, etc.), no un lápiz libre tipo pintura.
 
 - El explorador arma su respuesta en el lienzo.
-- **Enviar pizarra:** Taskia mira lo dibujado (como quien ve una foto del trabajo).
-- **Taskia dibuja:** Taskia puede plantear o marcar el ejercicio en la pizarra.
+- **Revisa mi Dibujo:** Taskia mira lo dibujado (como quien ve una foto del trabajo).
+- **Dibújamelo:** Taskia puede plantear o marcar el ejercicio en la pizarra.
 - En móvil suele alternarse la vista chat / pizarra; en pantallas grandes pueden convivir mejor.
 
 El dibujo que hace Taskia no se “empuja” como si fuera una ficha movible del niño: es parte del enunciado o la guía.

@@ -314,6 +314,42 @@
   width: 100%;
 }
 
+.study-photo-input {
+  display: none;
+}
+
+.study-photo-btn {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.study-photo-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.study-photo-preview img,
+.study-bubble-photo {
+  display: block;
+  max-width: min(240px, 100%);
+  max-height: 180px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.study-bubble-photo {
+  margin: 0 0 8px;
+}
+
+.study-photo-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .study-open-board-btn {
   display: none;
 }

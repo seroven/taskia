@@ -219,6 +219,7 @@ export const api = {
     board?: { description?: string; image_base64?: string | null },
     allowAiDraw = false,
     fromVoice = false,
+    photoBase64: string | null = null,
   ) {
     return request<StudyChatResponse>(`/study/${task_id}/chat`, {
       method: 'POST',
@@ -228,6 +229,7 @@ export const api = {
         board_image_base64: board?.image_base64 ?? null,
         allow_ai_draw: allowAiDraw,
         from_voice: fromVoice,
+        photo_base64: photoBase64,
       }),
     })
   },
@@ -350,6 +352,7 @@ export const api = {
     board?: { description?: string; image_base64?: string | null },
     allowAiDraw = false,
     fromVoice = false,
+    photoBase64: string | null = null,
   ) {
     return request<MissionChatResponse>(
       `/worlds/missions/${mission_id}/chat`,
@@ -361,6 +364,7 @@ export const api = {
           board_image_base64: board?.image_base64 ?? null,
           allow_ai_draw: allowAiDraw,
           from_voice: fromVoice,
+          photo_base64: photoBase64,
         }),
       },
     )

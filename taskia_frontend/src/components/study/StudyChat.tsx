@@ -3,12 +3,14 @@ import {
   useMemo,
   useRef,
   useState,
+  type ClipboardEvent,
   type FormEvent,
   type ReactNode,
 } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Microphone, Stop } from '@phosphor-icons/react'
+import { Camera, Microphone, Stop, X } from '@phosphor-icons/react'
 import { api } from '../../api'
+import { compressStudyPhoto } from '../../lib/studyPhoto'
 import { ModalShell } from '../ui/ModalShell'
 import { SwitchToggle } from '../ui/SwitchToggle'
 import { errorMessage } from '../../lib/errors'
@@ -30,7 +32,12 @@ interface Props {
   onThreadEl?: (el: HTMLDivElement | null) => void
   onSend: (
     message: string,
-    options: { includeBoard: boolean; allowAiDraw: boolean; fromVoice?: boolean },
+    options: {
+      includeBoard: boolean
+      allowAiDraw: boolean
+      fromVoice?: boolean
+      photoBase64?: string | null
+    },
   ) => Promise<void>
 }
 
@@ -125,6 +132,10 @@ export function StudyChat({
   const [includeBoard, setIncludeBoard] = useState(false)
   const [allowAiDraw, setAllowAiDraw] = useState(false)
   const [fromVoiceDraft, setFromVoiceDraft] = useState(false)
+  const [photoData, setPhotoData] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
   const [voiceStatus, setVoiceStatus] = useState<'idle' | 'recording' | 'transcribing'>('idle')
   const [voiceElapsed, setVoiceElapsed] = useState(0)
   const [voiceError, setVoiceError] = useState<string | null>(null)
@@ -152,10 +163,11 @@ export function StudyChat({
       {
         role: 'user',
         content: pendingUser,
+        image_url: pendingPhoto,
         created_at: 'pending',
       },
     ]
-  }, [messages, pendingUser])
+  }, [messages, pendingUser, pendingPhoto])
 
   const lastAssistantIndex =
     messages.length > 0 && messages[messages.length - 1]?.role === 'assistant'
@@ -373,26 +385,59 @@ export function StudyChat({
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     const text = draft.trim()
-    if (!text || sending || voiceBusy || pendingUser) return
+    const photo = photoData
+    if ((!text && !photo) || sending || voiceBusy || pendingUser) return
+    const outgoing = text || 'Mira la foto de mi ejercicio.'
     const sendBoard = includeBoard
     const draw = allowAiDraw
     const voice = fromVoiceDraft
     setDraft('')
     setFromVoiceDraft(false)
-    setPendingUser(text)
+    setPhotoData(null)
+    setPendingPhoto(photo)
+    setPendingUser(outgoing)
     setExpectingReply(true)
     try {
-      await onSend(text, {
+      await onSend(outgoing, {
         includeBoard: sendBoard,
         allowAiDraw: draw,
         fromVoice: voice,
+        photoBase64: photo,
       })
       if (sendBoard) setIncludeBoard(false)
+      setPendingPhoto(null)
     } catch {
       setPendingUser(null)
+      setPendingPhoto(null)
       setExpectingReply(false)
       setDraft(text)
+      setPhotoData(photo)
       setFromVoiceDraft(voice)
+    }
+  }
+
+  function onPastePhoto(event: ClipboardEvent<HTMLFormElement>) {
+    if (sending || voiceBusy) return
+    const data = event.clipboardData
+    if (!data) return
+    const fromFiles = Array.from(data.files).find((file) => file.type.startsWith('image/'))
+    const fromItems = Array.from(data.items)
+      .find((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      ?.getAsFile()
+    const file = fromFiles ?? fromItems
+    if (!file) return
+    event.preventDefault()
+    void onPickPhoto(file)
+  }
+
+  async function onPickPhoto(file: File | undefined) {
+    setPhotoError(null)
+    if (!file) return
+    try {
+      setPhotoData(await compressStudyPhoto(file))
+    } catch (err) {
+      setPhotoData(null)
+      setPhotoError(err instanceof Error ? err.message : 'No pude usar esa foto.')
     }
   }
 
@@ -443,6 +488,13 @@ export function StudyChat({
                 <span className="study-bubble-role">
                   {message.role === 'user' ? 'Tú' : 'Taskia'}
                 </span>
+                {message.image_url ? (
+                  <img
+                    className="study-bubble-photo"
+                    src={message.image_url}
+                    alt="Foto del ejercicio"
+                  />
+                ) : null}
                 <p>{message.content}</p>
               </motion.div>
             )
@@ -493,23 +545,23 @@ export function StudyChat({
       </div>
       </div>
 
-      {(error || (voiceError && voicePrompt !== 'review')) && (
-        <p className="form-error">{error ?? voiceError}</p>
+      {(error || photoError || (voiceError && voicePrompt !== 'review')) && (
+        <p className="form-error">{error ?? photoError ?? voiceError}</p>
       )}
 
-      <form className="study-chat-form" onSubmit={(e) => void onSubmit(e)}>
+      <form className="study-chat-form" onSubmit={(e) => void onSubmit(e)} onPaste={onPastePhoto}>
         {boardControls && (
           <div className="study-chat-toggles">
             <SwitchToggle
               checked={includeBoard}
               disabled={sending || voiceBusy}
-              title="Enviar pizarra"
+              title="Revisa mi Dibujo"
               onChange={setIncludeBoard}
             />
             <SwitchToggle
               checked={allowAiDraw}
               disabled={sending || voiceBusy}
-              title="Taskia dibuja"
+              title="Dibújamelo"
               onChange={setAllowAiDraw}
             />
           </div>
@@ -582,6 +634,32 @@ export function StudyChat({
           </div>
         )}
 
+        <input
+          ref={photoInputRef}
+          className="study-photo-input"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            event.target.value = ''
+            void onPickPhoto(file)
+          }}
+        />
+        {photoData ? (
+          <div className="study-photo-preview">
+            <img src={photoData} alt="Foto lista para enviar" />
+            <button
+              type="button"
+              className="ghost study-photo-remove"
+              disabled={sending || voiceBusy}
+              onClick={() => setPhotoData(null)}
+            >
+              <X size={16} weight="bold" />
+              Quitar foto
+            </button>
+          </div>
+        ) : null}
+
         <textarea
           value={draft}
           onChange={(e) => {
@@ -590,7 +668,7 @@ export function StudyChat({
           }}
           placeholder={
             boardControls
-              ? 'Escribe tu duda… “Enviar pizarra” para que mire tu dibujo; “Taskia dibuja” para que dibuje el ejercicio.'
+              ? 'Escribe tu duda… “Revisa mi Dibujo” para que mire tu dibujo; “Dibújamelo” para que dibuje el ejercicio.'
               : voiceEnabled
                 ? 'Cuéntale a Taskia lo de tu tema. Puedes grabar varias veces, sumarlo aquí y enviar cuando esté listo.'
                 : 'Escribe tu duda o lo que acabas de entender…'
@@ -605,6 +683,16 @@ export function StudyChat({
           </p>
         )}
         <div className="study-chat-send-row">
+          <button
+            type="button"
+            className="ghost study-photo-btn"
+            title="Adjuntar una foto o pegarla con Ctrl+V"
+            disabled={sending || voiceBusy}
+            onClick={() => photoInputRef.current?.click()}
+          >
+            <Camera size={18} weight="fill" />
+            Foto
+          </button>
           {showBoardViewToggle ? (
             <button
               type="button"
@@ -618,7 +706,7 @@ export function StudyChat({
           <button
             type="submit"
             className={`primary study-send-btn${sending ? ' is-loading' : ''}`}
-            disabled={sending || voiceBusy || !draft.trim()}
+            disabled={sending || voiceBusy || (!draft.trim() && !photoData)}
             aria-busy={sending}
           >
           <AnimatePresence mode="wait" initial={false}>
