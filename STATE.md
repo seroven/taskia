@@ -33,6 +33,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - Tripulación, XP y hub ya están en el producto. [ROADMAP_V2.md](docs/planes/ROADMAP_V2.md) sigue en pausa.
 - La documentación larga vive en `docs/` ([índice](docs/README.md)): producto, datos y planes. `STATE.md` se queda en la raíz.
 - El trabajo del día se commitea y se sube a `staging`.
+- La pantalla interna (explorador, admin o guardián) se guarda en `sessionStorage` de la pestaña. Recargar vuelve al mismo lugar; cerrar la pestaña lo olvida. Cada cuenta lee solo lo suyo.
 
 ## Pendiente
 

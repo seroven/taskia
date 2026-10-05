@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AccentProvider } from './accent'
 import { AuthProvider, useAuth } from './auth'
@@ -17,18 +17,12 @@ import { WorldDetail } from './pages/worlds/WorldDetail'
 import { CourseDetail } from './pages/worlds/CourseDetail'
 import { MissionStudyPage } from './pages/worlds/MissionStudyPage'
 import { ChallengePlayPage } from './pages/worlds/ChallengePlayPage'
+import {
+  readExplorerPlace,
+  writeExplorerPlace,
+  type ExplorerView,
+} from './lib/sessionPlace'
 import type { Task } from './types'
-
-type AppView =
-  | 'hub'
-  | 'troops'
-  | 'board'
-  | 'study'
-  | 'worlds'
-  | 'world'
-  | 'course'
-  | 'mission'
-  | 'challenge'
 
 const viewTransition = {
   initial: { opacity: 0, y: 14, scale: 0.985 },
@@ -44,28 +38,28 @@ const challengeTransition = {
   transition: { duration: 0.34, ease: [0.22, 1, 0.36, 1] as const },
 }
 
-function AppRouter() {
-  const { user, loading } = useAuth()
-  const [view, setView] = useState<AppView>('hub')
-  const [studyTaskId, setStudyTaskId] = useState<number | null>(null)
-  const [worldId, setWorldId] = useState<number | null>(null)
-  const [courseId, setCourseId] = useState<number | null>(null)
-  const [missionId, setMissionId] = useState<number | null>(null)
-  const [challengeId, setChallengeId] = useState<number | null>(null)
-  /** Tras salir de un desafío/misión, volver a course o world. */
-  const [challengeReturn, setChallengeReturn] = useState<'world' | 'course'>('world')
+function ExplorerApp({ userId }: { userId: number }) {
+  const [saved] = useState(() => readExplorerPlace(userId))
+  const [view, setView] = useState<ExplorerView>(saved.view)
+  const [studyTaskId, setStudyTaskId] = useState<number | null>(saved.studyTaskId)
+  const [worldId, setWorldId] = useState<number | null>(saved.worldId)
+  const [courseId, setCourseId] = useState<number | null>(saved.courseId)
+  const [missionId, setMissionId] = useState<number | null>(saved.missionId)
+  const [challengeId, setChallengeId] = useState<number | null>(saved.challengeId)
+  /** Tras salir de un desafío, volver a course o world. */
+  const [challengeReturn, setChallengeReturn] = useState<'world' | 'course'>(saved.challengeReturn)
 
-  if (loading) {
-    return (
-      <div className="boot-screen">
-        <AppLoader message="Cargando…" />
-      </div>
-    )
-  }
-
-  if (!user) return <AuthPage />
-  if (user.role === 'admin') return <AdminPage />
-  if (user.role === 'parent') return <GuardianPage />
+  useEffect(() => {
+    writeExplorerPlace(userId, {
+      view,
+      studyTaskId,
+      worldId,
+      courseId,
+      missionId,
+      challengeId,
+      challengeReturn,
+    })
+  }, [userId, view, studyTaskId, worldId, courseId, missionId, challengeId, challengeReturn])
 
   const goHub = () => {
     setView('hub')
@@ -194,6 +188,23 @@ function AppRouter() {
       </AnimatePresence>
     </div>
   )
+}
+
+function AppRouter() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="boot-screen">
+        <AppLoader message="Cargando…" />
+      </div>
+    )
+  }
+
+  if (!user) return <AuthPage />
+  if (user.role === 'admin') return <AdminPage key={user.id} />
+  if (user.role === 'parent') return <GuardianPage key={user.id} />
+  return <ExplorerApp key={user.id} userId={user.id} />
 }
 
 export default function App() {

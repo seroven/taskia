@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Shield } from '@phosphor-icons/react'
 import { api } from '../api'
+import { useAuth } from '../auth'
 import { AppearanceTools } from '../components/AppearanceTools'
 import { AppLoader } from '../components/AppLoader'
 import { EmptyState } from '../components/EmptyState'
@@ -8,6 +9,7 @@ import { SessionActions } from '../components/SessionActions'
 import { TextField } from '../components/ui/Field'
 import { SwitchToggle } from '../components/ui/SwitchToggle'
 import { errorMessage } from '../lib/errors'
+import { readGuardianExplorerId, writeGuardianExplorerId } from '../lib/sessionPlace'
 import type {
   ParentChatMessage,
   ParentExplorer,
@@ -18,9 +20,12 @@ import { troopRoleLabel } from '../lib/troopsTypes'
 import { useToast } from '../toast'
 
 export function GuardianPage() {
+  const { user } = useAuth()
   const { showToast } = useToast()
   const [explorers, setExplorers] = useState<ParentExplorer[]>([])
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<number | null>(() =>
+    user ? readGuardianExplorerId(user.id) : null,
+  )
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
@@ -30,7 +35,11 @@ export function GuardianPage() {
       try {
         const list = await api.listParentExplorers()
         setExplorers(list)
-        setSelectedId(list[0]?.id ?? null)
+        setSelectedId((current) =>
+          current != null && list.some((explorer) => explorer.id === current)
+            ? current
+            : (list[0]?.id ?? null),
+        )
       } catch (err) {
         setError(errorMessage(err))
       } finally {
@@ -38,6 +47,11 @@ export function GuardianPage() {
       }
     })()
   }, [])
+
+  useEffect(() => {
+    if (loading || !user || selectedId == null) return
+    writeGuardianExplorerId(user.id, selectedId)
+  }, [loading, user, selectedId])
 
   const selected = explorers.find((e) => e.id === selectedId) ?? null
 

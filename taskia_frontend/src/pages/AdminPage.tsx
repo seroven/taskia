@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useAuth } from '../auth'
 import { AppearanceTools } from '../components/AppearanceTools'
 import { SessionActions } from '../components/SessionActions'
+import { readAdminPlace, writeAdminPlace } from '../lib/sessionPlace'
 import { AdminAccountsPage } from './admin/AdminAccountsPage'
 import { AdminDashboard } from './admin/AdminDashboard'
 import { AdminStudentPage } from './admin/AdminStudentPage'
@@ -9,9 +11,16 @@ import { AdminStudentPage } from './admin/AdminStudentPage'
 type AdminView = 'dashboard' | 'accounts'
 
 export function AdminPage() {
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [view, setView] = useState<AdminView>('dashboard')
-  const [returnView, setReturnView] = useState<AdminView>('dashboard')
+  const { user } = useAuth()
+  const [saved] = useState(() => readAdminPlace(user?.id ?? 0))
+  const [selectedId, setSelectedId] = useState<number | null>(saved.selectedId)
+  const [view, setView] = useState<AdminView>(saved.view)
+  const [returnView, setReturnView] = useState<AdminView>(saved.returnView)
+
+  useEffect(() => {
+    if (!user) return
+    writeAdminPlace(user.id, { view, selectedId, returnView })
+  }, [user, view, selectedId, returnView])
 
   function openExplorer(id: number, from: AdminView) {
     setReturnView(from)

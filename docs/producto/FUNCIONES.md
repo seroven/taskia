@@ -142,6 +142,8 @@ No verá el Campamento, Mundos ni Tripulación del explorador: esa es otra entra
 | **Un** solo explorador | Arriba hay un chip con su nombre, ya activo. |
 | **Varios** | Los nombres van en chips, uno al lado del otro. Solo uno está activo. Al tocar otro, cambian el chat y el progreso. |
 
+Recargar la pestaña deja activo el mismo explorador. Cerrar la pestaña vuelve al primero de la lista.
+
 Al elegir un explorador, la pantalla se parte en dos: el **chat a la izquierda** (el mismo ancho y aspecto que el chat de estudio del explorador, no toda la página) y, a la derecha, cards de **progreso** y de **avisos**.
 
 El chat y el progreso son **por explorador**. Los avisos son de la **cuenta del guardián** (una sola configuración para todos) y se ven igual en la columna derecha.
@@ -251,7 +253,7 @@ El tono de botones y columnas está pensado para él: claro y cercano (Por hacer
 
 ### Después de entrar
 
-El explorador llega al **hub**, no directo al tablero. Tres puertas: **Tripulación** (cerrada, con el aviso de que se está armando), **Mundos**, **Campamento**. En la cabecera ve su **barra de nivel/XP**, apariencia, cuenta y salir.
+El explorador llega al **hub**, no directo al tablero. Tres puertas: **Tripulación** (cerrada, con el aviso de que se está armando), **Mundos**, **Campamento**. En la cabecera ve su **barra de nivel/XP**, apariencia, cuenta y salir. Si recarga la pestaña, sigue en la misma pantalla (hub, Campamento, estudio, mundo, misión o desafío). Cerrar la pestaña olvida ese lugar y la próxima entrada abre el hub.
 
 Dentro de Campamento o Mundos:
 
