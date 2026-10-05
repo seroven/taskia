@@ -1,7 +1,10 @@
+import { bindLabels, checkTheorems } from './algebra.js'
+import { parseMath } from './expression.js'
 import { expandScene, hasExpander } from './expand.js'
 import { coverScene, unsupportedOf } from './facts.js'
 import type { BoardFact } from './facts.js'
 import { nearly } from './geom.js'
+import { rEq, rFromClaim } from './rational.js'
 import { compileBoard } from './layout.js'
 import { measureTarget, type Measure } from './measure.js'
 import { parseScene } from './schema.js'
@@ -11,6 +14,7 @@ import {
   type BoardItem,
   type Scene,
   type SceneIssue,
+  type SceneTask,
 } from './types.js'
 
 export type Prepared =
@@ -24,16 +28,26 @@ export function prepareScene(raw: unknown): Prepared {
   if (expanded.issues.length > 0) return { ok: false, issues: expanded.issues }
   const solved = solveCanon(expanded.canon)
   if (solved.issues.length > 0) return { ok: false, issues: solved.issues }
-  const drawn = compileBoard(solved.canon, solved.points)
+  const theorems = checkTheorems(solved.canon, solved.points)
+  if (theorems.length > 0) return { ok: false, issues: theorems }
+  const labels = bindLabels(solved.canon, expanded.marks, solved.points)
+  if (labels.issues.length > 0) return { ok: false, issues: labels.issues }
+  const drawn = compileBoard(solved.canon, solved.points, expanded.marks)
   if (drawn.issues.length > 0) return { ok: false, issues: drawn.issues }
   const answer = parsed.scene.task
-    ? measureTarget(parsed.scene, solved.canon, solved.points, parsed.scene.task.target)
+    ? measureTarget(parsed.scene, solved.canon, solved.points, parsed.scene.task.target, labels.bindings)
     : { status: 'unverifiable' as const }
-  if (parsed.scene.task?.claimedAnswer != null && answer.status === 'value') {
-    const claimed = Number(String(parsed.scene.task.claimedAnswer).replace(',', '.'))
-    if (!Number.isFinite(claimed) || !nearly(claimed, answer.value)) {
+  if (parsed.scene.task && answer.status !== 'value' && needsGrade(parsed.scene.task)) {
+    return { ok: false, issues: [{ code: 'UNDERDETERMINED', objectId: parsed.scene.task.target }] }
+  }
+  if (parsed.scene.task?.type === 'multiple_choice') {
+    const hits = (parsed.scene.task.choices ?? []).filter((choice) => choiceAgrees(choice.text, answer))
+    if (hits.length !== 1) {
       return { ok: false, issues: [{ code: 'ANSWER_MISMATCH', objectId: parsed.scene.task.target }] }
     }
+  }
+  if (parsed.scene.task?.claimedAnswer != null && !claimAgrees(answer, parsed.scene.task.claimedAnswer)) {
+    return { ok: false, issues: [{ code: 'ANSWER_MISMATCH', objectId: parsed.scene.task.target }] }
   }
   return { ok: true, scene: parsed.scene, items: drawn.items, answer }
 }
@@ -99,6 +113,34 @@ export async function drawSceneWithRetries(opts: {
     }
   }
   return { ok: false, fallback: SCENE_FALLBACK_MESSAGE, issues: publicIssues(issues), attempts }
+}
+
+function needsGrade(task: SceneTask) {
+  if (task.type === 'multiple_choice') return true
+  const parsed = parseMath(task.target)
+  return parsed.ok && parsed.math.kind === 'value' && parsed.math.variables.length > 1
+}
+
+function choiceAgrees(text: string, answer: Measure) {
+  if (answer.status !== 'value') return false
+  const match = text.match(/-?\d+(?:[.,]\d+)?/)
+  if (!match) return false
+  if (answer.exact === 'exact') {
+    const parsed = rFromClaim(match[0])
+    return parsed != null && rEq(parsed, answer.rational)
+  }
+  const numeric = Number(match[0].replace(',', '.'))
+  return Number.isFinite(numeric) && nearly(numeric, answer.value)
+}
+
+function claimAgrees(answer: Measure, claimed: number | string) {
+  if (answer.status !== 'value') return false
+  if (answer.exact === 'exact') {
+    const parsed = rFromClaim(claimed)
+    return parsed != null && rEq(parsed, answer.rational)
+  }
+  const numeric = typeof claimed === 'number' ? claimed : Number(String(claimed).replace(',', '.'))
+  return Number.isFinite(numeric) && nearly(numeric, answer.value)
 }
 
 function unknownSceneType(raw: unknown) {

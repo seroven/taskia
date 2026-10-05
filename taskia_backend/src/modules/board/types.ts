@@ -27,11 +27,14 @@ export type SceneIssue = {
 
 export type Turn = 'left' | 'right'
 
+export type SceneChoice = { id: string; text: string }
+
 export type SceneTask = {
-  type: 'enter_value'
+  type: 'enter_value' | 'multiple_choice'
   target: string
   unit?: string
   claimedAnswer?: number | string
+  choices?: SceneChoice[]
 }
 
 export type SceneObject = {

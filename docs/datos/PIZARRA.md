@@ -101,9 +101,21 @@ La cobertura compara los hechos con la escena: tipo de objeto que ya existe, rel
 
 ### Expresiones
 
-El parser acepta números, una letra, `+ − * /`, paréntesis y un solo `=`. La coma vale como decimal. Unicode `− × · ÷` se normaliza. Un carácter fuera de esa lista, un nombre de varias letras o algo como `alert(1)` es `BAD_EXPRESSION`. No hay `eval`.
+El parser acepta números, una letra, `+ − * /`, paréntesis y un solo `=`. La coma vale como decimal exacto: `0,5` es `1/2`. Los números son fracciones de enteros grandes, reducidas. Dividir por cero, o pasar de 12 dígitos, es `BAD_EXPRESSION`. Unicode `− × · ÷` se normaliza. Un carácter fuera de esa lista, un nombre de varias letras o algo como `alert(1)` también. No hay `eval`.
 
-Resolver es afín y de una variable: `x + 5 = 12` da 7. Dos letras, o una ecuación que no es una recta en esa letra, no se resuelven: la medida queda `unverifiable`, no es un fallo de dibujo.
+Resolver es afín y de una variable: `x + 5 = 12` da `7/1`. Esa respuesta es exacta: lo que el modelo dice haber obtenido tiene que ser la misma fracción. Dos letras no se resuelven como sistema. `x+y` se calcula solo cuando cada letra ya salió de una etiqueta. Una longitud, un área o un perímetro con π sigue siendo aproximado y se compara con `nearly`.
+
+### Circunferencias
+
+El centro sin otra restricción queda en el origen. `point_on_circle` usa `angleDeg` si el enunciado lo da. Si no, los puntos salen del este hacia el antihorario: 0°, 90°, 180°, 270° y después de 36° en 36°. `rotation` en el círculo desplaza esos ángulos y no cambia la respuesta.
+
+`radius` une el centro con un punto. `diameter` con un solo extremo crea el otro como `d.far`. `chord` exige los dos puntos sobre el círculo. `tangent_line` mide dos radios, centrada en el punto de tangencia, y queda perpendicular al radio: el ángulo es `90/1`. Los extremos son `L1.a` y `L1.b`. `secant` alarga un radio más allá de cada punto del círculo. `central_angle` coloca el segundo punto con `degrees` cuando el enunciado lo trae. `inscribed_angle` no acepta la medida: si comparte arco con un central, vale la mitad exacta, y el vértice que nadie ubicó cae en el arco contrario. Si esa mitad no coincide con el ángulo medido en la escena, no se dibuja.
+
+Una etiqueta `3x` es la ecuación `3x = medida exacta`. Cada letra sale de una sola etiqueta. Si aparece en dos y no dan lo mismo, `OVERCONSTRAINED`.
+
+`multiple_choice` va en `task`, de 2 a 5 opciones, y no se dibuja. La respuesta calculada tiene que coincidir con una sola. Si no, `ANSWER_MISMATCH`.
+
+Las marcas (`right_angle`, `equal_side`, `parallel`, `dimension`, `angle_arc`) no entran al solver. Se arman después de pasar a celdas, con tamaño fijo, con línea, flecha y texto. Una marca que contradice la figura es `BAD_SCHEMA`.
 
 ## El pipeline
 
@@ -156,4 +168,4 @@ No hay sellos ni lápiz libre. El arrastre de una forma violeta no existe. Resal
 
 ## Qué este motor no hace
 
-No hay fracciones, gráfico de barras, marcas de ángulo del libro, tangentes, alternativa múltiple ni suma en columna. No hay cuadrado ni triángulo general como macros: el triángulo rectángulo y el `path` sí. No hay racionales de enteros grandes: las cuentas siguen en los números de ahora. El catálogo del prompt está escrito en `prompt.ts`. Un test falla si un expansor registrado no aparece ahí con su nombre. El registro (`registerExpander`, `registerMeasurer`) existe para que una primitiva nueva sume su expansor y su medidor sin reescribir el solver. Taskia dibuja el enunciado, no la solución.
+No hay fracciones dibujadas, gráfico de barras ni suma en columna. No hay cuadrado ni triángulo general como macros: el triángulo rectángulo y el `path` sí. El catálogo del prompt está escrito en `prompt.ts`. Un test falla si un expansor registrado no aparece ahí con su nombre. El registro (`registerExpander`, `registerMeasurer`) existe para que una primitiva nueva sume su expansor y su medidor sin reescribir el solver. Taskia dibuja el enunciado, no la solución.

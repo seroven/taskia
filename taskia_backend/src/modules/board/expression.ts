@@ -1,7 +1,8 @@
+import { rAdd, rDiv, rFromDecimal, rIsZero, rMul, rNeg, rSub, type Rational } from './rational.js'
 import type { SceneIssue } from './types.js'
 
 export type Expr =
-  | { kind: 'num'; value: number }
+  | { kind: 'num'; value: Rational }
   | { kind: 'var'; name: string }
   | { kind: 'neg'; value: Expr }
   | { kind: 'bin'; op: '+' | '-' | '*' | '/'; left: Expr; right: Expr }
@@ -34,28 +35,24 @@ export function parseMath(raw: string): { ok: true; math: ParsedMath } | { ok: f
   }
 }
 
-export function evalExpr(expr: Expr, bindings: Record<string, number>): number | null {
+export function evalExpr(expr: Expr, bindings: Record<string, Rational>): Rational | null {
   if (expr.kind === 'num') return expr.value
-  if (expr.kind === 'var') {
-    const value = bindings[expr.name]
-    return value == null || !Number.isFinite(value) ? null : value
-  }
+  if (expr.kind === 'var') return bindings[expr.name] ?? null
   if (expr.kind === 'neg') {
     const value = evalExpr(expr.value, bindings)
-    return value == null ? null : -value
+    return value == null ? null : rNeg(value)
   }
   const left = evalExpr(expr.left, bindings)
   const right = evalExpr(expr.right, bindings)
   if (left == null || right == null) return null
-  if (expr.op === '+') return left + right
-  if (expr.op === '-') return left - right
-  if (expr.op === '*') return left * right
-  if (right === 0) return null
-  return left / right
+  if (expr.op === '+') return rAdd(left, right)
+  if (expr.op === '-') return rSub(left, right)
+  if (expr.op === '*') return rMul(left, right)
+  return rDiv(left, right)
 }
 
 /** Resuelve una ecuación afín de una sola letra. Si no hay un valor único, null. */
-export function solveFor(math: ParsedMath, variable: string): number | null {
+export function solveFor(math: ParsedMath, variable: string): Rational | null {
   if (math.kind === 'value') {
     if (math.variables.length === 0) return evalExpr(math.expr, {})
     return null
@@ -64,14 +61,13 @@ export function solveFor(math: ParsedMath, variable: string): number | null {
   const left = affine(math.left, variable)
   const right = affine(math.right, variable)
   if (!left || !right) return null
-  const a = left.a - right.a
-  const b = right.b - left.b
-  if (Math.abs(a) < 1e-9) return null
-  const value = b / a
-  return Number.isFinite(value) ? value : null
+  const a = rSub(left.a, right.a)
+  const b = rSub(right.b, left.b)
+  if (!a || !b || rIsZero(a)) return null
+  return rDiv(b, a)
 }
 
-export function sidesMatch(math: ParsedMath, bindings: Record<string, number>, tol = 1e-6): boolean | null {
+export function sidesMatch(math: ParsedMath, bindings: Record<string, Rational>): boolean | null {
   if (math.kind === 'value') {
     const value = evalExpr(math.expr, bindings)
     return value == null ? null : true
@@ -79,8 +75,7 @@ export function sidesMatch(math: ParsedMath, bindings: Record<string, number>, t
   const left = evalExpr(math.left, bindings)
   const right = evalExpr(math.right, bindings)
   if (left == null || right == null) return null
-  const scale = Math.max(1, Math.abs(left), Math.abs(right))
-  return Math.abs(left - right) <= tol * scale
+  return left.n === right.n && left.d === right.d
 }
 
 function fail(): { ok: false; issues: SceneIssue[] } {
@@ -103,24 +98,45 @@ function uniqueVars(expr: Expr): string[] {
   return [...new Set([...uniqueVars(expr.left), ...uniqueVars(expr.right)])]
 }
 
-function affine(expr: Expr, variable: string): { a: number; b: number } | null {
-  if (expr.kind === 'num') return { a: 0, b: expr.value }
-  if (expr.kind === 'var') return expr.name === variable ? { a: 1, b: 0 } : null
+function affine(expr: Expr, variable: string): { a: Rational; b: Rational } | null {
+  const zero = rFromDecimal('0')
+  const one = rFromDecimal('1')
+  if (!zero || !one) return null
+  if (expr.kind === 'num') return { a: zero, b: expr.value }
+  if (expr.kind === 'var') return expr.name === variable ? { a: one, b: zero } : null
   if (expr.kind === 'neg') {
     const inner = affine(expr.value, variable)
-    return inner ? { a: -inner.a, b: -inner.b } : null
+    if (!inner) return null
+    const a = rNeg(inner.a)
+    const b = rNeg(inner.b)
+    return a && b ? { a, b } : null
   }
   const left = affine(expr.left, variable)
   const right = affine(expr.right, variable)
   if (!left || !right) return null
-  if (expr.op === '+') return { a: left.a + right.a, b: left.b + right.b }
-  if (expr.op === '-') return { a: left.a - right.a, b: left.b - right.b }
-  if (expr.op === '*') {
-    if (left.a !== 0 && right.a !== 0) return null
-    return { a: left.a * right.b + right.a * left.b, b: left.b * right.b }
+  if (expr.op === '+') {
+    const a = rAdd(left.a, right.a)
+    const b = rAdd(left.b, right.b)
+    return a && b ? { a, b } : null
   }
-  if (right.a !== 0 || right.b === 0) return null
-  return { a: left.a / right.b, b: left.b / right.b }
+  if (expr.op === '-') {
+    const a = rSub(left.a, right.a)
+    const b = rSub(left.b, right.b)
+    return a && b ? { a, b } : null
+  }
+  if (expr.op === '*') {
+    if (!rIsZero(left.a) && !rIsZero(right.a)) return null
+    const leftTerm = rMul(left.a, right.b)
+    const rightTerm = rMul(right.a, left.b)
+    if (!leftTerm || !rightTerm) return null
+    const a = rAdd(leftTerm, rightTerm)
+    const b = rMul(left.b, right.b)
+    return a && b ? { a, b } : null
+  }
+  if (!rIsZero(right.a) || rIsZero(right.b)) return null
+  const a = rDiv(left.a, right.b)
+  const b = rDiv(left.b, right.b)
+  return a && b ? { a, b } : null
 }
 
 class Parser {
@@ -194,10 +210,10 @@ class Parser {
       if (!/[0-9]/.test(this.peek())) throw new Error('dec')
       while (/[0-9]/.test(this.peek())) this.i += 1
     }
-    const raw = this.text.slice(start, this.i).replace(',', '.')
-    if (!raw || raw === '.') throw new Error('num')
-    const value = Number(raw)
-    if (!Number.isFinite(value)) throw new Error('num')
+    const raw = this.text.slice(start, this.i)
+    if (!raw || raw === '.' || raw === ',') throw new Error('num')
+    const value = rFromDecimal(raw)
+    if (!value) throw new Error('num')
     return value
   }
 }

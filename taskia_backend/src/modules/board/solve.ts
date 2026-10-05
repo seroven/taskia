@@ -31,6 +31,12 @@ export function solveCanon(canon: Canon[]): Solved {
         produced.add(vertex)
       }
     }
+    if (item.kind === 'on_circle') produced.add(item.id)
+    if (item.kind === 'tangent' || item.kind === 'secant') {
+      produced.add(`${item.id}.a`)
+      produced.add(`${item.id}.b`)
+    }
+    if (item.kind === 'antipode') produced.add(item.id)
   }
 
   let guard = 0
@@ -45,8 +51,10 @@ export function solveCanon(canon: Canon[]): Solved {
       if (item.kind === 'perpendicular' && placeOffset(item, canon, points, true)) progressed = true
       if (item.kind === 'reflection' && placeReflection(item, canon, points)) progressed = true
       if (item.kind === 'polygon' && placePolygon(item, points, issues)) progressed = true
+      if (placeCircle(item, canon, points)) progressed = true
     }
   }
+  checkOnCircle(canon, points, issues)
 
   for (const item of canon) {
     if (item.kind !== 'segment' || item.length == null) continue
@@ -293,7 +301,198 @@ function refsOf(item: Canon): string[] {
   if (item.kind === 'parallel' || item.kind === 'perpendicular') return [item.of, item.through]
   if (item.kind === 'reflection') return [item.of, item.over]
   if (item.kind === 'polygon') return [...item.vertices]
+  if (item.kind === 'tangent') return [item.at]
+  if (item.kind === 'secant' || item.kind === 'chord') return item.kind === 'secant' ? [...item.through] : [item.from, item.to]
+  if (item.kind === 'central') return [item.from, item.to]
+  if (item.kind === 'inscribed') return [item.vertex, item.from, item.to]
+  if (item.kind === 'antipode') return [item.through]
   return []
+}
+
+function placeCircle(item: Canon, canon: Canon[], points: Map<string, PointState>) {
+  if (item.kind === 'circle') return placeCenter(item, canon, points)
+  if (item.kind === 'on_circle' && item.angleDeg != null) return placePolar(item.id, item.circle, item.angleDeg, canon, points)
+  if (item.kind === 'central') return placeCentral(item, canon, points)
+  if (item.kind === 'inscribed') return placeInscribed(item, canon, points)
+  if (item.kind === 'on_circle') return placeDefaultOnCircle(item, canon, points)
+  if (item.kind === 'antipode') return placeAntipode(item, canon, points)
+  if (item.kind === 'tangent') return placeTangent(item, canon, points)
+  if (item.kind === 'secant') return placeSecant(item, canon, points)
+  return false
+}
+
+function placeCenter(circle: Extract<Canon, { kind: 'circle' }>, canon: Canon[], points: Map<string, PointState>) {
+  if (ready(points, circle.center)) return false
+  if (canon.some((item) => item.kind === 'on_circle' && item.id === circle.center)) return false
+  if (canon.some((item) => item.kind === 'point' && item.id === circle.center && item.at)) return false
+  points.set(circle.center, { x: 0, y: 0 })
+  return true
+}
+
+function placePolar(id: string, circleId: string, degrees: number, canon: Canon[], points: Map<string, PointState>) {
+  if (ready(points, id)) return false
+  const circle = canon.find((item) => item.kind === 'circle' && item.id === circleId)
+  if (!circle || circle.kind !== 'circle') return false
+  const center = ready(points, circle.center)
+  if (!center) return false
+  const rad = ((degrees + (circle.rotation ?? 0)) * Math.PI) / 180
+  points.set(id, { x: center.x + circle.radius * Math.cos(rad), y: center.y + circle.radius * Math.sin(rad) })
+  return true
+}
+
+function placeCentral(item: Extract<Canon, { kind: 'central' }>, canon: Canon[], points: Map<string, PointState>) {
+  if (item.degrees == null || ready(points, item.to)) return false
+  const circle = canon.find((row) => row.kind === 'circle' && row.id === item.circle)
+  if (!circle || circle.kind !== 'circle') return false
+  const center = ready(points, circle.center)
+  if (!center) return false
+  if (!ready(points, item.from)) {
+    const on = canon.find((row) => row.kind === 'on_circle' && row.id === item.from && row.angleDeg == null)
+    if (!on) return false
+    return placePolar(item.from, item.circle, defaultDegrees(defaultSlot(canon, item.from)), canon, points)
+  }
+  const from = ready(points, item.from)
+  if (!from) return false
+  const fromDeg = bearing(center, from)
+  const rad = ((fromDeg + item.degrees) * Math.PI) / 180
+  points.set(item.to, {
+    x: center.x + circle.radius * Math.cos(rad),
+    y: center.y + circle.radius * Math.sin(rad),
+  })
+  return true
+}
+
+function placeInscribed(item: Extract<Canon, { kind: 'inscribed' }>, canon: Canon[], points: Map<string, PointState>) {
+  if (ready(points, item.vertex)) return false
+  const circle = canon.find((row) => row.kind === 'circle' && row.id === item.circle)
+  if (!circle || circle.kind !== 'circle') return false
+  const center = ready(points, circle.center)
+  const from = ready(points, item.from)
+  const to = ready(points, item.to)
+  if (!center || !from || !to) return false
+  const central = item.sameArc
+    ? canon.find((row) => row.kind === 'central' && row.id === item.sameArc)
+    : null
+  const fromDeg = bearing(center, from)
+  const sweep =
+    central && central.kind === 'central' && central.degrees != null
+      ? central.degrees
+      : minorSweep(fromDeg, bearing(center, to))
+  const rad = ((fromDeg + sweep / 2 + 180) * Math.PI) / 180
+  points.set(item.vertex, {
+    x: center.x + circle.radius * Math.cos(rad),
+    y: center.y + circle.radius * Math.sin(rad),
+  })
+  return true
+}
+
+function placeDefaultOnCircle(item: Extract<Canon, { kind: 'on_circle' }>, canon: Canon[], points: Map<string, PointState>) {
+  if (canon.some((row) => row.kind === 'inscribed' && row.vertex === item.id)) return false
+  if (canon.some((row) => row.kind === 'central' && row.degrees != null && row.to === item.id)) return false
+  return placePolar(item.id, item.circle, defaultDegrees(defaultSlot(canon, item.id)), canon, points)
+}
+
+function placeAntipode(item: Extract<Canon, { kind: 'antipode' }>, canon: Canon[], points: Map<string, PointState>) {
+  if (ready(points, item.id)) return false
+  const circle = canon.find((row) => row.kind === 'circle' && row.id === item.circle)
+  if (!circle || circle.kind !== 'circle') return false
+  const center = ready(points, circle.center)
+  const through = ready(points, item.through)
+  if (!center || !through) return false
+  points.set(item.id, { x: 2 * center.x - through.x, y: 2 * center.y - through.y })
+  return true
+}
+
+function placeTangent(item: Extract<Canon, { kind: 'tangent' }>, canon: Canon[], points: Map<string, PointState>) {
+  if (ready(points, `${item.id}.a`) && ready(points, `${item.id}.b`)) return false
+  const circle = canon.find((row) => row.kind === 'circle' && row.id === item.circle)
+  if (!circle || circle.kind !== 'circle') return false
+  const center = ready(points, circle.center)
+  const at = ready(points, item.at)
+  if (!center || !at) return false
+  const dx = at.x - center.x
+  const dy = at.y - center.y
+  const len = Math.hypot(dx, dy) || 1
+  const px = -dy / len
+  const py = dx / len
+  points.set(`${item.id}.a`, { x: at.x + px * circle.radius, y: at.y + py * circle.radius })
+  points.set(`${item.id}.b`, { x: at.x - px * circle.radius, y: at.y - py * circle.radius })
+  return true
+}
+
+function placeSecant(item: Extract<Canon, { kind: 'secant' }>, canon: Canon[], points: Map<string, PointState>) {
+  if (ready(points, `${item.id}.a`) && ready(points, `${item.id}.b`)) return false
+  const circle = canon.find((row) => row.kind === 'circle' && row.id === item.circle)
+  if (!circle || circle.kind !== 'circle') return false
+  const a = ready(points, item.through[0])
+  const b = ready(points, item.through[1])
+  if (!a || !b) return false
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const len = Math.hypot(dx, dy) || 1
+  points.set(`${item.id}.a`, { x: a.x - (dx / len) * circle.radius, y: a.y - (dy / len) * circle.radius })
+  points.set(`${item.id}.b`, { x: b.x + (dx / len) * circle.radius, y: b.y + (dy / len) * circle.radius })
+  return true
+}
+
+function checkOnCircle(canon: Canon[], points: Map<string, PointState>, issues: SceneIssue[]) {
+  const watch: Array<{ id: string; circle: string; sourceId: string }> = []
+  for (const item of canon) {
+    if (item.kind === 'on_circle' || item.kind === 'tangent') {
+      watch.push({ id: item.kind === 'tangent' ? item.at : item.id, circle: item.circle, sourceId: item.sourceId })
+    }
+    if (item.kind === 'chord') {
+      watch.push({ id: item.from, circle: item.circle, sourceId: item.sourceId })
+      watch.push({ id: item.to, circle: item.circle, sourceId: item.sourceId })
+    }
+    if (item.kind === 'central' || item.kind === 'inscribed') {
+      watch.push({ id: item.from, circle: item.circle, sourceId: item.sourceId })
+      watch.push({ id: item.to, circle: item.circle, sourceId: item.sourceId })
+      if (item.kind === 'inscribed') watch.push({ id: item.vertex, circle: item.circle, sourceId: item.sourceId })
+    }
+  }
+  for (const item of watch) {
+    const circle = canon.find((row) => row.kind === 'circle' && row.id === item.circle)
+    if (!circle || circle.kind !== 'circle') {
+      issues.push({ code: 'BAD_REFERENCE', objectId: item.sourceId })
+      continue
+    }
+    const center = ready(points, circle.center)
+    const point = ready(points, item.id)
+    if (!center || !point) continue
+    if (!nearly(dist(center, point), circle.radius)) {
+      issues.push({ code: 'SIDE_MISMATCH', objectId: item.sourceId })
+    }
+  }
+}
+
+function defaultSlot(canon: Canon[], id: string) {
+  let slot = 0
+  for (const item of canon) {
+    if (item.kind !== 'on_circle' || item.angleDeg != null) continue
+    if (canon.some((row) => row.kind === 'inscribed' && row.vertex === item.id)) continue
+    if (item.id === id) return slot
+    slot += 1
+  }
+  return slot
+}
+
+function defaultDegrees(slot: number) {
+  if (slot < 4) return [0, 90, 180, 270][slot] ?? 0
+  return (slot - 3) * 36
+}
+
+function bearing(center: Pt, point: Pt) {
+  let deg = (Math.atan2(point.y - center.y, point.x - center.x) * 180) / Math.PI
+  if (deg < 0) deg += 360
+  return deg
+}
+
+function minorSweep(fromDeg: number, toDeg: number) {
+  let sweep = toDeg - fromDeg
+  while (sweep <= -180) sweep += 360
+  while (sweep > 180) sweep -= 360
+  return sweep
 }
 
 function segmentEnds(canon: Canon[], id: string) {

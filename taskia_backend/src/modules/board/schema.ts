@@ -24,6 +24,15 @@ const TYPES = new Set([
   'perpendicular_to',
   'reflection_of',
   'intersection_of',
+  'point_on_circle',
+  'radius',
+  'diameter',
+  'chord',
+  'tangent_line',
+  'secant',
+  'central_angle',
+  'inscribed_angle',
+  'mark',
 ])
 
 export function parseScene(raw: unknown): { ok: true; scene: Scene } | { ok: false; issues: SceneIssue[] } {
@@ -111,6 +120,65 @@ function checkObject(object: SceneObject): SceneIssue | null {
   }
   if (object.type === 'circle') {
     if (!isRef(object.center) || !positive(object.radius)) return { code: 'BAD_SCHEMA', objectId: id }
+    return rotationOk(object, id)
+  }
+  if (object.type === 'point_on_circle') {
+    if (!isRef(object.circle)) return { code: 'BAD_SCHEMA', objectId: id }
+    if (object.angleDeg != null && num(object.angleDeg) == null) return { code: 'BAD_SCHEMA', objectId: id }
+    return null
+  }
+  if (object.type === 'radius') {
+    if (!isRef(object.circle) || !isRef(object.to)) return { code: 'BAD_SCHEMA', objectId: id }
+    return null
+  }
+  if (object.type === 'diameter') {
+    if (!isRef(object.circle)) return { code: 'BAD_SCHEMA', objectId: id }
+    const pair = isRef(object.from) && isRef(object.to)
+    const one = isRef(object.through) && object.from == null && object.to == null
+    if (!pair && !one) return { code: 'BAD_SCHEMA', objectId: id }
+    return null
+  }
+  if (object.type === 'chord') {
+    if (!isRef(object.circle) || !isRef(object.from) || !isRef(object.to)) return { code: 'BAD_SCHEMA', objectId: id }
+    return null
+  }
+  if (object.type === 'tangent_line') {
+    if (!isRef(object.circle) || !isRef(object.at)) return { code: 'BAD_SCHEMA', objectId: id }
+    if (object.arrows != null && typeof object.arrows !== 'boolean') return { code: 'BAD_SCHEMA', objectId: id }
+    return null
+  }
+  if (object.type === 'secant') {
+    if (!isRef(object.circle) || !Array.isArray(object.through) || object.through.length !== 2) {
+      return { code: 'BAD_SCHEMA', objectId: id }
+    }
+    if (!object.through.every((ref) => isRef(ref))) return { code: 'BAD_SCHEMA', objectId: id }
+    return null
+  }
+  if (object.type === 'central_angle') {
+    if (!isRef(object.circle) || !isRef(object.from) || !isRef(object.to)) return { code: 'BAD_SCHEMA', objectId: id }
+    if (object.degrees != null && !positive(object.degrees)) return { code: 'BAD_SCHEMA', objectId: id }
+    if (object.major != null && typeof object.major !== 'boolean') return { code: 'BAD_SCHEMA', objectId: id }
+    return null
+  }
+  if (object.type === 'inscribed_angle') {
+    if (!isRef(object.circle) || !isRef(object.vertex) || !isRef(object.from) || !isRef(object.to)) {
+      return { code: 'BAD_SCHEMA', objectId: id }
+    }
+    if (object.degrees != null) return { code: 'BAD_SCHEMA', objectId: id }
+    if (object.sameArc != null && !isRef(object.sameArc)) return { code: 'BAD_SCHEMA', objectId: id }
+    return null
+  }
+  if (object.type === 'mark') {
+    const kinds = new Set(['right_angle', 'equal_side', 'parallel', 'dimension', 'angle_arc'])
+    if (typeof object.kind !== 'string' || !kinds.has(object.kind) || !isRef(object.of)) {
+      return { code: 'BAD_SCHEMA', objectId: id }
+    }
+    if ((object.kind === 'dimension' || object.kind === 'angle_arc') && (typeof object.text !== 'string' || !object.text.trim() || object.text.length > 16)) {
+      return { code: 'BAD_SCHEMA', objectId: id }
+    }
+    if (object.group != null && (typeof object.group !== 'string' || !/^[a-z0-9]{1,4}$/.test(object.group))) {
+      return { code: 'BAD_SCHEMA', objectId: id }
+    }
     return null
   }
   if (object.type === 'arc' || object.type === 'angle') {
@@ -175,11 +243,32 @@ function parseTask(raw: unknown): { ok: true; task: SceneTask } | { ok: false; i
   if (raw == null) return null
   if (!raw || typeof raw !== 'object') return { ok: false, issues: [{ code: 'BAD_SCHEMA' }] }
   const rec = raw as Record<string, unknown>
-  if (rec.type !== 'enter_value' || typeof rec.target !== 'string' || !rec.target.trim()) {
+  if ((rec.type !== 'enter_value' && rec.type !== 'multiple_choice') || typeof rec.target !== 'string' || !rec.target.trim()) {
     return { ok: false, issues: [{ code: 'BAD_SCHEMA' }] }
   }
-  const task: SceneTask = { type: 'enter_value', target: rec.target.trim() }
+  const task: SceneTask = { type: rec.type, target: rec.target.trim() }
   if (typeof rec.unit === 'string' && rec.unit.trim()) task.unit = rec.unit.trim().slice(0, 16)
+  if (rec.type === 'multiple_choice') {
+    if (rec.claimedAnswer != null) return { ok: false, issues: [{ code: 'BAD_SCHEMA' }] }
+    if (!Array.isArray(rec.choices) || rec.choices.length < 2 || rec.choices.length > 5) {
+      return { ok: false, issues: [{ code: 'BAD_SCHEMA' }] }
+    }
+    const choices = []
+    const seen = new Set<string>()
+    for (const choice of rec.choices) {
+      if (!choice || typeof choice !== 'object') return { ok: false, issues: [{ code: 'BAD_SCHEMA' }] }
+      const row = choice as { id?: unknown; text?: unknown }
+      const id = typeof row.id === 'string' ? row.id : ''
+      const text = typeof row.text === 'string' ? row.text.trim() : ''
+      if (!/^[a-z]$/.test(id) || !text || text.length > 20 || seen.has(id)) {
+        return { ok: false, issues: [{ code: 'BAD_SCHEMA' }] }
+      }
+      seen.add(id)
+      choices.push({ id, text })
+    }
+    task.choices = choices
+    return { ok: true, task }
+  }
   if (typeof rec.claimedAnswer === 'number' && Number.isFinite(rec.claimedAnswer)) {
     task.claimedAnswer = rec.claimedAnswer
   } else if (typeof rec.claimedAnswer === 'string' && rec.claimedAnswer.trim()) {

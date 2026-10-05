@@ -1,12 +1,12 @@
 import { defaultLabels, formatMeasure, rotateAround } from './geom.js'
-import { parseMath, type ParsedMath } from './expression.js'
+import { evalExpr, parseMath, type ParsedMath } from './expression.js'
 import { MAX_CANON, type Pt, type Scene, type SceneIssue, type SceneObject } from './types.js'
 
 export type Canon =
   | { kind: 'point'; id: string; at?: Pt; sourceId: string }
   | { kind: 'segment'; id: string; from: string; to: string; label?: string; length?: number; sourceId: string; interactive?: boolean }
   | { kind: 'polygon'; id: string; vertices: string[]; sides?: Record<string, number>; angles?: Record<string, number>; sourceId: string }
-  | { kind: 'circle'; id: string; center: string; radius: number; label?: string; sourceId: string; interactive?: boolean }
+  | { kind: 'circle'; id: string; center: string; radius: number; label?: string; rotation?: number; sourceId: string; interactive?: boolean }
   | { kind: 'arc'; id: string; center: string; from: string; to: string; sourceId: string }
   | { kind: 'angle'; id: string; vertex: string; from: string; to: string; degrees?: number; label?: string; sourceId: string }
   | { kind: 'label'; id: string; text: string; of: string; sourceId: string }
@@ -18,8 +18,30 @@ export type Canon =
   | { kind: 'perpendicular'; id: string; of: string; through: string; length: number; side: 'left' | 'right'; sourceId: string }
   | { kind: 'reflection'; id: string; of: string; over: string; sourceId: string }
   | { kind: 'intersection'; id: string; of: [string, string]; sourceId: string }
+  | { kind: 'on_circle'; id: string; circle: string; angleDeg: number | null; sourceId: string }
+  | { kind: 'tangent'; id: string; circle: string; at: string; sourceId: string }
+  | { kind: 'secant'; id: string; circle: string; through: [string, string]; sourceId: string }
+  | { kind: 'central'; id: string; circle: string; from: string; to: string; degrees?: number; major?: boolean; label?: string; sourceId: string }
+  | { kind: 'inscribed'; id: string; circle: string; vertex: string; from: string; to: string; sameArc?: string; label?: string; sourceId: string }
+  | { kind: 'antipode'; id: string; circle: string; through: string; sourceId: string }
+  | { kind: 'chord'; id: string; circle: string; from: string; to: string; sourceId: string }
 
-type Expander = (object: SceneObject, out: Canon[], issues: SceneIssue[]) => void
+export type Mark = {
+  id: string
+  kind: 'right_angle' | 'equal_side' | 'parallel' | 'dimension' | 'angle_arc'
+  of: string
+  group?: string
+  text?: string
+  sourceId: string
+}
+
+type Expander = (
+  object: SceneObject,
+  out: Canon[],
+  issues: SceneIssue[],
+  marks: Mark[],
+  scene: Scene,
+) => void
 
 const expanders = new Map<string, Expander>()
 
@@ -35,8 +57,9 @@ export function hasExpander(type: string) {
   return expanders.has(type)
 }
 
-export function expandScene(scene: Scene): { canon: Canon[]; issues: SceneIssue[] } {
+export function expandScene(scene: Scene): { canon: Canon[]; marks: Mark[]; issues: SceneIssue[] } {
   const canon: Canon[] = []
+  const marks: Mark[] = []
   const issues: SceneIssue[] = []
   for (const object of scene.objects) {
     const expander = expanders.get(object.type)
@@ -44,10 +67,10 @@ export function expandScene(scene: Scene): { canon: Canon[]; issues: SceneIssue[
       issues.push({ code: 'BAD_SCHEMA', objectId: object.id })
       continue
     }
-    expander(object, canon, issues)
+    expander(object, canon, issues, marks, scene)
   }
   if (canon.length > MAX_CANON) issues.push({ code: 'BAD_SCHEMA' })
-  return { canon, issues }
+  return { canon, marks, issues }
 }
 
 function vertexId(shapeId: string, label: string) {
@@ -213,6 +236,7 @@ registerExpander('circle', (object, out) => {
     label: typeof object.label === 'string' ? object.label : undefined,
     sourceId: object.id,
     interactive: interactive(object),
+    ...(typeof object.rotation === 'number' ? { rotation: object.rotation } : {}),
   })
 })
 
@@ -278,6 +302,14 @@ registerExpander('expression', (object, out, issues) => {
     issues.push({ code: 'BAD_EXPRESSION', objectId: object.id })
     return
   }
+  if (
+    parsed.math.kind === 'value' &&
+    parsed.math.variables.length === 0 &&
+    !evalExpr(parsed.math.expr, {})
+  ) {
+    issues.push({ code: 'BAD_EXPRESSION', objectId: object.id })
+    return
+  }
   out.push({
     kind: 'expression',
     id: object.id,
@@ -331,3 +363,189 @@ registerExpander('intersection_of', (object, out) => {
   const of = object.of as [string, string]
   out.push({ kind: 'intersection', id: object.id, of, sourceId: object.id })
 })
+
+registerExpander('point_on_circle', (object, out) => {
+  out.push({ kind: 'point', id: object.id, sourceId: object.id })
+  out.push({
+    kind: 'on_circle',
+    id: object.id,
+    circle: String(object.circle),
+    angleDeg: typeof object.angleDeg === 'number' ? object.angleDeg : null,
+    sourceId: object.id,
+  })
+})
+
+registerExpander('radius', (object, out, issues, _marks, scene) => {
+  const center = circleCenter(scene, object.circle)
+  if (!center) {
+    issues.push({ code: 'BAD_REFERENCE', objectId: object.id })
+    return
+  }
+  out.push({
+    kind: 'segment',
+    id: object.id,
+    from: center,
+    to: String(object.to),
+    label: typeof object.label === 'string' ? object.label : undefined,
+    sourceId: object.id,
+  })
+})
+
+registerExpander('diameter', (object, out, issues, _marks, scene) => {
+  const center = circleCenter(scene, object.circle)
+  if (!center) {
+    issues.push({ code: 'BAD_REFERENCE', objectId: object.id })
+    return
+  }
+  const from = typeof object.from === 'string' ? object.from : typeof object.through === 'string' ? object.through : ''
+  const to = typeof object.to === 'string' ? object.to : `${object.id}.far`
+  if (!from) {
+    issues.push({ code: 'BAD_SCHEMA', objectId: object.id })
+    return
+  }
+  if (typeof object.to !== 'string') {
+    out.push({ kind: 'antipode', id: to, circle: String(object.circle), through: from, sourceId: object.id })
+    out.push({ kind: 'point', id: to, sourceId: object.id })
+  }
+  out.push({
+    kind: 'segment',
+    id: object.id,
+    from,
+    to,
+    label: typeof object.label === 'string' ? object.label : undefined,
+    sourceId: object.id,
+  })
+  void center
+})
+
+registerExpander('chord', (object, out) => {
+  out.push({
+    kind: 'segment',
+    id: object.id,
+    from: String(object.from),
+    to: String(object.to),
+    label: typeof object.label === 'string' ? object.label : undefined,
+    sourceId: object.id,
+  })
+  out.push({
+    kind: 'chord',
+    id: object.id,
+    circle: String(object.circle),
+    from: String(object.from),
+    to: String(object.to),
+    sourceId: object.id,
+  })
+})
+
+registerExpander('tangent_line', (object, out) => {
+  const a = `${object.id}.a`
+  const b = `${object.id}.b`
+  out.push({ kind: 'point', id: a, sourceId: object.id })
+  out.push({ kind: 'point', id: b, sourceId: object.id })
+  out.push({
+    kind: 'segment',
+    id: object.id,
+    from: a,
+    to: b,
+    label: typeof object.label === 'string' ? object.label : undefined,
+    sourceId: object.id,
+  })
+  out.push({
+    kind: 'tangent',
+    id: object.id,
+    circle: String(object.circle),
+    at: String(object.at),
+    sourceId: object.id,
+  })
+})
+
+registerExpander('secant', (object, out) => {
+  const through = object.through as [string, string]
+  const a = `${object.id}.a`
+  const b = `${object.id}.b`
+  out.push({ kind: 'point', id: a, sourceId: object.id })
+  out.push({ kind: 'point', id: b, sourceId: object.id })
+  out.push({
+    kind: 'segment',
+    id: object.id,
+    from: a,
+    to: b,
+    label: typeof object.label === 'string' ? object.label : undefined,
+    sourceId: object.id,
+  })
+  out.push({ kind: 'secant', id: object.id, circle: String(object.circle), through, sourceId: object.id })
+})
+
+registerExpander('central_angle', (object, out, issues, _marks, scene) => {
+  const center = circleCenter(scene, object.circle)
+  if (!center) {
+    issues.push({ code: 'BAD_REFERENCE', objectId: object.id })
+    return
+  }
+  out.push({
+    kind: 'central',
+    id: object.id,
+    circle: String(object.circle),
+    from: String(object.from),
+    to: String(object.to),
+    ...(typeof object.degrees === 'number' ? { degrees: object.degrees } : {}),
+    ...(object.major === true ? { major: true } : {}),
+    ...(typeof object.label === 'string' ? { label: object.label } : {}),
+    sourceId: object.id,
+  })
+  out.push({
+    kind: 'angle',
+    id: object.id,
+    vertex: center,
+    from: String(object.from),
+    to: String(object.to),
+    label: typeof object.label === 'string' ? object.label : undefined,
+    sourceId: object.id,
+  })
+})
+
+registerExpander('inscribed_angle', (object, out) => {
+  out.push({
+    kind: 'inscribed',
+    id: object.id,
+    circle: String(object.circle),
+    vertex: String(object.vertex),
+    from: String(object.from),
+    to: String(object.to),
+    ...(typeof object.sameArc === 'string' ? { sameArc: object.sameArc } : {}),
+    ...(typeof object.label === 'string' ? { label: object.label } : {}),
+    sourceId: object.id,
+  })
+  out.push({
+    kind: 'angle',
+    id: object.id,
+    vertex: String(object.vertex),
+    from: String(object.from),
+    to: String(object.to),
+    label: typeof object.label === 'string' ? object.label : undefined,
+    sourceId: object.id,
+  })
+})
+
+registerExpander('mark', (object, _out, issues, marks) => {
+  const kind = object.kind
+  const allowed = new Set(['right_angle', 'equal_side', 'parallel', 'dimension', 'angle_arc'])
+  if (typeof kind !== 'string' || !allowed.has(kind) || typeof object.of !== 'string') {
+    issues.push({ code: 'BAD_SCHEMA', objectId: object.id })
+    return
+  }
+  marks.push({
+    id: object.id,
+    kind: kind as Mark['kind'],
+    of: object.of,
+    ...(typeof object.group === 'string' ? { group: object.group } : {}),
+    ...(typeof object.text === 'string' ? { text: object.text } : {}),
+    sourceId: object.id,
+  })
+})
+
+function circleCenter(scene: Scene | undefined, circleId: unknown) {
+  if (!scene || typeof circleId !== 'string') return ''
+  const circle = scene.objects.find((object) => object.id === circleId && object.type === 'circle')
+  return circle && typeof circle.center === 'string' ? circle.center : ''
+}

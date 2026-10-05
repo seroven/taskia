@@ -1,4 +1,6 @@
-import type { Canon } from './expand.js'
+import type { Canon, Mark } from './expand.js'
+import { angleDegrees, dist, nearly } from './geom.js'
+import { rFromClaim, rToNumber } from './rational.js'
 import { GRID_COLS, GRID_ROWS, type BoardItem, type Pt, type SceneIssue } from './types.js'
 
 const MARGIN = 10
@@ -10,6 +12,7 @@ type Placed = { col: number; row: number }
 export function compileBoard(
   canon: Canon[],
   points: Map<string, Pt>,
+  marks: Mark[] = [],
 ): { items: BoardItem[]; issues: SceneIssue[] } {
   const issues: SceneIssue[] = []
   const cloud = new Map(points)
@@ -57,6 +60,18 @@ export function compileBoard(
       })
       if (item.label) {
         placeText(items, occupied, issues, `${item.id}.label`, item.label, center, { col: center.col + radius, row: center.row }, layer, color)
+      }
+    }
+    if (item.kind === 'angle' && item.label) {
+      const vertex = placed.get(item.vertex)
+      const from = placed.get(item.from)
+      const to = placed.get(item.to)
+      if (vertex && from && to) {
+        const mid = {
+          col: Math.round((from.col + to.col) / 2),
+          row: Math.round((from.row + to.row) / 2),
+        }
+        placeText(items, occupied, issues, `${item.id}.label`, item.label, vertex, mid, layer, color)
       }
     }
     if (item.kind === 'arc') {
@@ -132,6 +147,8 @@ export function compileBoard(
     }
   }
 
+  issues.push(...compileMarks(canon, points, placed, items, occupied, marks))
+
   for (const item of items) {
     if (item.col < 0 || item.row < 0 || item.col >= GRID_COLS || item.row >= GRID_ROWS) {
       issues.push({ code: 'OUT_OF_BOUNDS', objectId: item.id })
@@ -173,6 +190,227 @@ function layout(points: Map<string, Pt>) {
   }
   placed.set('__scale__', { col: scale, row: scale })
   return placed
+}
+
+function compileMarks(
+  canon: Canon[],
+  points: Map<string, Pt>,
+  placed: Map<string, Placed>,
+  items: BoardItem[],
+  occupied: Array<{ col: number; row: number; w: number; h: number; id: string }>,
+  marks: Mark[],
+) {
+  const issues: SceneIssue[] = []
+  const lengths = new Map<string, number[]>()
+  const directions = new Map<string, Pt[]>()
+  for (const mark of marks) {
+    const before = items.length
+    if (mark.kind === 'right_angle') drawRightAngle(canon, points, placed, items, issues, mark)
+    if (mark.kind === 'equal_side' || mark.kind === 'parallel') {
+      drawTicks(canon, points, placed, items, issues, mark, lengths, directions)
+    }
+    if (mark.kind === 'dimension') drawDimension(canon, points, placed, items, occupied, issues, mark)
+    if (mark.kind === 'angle_arc') drawAngleArc(canon, placed, items, occupied, issues, mark)
+    if (items.length - before > 8) items.splice(before + 8)
+  }
+  for (const [key, group] of lengths) {
+    if (group.some((value) => !nearly(value, group[0]!))) issues.push({ code: 'BAD_SCHEMA', objectId: key })
+  }
+  for (const [key, group] of directions) {
+    const first = group[0]
+    if (!first) continue
+    const parallel = group.every((dir) => {
+      const denom = Math.hypot(first.x, first.y) * Math.hypot(dir.x, dir.y)
+      if (denom === 0) return false
+      return Math.abs((first.x * dir.x + first.y * dir.y) / denom) > 0.98
+    })
+    if (!parallel) issues.push({ code: 'BAD_SCHEMA', objectId: key })
+  }
+  return issues
+}
+
+function drawRightAngle(
+  canon: Canon[],
+  points: Map<string, Pt>,
+  placed: Map<string, Placed>,
+  items: BoardItem[],
+  issues: SceneIssue[],
+  mark: Mark,
+) {
+  const angle = canon.find((item) => item.kind === 'angle' && item.id === mark.of)
+  if (!angle || angle.kind !== 'angle') {
+    issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+    return
+  }
+  const vertex = points.get(angle.vertex)
+  const from = points.get(angle.from)
+  const to = points.get(angle.to)
+  const cell = placed.get(angle.vertex)
+  const cellFrom = placed.get(angle.from)
+  const cellTo = placed.get(angle.to)
+  if (!vertex || !from || !to || !cell || !cellFrom || !cellTo) {
+    issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+    return
+  }
+  if (!nearly(angleDegrees(from, vertex, to), 90)) {
+    issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+    return
+  }
+  const u = step(cell, cellFrom, 3)
+  const v = step(cell, cellTo, 3)
+  const p1 = { col: cell.col + u.col, row: cell.row + u.row }
+  const corner = { col: cell.col + u.col + v.col, row: cell.row + u.row + v.row }
+  const p3 = { col: cell.col + v.col, row: cell.row + v.row }
+  items.push(lineItem(`${mark.id}.mark`, p1, corner, 'ai', 'violet'))
+  items.push(lineItem(`${mark.id}.mark2`, corner, p3, 'ai', 'violet'))
+}
+
+function drawTicks(
+  canon: Canon[],
+  points: Map<string, Pt>,
+  placed: Map<string, Placed>,
+  items: BoardItem[],
+  issues: SceneIssue[],
+  mark: Mark,
+  lengths: Map<string, number[]>,
+  directions: Map<string, Pt[]>,
+) {
+  const segment = canon.find((item) => item.kind === 'segment' && item.id === mark.of)
+  if (!segment || segment.kind !== 'segment') {
+    issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+    return
+  }
+  const a = points.get(segment.from)
+  const b = points.get(segment.to)
+  const cellA = placed.get(segment.from)
+  const cellB = placed.get(segment.to)
+  if (!a || !b || !cellA || !cellB) {
+    issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+    return
+  }
+  const key = `${mark.kind}:${mark.group ?? '1'}`
+  if (mark.kind === 'equal_side') {
+    const found = lengths.get(key) ?? []
+    found.push(dist(a, b))
+    lengths.set(key, found)
+  } else {
+    const found = directions.get(key) ?? []
+    found.push({ x: b.x - a.x, y: b.y - a.y })
+    directions.set(key, found)
+  }
+  const ticks = mark.group === '2' ? 2 : 1
+  const mid = { col: (cellA.col + cellB.col) / 2, row: (cellA.row + cellB.row) / 2 }
+  const normal = normalStep(cellA, cellB, 2)
+  const along = step(cellA, cellB, 1)
+  for (let index = 0; index < ticks; index += 1) {
+    const shift = index === 0 ? 0 : 2
+    const at = { col: Math.round(mid.col + along.col * shift), row: Math.round(mid.row + along.row * shift) }
+    items.push(
+      lineItem(
+        `${mark.id}.mark${index === 0 ? '' : index + 1}`,
+        { col: at.col - normal.col, row: at.row - normal.row },
+        { col: at.col + normal.col, row: at.row + normal.row },
+        'ai',
+        'violet',
+      ),
+    )
+  }
+}
+
+function drawDimension(
+  canon: Canon[],
+  points: Map<string, Pt>,
+  placed: Map<string, Placed>,
+  items: BoardItem[],
+  occupied: Array<{ col: number; row: number; w: number; h: number; id: string }>,
+  issues: SceneIssue[],
+  mark: Mark,
+) {
+  const segment = canon.find((item) => item.kind === 'segment' && item.id === mark.of)
+  if (!segment || segment.kind !== 'segment' || !mark.text) {
+    issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+    return
+  }
+  const a = points.get(segment.from)
+  const b = points.get(segment.to)
+  const cellA = placed.get(segment.from)
+  const cellB = placed.get(segment.to)
+  if (!a || !b || !cellA || !cellB) {
+    issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+    return
+  }
+  const numeric = mark.text.match(/-?\d+(?:[.,]\d+)?/)
+  if (numeric) {
+    const claimed = rFromClaim(numeric[0])
+    if (!claimed || !nearly(rToNumber(claimed), dist(a, b))) {
+      issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+      return
+    }
+  }
+  const normal = normalStep(cellA, cellB, 4)
+  const start = { col: cellA.col + normal.col, row: cellA.row + normal.row }
+  const end = { col: cellB.col + normal.col, row: cellB.row + normal.row }
+  items.push({ ...lineItem(`${mark.id}.mark`, start, end, 'ai', 'violet'), kind: 'arrow' })
+  placeText(items, occupied, issues, `${mark.id}.mark2`, mark.text, start, end, 'ai', 'violet')
+}
+
+function drawAngleArc(
+  canon: Canon[],
+  placed: Map<string, Placed>,
+  items: BoardItem[],
+  occupied: Array<{ col: number; row: number; w: number; h: number; id: string }>,
+  issues: SceneIssue[],
+  mark: Mark,
+) {
+  const angle = canon.find((item) => item.kind === 'angle' && item.id === mark.of)
+  if (!angle || angle.kind !== 'angle') {
+    issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+    return
+  }
+  const vertex = placed.get(angle.vertex)
+  const from = placed.get(angle.from)
+  const to = placed.get(angle.to)
+  if (!vertex || !from || !to) {
+    issues.push({ code: 'BAD_SCHEMA', objectId: mark.id })
+    return
+  }
+  const start = Math.atan2(from.row - vertex.row, from.col - vertex.col)
+  let sweep = Math.atan2(to.row - vertex.row, to.col - vertex.col) - start
+  while (sweep <= -Math.PI) sweep += Math.PI * 2
+  while (sweep > Math.PI) sweep -= Math.PI * 2
+  const steps = 5
+  let previous: Placed | null = null
+  for (let index = 0; index <= steps; index += 1) {
+    const theta = start + (sweep * index) / steps
+    const at = {
+      col: Math.round(vertex.col + Math.cos(theta) * 6),
+      row: Math.round(vertex.row + Math.sin(theta) * 6),
+    }
+    if (previous) items.push(lineItem(`${mark.id}.mark${index}`, previous, at, 'ai', 'violet'))
+    previous = at
+  }
+  if (mark.text) {
+    const mid = start + sweep / 2
+    const at = {
+      col: Math.round(vertex.col + Math.cos(mid) * 8),
+      row: Math.round(vertex.row + Math.sin(mid) * 8),
+    }
+    placeText(items, occupied, issues, `${mark.id}.text`, mark.text, vertex, at, 'ai', 'violet')
+  }
+}
+
+function step(origin: Placed, target: Placed, cells: number): Placed {
+  const dx = target.col - origin.col
+  const dy = target.row - origin.row
+  const len = Math.hypot(dx, dy) || 1
+  return { col: Math.round((dx / len) * cells), row: Math.round((dy / len) * cells) }
+}
+
+function normalStep(a: Placed, b: Placed, cells: number): Placed {
+  const dx = b.col - a.col
+  const dy = b.row - a.row
+  const len = Math.hypot(dx, dy) || 1
+  return { col: Math.round((-dy / len) * cells), row: Math.round((dx / len) * cells) }
 }
 
 function lineItem(id: string, a: Placed, b: Placed, layer: 'ai' | 'student', color: string): BoardItem {

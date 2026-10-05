@@ -1,5 +1,7 @@
+import { bindLabels } from './algebra.js'
 import { expandScene } from './expand.js'
 import { nearly } from './geom.js'
+import { rEq, rFromClaim } from './rational.js'
 import { measureTarget } from './measure.js'
 import { parseScene } from './schema.js'
 import { solveCanon } from './solve.js'
@@ -19,8 +21,19 @@ export function gradeBoard(opts: {
   if (expanded.issues.length > 0) return unverifiable()
   const solved = solveCanon(expanded.canon)
   if (solved.issues.length > 0) return unverifiable()
-  const answer = measureTarget(parsed.scene, solved.canon, solved.points, parsed.scene.task.target)
+  const labels = bindLabels(solved.canon, expanded.marks, solved.points)
+  if (labels.issues.length > 0) return unverifiable()
+  const answer = measureTarget(
+    parsed.scene,
+    solved.canon,
+    solved.points,
+    parsed.scene.task.target,
+    labels.bindings,
+  )
   if (answer.status !== 'value') return unverifiable()
+  if (parsed.scene.task.type === 'multiple_choice' && parsed.scene.task.choices) {
+    return gradeChoice(parsed.scene.task.choices, answer, opts.board, opts.childMessage)
+  }
   const got = readChildValue(opts.board, opts.childMessage, answer.value, solved)
   if (got == null) return { verdict: 'unverifiable', expected: round(answer.value), got: null }
   const ok = closeEnough(got, answer.value)
@@ -43,6 +56,42 @@ export function applyVerdictToMastery(opts: {
     contextSummary = contextSummary.replace(/solo bien:\s*\d+\s*\/\s*2/i, `Solo bien: ${previous}/2`)
   }
   return { passed: false, contextSummary }
+}
+
+function gradeChoice(
+  choices: Array<{ id: string; text: string }>,
+  answer: Extract<ReturnType<typeof measureTarget>, { status: 'value' }>,
+  board: unknown,
+  message: string | undefined,
+): BoardVerdict {
+  const blob = `${message ?? ''}\n${writtenText(board)}`.toLowerCase()
+  const byLetter = choices.find((choice) => new RegExp(`(^|[^a-z])${choice.id}([^a-z]|$)`).test(blob))
+  const picked =
+    byLetter ??
+    choices.find((choice) => {
+      const match = choice.text.match(/-?\d+(?:[.,]\d+)?/)
+      if (!match) return false
+      return blob.includes(match[0].toLowerCase())
+    })
+  if (!picked) return unverifiable()
+  const match = picked.text.match(/-?\d+(?:[.,]\d+)?/)
+  const numeric = match ? Number(match[0].replace(',', '.')) : null
+  const agrees =
+    answer.exact === 'exact'
+      ? match != null && rFromClaim(match[0]) != null && rEq(rFromClaim(match[0])!, answer.rational)
+      : numeric != null && nearly(numeric, answer.value)
+  return {
+    verdict: agrees ? 'correct' : 'incorrect',
+    expected: round(answer.value),
+    got: numeric == null ? null : round(numeric),
+  }
+}
+
+function writtenText(board: unknown) {
+  return boardItems(board)
+    .filter((item) => item.layer !== 'ai' && typeof item.text === 'string')
+    .map((item) => String(item.text))
+    .join('\n')
 }
 
 function unverifiable(): BoardVerdict {

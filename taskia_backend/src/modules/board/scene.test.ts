@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { auditScene, drawSceneWithRetries, prepareScene } from './pipeline.ts'
 import { expanderNames } from './expand.ts'
-import { parseMath } from './expression.ts'
+import { parseMath, solveFor } from './expression.ts'
 import { coverScene, finishSpeak, isConfirmMessage, normalizeGapKey } from './facts.ts'
 import { gradeBoard } from './grade.ts'
 import { boundsIssues } from './layout.ts'
-import { drawSceneWithRetries, prepareScene } from './pipeline.ts'
 import { SCENE_DRAW_PROMPT } from './prompt.ts'
+import { rEq, rInt } from './rational.ts'
 
 const rectangle = {
   schemaVersion: 1,
@@ -49,7 +50,10 @@ test('la ecuación x + 5 = 12 se resuelve en 7 y rechaza un claimed distinto', (
     task: { type: 'enter_value', target: 'x', claimedAnswer: 7 },
   })
   assert.equal(ok.ok, true)
-  if (ok.ok) assert.equal(ok.answer.status === 'value' ? ok.answer.value : null, 7)
+  if (ok.ok && ok.answer.status === 'value') {
+    assert.equal(ok.answer.value, 7)
+    assert.equal(ok.answer.exact, 'exact')
+  }
 
   const bad = prepareScene({
     schemaVersion: 1,
@@ -300,7 +304,7 @@ test('una escena que no cubre los hechos es MISSING_FACT', () => {
 test('unsupported no reintenta la escena', async () => {
   let calls = 0
   const drawn = await drawSceneWithRetries({
-    initial: { schemaVersion: 1, objects: [{ id: 'T', type: 'tangent_line' }] },
+    initial: { schemaVersion: 1, objects: [{ id: 'S', type: 'square', side: 4 }] },
     retry: async () => {
       calls += 1
       return null
@@ -351,4 +355,127 @@ test('la frase de fallo reemplaza y la de éxito se agrega al pasar', () => {
   assert.equal(normalizeGapKey('!!!'), 'other')
   assert.equal(isConfirmMessage('Sí'), true)
   assert.equal(isConfirmMessage('no, cambia el 6'), false)
+})
+
+test('0,5 es un medio y dividir por cero no entra', () => {
+  const half = parseMath('0,5')
+  assert.equal(half.ok, true)
+  if (half.ok && half.math.kind === 'value') {
+    const value = solveFor(half.math, '')
+    const expected = rInt(1n)
+    assert.ok(value && expected && rEq(value, { n: 1n, d: 2n }))
+  }
+  const broken = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'eq', type: 'expression', text: '1/0' }],
+  })
+  assert.equal(broken.ok, false)
+  if (!broken.ok) assert.equal(broken.issues[0]?.code, 'BAD_EXPRESSION')
+})
+
+const choices = [
+  { id: 'a', text: '50°' },
+  { id: 'b', text: '60°' },
+  { id: 'c', text: '75°' },
+  { id: 'd', text: '85°' },
+  { id: 'e', text: '90°' },
+]
+
+function tangentScene(radius = 5, rotation = 0, angles?: [number, number]) {
+  return {
+    schemaVersion: 1,
+    objects: [
+      { id: 'O', type: 'point' },
+      { id: 'C', type: 'circle', center: 'O', radius, ...(rotation ? { rotation } : {}) },
+      { id: 'T', type: 'point_on_circle', circle: 'C', ...(angles ? { angleDeg: angles[0] } : {}) },
+      { id: 'Q', type: 'point_on_circle', circle: 'C', ...(angles ? { angleDeg: angles[1] } : {}) },
+      { id: 'L1', type: 'tangent_line', circle: 'C', at: 'T', label: 'L1' },
+      { id: 'L2', type: 'tangent_line', circle: 'C', at: 'Q', label: 'L2' },
+      { id: 'OT', type: 'radius', circle: 'C', to: 'T' },
+      { id: 'OQ', type: 'radius', circle: 'C', to: 'Q' },
+      { id: 'a1', type: 'angle', vertex: 'T', from: 'L1.a', to: 'O', label: '3x' },
+      { id: 'a2', type: 'angle', vertex: 'Q', from: 'L2.a', to: 'O', label: '2y' },
+    ],
+    task: { type: 'multiple_choice', target: 'x+y', unit: '°', choices },
+  }
+}
+
+test('las dos tangentes dan x+y = 75 y no depende del tamaño', () => {
+  for (const scene of [tangentScene(), tangentScene(9, 30, [15, 140]), tangentScene(4, 80)]) {
+    const prepared = prepareScene(scene)
+    assert.equal(prepared.ok, true, prepared.ok ? '' : prepared.issues.map((issue) => issue.code).join(','))
+    if (!prepared.ok || prepared.answer.status !== 'value') continue
+    assert.equal(prepared.answer.value, 75)
+    assert.equal(prepared.answer.exact, 'exact')
+  }
+  const graded = gradeBoard({ scene: tangentScene(), board: { items: [] }, childMessage: 'c' })
+  assert.equal(graded.verdict, 'correct')
+  const wrong = gradeBoard({ scene: tangentScene(), board: { items: [] }, childMessage: 'a' })
+  assert.equal(wrong.verdict, 'incorrect')
+})
+
+test('el inscrito es la mitad exacta del central', () => {
+  const prepared = prepareScene({
+    schemaVersion: 1,
+    objects: [
+      { id: 'O', type: 'point' },
+      { id: 'C', type: 'circle', center: 'O', radius: 5 },
+      { id: 'A', type: 'point_on_circle', circle: 'C', angleDeg: 0 },
+      { id: 'B', type: 'point_on_circle', circle: 'C' },
+      { id: 'c1', type: 'central_angle', circle: 'C', from: 'A', to: 'B', degrees: 80, label: '80°' },
+      { id: 'P', type: 'point' },
+      { id: 'i1', type: 'inscribed_angle', circle: 'C', vertex: 'P', from: 'A', to: 'B', sameArc: 'c1' },
+    ],
+    task: { type: 'enter_value', target: 'angle:i1', claimedAnswer: 40 },
+  })
+  assert.equal(prepared.ok, true, prepared.ok ? '' : prepared.issues.map((issue) => issue.code).join(','))
+  if (prepared.ok && prepared.answer.status === 'value') {
+    assert.equal(prepared.answer.value, 40)
+    assert.equal(prepared.answer.exact, 'exact')
+  }
+})
+
+test('un círculo y un triángulo ajeno no cubren la tangente', () => {
+  const scene = {
+    schemaVersion: 1,
+    objects: [
+      { id: 'O', type: 'point' },
+      { id: 'C', type: 'circle', center: 'O', radius: 4 },
+      { id: 'T', type: 'right_triangle', a: 3, b: 4 },
+    ],
+  }
+  const checked = auditScene(scene, [{ kind: 'object', type: 'tangent_line' }])
+  assert.equal(checked.ok, false)
+  if (!checked.ok) assert.equal(checked.issues[0]?.code, 'MISSING_FACT')
+})
+
+test('una alternativa que no contiene la respuesta no se publica', () => {
+  const scene = tangentScene()
+  scene.task = {
+    type: 'multiple_choice',
+    target: 'x+y',
+    choices: [
+      { id: 'a', text: '50°' },
+      { id: 'b', text: '60°' },
+    ],
+  }
+  const prepared = prepareScene(scene)
+  assert.equal(prepared.ok, false)
+  if (!prepared.ok) assert.equal(prepared.issues[0]?.code, 'ANSWER_MISMATCH')
+})
+
+test('una marca de ángulo recto sobre un ángulo de 60° se rechaza', () => {
+  const prepared = prepareScene({
+    schemaVersion: 1,
+    objects: [
+      { id: 'O', type: 'point' },
+      { id: 'C', type: 'circle', center: 'O', radius: 5 },
+      { id: 'A', type: 'point_on_circle', circle: 'C', angleDeg: 0 },
+      { id: 'B', type: 'point_on_circle', circle: 'C' },
+      { id: 'c1', type: 'central_angle', circle: 'C', from: 'A', to: 'B', degrees: 60 },
+      { id: 'm', type: 'mark', kind: 'right_angle', of: 'c1' },
+    ],
+  })
+  assert.equal(prepared.ok, false)
+  if (!prepared.ok) assert.equal(prepared.issues[0]?.code, 'BAD_SCHEMA')
 })

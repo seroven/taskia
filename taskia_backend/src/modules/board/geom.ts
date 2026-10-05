@@ -4,6 +4,14 @@ export function dist(a: Pt, b: Pt) {
   return Math.hypot(a.x - b.x, a.y - b.y)
 }
 
+export function angleDegrees(from: Pt, vertex: Pt, to: Pt) {
+  const a = Math.atan2(from.y - vertex.y, from.x - vertex.x)
+  const b = Math.atan2(to.y - vertex.y, to.x - vertex.x)
+  let turn = Math.abs(b - a)
+  if (turn > Math.PI) turn = Math.PI * 2 - turn
+  return (turn * 180) / Math.PI
+}
+
 export function nearly(a: number, b: number) {
   const tol = Math.max(0.02, 1e-3 * Math.max(Math.abs(a), Math.abs(b)))
   return Math.abs(a - b) <= tol
