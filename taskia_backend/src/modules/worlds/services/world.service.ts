@@ -5,8 +5,9 @@ import {
   applyVerdictToMastery,
   gradeBoard,
   highlightFromModel,
-  resolveModelScene,
-  SCENE_FALLBACK_MESSAGE,
+  planBoardDraw,
+  settleBoardDraw,
+  type DrawPlan,
 } from '../../board/index.js'
 import { awardXp, clampEffortScore, xpForMission } from '../../../services/xp.js'
 import {
@@ -41,6 +42,7 @@ import {
   maxMissionSort,
   maxWorldCourseSort,
   saveMissionBoard,
+  savePendingBoardFacts,
   saveSessionGreeting,
   saveSessionMeta,
   setMissionStatus,
@@ -290,6 +292,24 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   } else if (verdict?.verdict === 'unverifiable' && (intent.reviewDrawing || photo)) {
     instruction += ' code_verdict=unverifiable. No afirmes si está bien o mal.'
   }
+  const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
+  const drawPlan: DrawPlan = mission.uses_board
+    ? await planBoardDraw({
+        draw: allowAiDraw,
+        photoBase64: photoData,
+        message: parsed.message,
+        pendingRaw: context.pending_board_facts ?? null,
+        source: `${parsed.message}\n${truncateChars(lastTutor, 180)}`,
+        usage: { userId, kind: 'board_facts' },
+      })
+    : { mode: 'none', pendingWrite: 'keep' }
+  if (drawPlan.mode === 'draw') {
+    instruction +=
+      ' board_facts están congelados: incluye scene que los cubra y no agregues ni quites hechos. draw_ops []. No digas que ya dibujaste.'
+  }
+  if (drawPlan.mode === 'confirm' || drawPlan.mode === 'gap') {
+    instruction += ' No incluyas scene.'
+  }
 
   const payload = JSON.stringify({
     instruction,
@@ -311,6 +331,12 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     last_tutor_message: lastTutor,
     hints_level: context.hints_level,
     ...(allowAiDraw ? { allow_ai_draw: true } : {}),
+    ...(drawPlan.mode === 'draw'
+      ? {
+          board_facts: drawPlan.facts,
+          ...(drawPlan.statement ? { board_statement: drawPlan.statement } : {}),
+        }
+      : {}),
     ...(verdict ? { code_verdict: verdict } : {}),
     board_has_drawing: boardHas,
     photo_attached: Boolean(photo),
@@ -324,7 +350,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   })
 
   const raw = await callGemini({
-    system: missionTutorPrompt(allowAiDraw),
+    system: missionTutorPrompt(allowAiDraw || drawPlan.mode === 'draw'),
     user: payload,
     boardImageBase64: boardImageRaw || null,
     photoBase64: photo ? `data:${photo.mime};base64,${photo.base64}` : null,
@@ -390,16 +416,6 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     if (offeringMore) reply.study_eval.passed = false
     const score = soloBienCount(reply.context_summary)
     if (score !== null && score < 2) reply.study_eval.passed = false
-    const drawn = await resolveModelScene(value, { userId, kind: 'mission_tutor' })
-    if (drawn.ok) {
-      reply.board_items = drawn.items
-      reply.scene = drawn.scene
-    } else {
-      reply.board_fallback = drawn.fallback
-      if (!reply.speak_to_child.includes('lo armamos juntos')) {
-        reply.speak_to_child = truncateChars(`${reply.speak_to_child} ${SCENE_FALLBACK_MESSAGE}`, 450)
-      }
-    }
   }
   if (mission.status !== 'mastered' && verdict?.verdict === 'incorrect') {
     const gated = applyVerdictToMastery({
@@ -421,6 +437,18 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       450,
     )
   }
+  const settled = await settleBoardDraw({
+    plan: drawPlan,
+    speak: reply.speak_to_child,
+    modelValue: value,
+    usage: { userId, kind: 'mission_tutor' },
+    origin: 'mission',
+    maxSpeak: 450,
+  })
+  reply.speak_to_child = settled.speak
+  reply.board_items = settled.items
+  reply.scene = settled.scene
+  reply.board_fallback = settled.fallback
 
   const saved = await insertMissionMessage(missionId, 'assistant', reply.speak_to_child)
   context.messages.push(saved)
@@ -434,6 +462,9 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     contextSummary: context.context_summary,
     hintsLevel: context.hints_level,
   })
+  if (settled.pendingWrite !== 'keep') {
+    await savePendingBoardFacts(missionId, settled.pendingWrite)
+  }
 
   if (reply.study_eval.passed && mission.status !== 'mastered') {
     await setMissionStatus(missionId, 'mastered')

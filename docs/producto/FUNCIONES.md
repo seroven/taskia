@@ -389,7 +389,7 @@ Es una grilla de **formas** (rectángulo, círculo, triángulo, línea, flecha y
 
 - El explorador arma su respuesta en el lienzo. Si selecciona una forma suya, puede escribir la medida al lado.
 - Si pide en el mensaje que miren su dibujo, el código mide lo que se puede calcular y Taskia solo explica ese resultado. Si no se puede medir, Taskia no afirma si está bien o mal. Una foto del cuaderno tampoco se califica como número exacto.
-- Si pide que se lo dibujen, Taskia describe la figura (medidas y relaciones, no coordenadas). El servidor la arma, la comprueba y la pinta en violeta. Si no logra una figura válida, lo dice y deja la pizarra libre.
+- Si pide que se lo dibujen, Taskia describe la figura (medidas y relaciones, no coordenadas). El servidor la arma, la comprueba y la pinta en violeta. Solo entonces dice «Te lo dibujé en la pizarra». Si no logra una figura fiel, la frase queda en «No pude dibujarlo bien, ¿lo armamos juntos?» y la pizarra queda libre. Con una foto, primero muestra lo que entendió y espera un sí antes de dibujar.
 - Un ejercicio que el código marca mal no cuenta para los dos problemas ni para el visto.
 - En móvil suele alternarse la vista chat / pizarra; en pantallas grandes pueden convivir mejor.
 

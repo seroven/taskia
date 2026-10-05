@@ -1,5 +1,14 @@
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
-import { gradeBoard, isSceneRecord, prepareScene, SCENE_RETRY_SYSTEM } from '../../board/index.js'
+import {
+  auditScene,
+  gradeBoard,
+  isSceneRecord,
+  readBoardFactsList,
+  recordBoardGap,
+  SCENE_RETRY_SYSTEM,
+  type BoardFact,
+  type BoardFactsResult,
+} from '../../board/index.js'
 import {
   CHALLENGE_GRADE_SYSTEM,
   CHALLENGE_STATEMENT_DRAW_SYSTEM,
@@ -98,6 +107,10 @@ async function loadMissionStudyMaterial(missionId: number) {
   }
 }
 
+function challengeSceneOk(prompt: string, raw: unknown, facts: BoardFact[]) {
+  return auditScene(raw, facts).ok && figureFitsPrompt(prompt, raw)
+}
+
 async function ensureChallengeBoardDrawOps(
   items: Array<Record<string, unknown>>,
   missions: MissionView[],
@@ -116,7 +129,35 @@ async function ensureChallengeBoardDrawOps(
     })
   }
   if (boardItems.length === 0) return
-  let pending = boardItems.filter((row) => !figureFitsPrompt(row.prompt, row.item.scene ?? row.item.draw_ops))
+  let factRows: BoardFactsResult[] = boardItems.map(() => ({ facts: [], statement: '', unsupported: null }))
+  try {
+    factRows = await readBoardFactsList(
+      boardItems.map((row) => row.prompt),
+      { userId, kind: 'board_facts' },
+    )
+  } catch (err) {
+    console.info('[board] facts failed', err instanceof Error ? err.name : 'error')
+  }
+  const rows = boardItems.map((row, index) => ({
+    ...row,
+    facts: factRows[index] ?? { facts: [], statement: '', unsupported: null as string | null },
+    dropped: false,
+  }))
+  for (const row of rows) {
+    if (!row.facts.unsupported) continue
+    row.dropped = true
+    await recordBoardGap({
+      code: 'UNSUPPORTED',
+      gapKey: row.facts.unsupported,
+      origin: 'challenge',
+      attempts: 0,
+    })
+    row.item.scene = null
+    row.item.draw_ops = fallbackSceneForPrompt(row.prompt)
+  }
+  let pending = rows.filter(
+    (row) => !row.dropped && !challengeSceneOk(row.prompt, row.item.scene ?? row.item.draw_ops, row.facts.facts),
+  )
   for (let attempt = 0; attempt < 3 && pending.length > 0; attempt += 1) {
     try {
       const raw = await callGemini({
@@ -128,14 +169,16 @@ async function ensureChallengeBoardDrawOps(
                   index,
                   prompt: row.prompt,
                   answer_key: typeof row.item.answer_key === 'string' ? row.item.answer_key : '',
+                  facts: row.facts.facts,
                 })),
               }
             : {
                 scenes: pending.map((row, index) => {
-                  const checked = prepareScene(row.item.scene)
+                  const checked = auditScene(row.item.scene, row.facts.facts)
                   return {
                     index,
                     scene: row.item.scene ?? null,
+                    facts: row.facts.facts,
                     errors: checked.ok ? [] : checked.issues,
                   }
                 }),
@@ -154,8 +197,20 @@ async function ensureChallengeBoardDrawOps(
           if (!Number.isFinite(index) || !pending[index] || used.has(index)) continue
           used.add(index)
           const scene = rec.scene ?? rec
-          if (figureFitsPrompt(pending[index]!.prompt, scene)) pending[index]!.item.scene = scene
-          else {
+          const checked = auditScene(scene, pending[index]!.facts.facts)
+          if (checked.ok && figureFitsPrompt(pending[index]!.prompt, scene)) {
+            pending[index]!.item.scene = scene
+          } else if (!checked.ok && checked.stop) {
+            pending[index]!.dropped = true
+            await recordBoardGap({
+              code: 'UNSUPPORTED',
+              gapKey: checked.issues[0]?.objectId ?? 'other',
+              origin: 'challenge',
+              attempts: attempt + 1,
+            })
+            pending[index]!.item.scene = null
+            pending[index]!.item.draw_ops = fallbackSceneForPrompt(pending[index]!.prompt)
+          } else {
             pending[index]!.item.scene = scene
             still.push(pending[index]!)
           }
@@ -172,9 +227,22 @@ async function ensureChallengeBoardDrawOps(
       break
     }
   }
-  for (const row of boardItems) {
+  for (const row of rows) {
+    if (row.dropped) continue
+    const missed = auditScene(row.item.scene ?? row.item.draw_ops, row.facts.facts)
+    if (!missed.ok && missed.issues.some((issue) => issue.code === 'MISSING_FACT' || issue.code === 'UNSUPPORTED')) {
+      await recordBoardGap({
+        code: missed.issues[0]?.code ?? 'MISSING_FACT',
+        gapKey: missed.issues[0]?.objectId ?? 'other',
+        origin: 'challenge',
+        attempts: 3,
+      })
+    }
+  }
+  for (const row of rows) {
+    if (row.dropped) continue
     const current = row.item.scene ?? row.item.draw_ops
-    if (isSceneRecord(current) && figureFitsPrompt(row.prompt, current)) {
+    if (isSceneRecord(current) && challengeSceneOk(row.prompt, current, row.facts.facts)) {
       const packed = packScene(current)
       if (packed) {
         row.item.draw_ops = packed

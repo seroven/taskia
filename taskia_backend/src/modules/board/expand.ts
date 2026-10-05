@@ -27,6 +27,14 @@ export function registerExpander(type: string, expander: Expander) {
   expanders.set(type, expander)
 }
 
+export function expanderNames(): string[] {
+  return [...expanders.keys()]
+}
+
+export function hasExpander(type: string) {
+  return expanders.has(type)
+}
+
 export function expandScene(scene: Scene): { canon: Canon[]; issues: SceneIssue[] } {
   const canon: Canon[] = []
   const issues: SceneIssue[] = []
@@ -109,7 +117,7 @@ registerExpander('right_triangle', (object, out) => {
       { x: 0, y: b },
     ],
     labels,
-    [formatMeasure(a), formatMeasure(Math.hypot(a, b)), formatMeasure(b)],
+    [formatMeasure(a), undefined, formatMeasure(b)],
     out,
   )
 })
@@ -202,7 +210,7 @@ registerExpander('circle', (object, out) => {
     id: object.id,
     center: String(object.center),
     radius: Number(object.radius),
-    label: typeof object.label === 'string' ? object.label : formatMeasure(Number(object.radius)),
+    label: typeof object.label === 'string' ? object.label : undefined,
     sourceId: object.id,
     interactive: interactive(object),
   })

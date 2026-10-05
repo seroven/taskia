@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { expanderNames } from './expand.ts'
 import { parseMath } from './expression.ts'
+import { coverScene, finishSpeak, isConfirmMessage, normalizeGapKey } from './facts.ts'
 import { gradeBoard } from './grade.ts'
 import { boundsIssues } from './layout.ts'
 import { drawSceneWithRetries, prepareScene } from './pipeline.ts'
+import { SCENE_DRAW_PROMPT } from './prompt.ts'
 
 const rectangle = {
   schemaVersion: 1,
@@ -242,4 +245,110 @@ test('el veredicto del niño sale del código', () => {
   const bad = gradeBoard({ scene, board: { items: [{ layer: 'student', kind: 'text', text: '9', col: 1, row: 1 }] } })
   assert.equal(bad.verdict, 'incorrect')
   assert.equal(bad.got, 9)
+})
+
+test('cada expansor está nombrado en el prompt', () => {
+  for (const name of expanderNames()) {
+    assert.match(SCENE_DRAW_PROMPT, new RegExp(`(^|[^a-z_])${name}([^a-z_]|$)`))
+  }
+})
+
+test('el triángulo no escribe la hipotenusa y el círculo no escribe el radio', () => {
+  const triangle = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'T', type: 'right_triangle', a: 3, b: 4, vertexLabels: ['A', 'B', 'C'] }],
+  })
+  assert.equal(triangle.ok, true)
+  if (!triangle.ok) return
+  const texts = triangle.items.map((item) => item.text)
+  assert.equal(texts.includes('5'), false)
+  assert.equal(texts.includes('3'), true)
+  assert.equal(texts.includes('4'), true)
+
+  const circle = prepareScene({
+    schemaVersion: 1,
+    objects: [
+      { id: 'R', type: 'rectangle', width: 6, height: 4 },
+      { id: 'C', type: 'circle', center: 'R.A', radius: 5 },
+    ],
+  })
+  assert.equal(circle.ok, true)
+  if (!circle.ok) return
+  assert.equal(circle.items.some((item) => item.text === '5'), false)
+})
+
+test('una escena que no cubre los hechos es MISSING_FACT', () => {
+  const prepared = prepareScene({
+    schemaVersion: 1,
+    objects: [
+      { id: 'R', type: 'rectangle', width: 2, height: 2 },
+      { id: 'C', type: 'circle', center: 'R.A', radius: 3 },
+    ],
+  })
+  assert.equal(prepared.ok, true)
+  if (!prepared.ok) return
+  const issues = coverScene(
+    [
+      { kind: 'object', type: 'rectangle' },
+      { kind: 'number', value: 6 },
+    ],
+    prepared.scene,
+  )
+  assert.ok(issues.some((issue) => issue.code === 'MISSING_FACT'))
+})
+
+test('unsupported no reintenta la escena', async () => {
+  let calls = 0
+  const drawn = await drawSceneWithRetries({
+    initial: { schemaVersion: 1, objects: [{ id: 'T', type: 'tangent_line' }] },
+    retry: async () => {
+      calls += 1
+      return null
+    },
+  })
+  assert.equal(calls, 0)
+  assert.equal(drawn.ok, false)
+  if (!drawn.ok) assert.equal(drawn.issues[0]?.code, 'UNSUPPORTED')
+})
+
+test('un hecho que falta se reintenta con los hechos congelados', async () => {
+  const circle = {
+    schemaVersion: 1,
+    objects: [
+      { id: 'R', type: 'rectangle', width: 2, height: 2 },
+      { id: 'C', type: 'circle', center: 'R.A', radius: 1 },
+    ],
+  }
+  const facts = [
+    { kind: 'object' as const, type: 'rectangle' },
+    { kind: 'number' as const, value: 6 },
+  ]
+  let calls = 0
+  const drawn = await drawSceneWithRetries({
+    initial: circle,
+    facts,
+    retry: async (_scene, issues) => {
+      calls += 1
+      assert.equal(issues[0]?.code, 'MISSING_FACT')
+      if (calls < 2) return circle
+      return {
+        schemaVersion: 1,
+        objects: [{ id: 'R', type: 'rectangle', width: 6, height: 4 }],
+      }
+    },
+  })
+  assert.equal(calls, 2)
+  assert.equal(drawn.ok, true)
+})
+
+test('la frase de fallo reemplaza y la de éxito se agrega al pasar', () => {
+  assert.equal(finishSpeak('Ya te lo dibujé, mira.', 'fallback'), 'No pude dibujarlo bien, ¿lo armamos juntos?')
+  assert.equal(
+    finishSpeak('El rectángulo mide 6 por 4.', 'drawn', 'Un rectángulo de 6 por 4.'),
+    'Un rectángulo de 6 por 4. El rectángulo mide 6 por 4. Te lo dibujé en la pizarra.',
+  )
+  assert.equal(normalizeGapKey('Tangente-1!'), 'tangente')
+  assert.equal(normalizeGapKey('!!!'), 'other')
+  assert.equal(isConfirmMessage('Sí'), true)
+  assert.equal(isConfirmMessage('no, cambia el 6'), false)
 })

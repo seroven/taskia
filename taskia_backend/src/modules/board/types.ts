@@ -5,6 +5,7 @@ export const GRID_COLS = 160
 export const GRID_ROWS = 100
 
 export const SCENE_FALLBACK_MESSAGE = 'No pude dibujarlo bien, ¿lo armamos juntos?'
+export const SCENE_DRAWN_MESSAGE = 'Te lo dibujé en la pizarra.'
 
 export type SceneCode =
   | 'BAD_SCHEMA'
@@ -16,6 +17,8 @@ export type SceneCode =
   | 'UNDERDETERMINED'
   | 'OVERCONSTRAINED'
   | 'BAD_EXPRESSION'
+  | 'MISSING_FACT'
+  | 'UNSUPPORTED'
 
 export type SceneIssue = {
   code: SceneCode

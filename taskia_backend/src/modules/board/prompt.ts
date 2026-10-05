@@ -16,13 +16,16 @@ Formas (generan sus vértices solas). Ejes alineados. Vértices en sentido antih
 Polígono irregular: declara cada punto y sus lados o ángulos. Nada de ángulos rectos "porque sí".
 {"id":"A","type":"point"} ... {"id":"Q","type":"polygon","vertices":["A","B","C","D"],"sides":{"AB":6,"BC":4,"CD":6,"DA":4},"angles":{"B":90,"C":90,"D":90}}
 
-También: segment (from,to,label?,length?), circle (center,radius), arc (center,from,to), angle (vertex,from,to,degrees?), label (text,of), caption (text, frase corta que no es una ecuación), number_line (min,max,step?), expression (text, por ejemplo "x + 5 = 12").
+También: point (lo coloca una relación; no mandes coordenadas), segment (from,to,label?,length?), circle (center,radius,label?), arc (center,from,to), angle (vertex,from,to,degrees?), label (text,of), caption (text, frase corta que no es una ecuación), number_line (min,max,step?), expression (text, por ejemplo "x + 5 = 12").
 Relaciones por id: midpoint (of:[a,b]), parallel_to (of,through,length,side?), perpendicular_to, reflection_of (of,over), intersection_of (of:[a,b]).
 Los vértices de una forma se nombran "R.A". Máximo 30 objetos.
 task.target puede ser length:s, perimeter:R, area:R, angle:a, o la letra de una expression.
 claimedAnswer es lo que tú crees: el código lo comprueba y puede rechazar la escena. No mandes coordenadas.
 Si el niño debe poder mover una figura, pon "interactive":true en ese objeto. Lo demás queda violeta y quieto.
 Para resaltar sin redibujar, llena "highlight" con ids, y scene=null si la figura ya está.
+No digas que ya dibujaste: el servidor lo dirá solo si la escena quedó bien.
+Si recibes facts, la escena debe cubrirlos todos. No agregues ni quites hechos.
+Si falta una primitiva de la lista, no inventes otra figura: responde {"unsupported":"nombre_en_minusculas"} en el campo scene.
 `
 
 export const SCENE_RETRY_SYSTEM = `${SCENE_DRAW_PROMPT}

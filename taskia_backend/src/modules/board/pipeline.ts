@@ -1,4 +1,6 @@
-import { expandScene } from './expand.js'
+import { expandScene, hasExpander } from './expand.js'
+import { coverScene, unsupportedOf } from './facts.js'
+import type { BoardFact } from './facts.js'
 import { nearly } from './geom.js'
 import { compileBoard } from './layout.js'
 import { measureTarget, type Measure } from './measure.js'
@@ -36,27 +38,52 @@ export function prepareScene(raw: unknown): Prepared {
   return { ok: true, scene: parsed.scene, items: drawn.items, answer }
 }
 
+export function auditScene(
+  raw: unknown,
+  facts: BoardFact[] = [],
+):
+  | { ok: true; prepared: Extract<Prepared, { ok: true }> }
+  | { ok: false; stop: boolean; issues: SceneIssue[] } {
+  const named = unsupportedOf(raw)
+  if (named) return { ok: false, stop: true, issues: [{ code: 'UNSUPPORTED', objectId: named }] }
+  const missingType = unknownSceneType(raw)
+  if (missingType) return { ok: false, stop: true, issues: [{ code: 'UNSUPPORTED', objectId: missingType }] }
+  if (raw == null) return { ok: false, stop: false, issues: [{ code: 'MISSING_FACT' }] }
+  const prepared = prepareScene(raw)
+  if (!prepared.ok) return { ok: false, stop: false, issues: prepared.issues }
+  const coverage = facts.length > 0 ? coverScene(facts, prepared.scene) : []
+  if (coverage.some((issue) => issue.code === 'UNSUPPORTED')) {
+    return { ok: false, stop: true, issues: coverage }
+  }
+  if (coverage.length > 0) return { ok: false, stop: false, issues: coverage }
+  return { ok: true, prepared }
+}
+
 export async function drawSceneWithRetries(opts: {
   initial: unknown
   retry: (scene: unknown, issues: SceneIssue[]) => Promise<unknown>
+  facts?: BoardFact[]
   maxRetries?: number
 }): Promise<
   | { ok: true; scene: Scene | null; items: BoardItem[]; answer: Measure; attempts: number }
   | { ok: false; fallback: string; issues: SceneIssue[]; attempts: number }
 > {
   const maxRetries = opts.maxRetries ?? 2
-  if (opts.initial == null) {
+  const facts = opts.facts ?? []
+  if (opts.initial == null && facts.length === 0) {
     return { ok: true, scene: null, items: [], answer: { status: 'unverifiable' }, attempts: 0 }
   }
   let current: unknown = opts.initial
   let attempts = 0
-  let issues: SceneIssue[] = [{ code: 'BAD_SCHEMA' }]
+  let issues: SceneIssue[] = [{ code: 'MISSING_FACT' }]
   while (attempts <= maxRetries) {
     attempts += 1
-    if (current == null) return { ok: false, fallback: SCENE_FALLBACK_MESSAGE, issues, attempts }
-    const prepared = prepareScene(current)
-    if (prepared.ok) return { ...prepared, attempts }
-    issues = prepared.issues
+    const audited = auditScene(current, facts)
+    if (audited.ok) return { ...audited.prepared, attempts }
+    issues = audited.issues
+    if (audited.stop) {
+      return { ok: false, fallback: SCENE_FALLBACK_MESSAGE, issues: publicIssues(issues), attempts }
+    }
     console.info(
       '[board] scene rejected',
       issues.map((issue) => issue.code).join(','),
@@ -74,6 +101,16 @@ export async function drawSceneWithRetries(opts: {
   return { ok: false, fallback: SCENE_FALLBACK_MESSAGE, issues: publicIssues(issues), attempts }
 }
 
+function unknownSceneType(raw: unknown) {
+  if (!isSceneRecord(raw)) return null
+  for (const object of raw.objects) {
+    if (!object || typeof object !== 'object') continue
+    const type = (object as { type?: unknown }).type
+    if (typeof type === 'string' && type && !hasExpander(type)) return type
+  }
+  return null
+}
+
 export function publicIssues(issues: SceneIssue[]): SceneIssue[] {
   return issues.slice(0, 8).map((issue) => ({
     code: issue.code,
@@ -88,6 +125,7 @@ export function isSceneRecord(raw: unknown): raw is { schemaVersion: 1; objects:
 }
 
 export function sceneFromModel(raw: unknown): unknown {
+  if (unsupportedOf(raw)) return raw
   if (isSceneRecord(raw)) return raw
   if (!raw || typeof raw !== 'object') return null
   if (!('scene' in raw)) return null

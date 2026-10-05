@@ -1,3 +1,4 @@
+import { BoardGap } from './board-gap.entity.js'
 import { Course } from './course.entity.js'
 import { Difficulty } from './difficulty.entity.js'
 import { LlmUsage } from './llm-usage.entity.js'
@@ -27,8 +28,9 @@ import { UserStudyMemory } from './user-study-memory.entity.js'
 import { User } from './user.entity.js'
 import { XpAward } from './xp-award.entity.js'
 
-/** Las 28 tablas de Taskia. schema_migrations no entra. */
+/** Las tablas de Taskia. schema_migrations no entra. */
 export const entities = [
+  BoardGap,
   Role,
   User,
   Course,
@@ -60,6 +62,7 @@ export const entities = [
 ]
 
 export {
+  BoardGap,
   Course,
   Difficulty,
   LlmUsage,

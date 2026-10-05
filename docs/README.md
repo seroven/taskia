@@ -12,6 +12,7 @@ Qué hace la app y cómo se usa.
 ## Datos
 
 - [BASE_DE_DATOS.md](datos/BASE_DE_DATOS.md) — tablas, relaciones y cómo se migran. El DDL vive en `taskia_backend/db/migrations/`.
+- [PIZARRA.md](datos/PIZARRA.md) — cómo se describe, resuelve, dibuja y califica una escena de la pizarra.
 
 ## Planes
 

@@ -19,6 +19,9 @@ export class StudySession {
   @Column({ type: 'int', default: 0 })
   hintsLevel!: number
 
+  @Column({ type: 'text', nullable: true })
+  pendingBoardFacts!: string | null
+
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   createdAt!: Date
 

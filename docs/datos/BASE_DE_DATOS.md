@@ -178,6 +178,7 @@ El estado de la sesión: una fila por tarea, no una por conversación. La PK **e
 | `topic_summary` | text | de qué se trata la tarea |
 | `context_summary` | text | resumen vivo de la charla |
 | `hints_level` | int | pistas dadas |
+| `pending_board_facts` | text | hechos de una foto, esperando el sí; se borra al dibujar o al seguir de largo |
 | `created_at` / `updated_at` | timestamptz | |
 
 `context_summary` es lo que hace que el tutor no repita preguntas: en cada turno se le manda este resumen, no el chat crudo. `tutor_phase` son las tres fases que el alumno ve en pantalla.
@@ -289,6 +290,7 @@ Mismo patrón que el tutor del tablero, pero colgando de `study_missions`. Son t
 | `context_summary` | text | resumen vivo de la charla |
 | `notebook_context` | text | el relato del cuaderno, fijo |
 | `hints_level` | int | |
+| `pending_board_facts` | text | igual que en la sesión de una tarea |
 | `updated_at` | timestamptz | |
 
 La diferencia con `study_sessions` son dos columnas: acá está `notebook_context` y no está `created_at`. `notebook_context` guarda el primer relato del alumno sobre su cuaderno y **no se vuelve a tocar**: el tutor lo recibe completo en cada turno para no preguntar cosas que no estén ahí, mientras `context_summary` sí se va actualizando.
@@ -491,6 +493,21 @@ Una fila por llamada al modelo. Es lo que alimenta las gráficas de uso y el cos
 Tiene dos índices pensados para el panel: `(user_id, created_at)` y `(kind, created_at)`.
 
 El registro es deliberadamente tolerante a fallos: si insertar acá falla, la sesión del alumno sigue igual. Medir no puede romper lo que se está midiendo.
+
+### `board_gaps`
+
+Un hueco de la pizarra: la escena no cubrió un hecho o pidió una primitiva que no existe. No guarda usuario ni texto.
+
+| Columna | Tipo | Nota |
+| --- | --- | --- |
+| `id` | bigint | PK |
+| `created_at` | timestamptz | |
+| `code` | text | `MISSING_FACT` o `UNSUPPORTED` |
+| `gap_key` | varchar(40) | nombre normalizado, o `other` |
+| `origin` | text | `study`, `mission` o `challenge` |
+| `attempts` | int | reintentos de esa escena |
+
+Al insertar se borran filas de más de 180 días. Índice `(gap_key, created_at)`.
 
 ---
 

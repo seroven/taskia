@@ -60,6 +60,7 @@ export async function loadContext(taskId: number) {
     topic_summary: session.topicSummary,
     context_summary: session.contextSummary,
     hints_level: session.hintsLevel,
+    pending_board_facts: session.pendingBoardFacts,
     messages: messages.map((message) => ({
       role: message.role,
       content: message.content,
@@ -139,6 +140,10 @@ export async function saveUserMemory(userId: number, summary: string) {
     .values({ userId, memorySummary: summary })
     .orUpdate(['memory_summary'], ['user_id'])
     .execute()
+}
+
+export async function savePendingBoardFacts(taskId: number, raw: string | null) {
+  await AppDataSource.getRepository(StudySession).update({ taskId }, { pendingBoardFacts: raw })
 }
 
 export async function saveSessionMeta(ctx: {

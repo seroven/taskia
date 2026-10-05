@@ -22,8 +22,9 @@ import {
   applyVerdictToMastery,
   gradeBoard,
   highlightFromModel,
-  resolveModelScene,
-  SCENE_FALLBACK_MESSAGE,
+  planBoardDraw,
+  settleBoardDraw,
+  type DrawPlan,
 } from '../../board/index.js'
 
 export function canOpenStudy(task: { status: string; difficulty_code: string }) {
@@ -55,6 +56,7 @@ import {
   loadUserMemory,
   markStudyPassed,
   saveBoard,
+  savePendingBoardFacts,
   saveSessionMeta,
   saveUserMemory,
 } from '../repositories/study.repository.js'
@@ -229,6 +231,24 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     } else if (verdict?.verdict === 'unverifiable' && (intent.reviewDrawing || photo)) {
       instruction += ' code_verdict=unverifiable. No afirmes si está bien o mal.'
     }
+    const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
+    const drawPlan: DrawPlan = task.uses_board
+      ? await planBoardDraw({
+          draw: allowAiDraw,
+          photoBase64: photoData,
+          message,
+          pendingRaw: context.pending_board_facts ?? null,
+          source: `${message}\n${truncateChars(lastTutor, 180)}`,
+          usage: { userId, kind: 'board_facts' },
+        })
+      : { mode: 'none', pendingWrite: 'keep' }
+    if (drawPlan.mode === 'draw') {
+      instruction +=
+        ' board_facts están congelados: incluye scene que los cubra y no agregues ni quites hechos. draw_ops []. No digas que ya dibujaste.'
+    }
+    if (drawPlan.mode === 'confirm' || drawPlan.mode === 'gap') {
+      instruction += ' No incluyas scene.'
+    }
 
     const payload = {
       instruction,
@@ -253,6 +273,12 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       photo_attached: Boolean(photo),
       child_message: truncateChars(message, fromVoice ? 4000 : 800),
       ...(allowAiDraw ? { allow_ai_draw: true } : {}),
+      ...(drawPlan.mode === 'draw'
+        ? {
+            board_facts: drawPlan.facts,
+            ...(drawPlan.statement ? { board_statement: drawPlan.statement } : {}),
+          }
+        : {}),
       ...(verdict ? { code_verdict: verdict } : {}),
       // Texto de coords solo si no hay imagen (fallback).
       ...(!boardImageRaw && boardDescription?.trim()
@@ -261,7 +287,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     }
 
     const raw = await callGemini({
-      system: tutorSystemPrompt(allowAiDraw),
+      system: tutorSystemPrompt(allowAiDraw || drawPlan.mode === 'draw'),
       user: JSON.stringify(payload),
       boardImageBase64: boardImageRaw || null,
       photoBase64: photo ? `data:${photo.mime};base64,${photo.base64}` : null,
@@ -328,13 +354,6 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
 
     // Si el servidor negó el visto, no dejar que el texto diga "ya puedes a Listo".
     let speakSafe = speakToChild
-    const drawn = allowAiDraw
-      ? await resolveModelScene(value, { userId, kind: 'task_tutor' })
-      : null
-    const boardFallback = drawn && !drawn.ok ? drawn.fallback : null
-    if (boardFallback && !speakSafe.includes('lo armamos juntos')) {
-      speakSafe = truncateChars(`${speakSafe} ${SCENE_FALLBACK_MESSAGE}`, MAX_SPEAK)
-    }
     if (!task.study_passed && verdict?.verdict === 'incorrect') {
       const gated = applyVerdictToMastery({
         verdict,
@@ -354,6 +373,16 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         MAX_SPEAK,
       )
     }
+    const settled = await settleBoardDraw({
+      plan: drawPlan,
+      speak: speakSafe,
+      modelValue: value,
+      usage: { userId, kind: 'task_tutor' },
+      origin: 'study',
+      maxSpeak: MAX_SPEAK,
+    })
+    speakSafe = settled.speak
+    const boardFallback = settled.fallback
 
     const reply = {
       phase,
@@ -373,8 +402,8 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       ),
       exercise,
       draw_ops: [],
-      board_items: drawn && drawn.ok ? drawn.items : [],
-      scene: drawn && drawn.ok ? drawn.scene : null,
+      board_items: settled.items,
+      scene: settled.scene,
       highlight: highlightFromModel(value),
       board_fallback: boardFallback,
       verdict,
@@ -399,6 +428,9 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     }
     context.messages.push(await insertMessage(taskId, 'assistant', visible))
     await saveSessionMeta(context)
+    if (settled.pendingWrite !== 'keep') {
+      await savePendingBoardFacts(taskId, settled.pendingWrite)
+    }
     if (updateUserMemory) await saveUserMemory(userId, reply.user_memory_summary)
 
     let xpAward = null as Awaited<ReturnType<typeof awardXp>> | null

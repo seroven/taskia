@@ -15,6 +15,7 @@ export type LlmUsageKind =
   | 'planet_generate'
   | 'daily_summary'
   | 'board_intent'
+  | 'board_facts'
 
 export interface LlmUsageContext {
   userId: number
