@@ -1,4 +1,4 @@
-import { defaultLabels, formatMeasure, rotateAround } from './geom.js'
+import { defaultLabels, formatMeasure, nearly, rotateAround } from './geom.js'
 import { evalExpr, parseMath, type ParsedMath } from './expression.js'
 import { MAX_CANON, type Pt, type Scene, type SceneIssue, type SceneObject } from './types.js'
 
@@ -77,6 +77,63 @@ function vertexId(shapeId: string, label: string) {
   return `${shapeId}.${label}`
 }
 
+function angleText(degrees: number) {
+  return `${formatMeasure(degrees)}°`
+}
+
+function emitVertexAngles(
+  object: SceneObject,
+  labels: string[],
+  known: Array<number | undefined>,
+  texts: Array<string | undefined>,
+  out: Canon[],
+) {
+  const ids = labels.map((label) => vertexId(object.id, label))
+  const angles: Record<string, number> = {}
+  known.forEach((value, index) => {
+    if (value != null) angles[labels[index]!] = value
+  })
+  const polygon = out.find((item) => item.kind === 'polygon' && item.id === object.id)
+  if (polygon && polygon.kind === 'polygon' && Object.keys(angles).length > 0) polygon.angles = angles
+  ids.forEach((id, index) => {
+    out.push({
+      kind: 'angle',
+      id,
+      vertex: id,
+      from: ids[(index + ids.length - 1) % ids.length]!,
+      to: ids[(index + 1) % ids.length]!,
+      ...(known[index] != null ? { degrees: known[index] } : {}),
+      ...(texts[index] ? { label: texts[index] } : {}),
+      sourceId: object.id,
+    })
+  })
+}
+
+function triangleFromSides(ab: number, bc: number, ca: number): Pt[] | null {
+  if (ab + bc <= ca || ab + ca <= bc || bc + ca <= ab) return null
+  const x = (ca * ca + ab * ab - bc * bc) / (2 * ab)
+  const height = ca * ca - x * x
+  if (height <= 1e-8) return null
+  return [
+    { x: 0, y: 0 },
+    { x: ab, y: 0 },
+    { x, y: Math.sqrt(height) },
+  ]
+}
+
+function triangleFromAngles(alpha: number, beta: number, base: number): Pt[] | null {
+  const gamma = 180 - alpha - beta
+  if (gamma <= 0) return null
+  const sin = (degrees: number) => Math.sin((degrees * Math.PI) / 180)
+  const adjacent = (base * sin(beta)) / sin(gamma)
+  const radians = (alpha * Math.PI) / 180
+  return [
+    { x: 0, y: 0 },
+    { x: base, y: 0 },
+    { x: adjacent * Math.cos(radians), y: adjacent * Math.sin(radians) },
+  ]
+}
+
 function interactive(object: SceneObject) {
   return object.interactive === true
 }
@@ -110,6 +167,8 @@ function emitLoop(
   out.push({ kind: 'polygon', id: object.id, vertices: ids, sourceId: object.id })
 }
 
+const DEFAULT_TRIANGLE_BASE = 6
+
 registerExpander('rectangle', (object, out) => {
   const width = Number(object.width)
   const height = Number(object.height)
@@ -128,6 +187,24 @@ registerExpander('rectangle', (object, out) => {
   )
 })
 
+registerExpander('square', (object, out) => {
+  const side = Number(object.side)
+  const labels = (object.vertexLabels as string[] | undefined) ?? defaultLabels(4)
+  emitLoop(
+    object,
+    [
+      { x: 0, y: 0 },
+      { x: side, y: 0 },
+      { x: side, y: side },
+      { x: 0, y: side },
+    ],
+    labels,
+    [formatMeasure(side), undefined, undefined, undefined],
+    out,
+  )
+  emitVertexAngles(object, labels, [90, 90, 90, 90], [], out)
+})
+
 registerExpander('right_triangle', (object, out) => {
   const a = Number(object.a)
   const b = Number(object.b)
@@ -141,6 +218,44 @@ registerExpander('right_triangle', (object, out) => {
     ],
     labels,
     [formatMeasure(a), undefined, formatMeasure(b)],
+    out,
+  )
+})
+
+registerExpander('triangle', (object, out, issues) => {
+  const labels = (object.vertexLabels as string[] | undefined) ?? defaultLabels(3)
+  if (Array.isArray(object.sides)) {
+    const sides = object.sides as number[]
+    const points = triangleFromSides(Number(sides[0]), Number(sides[1]), Number(sides[2]))
+    if (!points) {
+      issues.push({ code: 'OVERCONSTRAINED', objectId: object.id })
+      return
+    }
+    emitLoop(object, points, labels, sides.map((side) => formatMeasure(Number(side))), out)
+    emitVertexAngles(object, labels, [], [], out)
+    return
+  }
+  const angles = object.angles as number[]
+  const alpha = Number(angles[0])
+  const beta = Number(angles[1])
+  const gamma = 180 - alpha - beta
+  const givenThird = angles.length === 3 ? Number(angles[2]) : null
+  if (gamma <= 0 || (givenThird != null && !nearly(givenThird, gamma))) {
+    issues.push({ code: 'OVERCONSTRAINED', objectId: object.id })
+    return
+  }
+  const base = typeof object.base === 'number' ? Number(object.base) : DEFAULT_TRIANGLE_BASE
+  const points = triangleFromAngles(alpha, beta, base)
+  if (!points) {
+    issues.push({ code: 'OVERCONSTRAINED', objectId: object.id })
+    return
+  }
+  emitLoop(object, points, labels, [], out)
+  emitVertexAngles(
+    object,
+    labels,
+    [alpha, beta, gamma],
+    [angleText(alpha), angleText(beta), givenThird != null ? angleText(gamma) : undefined],
     out,
   )
 })

@@ -7,11 +7,18 @@ Si no hace falta dibujar, scene=null.
 Formas (generan sus vértices solas). Ejes alineados. Vértices en sentido antihorario desde abajo a la izquierda. width es el lado horizontal, height el vertical. rotation opcional, grados antihorarios, alrededor del primer vértice.
 - rectangle: {"id":"R","type":"rectangle","width":6,"height":4,"vertexLabels":["A","B","C","D"]}
   A abajo-izquierda, B abajo-derecha, C arriba-derecha, D arriba-izquierda.
+- square: {"id":"S","type":"square","side":4,"vertexLabels":["A","B","C","D"]}
+  Mismos vértices que el rectángulo. El lado dado es side.
 - right_triangle: {"id":"T","type":"right_triangle","a":3,"b":4,"vertexLabels":["A","B","C"]}
   Ángulo recto en A. a = AB horizontal. b = AC vertical. Hipotenusa BC.
+- triangle: tres lados, o dos ángulos. No los dos a la vez.
+  {"id":"T","type":"triangle","sides":[3,4,5]} son AB, BC y CA.
+  {"id":"T","type":"triangle","angles":[50,60]} son los de A y B. No mandes el de C.
+  Si omites base, AB mide 6. El ángulo de un vértice es angle:T.C.
 - regular_polygon: {"id":"P","type":"regular_polygon","sides":6,"sideLength":2}
 - path (polígono ortogonal, debe cerrar): primer tramo a la derecha, cada turn es 90° antes del tramo. left es antihorario.
   {"id":"L","type":"path","steps":[{"length":6},{"turn":"left","length":4},{"turn":"left","length":6},{"turn":"left","length":4}]}
+  Una L (rectángulo 6×4 menos un cuadrado 2×2) cierra con 6, left 2, left 2, right 2, left 4, left 4.
 
 Polígono irregular: declara cada punto y sus lados o ángulos. Nada de ángulos rectos "porque sí".
 {"id":"A","type":"point"} ... {"id":"Q","type":"polygon","vertices":["A","B","C","D"],"sides":{"AB":6,"BC":4,"CD":6,"DA":4},"angles":{"B":90,"C":90,"D":90}}

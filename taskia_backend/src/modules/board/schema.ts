@@ -6,7 +6,9 @@ const REF = /^[A-Za-z][A-Za-z0-9_.]{0,40}$/
 
 const TYPES = new Set([
   'rectangle',
+  'square',
   'right_triangle',
+  'triangle',
   'regular_polygon',
   'path',
   'point',
@@ -79,7 +81,12 @@ function parseObject(raw: unknown): { ok: true; object: SceneObject } | { ok: fa
 function checkObject(object: SceneObject): SceneIssue | null {
   const id = object.id
   if (object.type === 'rectangle') return needSize(object, id, ['width', 'height'])
+  if (object.type === 'square') {
+    if (!positive(object.side)) return { code: 'BAD_SCHEMA', objectId: id }
+    return labelsOk(object, id, 4) ?? rotationOk(object, id)
+  }
   if (object.type === 'right_triangle') return needSize(object, id, ['a', 'b'])
+  if (object.type === 'triangle') return triangleOk(object, id)
   if (object.type === 'regular_polygon') {
     const sides = num(object.sides)
     const side = num(object.sideLength)
@@ -277,6 +284,25 @@ function parseTask(raw: unknown): { ok: true; task: SceneTask } | { ok: false; i
   return { ok: true, task }
 }
 
+function triangleOk(object: SceneObject, id: string): SceneIssue | null {
+  const hasSides = Array.isArray(object.sides)
+  const hasAngles = Array.isArray(object.angles)
+  if (hasSides === hasAngles) return { code: 'BAD_SCHEMA', objectId: id }
+  if (hasSides) {
+    const sides = object.sides as unknown[]
+    if (sides.length !== 3 || sides.some((side) => !positive(side)) || object.base != null) {
+      return { code: 'BAD_SCHEMA', objectId: id }
+    }
+  } else {
+    const angles = object.angles as unknown[]
+    if (angles.length < 2 || angles.length > 3 || angles.some((angle) => !acute(angle))) {
+      return { code: 'BAD_SCHEMA', objectId: id }
+    }
+    if (object.base != null && !positive(object.base)) return { code: 'BAD_SCHEMA', objectId: id }
+  }
+  return labelsOk(object, id, 3) ?? rotationOk(object, id)
+}
+
 function needSize(object: SceneObject, id: string, keys: string[]) {
   for (const key of keys) {
     if (!positive(object[key])) return { code: 'BAD_SCHEMA' as const, objectId: id }
@@ -311,6 +337,11 @@ function isRef(value: unknown) {
 function positive(value: unknown) {
   const n = num(value)
   return n != null && n > 0 && n <= 10000
+}
+
+function acute(value: unknown) {
+  const n = num(value)
+  return n != null && n > 0 && n < 180
 }
 
 function num(value: unknown) {

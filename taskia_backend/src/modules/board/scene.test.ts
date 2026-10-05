@@ -304,7 +304,7 @@ test('una escena que no cubre los hechos es MISSING_FACT', () => {
 test('unsupported no reintenta la escena', async () => {
   let calls = 0
   const drawn = await drawSceneWithRetries({
-    initial: { schemaVersion: 1, objects: [{ id: 'S', type: 'square', side: 4 }] },
+    initial: { schemaVersion: 1, objects: [{ id: 'S', type: 'not_a_shape', side: 4 }] },
     retry: async () => {
       calls += 1
       return null
@@ -462,6 +462,91 @@ test('una alternativa que no contiene la respuesta no se publica', () => {
   const prepared = prepareScene(scene)
   assert.equal(prepared.ok, false)
   if (!prepared.ok) assert.equal(prepared.issues[0]?.code, 'ANSWER_MISMATCH')
+})
+
+const elbow = {
+  schemaVersion: 1,
+  objects: [
+    {
+      id: 'L',
+      type: 'path',
+      steps: [
+        { length: 6 },
+        { turn: 'left', length: 2 },
+        { turn: 'left', length: 2 },
+        { turn: 'right', length: 2 },
+        { turn: 'left', length: 4 },
+        { turn: 'left', length: 4 },
+      ],
+    },
+  ],
+}
+
+test('el cuadrado de lado 4 tiene área 16 y ángulo recto en A', () => {
+  const prepared = prepareScene({
+    schemaVersion: 1,
+    objects: [
+      { id: 'S', type: 'square', side: 4 },
+      { id: 'm', type: 'mark', kind: 'right_angle', of: 'S.A' },
+    ],
+    task: { type: 'enter_value', target: 'area:S', claimedAnswer: 16 },
+  })
+  assert.equal(prepared.ok, true)
+  if (!prepared.ok || prepared.answer.status !== 'value') return
+  assert.ok(Math.abs(prepared.answer.value - 16) < 0.02)
+})
+
+test('la L tiene perímetro 20 y área 20', () => {
+  const perimeter = prepareScene({ ...elbow, task: { type: 'enter_value', target: 'perimeter:L', claimedAnswer: 20 } })
+  const area = prepareScene({ ...elbow, task: { type: 'enter_value', target: 'area:L', claimedAnswer: 20 } })
+  assert.equal(perimeter.ok, true)
+  assert.equal(area.ok, true)
+  if (!perimeter.ok || !area.ok) return
+  if (perimeter.answer.status === 'value') assert.ok(Math.abs(perimeter.answer.value - 20) < 0.02)
+  if (area.answer.status === 'value') assert.ok(Math.abs(area.answer.value - 20) < 0.02)
+  const texts = area.items.map((item) => item.text).filter(Boolean)
+  assert.equal(texts.includes('20'), false)
+})
+
+test('dos ángulos de 50° y 60° dejan el tercero en 70, sin depender de la base', () => {
+  function third(extra: Record<string, unknown> = {}) {
+    return prepareScene({
+      schemaVersion: 1,
+      objects: [{ id: 'T', type: 'triangle', angles: [50, 60], ...extra }],
+      task: { type: 'enter_value', target: 'angle:T.C', claimedAnswer: 70 },
+    })
+  }
+  for (const extra of [{}, { base: 10 }, { rotation: 30 }, { base: 3, rotation: -20 }]) {
+    const prepared = third(extra)
+    assert.equal(prepared.ok, true, JSON.stringify(extra))
+    if (!prepared.ok || prepared.answer.status !== 'value') continue
+    assert.ok(Math.abs(prepared.answer.value - 70) < 0.02, String(prepared.answer.value))
+    assert.equal(
+      prepared.items.some((item) => item.text === '70' || item.text === '70°'),
+      false,
+    )
+  }
+  const wrong = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'T', type: 'triangle', angles: [50, 60] }],
+    task: { type: 'enter_value', target: 'angle:T.C', claimedAnswer: 80 },
+  })
+  assert.equal(wrong.ok, false)
+  if (!wrong.ok) assert.equal(wrong.issues[0]?.code, 'ANSWER_MISMATCH')
+
+  const flat = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'T', type: 'triangle', sides: [1, 1, 3] }],
+  })
+  assert.equal(flat.ok, false)
+  if (!flat.ok) assert.equal(flat.issues[0]?.code, 'OVERCONSTRAINED')
+
+  const wide = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'T', type: 'triangle', angles: [50, 140] }],
+  })
+  assert.equal(wide.ok, false)
+  if (!wide.ok) assert.equal(wide.issues[0]?.code, 'OVERCONSTRAINED')
 })
 
 test('una marca de ángulo recto sobre un ángulo de 60° se rechaza', () => {

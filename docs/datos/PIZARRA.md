@@ -83,9 +83,11 @@ Macros, que se expanden a puntos y segmentos antes de validar la geometría:
 | Tipo | Qué fija |
 | --- | --- |
 | `rectangle` | `width` horizontal, `height` vertical. Vértices A abajo-izquierda, B abajo-derecha, C arriba-derecha, D arriba-izquierda. Implica ángulos rectos. |
+| `square` | `side`. Mismos vértices que el rectángulo. Los cuatro ángulos son rectos. |
 | `right_triangle` | Catetos `a` (AB horizontal) y `b` (AC vertical). Ángulo recto en A. Hipotenusa BC, id `T.e1` si la forma se llama T. Los catetos pueden llevar su medida. La hipotenusa no se rotula: sería la solución. |
+| `triangle` | Tres lados `sides` (AB, BC, CA), o dos o tres ángulos en A, B y, si viene, C. Con solo ángulos la base AB vale 6, salvo que venga `base`. El ángulo de un vértice es `angle:T.C`. El tercero no se rotula. |
 | `regular_polygon` | `sides` de 3 a 12 y `sideLength`. Primer lado hacia la derecha. |
-| `path` | Polígono ortogonal. Primer tramo a la derecha. Cada `turn` es 90°: `left` antihorario, `right` horario. Si no vuelve al origen (tolerancia 0,001), `UNDERDETERMINED`. |
+| `path` | Polígono ortogonal. Primer tramo a la derecha. Cada `turn` es 90°: `left` antihorario, `right` horario. Si no vuelve al origen (tolerancia 0,001), `UNDERDETERMINED`. La L de 6×4 menos un cuadrado de 2×2 es 6, left 2, left 2, right 2, left 4, left 4. Perímetro 20 y área 20, medidos sobre el contorno. |
 
 `rotation`, si viene, son grados antihorarios alrededor del primer vértice.
 
@@ -168,4 +170,4 @@ No hay sellos ni lápiz libre. El arrastre de una forma violeta no existe. Resal
 
 ## Qué este motor no hace
 
-No hay fracciones dibujadas, gráfico de barras ni suma en columna. No hay cuadrado ni triángulo general como macros: el triángulo rectángulo y el `path` sí. El catálogo del prompt está escrito en `prompt.ts`. Un test falla si un expansor registrado no aparece ahí con su nombre. El registro (`registerExpander`, `registerMeasurer`) existe para que una primitiva nueva sume su expansor y su medidor sin reescribir el solver. Taskia dibuja el enunciado, no la solución.
+No hay fracciones dibujadas, gráfico de barras ni suma en columna. El catálogo del prompt está escrito en `prompt.ts`. Un test falla si un expansor registrado no aparece ahí con su nombre. El registro (`registerExpander`, `registerMeasurer`) existe para que una primitiva nueva sume su expansor y su medidor sin reescribir el solver. Taskia dibuja el enunciado, no la solución.
