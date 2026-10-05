@@ -2,6 +2,8 @@ import type { Canon } from './expand.js'
 import { GRID_COLS, GRID_ROWS, type BoardItem, type Pt, type SceneIssue } from './types.js'
 
 const MARGIN = 10
+/** Una unidad de la escena (cm, lado, radio) no pasa de estas celdas. Si no cabe, se achica. */
+const MAX_CELLS_PER_UNIT = 8
 
 type Placed = { col: number; row: number }
 
@@ -157,7 +159,8 @@ function layout(points: Map<string, Pt>) {
   const maxY = Math.max(...values.map((point) => point.y))
   const spanX = Math.max(maxX - minX, 0.001)
   const spanY = Math.max(maxY - minY, 0.001)
-  const scale = Math.min((GRID_COLS - MARGIN * 2) / spanX, (GRID_ROWS - MARGIN * 2) / spanY)
+  const fit = Math.min((GRID_COLS - MARGIN * 2) / spanX, (GRID_ROWS - MARGIN * 2) / spanY)
+  const scale = Math.min(fit, MAX_CELLS_PER_UNIT)
   const usedW = spanX * scale
   const usedH = spanY * scale
   const originCol = (GRID_COLS - usedW) / 2

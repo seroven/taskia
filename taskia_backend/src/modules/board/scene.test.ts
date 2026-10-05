@@ -15,6 +15,22 @@ const rectangle = {
   task: { type: 'enter_value', target: 'length:s', unit: 'cm' },
 }
 
+test('un rectángulo 6×4 cabe sin llenar la pizarra', () => {
+  const prepared = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'R', type: 'rectangle', width: 6, height: 4 }],
+  })
+  assert.equal(prepared.ok, true)
+  if (!prepared.ok) return
+  const cols = prepared.items.flatMap((item) => [item.col, item.endCol ?? item.col])
+  const rows = prepared.items.flatMap((item) => [item.row, item.endRow ?? item.row])
+  const width = Math.max(...cols) - Math.min(...cols)
+  const height = Math.max(...rows) - Math.min(...rows)
+  assert.ok(width <= 6 * 8 + 1, `ancho ${width}`)
+  assert.ok(height <= 4 * 8 + 1, `alto ${height}`)
+  assert.ok(width >= 40, `ancho ${width}`)
+})
+
 test('el segmento del punto medio al vértice opuesto mide 5', () => {
   const prepared = prepareScene(rectangle)
   assert.equal(prepared.ok, true)
