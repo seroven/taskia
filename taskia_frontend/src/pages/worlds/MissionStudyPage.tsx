@@ -101,14 +101,17 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
     setChatError(null)
     try {
       let boardAttach:
-        | { description?: string; image_base64?: string | null }
+        | { description?: string; image_base64?: string | null; board_json?: unknown }
         | undefined
       if (mission?.uses_board) {
         const attachment = await boardRef.current?.getBoardAttachment()
+        const boardJson = boardRef.current?.getScene()
         if ((attachment?.elementCount ?? 0) > 0) {
           boardAttach = attachment?.imageBase64
-            ? { image_base64: attachment.imageBase64 }
-            : { description: attachment?.description }
+            ? { image_base64: attachment.imageBase64, board_json: boardJson }
+            : { description: attachment?.description, board_json: boardJson }
+        } else {
+          boardAttach = { board_json: boardJson }
         }
       }
       const result = await api.missionChat(
@@ -135,9 +138,14 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         const copy = xpToastCopy(result.xp_gained)
         if (copy) showToast({ tone: 'success', ...copy })
       }
-      const ops = parseDrawOps(result.reply.draw_ops)
-      if (ops.length > 0) {
-        boardRef.current?.applyDrawOps(ops)
+      const items = result.reply.board_items ?? []
+      if (items.length > 0 && mission?.uses_board) {
+        boardRef.current?.applyAiItems(items, result.reply.scene, result.reply.highlight)
+      } else if ((result.reply.highlight?.length ?? 0) > 0 && mission?.uses_board) {
+        boardRef.current?.applyAiItems([], undefined, result.reply.highlight)
+      } else {
+        const ops = parseDrawOps(result.reply.draw_ops)
+        if (ops.length > 0) boardRef.current?.applyDrawOps(ops)
       }
     } catch (err) {
       setChatError(errorMessage(err))

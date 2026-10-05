@@ -216,7 +216,7 @@ export const api = {
   studyChat(
     task_id: number,
     user_message: string,
-    board?: { description?: string; image_base64?: string | null },
+    board?: { description?: string; image_base64?: string | null; board_json?: unknown },
     allowAiDraw = false,
     fromVoice = false,
     photoBase64: string | null = null,
@@ -227,6 +227,7 @@ export const api = {
         user_message,
         board_description: board?.description ?? null,
         board_image_base64: board?.image_base64 ?? null,
+        board_json: board?.board_json ?? null,
         allow_ai_draw: allowAiDraw,
         from_voice: fromVoice,
         photo_base64: photoBase64,
@@ -349,7 +350,7 @@ export const api = {
   missionChat(
     mission_id: number,
     user_message: string,
-    board?: { description?: string; image_base64?: string | null },
+    board?: { description?: string; image_base64?: string | null; board_json?: unknown },
     allowAiDraw = false,
     fromVoice = false,
     photoBase64: string | null = null,
@@ -362,6 +363,7 @@ export const api = {
           user_message,
           board_description: board?.description ?? null,
           board_image_base64: board?.image_base64 ?? null,
+          board_json: board?.board_json ?? null,
           allow_ai_draw: allowAiDraw,
           from_voice: fromVoice,
           photo_base64: photoBase64,

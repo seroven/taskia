@@ -383,10 +383,12 @@ Así puede dictar el relato del cuaderno o explicar un razonamiento con más com
 
 ### Pizarra
 
-Es una grilla de **formas** (cuadros, círculos, triángulos, líneas, texto, sellos, etc.), no un lápiz libre tipo pintura.
+Es una grilla de **formas** (rectángulo, círculo, triángulo, línea, flecha y texto), no un lápiz libre. La barra es siempre la misma: Mover, Formas, Texto y Color. En una esquina quedan deshacer, rehacer, zoom y papelera.
 
-- El explorador arma su respuesta en el lienzo.
-- Si el explorador pide en el mensaje que miren su dibujo, Taskia lo revisa. Si pide que se lo dibujen, Taskia plantea el ejercicio en la pizarra. No hay interruptores: una pregunta corta a la IA, solo con esa frase, decide cuál de las dos acciones corresponde.
+- El explorador arma su respuesta en el lienzo. Si selecciona una forma suya, puede escribir la medida al lado.
+- Si pide en el mensaje que miren su dibujo, el código mide lo que se puede calcular y Taskia solo explica ese resultado. Si no se puede medir, Taskia no afirma si está bien o mal. Una foto del cuaderno tampoco se califica como número exacto.
+- Si pide que se lo dibujen, Taskia describe la figura (medidas y relaciones, no coordenadas). El servidor la arma, la comprueba y la pinta en violeta. Si no logra una figura válida, lo dice y deja la pizarra libre.
+- Un ejercicio que el código marca mal no cuenta para los dos problemas ni para el visto.
 - En móvil suele alternarse la vista chat / pizarra; en pantallas grandes pueden convivir mejor.
 
 El dibujo que hace Taskia no se “empuja” como si fuera una ficha movible del niño: es parte del enunciado o la guía.

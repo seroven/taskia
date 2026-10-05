@@ -1,4 +1,5 @@
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
+import { gradeBoard, isSceneRecord, prepareScene, SCENE_RETRY_SYSTEM } from '../../board/index.js'
 import {
   CHALLENGE_GRADE_SYSTEM,
   CHALLENGE_STATEMENT_DRAW_SYSTEM,
@@ -11,7 +12,8 @@ import {
   distributeQuestionCounts,
   drawOpsFitPrompt,
   estimateMaxQuestionsFromMaterial,
-  fallbackDrawOpsForPrompt,
+  fallbackSceneForPrompt,
+  figureFitsPrompt,
   formatCorrectAnswer,
   gradeMultipleChoice,
   groupMissionsByCourse,
@@ -19,6 +21,8 @@ import {
   normalizeAnswerKey,
   normalizeDrawOps,
   normalizeOptionsList,
+  packScene,
+  publishPromptFigure,
   sanitizeFittedDrawOps,
   shuffleArray,
 } from '../lib/challenge-logic.js'
@@ -112,40 +116,76 @@ async function ensureChallengeBoardDrawOps(
     })
   }
   if (boardItems.length === 0) return
-  const toDraw = boardItems.filter((row) => !drawOpsFitPrompt(row.prompt, row.item.draw_ops))
-  if (toDraw.length > 0) {
+  let pending = boardItems.filter((row) => !figureFitsPrompt(row.prompt, row.item.scene ?? row.item.draw_ops))
+  for (let attempt = 0; attempt < 3 && pending.length > 0; attempt += 1) {
     try {
       const raw = await callGemini({
-        system: CHALLENGE_STATEMENT_DRAW_SYSTEM,
-        user: JSON.stringify({
-          problems: toDraw.map((row, index) => ({
-            index,
-            prompt: row.prompt,
-            answer_key: typeof row.item.answer_key === 'string' ? row.item.answer_key : '',
-          })),
-        }),
+        system: attempt === 0 ? CHALLENGE_STATEMENT_DRAW_SYSTEM : SCENE_RETRY_SYSTEM,
+        user: JSON.stringify(
+          attempt === 0
+            ? {
+                problems: pending.map((row, index) => ({
+                  index,
+                  prompt: row.prompt,
+                  answer_key: typeof row.item.answer_key === 'string' ? row.item.answer_key : '',
+                })),
+              }
+            : {
+                scenes: pending.map((row, index) => {
+                  const checked = prepareScene(row.item.scene)
+                  return {
+                    index,
+                    scene: row.item.scene ?? null,
+                    errors: checked.ok ? [] : checked.issues,
+                  }
+                }),
+              },
+        ),
         usage: { userId, kind: 'challenge_generate' },
       })
       const parsed = JSON.parse(extractJson(raw)) as unknown
+      const still: typeof pending = []
       if (Array.isArray(parsed)) {
+        const used = new Set<number>()
         for (const row of parsed) {
           if (!row || typeof row !== 'object') continue
           const rec = row as Record<string, unknown>
           const index = Number(rec.index)
-          if (!Number.isFinite(index) || !toDraw[index]) continue
-          if (drawOpsFitPrompt(toDraw[index]!.prompt, rec.draw_ops)) {
-            toDraw[index]!.item.draw_ops = sanitizeFittedDrawOps(toDraw[index]!.prompt, rec.draw_ops)
+          if (!Number.isFinite(index) || !pending[index] || used.has(index)) continue
+          used.add(index)
+          const scene = rec.scene ?? rec
+          if (figureFitsPrompt(pending[index]!.prompt, scene)) pending[index]!.item.scene = scene
+          else {
+            pending[index]!.item.scene = scene
+            still.push(pending[index]!)
           }
         }
+        pending.forEach((row, index) => {
+          if (!used.has(index)) still.push(row)
+        })
+      } else {
+        still.push(...pending)
       }
+      pending = still
     } catch (err) {
-      console.error('[challenge:board-ops] no se pudieron completar draw_ops', err)
+      console.info('[board] scene retry failed', err instanceof Error ? err.name : 'error')
+      break
     }
   }
   for (const row of boardItems) {
-    if (!drawOpsFitPrompt(row.prompt, row.item.draw_ops)) {
-      row.item.draw_ops = fallbackDrawOpsForPrompt(row.prompt)
+    const current = row.item.scene ?? row.item.draw_ops
+    if (isSceneRecord(current) && figureFitsPrompt(row.prompt, current)) {
+      const packed = packScene(current)
+      if (packed) {
+        row.item.draw_ops = packed
+        continue
+      }
     }
+    if (Array.isArray(current) && drawOpsFitPrompt(row.prompt, current)) {
+      row.item.draw_ops = sanitizeFittedDrawOps(row.prompt, current)
+      continue
+    }
+    row.item.draw_ops = fallbackSceneForPrompt(row.prompt)
   }
 }
 
@@ -295,7 +335,7 @@ export async function getChallengeDetail(challengeId: number, userId: number) {
       options,
       requires_board: Number(question.requires_board) !== 0,
       prompt_draw_ops:
-        Number(question.requires_board) !== 0 ? normalizeDrawOps(question.prompt_draw_ops) : [],
+        Number(question.requires_board) !== 0 ? publishPromptFigure(question.prompt_draw_ops) : [],
       answered,
       is_correct: question.is_correct == null ? null : Number(question.is_correct) !== 0,
       user_answer: null as string | null,
@@ -477,9 +517,13 @@ export async function startChallenge(userId: number, body: Record<string, unknow
       options,
     )
     const promptDrawOps = requiresBoard
-      ? drawOpsFitPrompt(prompt, item.draw_ops)
-        ? normalizeDrawOps(item.draw_ops)
-        : fallbackDrawOpsForPrompt(prompt)
+      ? isSceneRecord(item.scene) && figureFitsPrompt(prompt, item.scene)
+        ? packScene(item.scene)
+        : isSceneRecord(item.draw_ops) && figureFitsPrompt(prompt, item.draw_ops)
+          ? packScene(item.draw_ops)
+          : Array.isArray(item.draw_ops) && drawOpsFitPrompt(prompt, item.draw_ops)
+            ? normalizeDrawOps(item.draw_ops)
+            : fallbackSceneForPrompt(prompt)
       : null
     await insertChallengeQuestion({
       challengeId,
@@ -571,6 +615,29 @@ export async function finishChallenge(
     const requiresBoard = question.requiresBoard
     if (question.kind === 'multiple_choice') {
       graded.set(questionId, gradeMultipleChoice(submitted.user_answer, question.answerKey))
+    } else if (requiresBoard && isSceneRecord(question.promptDrawOps)) {
+      const verdict = gradeBoard({
+        scene: question.promptDrawOps,
+        board: submitted.board_json,
+        childMessage: submitted.user_answer,
+      })
+      if (verdict.verdict === 'correct' || verdict.verdict === 'incorrect') {
+        graded.set(questionId, verdict.verdict === 'correct')
+      } else {
+        const boardDescription =
+          submitted.board_description.trim() || describeBoardJson(submitted.board_json)
+        openItems.push({
+          question_id: questionId,
+          prompt: String(question.prompt ?? ''),
+          answer_key: question.answerKey,
+          child_answer: truncateChars(submitted.user_answer, 800),
+          requires_board: true,
+          board_description: truncateChars(`code_verdict=unverifiable. ${boardDescription}`, 1600),
+        })
+        if (submitted.board_image_base64.trim()) {
+          boardImages.push({ question_id: questionId, data: submitted.board_image_base64 })
+        }
+      }
     } else {
       const boardDescription =
         submitted.board_description.trim() || describeBoardJson(submitted.board_json)

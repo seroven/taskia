@@ -13,23 +13,25 @@ import {
   type ReactNode,
 } from 'react'
 import {
+  ArrowCounterClockwise,
   ArrowRight,
+  ArrowClockwise,
   Circle,
   Cursor,
-  Hand,
-  LineSegment,
   MagnifyingGlassMinus,
   MagnifyingGlassPlus,
   Rectangle,
   TextT,
   Trash,
   Triangle,
+  LineSegment,
 } from '@phosphor-icons/react'
 import type { DrawOp, GridColor, GridItem, GridStampId, StudyBoardScene } from '../../lib/studyProtocol'
 import {
   GRID_CELL,
   GRID_COLORS,
   applyDrawOpsToGrid,
+  applyAiItems,
   clampItem,
   describeGridScene,
   emptyGridScene,
@@ -57,6 +59,7 @@ export interface BoardAttachment {
 
 export interface GridBoardHandle {
   applyDrawOps: (ops: DrawOp[]) => void
+  applyAiItems: (items: GridItem[], scene?: unknown, highlightIds?: string[]) => void
   getBoardAttachment: () => Promise<BoardAttachment>
   getScene: () => StudyBoardScene | null
 }
@@ -78,21 +81,12 @@ type Tool =
   | 'text'
   | GridStampId
 
-const VIEW_TOOLS: Array<{ id: 'pan' | 'select'; label: string; icon: 'hand' | 'cursor' }> = [
-  { id: 'pan', label: 'Mano', icon: 'hand' },
-  { id: 'select', label: 'Seleccionar', icon: 'cursor' },
-]
-
-const DRAW_TOOLS: Array<{ id: Tool; label: string; icon?: 'rect' | 'circle' | 'tri' | 'line' | 'arrow' | 'text' }> = [
-  { id: 'rectangle', label: 'Cuadro', icon: 'rect' },
+const SHAPE_TOOLS: Array<{ id: Tool; label: string; icon: 'rect' | 'circle' | 'tri' | 'line' | 'arrow' }> = [
+  { id: 'rectangle', label: 'Rectángulo', icon: 'rect' },
   { id: 'ellipse', label: 'Círculo', icon: 'circle' },
   { id: 'triangle', label: 'Triángulo', icon: 'tri' },
   { id: 'line', label: 'Línea', icon: 'line' },
   { id: 'arrow', label: 'Flecha', icon: 'arrow' },
-  { id: 'text', label: 'Texto', icon: 'text' },
-  { id: 'right_triangle', label: 'Rectángulo 90°' },
-  { id: 'circle', label: 'Sello círculo' },
-  { id: 'square', label: 'Sello cuadro' },
 ]
 
 const COLOR_ORDER: GridColor[] = [
@@ -174,6 +168,8 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
       normalizeScene(initialBoard),
     )
     const [tool, setTool] = useState<Tool>('select')
+    const [shapesOpen, setShapesOpen] = useState(false)
+    const [colorsOpen, setColorsOpen] = useState(false)
     const [color, setColor] = useState<GridColor>(() => themeDefaultColor(theme))
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [editingId, setEditingId] = useState<string | null>(null)
@@ -194,6 +190,9 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
     const centeredRef = useRef(false)
     const gridPatternId = `taskia-grid-cells-${useId().replace(/:/g, '')}`
     const saveTimer = useRef<number | null>(null)
+    const historyRef = useRef<StudyBoardScene[]>([])
+    const futureRef = useRef<StudyBoardScene[]>([])
+    const gestureBase = useRef<StudyBoardScene | null>(null)
     const pendingTextEditRef = useRef<string | null>(null)
     const pendingCaretRef = useRef(0)
     const caretIndexRef = useRef(0)
@@ -249,6 +248,11 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
 
     const commit = useCallback(
       (next: StudyBoardScene) => {
+        if (!gestureBase.current) {
+          historyRef.current.push(sceneRef.current)
+          if (historyRef.current.length > 40) historyRef.current.shift()
+          futureRef.current = []
+        }
         setScene(next)
         sceneRef.current = next
         persist(next)
@@ -256,12 +260,36 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
       [persist],
     )
 
+    const undo = useCallback(() => {
+      const prev = historyRef.current.pop()
+      if (!prev) return
+      futureRef.current.push(sceneRef.current)
+      setScene(prev)
+      sceneRef.current = prev
+      persist(prev)
+      setSelectedIds([])
+    }, [persist])
+
+    const redo = useCallback(() => {
+      const next = futureRef.current.pop()
+      if (!next) return
+      historyRef.current.push(sceneRef.current)
+      setScene(next)
+      sceneRef.current = next
+      persist(next)
+      setSelectedIds([])
+    }, [persist])
+
     useImperativeHandle(
       ref,
       () => ({
         applyDrawOps(ops: DrawOp[]) {
           const next = applyDrawOpsToGrid(emptyGridScene(), ops)
           commit(next)
+          setSelectedIds([])
+        },
+        applyAiItems(items: GridItem[], scene?: unknown, highlightIds?: string[]) {
+          commit(applyAiItems(sceneRef.current, items, scene, highlightIds))
           setSelectedIds([])
         },
         async getBoardAttachment() {
@@ -504,6 +532,18 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
     }
 
     editorKeyRef.current = (event: KeyboardEvent) => {
+      if (!editingIdRef.current && (event.ctrlKey || event.metaKey)) {
+        const key = event.key.toLowerCase()
+        if (key === 'z') {
+          event.preventDefault()
+          if (event.shiftKey) redo()
+          else undo()
+        } else if (key === 'y') {
+          event.preventDefault()
+          redo()
+        }
+        return
+      }
       if (!editingIdRef.current) return
       if (event.ctrlKey || event.metaKey || event.altKey) return
       if (event.isComposing || event.key === 'Process') return
@@ -600,6 +640,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
     function onPointerDown(event: ReactPointerEvent<SVGSVGElement>) {
       const svg = svgRef.current
       if (!svg) return
+      gestureBase.current = sceneRef.current
       event.preventDefault()
       window.getSelection()?.removeAllRanges()
       if (editingId) finishTextEdit()
@@ -652,14 +693,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
         .find((item) => item.layer === 'student' && itemHitsCell(item, col, row))
       if (!hit) {
         setSelectedIds([])
-        drag.current = {
-          mode: 'press-marquee',
-          c0: col,
-          r0: row,
-          x: event.clientX,
-          y: event.clientY,
-        }
-        svg.setPointerCapture(event.pointerId)
+        beginPan(event, svg)
         return
       }
       const group = selectedIds.includes(hit.id)
@@ -768,6 +802,12 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
     }
 
     function onPointerUp() {
+      if (gestureBase.current && gestureBase.current !== sceneRef.current) {
+        historyRef.current.push(gestureBase.current)
+        if (historyRef.current.length > 40) historyRef.current.shift()
+        futureRef.current = []
+      }
+      gestureBase.current = null
       if (drag.current?.mode === 'draw') setTool('select')
       drag.current = null
       setPanning(false)
@@ -808,95 +848,170 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
     return (
       <div className={`grid-board${theme === 'dark' ? ' is-dark' : ''}`}>
         <div className="grid-board-toolbar" role="toolbar" aria-label="Herramientas de pizarra">
-          {VIEW_TOOLS.map((entry) => (
+          <button
+            type="button"
+            className={`grid-board-tool${tool === 'select' ? ' is-on' : ''}`}
+            title="Mover"
+            aria-label="Mover"
+            aria-pressed={tool === 'select'}
+            onClick={() => {
+              setTool('select')
+              setShapesOpen(false)
+              setColorsOpen(false)
+            }}
+          >
+            <Cursor size={16} weight="bold" />
+          </button>
+          <div className="grid-board-pop">
             <button
-              key={entry.id}
               type="button"
-              className={`grid-board-tool${tool === entry.id ? ' is-on' : ''}`}
-              title={entry.label}
-              aria-label={entry.label}
-              aria-pressed={tool === entry.id}
-              onClick={() => setTool(entry.id)}
-            >
-              {entry.icon === 'hand' && <Hand size={16} weight="bold" />}
-              {entry.icon === 'cursor' && <Cursor size={16} weight="bold" />}
-            </button>
-          ))}
-          <span className="grid-board-sep" aria-hidden />
-          {DRAW_TOOLS.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              className={`grid-board-tool${tool === entry.id ? ' is-on' : ''}`}
-              title={entry.label}
-              aria-label={entry.label}
-              aria-pressed={tool === entry.id}
-              onClick={() => setTool(entry.id)}
-            >
-              {entry.icon === 'rect' && <Rectangle size={16} weight="bold" />}
-              {entry.icon === 'circle' && <Circle size={16} weight="bold" />}
-              {entry.icon === 'tri' && <Triangle size={16} weight="bold" />}
-              {entry.icon === 'line' && <LineSegment size={16} weight="bold" />}
-              {entry.icon === 'arrow' && <ArrowRight size={16} weight="bold" />}
-              {entry.icon === 'text' && <TextT size={16} weight="bold" />}
-              {!entry.icon && <span>{entry.label}</span>}
-            </button>
-          ))}
-          <span className="grid-board-sep" aria-hidden />
-          {COLOR_ORDER.map((c) => (
-            <button
-              key={c}
-              type="button"
-              data-color={c}
-              className={`grid-board-color${color === c ? ' is-on' : ''}`}
-              style={{ '--swatch': GRID_COLORS[c] } as CSSProperties}
-              aria-label={`Color ${c}`}
-              title={c}
+              className={`grid-board-tool${shapesOpen || SHAPE_TOOLS.some((entry) => entry.id === tool) ? ' is-on' : ''}`}
+              title="Formas"
+              aria-label="Formas"
+              aria-expanded={shapesOpen}
               onClick={() => {
-                setColor(c)
-                const ids = new Set(
-                  selectedItems
-                    .filter((item) => item.layer === 'student')
-                    .map((item) => item.id),
-                )
-                if (ids.size === 0) return
+                setShapesOpen((open) => !open)
+                setColorsOpen(false)
+              }}
+            >
+              <Rectangle size={16} weight="bold" />
+            </button>
+            {shapesOpen && (
+              <div className="grid-board-menu" role="menu">
+                {SHAPE_TOOLS.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    className={`grid-board-tool${tool === entry.id ? ' is-on' : ''}`}
+                    title={entry.label}
+                    aria-label={entry.label}
+                    onClick={() => {
+                      setTool(entry.id)
+                      setShapesOpen(false)
+                    }}
+                  >
+                    {entry.icon === 'rect' && <Rectangle size={16} weight="bold" />}
+                    {entry.icon === 'circle' && <Circle size={16} weight="bold" />}
+                    {entry.icon === 'tri' && <Triangle size={16} weight="bold" />}
+                    {entry.icon === 'line' && <LineSegment size={16} weight="bold" />}
+                    {entry.icon === 'arrow' && <ArrowRight size={16} weight="bold" />}
+                    <span>{entry.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            className={`grid-board-tool${tool === 'text' ? ' is-on' : ''}`}
+            title="Texto"
+            aria-label="Texto"
+            aria-pressed={tool === 'text'}
+            onClick={() => {
+              setTool('text')
+              setShapesOpen(false)
+              setColorsOpen(false)
+            }}
+          >
+            <TextT size={16} weight="bold" />
+          </button>
+          <div className="grid-board-pop">
+            <button
+              type="button"
+              className={`grid-board-tool${colorsOpen ? ' is-on' : ''}`}
+              title="Color"
+              aria-label="Color"
+              aria-expanded={colorsOpen}
+              onClick={() => {
+                setColorsOpen((open) => !open)
+                setShapesOpen(false)
+              }}
+            >
+              <span className="grid-board-swatch" style={{ '--swatch': GRID_COLORS[color] } as CSSProperties} />
+            </button>
+            {colorsOpen && (
+              <div className="grid-board-menu" role="menu">
+                {COLOR_ORDER.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    data-color={c}
+                    className={`grid-board-color${color === c ? ' is-on' : ''}`}
+                    style={{ '--swatch': GRID_COLORS[c] } as CSSProperties}
+                    aria-label={`Color ${c}`}
+                    onClick={() => {
+                      setColor(c)
+                      setColorsOpen(false)
+                      const ids = new Set(
+                        selectedItems.filter((item) => item.layer === 'student').map((item) => item.id),
+                      )
+                      if (ids.size === 0) return
+                      const current = sceneRef.current
+                      commit({
+                        ...current,
+                        items: current.items.map((item) => (ids.has(item.id) ? { ...item, color: c } : item)),
+                      })
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+          <span className="grid-board-corner">
+            <button type="button" className="grid-board-tool" aria-label="Deshacer" title="Deshacer" onClick={undo}>
+              <ArrowCounterClockwise size={16} weight="bold" />
+            </button>
+            <button type="button" className="grid-board-tool" aria-label="Rehacer" title="Rehacer" onClick={redo}>
+              <ArrowClockwise size={16} weight="bold" />
+            </button>
+            <button
+              type="button"
+              className="grid-board-tool"
+              aria-label="Alejar"
+              onClick={() => setZoom((z) => Math.max(0.15, Number((z - 0.15).toFixed(2))))}
+            >
+              <MagnifyingGlassMinus size={16} weight="bold" />
+            </button>
+            <button
+              type="button"
+              className="grid-board-tool"
+              aria-label="Acercar"
+              onClick={() => setZoom((z) => Math.min(2.2, Number((z + 0.15).toFixed(2))))}
+            >
+              <MagnifyingGlassPlus size={16} weight="bold" />
+            </button>
+            <button
+              type="button"
+              className="grid-board-tool"
+              aria-label="Borrar forma"
+              disabled={selectedItems.every((item) => item.layer === 'ai') || selectedItems.length === 0}
+              onClick={deleteSelected}
+            >
+              <Trash size={16} weight="bold" />
+            </button>
+          </span>
+        </div>
+        {selectedItems.length === 1 && selectedItems[0]?.layer === 'student' && (
+          <label className="grid-board-context">
+            Tu medida
+            <input
+              className="grid-board-measure"
+              inputMode="decimal"
+              value={selectedItems[0].text ?? ''}
+              onChange={(event) => {
+                const text = event.target.value.slice(0, 24)
+                const id = selectedItems[0]!.id
                 const current = sceneRef.current
                 commit({
                   ...current,
                   items: current.items.map((item) =>
-                    ids.has(item.id) ? { ...item, color: c } : item,
+                    item.id === id ? { ...item, text, w: Math.max(item.w, text.length || 1) } : item,
                   ),
                 })
               }}
             />
-          ))}
-          <span className="grid-board-sep" aria-hidden />
-          <button
-            type="button"
-            className="grid-board-tool"
-            aria-label="Alejar"
-            onClick={() => setZoom((z) => Math.max(0.15, Number((z - 0.15).toFixed(2))))}
-          >
-            <MagnifyingGlassMinus size={16} weight="bold" />
-          </button>
-          <button
-            type="button"
-            className="grid-board-tool"
-            aria-label="Acercar"
-            onClick={() => setZoom((z) => Math.min(2.2, Number((z + 0.15).toFixed(2))))}
-          >
-            <MagnifyingGlassPlus size={16} weight="bold" />
-          </button>
-          <button
-            type="button"
-            className="grid-board-tool"
-            aria-label="Borrar forma"
-            disabled={selectedItems.every((item) => item.layer === 'ai') || selectedItems.length === 0}
-            onClick={deleteSelected}
-          >
-            <Trash size={16} weight="bold" />
-          </button>
-        </div>
+          </label>
+        )}
 
         <div className="grid-board-stage">
           <svg
@@ -945,8 +1060,8 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
               <line x1={width} y1={0} x2={width} y2={height} className="grid-board-line" />
               <line x1={0} y1={height} x2={width} y2={height} className="grid-board-line" />
               {scene.items.map((item) => (
+                <g key={item.id} className={scene.highlightIds?.includes(item.id) ? 'grid-board-highlight' : undefined}>
                 <GridItemShape
-                  key={item.id}
                   item={item}
                   selected={
                     selectedIds.includes(item.id) &&
@@ -964,6 +1079,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
                   onResizeStart={startResize}
                   onEndpointStart={startEndpoint}
                 />
+                </g>
               ))}
               {marquee && (
                 <rect
@@ -1016,8 +1132,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(
           )}
         </div>
         <p className="grid-board-hint muted">
-          La mano mueve la vista. El cursor selecciona: clic en una forma o arrastrá un recuadro
-          para agarrar varias. El dibujo violeta es de Taskia y no se mueve.
+          Arrastrá el fondo para mover la vista. Tocá una forma tuya para seleccionarla. El dibujo violeta es de Taskia y no se mueve.
         </p>
       </div>
     )

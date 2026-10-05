@@ -1,6 +1,13 @@
 import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
 import { callGemini, classifyBoardIntent } from '../../../infrastructure/gemini/gemini.client.js'
 import { missionTutorPrompt } from '../../../prompts/mission-tutor.js'
+import {
+  applyVerdictToMastery,
+  gradeBoard,
+  highlightFromModel,
+  resolveModelScene,
+  SCENE_FALLBACK_MESSAGE,
+} from '../../board/index.js'
 import { awardXp, clampEffortScore, xpForMission } from '../../../services/xp.js'
 import {
   AppError,
@@ -13,7 +20,6 @@ import {
   stripPrematureReadyCelebration,
   truncateChars,
 } from '../../../utils/helpers.js'
-import { normalizeDrawOps } from '../lib/challenge-logic.js'
 import {
   archiveMission,
   archiveWorld,
@@ -240,12 +246,30 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       })
     : { reviewDrawing: false, drawExercise: false }
   const allowAiDraw = intent.drawExercise
-  const boardImageRaw = intent.reviewDrawing ? boardImageSent : ''
+  const incomingBoard = body.board_json ?? body.boardJson
+  const boardState = mission.uses_board
+    ? incomingBoard && typeof incomingBoard === 'object'
+      ? incomingBoard
+      : await loadMissionBoard(missionId)
+    : null
+  const verdict =
+    mission.uses_board && (intent.reviewDrawing || photo)
+      ? gradeBoard({
+          scene:
+            boardState && typeof boardState === 'object'
+              ? (boardState as { scene?: unknown }).scene
+              : null,
+          board: boardState,
+          childMessage: parsed.message,
+        })
+      : null
+  const boardImageRaw =
+    intent.reviewDrawing && verdict?.verdict === 'unverifiable' && !photo ? boardImageSent : ''
   const boardDescription = intent.reviewDrawing ? boardDescriptionSent : null
   const boardHas = Boolean(boardDescription?.trim() || boardImageRaw)
 
   let instruction = allowAiDraw
-    ? 'Responde breve. Conserva ejercicio activo. Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina. Incluye draw_ops con clear_board + stamps/shapes (no dejes el ejercicio solo en texto).'
+    ? 'Responde breve. Conserva ejercicio activo. Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina. Incluye scene con la figura o la expresión. draw_ops [].'
     : 'Responde breve. Enseña el tema completo (básico + observación) SOLO con notebook_context + título/descripción. Conserva ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 10+N. Pregunta todo lo posible de ese relato. Al cumplir el piso pregunta si queda más contenido (passed=false); passed=true solo si declina. Sin pizarra.'
   if (parsed.fromVoice) {
     instruction +=
@@ -260,6 +284,11 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   }
   if (intent.reviewDrawing && boardHas && !allowAiDraw) {
     instruction += ' El niño pidió que mires su dibujo de la pizarra. Úsalo para responder.'
+  }
+  if (verdict?.verdict === 'correct' || verdict?.verdict === 'incorrect') {
+    instruction += ` code_verdict=${verdict.verdict} expected=${verdict.expected} got=${verdict.got}. Explícalo y no lo cambies. Si es incorrecto, ese ejercicio no suma a Solo bien.`
+  } else if (verdict?.verdict === 'unverifiable' && (intent.reviewDrawing || photo)) {
+    instruction += ' code_verdict=unverifiable. No afirmes si está bien o mal.'
   }
 
   const payload = JSON.stringify({
@@ -282,6 +311,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     last_tutor_message: lastTutor,
     hints_level: context.hints_level,
     ...(allowAiDraw ? { allow_ai_draw: true } : {}),
+    ...(verdict ? { code_verdict: verdict } : {}),
     board_has_drawing: boardHas,
     photo_attached: Boolean(photo),
     ...(!boardImageRaw && boardDescription?.trim()
@@ -324,7 +354,12 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       typeof value.context_summary === 'string' ? value.context_summary : context.context_summary,
       400,
     ),
-    draw_ops: allowAiDraw ? normalizeDrawOps(value.draw_ops) : [],
+    draw_ops: [],
+    board_items: [] as unknown[],
+    scene: null as unknown,
+    highlight: highlightFromModel(value),
+    board_fallback: null as string | null,
+    verdict,
     hints_level: typeof value.hints_level === 'number' ? value.hints_level : 0,
     study_eval: {
       passed: Boolean(studyEvalRaw.passed),
@@ -355,6 +390,26 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     if (offeringMore) reply.study_eval.passed = false
     const score = soloBienCount(reply.context_summary)
     if (score !== null && score < 2) reply.study_eval.passed = false
+    const drawn = await resolveModelScene(value, { userId, kind: 'mission_tutor' })
+    if (drawn.ok) {
+      reply.board_items = drawn.items
+      reply.scene = drawn.scene
+    } else {
+      reply.board_fallback = drawn.fallback
+      if (!reply.speak_to_child.includes('lo armamos juntos')) {
+        reply.speak_to_child = truncateChars(`${reply.speak_to_child} ${SCENE_FALLBACK_MESSAGE}`, 450)
+      }
+    }
+  }
+  if (mission.status !== 'mastered' && verdict?.verdict === 'incorrect') {
+    const gated = applyVerdictToMastery({
+      verdict,
+      passed: reply.study_eval.passed,
+      contextSummary: reply.context_summary,
+      previousSummary: context.context_summary,
+    })
+    reply.study_eval.passed = gated.passed
+    reply.context_summary = truncateChars(gated.contextSummary, 400)
   }
   if (mission.status === 'mastered') reply.study_eval.passed = true
   if (!reply.study_eval.passed && looksLikeCelebratingMissionMastered(reply.speak_to_child)) {

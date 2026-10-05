@@ -15,8 +15,8 @@ import { WorldsNav } from '../../components/worlds/WorldsNav'
 import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import { challengeDifficultyIcon } from '../../components/worlds/worldsIcons'
 import { errorMessage } from '../../lib/errors'
-import { parseDrawOps, type StudyBoardScene } from '../../lib/studyProtocol'
-import { emptyGridScene, hasStudentWork, normalizeScene, promptOpsToScene } from '../../lib/gridBoardModel'
+import { type StudyBoardScene } from '../../lib/studyProtocol'
+import { emptyGridScene, figureToScene, hasStudentWork, normalizeScene } from '../../lib/gridBoardModel'
 import {
   DIFFICULTY_LABEL,
   type ChallengeAnswerPayload,
@@ -56,9 +56,7 @@ function isBoardQuestion(q: Pick<ChallengeQuestionPublic, 'kind' | 'requires_boa
 }
 
 function promptSceneFor(q: ChallengeQuestionPublic): StudyBoardScene {
-  const ops = parseDrawOps(q.prompt_draw_ops)
-  if (ops.length === 0) return EMPTY_BOARD
-  return promptOpsToScene(ops)
+  return figureToScene(q.prompt_draw_ops)
 }
 
 export function ChallengePlayPage({ challengeId, onBack }: Props) {

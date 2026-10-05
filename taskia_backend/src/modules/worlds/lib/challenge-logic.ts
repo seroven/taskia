@@ -1,4 +1,5 @@
 import { truncateChars } from '../../../utils/helpers.js'
+import { isSceneRecord, prepareScene } from '../../board/pipeline.js'
 import type { MissionView } from '../repositories/world.repository.js'
 
 export function normalizeDrawOps(raw: unknown): unknown[] {
@@ -74,6 +75,49 @@ export function drawOpsFitPrompt(prompt: string, ops: unknown) {
   if (drawOpsAreGenericFrame(ops)) return false
   if (looksLikeSymbolicPrompt(prompt) && !drawOpsHaveProblemText(ops)) return false
   return true
+}
+
+export function figureFitsPrompt(prompt: string, raw: unknown) {
+  if (isSceneRecord(raw)) {
+    const prepared = prepareScene(raw)
+    if (!prepared.ok) return false
+    if (looksLikeSymbolicPrompt(prompt)) {
+      return prepared.scene.objects.some((object) => object.type === 'expression')
+    }
+    return true
+  }
+  return drawOpsFitPrompt(prompt, raw)
+}
+
+export function packScene(raw: unknown) {
+  const prepared = prepareScene(isSceneRecord(raw) ? raw : null)
+  if (!prepared.ok || !prepared.scene) return null
+  return { ...prepared.scene, items: prepared.items }
+}
+
+export function fallbackSceneForPrompt(prompt: string) {
+  const text = truncateChars(prompt.trim() || 'Resuelve en la pizarra', 80)
+  const expression = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'eq', type: 'expression', text }],
+  })
+  if (expression.ok && expression.scene) return { ...expression.scene, items: expression.items }
+  const caption = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 't', type: 'caption', text }],
+  })
+  if (caption.ok && caption.scene) return { ...caption.scene, items: caption.items }
+  return {
+    schemaVersion: 1,
+    objects: [{ id: 't', type: 'caption', text: 'Resuelve en la pizarra' }],
+    items: [],
+  }
+}
+
+export function publishPromptFigure(raw: unknown) {
+  if (Array.isArray(raw)) return normalizeDrawOps(raw)
+  if (raw && typeof raw === 'object') return raw
+  return []
 }
 
 export function fallbackDrawOpsForPrompt(prompt: string): unknown[] {

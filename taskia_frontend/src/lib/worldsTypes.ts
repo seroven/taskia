@@ -104,6 +104,15 @@ export interface MissionTutorReply {
   topic_summary: string
   context_summary: string
   draw_ops: unknown[]
+  board_items?: import('./studyProtocol').GridItem[]
+  scene?: unknown
+  highlight?: string[]
+  board_fallback?: string | null
+  verdict?: {
+    verdict: 'correct' | 'incorrect' | 'unverifiable'
+    expected: number | null
+    got: number | null
+  } | null
   hints_level: number
   study_eval: { passed: boolean; evidence: string }
 }
@@ -157,7 +166,7 @@ export interface ChallengeQuestionPublic {
   prompt: string
   options: string[] | null
   requires_board: boolean
-  prompt_draw_ops?: unknown[]
+  prompt_draw_ops?: unknown
   answered: boolean
   is_correct: boolean | null
   /** Solo en desafíos completados */

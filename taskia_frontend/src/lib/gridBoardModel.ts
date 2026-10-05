@@ -6,7 +6,7 @@ import type {
   GridStampId,
   StudyBoardScene,
 } from './studyProtocol'
-import { GRID_COLS, GRID_ROWS } from './studyProtocol'
+import { GRID_COLS, GRID_ROWS, parseDrawOps } from './studyProtocol'
 
 export const GRID_CELL = 28
 
@@ -356,6 +356,49 @@ export function applyDrawOpsToGrid(
   }
 }
 
+export function applyAiItems(
+  current: StudyBoardScene,
+  items: GridItem[],
+  scene?: unknown,
+  highlightIds?: string[],
+): StudyBoardScene {
+  const kept = items.length > 0 ? current.items.filter((item) => item.layer !== 'ai') : current.items
+  const incoming =
+    items.length > 0
+      ? items.map((item) =>
+          clampItem(
+            {
+              ...item,
+              id: String(item.id || newItemId()),
+              layer: item.layer === 'student' ? 'student' : 'ai',
+              color: item.layer === 'student' ? parseGridColor(item.color) : AI_COLOR,
+            },
+            GRID_COLS,
+            GRID_ROWS,
+          ),
+        )
+      : []
+  return {
+    ...current,
+    items: [...kept, ...incoming],
+    scene: scene === undefined ? current.scene : scene,
+    highlightIds: highlightIds ?? current.highlightIds ?? [],
+  }
+}
+
+export function figureToScene(raw: unknown): StudyBoardScene {
+  if (Array.isArray(raw)) return promptOpsToScene(parseDrawOps(raw))
+  if (raw && typeof raw === 'object' && Array.isArray((raw as { items?: unknown }).items)) {
+    const packed = raw as { items: GridItem[]; schemaVersion?: unknown; objects?: unknown; task?: unknown }
+    const scene =
+      packed.schemaVersion === 1
+        ? { schemaVersion: packed.schemaVersion, objects: packed.objects, task: packed.task }
+        : undefined
+    return applyAiItems(emptyGridScene(), packed.items, scene)
+  }
+  return emptyGridScene()
+}
+
 export function promptOpsToScene(ops: DrawOp[]): StudyBoardScene {
   return applyDrawOpsToGrid(emptyGridScene(), ops)
 }
@@ -413,6 +456,10 @@ export function normalizeScene(raw: unknown): StudyBoardScene {
     cols,
     rows,
     items,
+    scene: rec.scene,
+    highlightIds: Array.isArray((rec as { highlightIds?: unknown }).highlightIds)
+      ? ((rec as { highlightIds: unknown[] }).highlightIds.filter((id) => typeof id === 'string') as string[])
+      : [],
   }
 }
 

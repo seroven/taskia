@@ -18,6 +18,13 @@ import {
 import { fetchTask } from '../../tasks/services/task.service.js'
 import { parseChatMessage, parseTranscribeBody } from '../schemas/study.schema.js'
 import { tutorSystemPrompt } from '../../../prompts/study-tutor.js'
+import {
+  applyVerdictToMastery,
+  gradeBoard,
+  highlightFromModel,
+  resolveModelScene,
+  SCENE_FALLBACK_MESSAGE,
+} from '../../board/index.js'
 
 export function canOpenStudy(task: { status: string; difficulty_code: string }) {
   return (
@@ -171,7 +178,25 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         })
       : { reviewDrawing: false, drawExercise: false }
     const allowAiDraw = intent.drawExercise
-    const boardImageRaw = intent.reviewDrawing ? boardImageSent : ''
+    const incomingBoard = body.board_json ?? body.boardJson
+    const boardState = task.uses_board
+      ? incomingBoard && typeof incomingBoard === 'object'
+        ? incomingBoard
+        : await loadBoard(taskId)
+      : null
+    const verdict =
+      task.uses_board && (intent.reviewDrawing || photo)
+        ? gradeBoard({
+            scene:
+              boardState && typeof boardState === 'object'
+                ? (boardState as { scene?: unknown }).scene
+                : null,
+            board: boardState,
+            childMessage: message,
+          })
+        : null
+    const boardImageRaw =
+      intent.reviewDrawing && verdict?.verdict === 'unverifiable' && !photo ? boardImageSent : ''
     const boardDescription = intent.reviewDrawing ? boardDescriptionRaw : null
     const boardHas = Boolean(boardDescription?.trim() || boardImageRaw)
 
@@ -181,10 +206,10 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       ? boardHas
         ? 'Responde breve. Usa context + last_tutor_message + mensaje + pizarra. Conserva el ejercicio activo.' +
           boardMasteryHint +
-          ' Incluye draw_ops con clear_board + stamps/shapes.'
+          ' Incluye scene con la figura o la expresión. draw_ops [].'
         : 'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo.' +
           boardMasteryHint +
-          ' Incluye draw_ops con clear_board + stamps/shapes (no dejes el ejercicio solo en texto).'
+          ' Incluye scene con la figura o la expresión (no dejes el ejercicio solo en el chat). draw_ops [].'
       : boardHas
         ? 'Responde breve. Usa context + last_tutor_message + mensaje + pizarra. Conserva el ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
         : 'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo. Ignora pizarra. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
@@ -198,6 +223,11 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     }
     if (intent.reviewDrawing && !boardHas) {
       instruction += ' Pidió que revises su dibujo, pero la pizarra está vacía. Pídele que dibuje primero.'
+    }
+    if (verdict?.verdict === 'correct' || verdict?.verdict === 'incorrect') {
+      instruction += ` code_verdict=${verdict.verdict} expected=${verdict.expected} got=${verdict.got}. Explícalo y no lo cambies. Si es incorrecto, ese ejercicio no suma a Solo bien.`
+    } else if (verdict?.verdict === 'unverifiable' && (intent.reviewDrawing || photo)) {
+      instruction += ' code_verdict=unverifiable. No afirmes si está bien o mal.'
     }
 
     const payload = {
@@ -223,6 +253,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       photo_attached: Boolean(photo),
       child_message: truncateChars(message, fromVoice ? 4000 : 800),
       ...(allowAiDraw ? { allow_ai_draw: true } : {}),
+      ...(verdict ? { code_verdict: verdict } : {}),
       // Texto de coords solo si no hay imagen (fallback).
       ...(!boardImageRaw && boardDescription?.trim()
         ? { board_drawing: truncateChars(boardDescription, MAX_BOARD) }
@@ -265,7 +296,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       String(value.speak_to_child ?? '¡Genial! Cuéntame un poquito más y seguimos juntos.'),
       MAX_SPEAK,
     )
-    const contextSummaryDraft = String(
+    let contextSummaryDraft = String(
       value.context_summary ?? context.context_summary,
     )
 
@@ -297,6 +328,23 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
 
     // Si el servidor negó el visto, no dejar que el texto diga "ya puedes a Listo".
     let speakSafe = speakToChild
+    const drawn = allowAiDraw
+      ? await resolveModelScene(value, { userId, kind: 'task_tutor' })
+      : null
+    const boardFallback = drawn && !drawn.ok ? drawn.fallback : null
+    if (boardFallback && !speakSafe.includes('lo armamos juntos')) {
+      speakSafe = truncateChars(`${speakSafe} ${SCENE_FALLBACK_MESSAGE}`, MAX_SPEAK)
+    }
+    if (!task.study_passed && verdict?.verdict === 'incorrect') {
+      const gated = applyVerdictToMastery({
+        verdict,
+        passed,
+        contextSummary: contextSummaryDraft,
+        previousSummary: context.context_summary,
+      })
+      passed = gated.passed
+      contextSummaryDraft = gated.contextSummary
+    }
     if (!passed && looksLikeCelebratingTaskReady(speakSafe)) {
       const stripped = stripPrematureReadyCelebration(speakSafe)
       speakSafe = truncateChars(
@@ -313,7 +361,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       ask_questions: askQuestions,
       topic_summary: String(value.topic_summary ?? ''),
       context_summary: ensureActiveExercise(
-        String(value.context_summary ?? context.context_summary),
+        contextSummaryDraft,
         exercise,
         context.context_summary,
       ),
@@ -324,7 +372,12 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         MAX_MEMORY,
       ),
       exercise,
-      draw_ops: allowAiDraw ? normalizeDrawOps(value.draw_ops) : [],
+      draw_ops: [],
+      board_items: drawn && drawn.ok ? drawn.items : [],
+      scene: drawn && drawn.ok ? drawn.scene : null,
+      highlight: highlightFromModel(value),
+      board_fallback: boardFallback,
+      verdict,
       hints_level: Number(value.hints_level ?? 0),
       study_eval: {
         passed,

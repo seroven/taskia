@@ -104,6 +104,15 @@ export interface GeminiTutorReply {
   user_memory_summary?: string
   exercise: StudyExercise | null
   draw_ops: DrawOp[]
+  board_items?: GridItem[]
+  scene?: unknown
+  highlight?: string[]
+  board_fallback?: string | null
+  verdict?: {
+    verdict: 'correct' | 'incorrect' | 'unverifiable'
+    expected: number | null
+    got: number | null
+  } | null
   hints_level: number
   study_eval?: {
     passed: boolean
@@ -118,6 +127,8 @@ export interface StudyBoardScene {
   cols: number
   rows: number
   items: GridItem[]
+  scene?: unknown
+  highlightIds?: string[]
 }
 
 export interface StudySession {
