@@ -1,5 +1,5 @@
 import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
-import { callGemini, callGeminiTranscribe } from '../../../infrastructure/gemini/gemini.client.js'
+import { callGemini, callGeminiTranscribe, classifyBoardIntent } from '../../../infrastructure/gemini/gemini.client.js'
 import { AppError } from '../../../shared/errors/app-error.js'
 import {
   extractJson,
@@ -144,12 +144,10 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     const message = parsedTurn.message
     const photo = parsedTurn.photoRaw ? decodeStudyPhoto(parsedTurn.photoRaw) : null
     const imageUrl = photo ? await uploadStudyPhoto(photo) : null
-    const allowAiDraw =
-      Boolean(body.allow_ai_draw ?? body.allowAiDraw) && task.uses_board
-    const boardDescription = task.uses_board
+    const boardDescriptionRaw = task.uses_board
       ? ((body.board_description ?? body.boardDescription) as string | null)
       : null
-    const boardImageRaw = task.uses_board
+    const boardImageSent = task.uses_board
       ? String(body.board_image_base64 ?? body.boardImageBase64 ?? '').trim()
       : ''
     const fromVoice = Boolean(body.from_voice ?? body.fromVoice)
@@ -165,6 +163,16 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         .reverse()
         .find((m) => m.role === 'assistant')
         ?.content ?? ''
+    const intent = task.uses_board
+      ? await classifyBoardIntent({
+          message,
+          previous: truncateChars(lastTutor, 180),
+          usage: { userId, kind: 'board_intent' },
+        })
+      : { reviewDrawing: false, drawExercise: false }
+    const allowAiDraw = intent.drawExercise
+    const boardImageRaw = intent.reviewDrawing ? boardImageSent : ''
+    const boardDescription = intent.reviewDrawing ? boardDescriptionRaw : null
     const boardHas = Boolean(boardDescription?.trim() || boardImageRaw)
 
     const boardMasteryHint =
@@ -187,6 +195,9 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     if (photo) {
       instruction +=
         ' El niño adjuntó una foto de un ejercicio resuelto en papel. Léela y úsala como referencia. No es la pizarra.'
+    }
+    if (intent.reviewDrawing && !boardHas) {
+      instruction += ' Pidió que revises su dibujo, pero la pizarra está vacía. Pídele que dibuje primero.'
     }
 
     const payload = {

@@ -1,5 +1,5 @@
 import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
-import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
+import { callGemini, classifyBoardIntent } from '../../../infrastructure/gemini/gemini.client.js'
 import { missionTutorPrompt } from '../../../prompts/mission-tutor.js'
 import { awardXp, clampEffortScore, xpForMission } from '../../../services/xp.js'
 import {
@@ -209,7 +209,8 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     await setMissionStatus(missionId, 'studying')
     mission.status = 'studying'
   }
-  const allowAiDraw = parsed.allowAiDraw && mission.uses_board
+  const boardImageSent = mission.uses_board ? parsed.boardImageRaw : ''
+  const boardDescriptionSent = mission.uses_board ? parsed.boardDescription : null
   const photo = parsed.photoRaw ? decodeStudyPhoto(parsed.photoRaw) : null
   const imageUrl = photo ? await uploadStudyPhoto(photo) : null
   const context = await loadMissionSession(missionId)
@@ -231,8 +232,17 @@ export async function chatMission(userId: number, missionId: number, body: Recor
 
   const lastTutorMsg = [...context.messages].reverse().find((message) => message.role === 'assistant')
   const lastTutor = lastTutorMsg ? truncateChars(lastTutorMsg.content, 320) : ''
-  const boardImageRaw = mission.uses_board ? parsed.boardImageRaw : ''
-  const boardHas = Boolean(parsed.boardDescription?.trim() || boardImageRaw)
+  const intent = mission.uses_board
+    ? await classifyBoardIntent({
+        message: parsed.message,
+        previous: truncateChars(lastTutor, 180),
+        usage: { userId, kind: 'board_intent' },
+      })
+    : { reviewDrawing: false, drawExercise: false }
+  const allowAiDraw = intent.drawExercise
+  const boardImageRaw = intent.reviewDrawing ? boardImageSent : ''
+  const boardDescription = intent.reviewDrawing ? boardDescriptionSent : null
+  const boardHas = Boolean(boardDescription?.trim() || boardImageRaw)
 
   let instruction = allowAiDraw
     ? 'Responde breve. Conserva ejercicio activo. Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina. Incluye draw_ops con clear_board + stamps/shapes (no dejes el ejercicio solo en texto).'
@@ -244,6 +254,12 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   if (photo) {
     instruction +=
       ' El niño adjuntó una foto de un ejercicio resuelto en papel. Léela y úsala como referencia. No es la pizarra.'
+  }
+  if (intent.reviewDrawing && !boardHas) {
+    instruction += ' Pidió que revises su dibujo, pero la pizarra está vacía. Pídele que dibuje primero.'
+  }
+  if (intent.reviewDrawing && boardHas && !allowAiDraw) {
+    instruction += ' El niño pidió que mires su dibujo de la pizarra. Úsalo para responder.'
   }
 
   const payload = JSON.stringify({
@@ -268,8 +284,8 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     ...(allowAiDraw ? { allow_ai_draw: true } : {}),
     board_has_drawing: boardHas,
     photo_attached: Boolean(photo),
-    ...(!boardImageRaw && parsed.boardDescription?.trim()
-      ? { board_drawing: truncateChars(parsed.boardDescription, 500) }
+    ...(!boardImageRaw && boardDescription?.trim()
+      ? { board_drawing: truncateChars(boardDescription, 500) }
       : {}),
     child_message: truncateChars(
       parsed.message,

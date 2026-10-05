@@ -93,8 +93,6 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
   async function onSend(
     message: string,
     options: {
-      includeBoard: boolean
-      allowAiDraw: boolean
       fromVoice?: boolean
       photoBase64?: string | null
     },
@@ -105,7 +103,7 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
       let boardAttach:
         | { description?: string; image_base64?: string | null }
         | undefined
-      if (options.includeBoard && mission?.uses_board) {
+      if (mission?.uses_board) {
         const attachment = await boardRef.current?.getBoardAttachment()
         if ((attachment?.elementCount ?? 0) > 0) {
           boardAttach = attachment?.imageBase64
@@ -117,7 +115,7 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         missionId,
         message,
         boardAttach,
-        options.allowAiDraw,
+        false,
         Boolean(options.fromVoice),
         options.photoBase64 ?? null,
       )

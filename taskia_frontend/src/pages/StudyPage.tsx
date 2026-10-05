@@ -102,8 +102,6 @@ export function StudyPage({ taskId, onBack }: Props) {
   async function onSend(
     message: string,
     options: {
-      includeBoard: boolean
-      allowAiDraw: boolean
       fromVoice?: boolean
       photoBase64?: string | null
     },
@@ -114,7 +112,7 @@ export function StudyPage({ taskId, onBack }: Props) {
       let boardAttach:
         | { description?: string; image_base64?: string | null }
         | undefined
-      if (options.includeBoard && task?.uses_board) {
+      if (task?.uses_board) {
         const attachment = await boardRef.current?.getBoardAttachment()
         if ((attachment?.elementCount ?? 0) > 0) {
           // La imagen manda para que Taskia entienda; coords solo si falla el PNG.
@@ -127,7 +125,7 @@ export function StudyPage({ taskId, onBack }: Props) {
         taskId,
         message,
         boardAttach,
-        options.allowAiDraw && Boolean(task?.uses_board),
+        false,
         Boolean(options.fromVoice),
         options.photoBase64 ?? null,
       )

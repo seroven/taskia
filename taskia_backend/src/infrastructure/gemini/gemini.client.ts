@@ -1,6 +1,7 @@
 import { env } from '../../config/env.js'
 import { AppDataSource } from '../database/data-source.js'
 import { LlmUsage } from '../database/entities/index.js'
+import { BOARD_INTENT_SYSTEM } from '../../prompts/board-intent.js'
 import { TRANSCRIBE_SYSTEM } from '../../prompts/transcribe.js'
 import { AppError } from '../../shared/errors/app-error.js'
 
@@ -13,6 +14,7 @@ export type LlmUsageKind =
   | 'parent_tutor'
   | 'planet_generate'
   | 'daily_summary'
+  | 'board_intent'
 
 export interface LlmUsageContext {
   userId: number
@@ -93,6 +95,82 @@ export async function callGemini(opts: {
     void recordLlmUsage(opts.usage, model, generated.usage)
   }
   return generated.text
+}
+
+const NONE_INTENT = { reviewDrawing: false, drawExercise: false }
+
+/** Pregunta barata: solo la frase del niño y la última de Taskia. Sin imagen ni resumen. */
+export async function classifyBoardIntent(opts: {
+  message: string
+  previous: string
+  usage?: LlmUsageContext
+}): Promise<{ reviewDrawing: boolean; drawExercise: boolean }> {
+  const apiKey = env.gemini.apiKey.trim().replace(/^["']|["']$/g, '')
+  if (!apiKey) return NONE_INTENT
+  const model = env.gemini.model.trim().replace(/^["']|["']$/g, '') || 'gemini-2.0-flash'
+  const modelL = model.toLowerCase()
+  const generationConfig: Record<string, unknown> = {
+    maxOutputTokens: 40,
+    temperature: 0,
+    responseMimeType: 'application/json',
+  }
+  if (modelL.includes('gemini-3')) {
+    generationConfig.thinkingConfig = { thinkingLevel: 'minimal' }
+  } else if (modelL.includes('2.5')) {
+    generationConfig.thinkingConfig = { thinkingBudget: 0 }
+  }
+
+  const parts = [
+    {
+      text: JSON.stringify({
+        previous: opts.previous.slice(0, 180),
+        message: opts.message.slice(0, 400),
+      }),
+    },
+  ]
+  try {
+    let generated: Awaited<ReturnType<typeof generateGeminiText>>
+    try {
+      generated = await generateGeminiText({
+        apiKey,
+        model,
+        system: BOARD_INTENT_SYSTEM,
+        parts,
+        generationConfig,
+      })
+    } catch {
+      const { thinkingConfig: _drop, ...plain } = generationConfig
+      generated = await generateGeminiText({
+        apiKey,
+        model,
+        system: BOARD_INTENT_SYSTEM,
+        parts,
+        generationConfig: plain,
+      })
+    }
+    if (opts.usage) void recordLlmUsage(opts.usage, model, generated.usage)
+    return parseBoardIntent(generated.text)
+  } catch {
+    return NONE_INTENT
+  }
+}
+
+function parseBoardIntent(raw: string): { reviewDrawing: boolean; drawExercise: boolean } {
+  const start = raw.indexOf('{')
+  const end = raw.lastIndexOf('}')
+  if (start < 0 || end <= start) return NONE_INTENT
+  try {
+    const value = JSON.parse(raw.slice(start, end + 1)) as {
+      review_drawing?: unknown
+      draw_exercise?: unknown
+    }
+    return {
+      reviewDrawing: value.review_drawing === true,
+      drawExercise: value.draw_exercise === true,
+    }
+  } catch {
+    return NONE_INTENT
+  }
 }
 
 const MAX_AUDIO_BASE64_CHARS = 5_500_000

@@ -386,8 +386,7 @@ Así puede dictar el relato del cuaderno o explicar un razonamiento con más com
 Es una grilla de **formas** (cuadros, círculos, triángulos, líneas, texto, sellos, etc.), no un lápiz libre tipo pintura.
 
 - El explorador arma su respuesta en el lienzo.
-- **Revisa mi Dibujo:** Taskia mira lo dibujado (como quien ve una foto del trabajo).
-- **Dibújamelo:** Taskia puede plantear o marcar el ejercicio en la pizarra.
+- Si el explorador pide en el mensaje que miren su dibujo, Taskia lo revisa. Si pide que se lo dibujen, Taskia plantea el ejercicio en la pizarra. No hay interruptores: una pregunta corta a la IA, solo con esa frase, decide cuál de las dos acciones corresponde.
 - En móvil suele alternarse la vista chat / pizarra; en pantallas grandes pueden convivir mejor.
 
 El dibujo que hace Taskia no se “empuja” como si fuera una ficha movible del niño: es parte del enunciado o la guía.

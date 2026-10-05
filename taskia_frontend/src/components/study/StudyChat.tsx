@@ -12,7 +12,6 @@ import { Camera, Microphone, Stop, X } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { compressStudyPhoto } from '../../lib/studyPhoto'
 import { ModalShell } from '../ui/ModalShell'
-import { SwitchToggle } from '../ui/SwitchToggle'
 import { errorMessage } from '../../lib/errors'
 import type { StudyContext, StudyExercise, StudyMessage, TutorPhase } from '../../lib/studyProtocol'
 import { phaseLabel } from '../../lib/studyProtocol'
@@ -25,7 +24,7 @@ interface Props {
   exercise: StudyExercise | null
   sending: boolean
   error: string | null
-  /** Si false, oculta toggles de pizarra y habilita micrófono. Default true. */
+  /** Si false, el estudio no usa pizarra y habilita el micrófono. Default true. */
   boardControls?: boolean
   boardOpen?: boolean
   onToggleBoardView?: () => void
@@ -33,8 +32,6 @@ interface Props {
   onSend: (
     message: string,
     options: {
-      includeBoard: boolean
-      allowAiDraw: boolean
       fromVoice?: boolean
       photoBase64?: string | null
     },
@@ -129,8 +126,6 @@ export function StudyChat({
 }: Props) {
   const voiceEnabled = !boardControls
   const [draft, setDraft] = useState('')
-  const [includeBoard, setIncludeBoard] = useState(false)
-  const [allowAiDraw, setAllowAiDraw] = useState(false)
   const [fromVoiceDraft, setFromVoiceDraft] = useState(false)
   const [photoData, setPhotoData] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
@@ -388,8 +383,6 @@ export function StudyChat({
     const photo = photoData
     if ((!text && !photo) || sending || voiceBusy || pendingUser) return
     const outgoing = text || 'Mira la foto de mi ejercicio.'
-    const sendBoard = includeBoard
-    const draw = allowAiDraw
     const voice = fromVoiceDraft
     setDraft('')
     setFromVoiceDraft(false)
@@ -399,12 +392,9 @@ export function StudyChat({
     setExpectingReply(true)
     try {
       await onSend(outgoing, {
-        includeBoard: sendBoard,
-        allowAiDraw: draw,
         fromVoice: voice,
         photoBase64: photo,
       })
-      if (sendBoard) setIncludeBoard(false)
       setPendingPhoto(null)
     } catch {
       setPendingUser(null)
@@ -550,23 +540,6 @@ export function StudyChat({
       )}
 
       <form className="study-chat-form" onSubmit={(e) => void onSubmit(e)} onPaste={onPastePhoto}>
-        {boardControls && (
-          <div className="study-chat-toggles">
-            <SwitchToggle
-              checked={includeBoard}
-              disabled={sending || voiceBusy}
-              title="Revisa mi Dibujo"
-              onChange={setIncludeBoard}
-            />
-            <SwitchToggle
-              checked={allowAiDraw}
-              disabled={sending || voiceBusy}
-              title="Dibújamelo"
-              onChange={setAllowAiDraw}
-            />
-          </div>
-        )}
-
         {voiceEnabled && (
           <div className="study-voice-bar">
             <AnimatePresence mode="wait" initial={false}>
@@ -668,7 +641,7 @@ export function StudyChat({
           }}
           placeholder={
             boardControls
-              ? 'Escribe tu duda… “Revisa mi Dibujo” para que mire tu dibujo; “Dibújamelo” para que dibuje el ejercicio.'
+              ? 'Escribe tu duda. Si quieres, pide que revise tu dibujo o que te dibuje el ejercicio.'
               : voiceEnabled
                 ? 'Cuéntale a Taskia lo de tu tema. Puedes grabar varias veces, sumarlo aquí y enviar cuando esté listo.'
                 : 'Escribe tu duda o lo que acabas de entender…'

@@ -9,4 +9,5 @@ export {
 } from './challenge.js'
 export { guardianTutorSystem } from './guardian.js'
 export { dailySummarySystem } from './daily-summary.js'
+export { BOARD_INTENT_SYSTEM } from './board-intent.js'
 export { PLANET_GENERATE_SYSTEM } from './planet.js'
