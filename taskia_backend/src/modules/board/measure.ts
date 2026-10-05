@@ -2,7 +2,7 @@ import { exactAngle } from './algebra.js'
 import type { Canon } from './expand.js'
 import { evalExpr, parseMath, solveFor } from './expression.js'
 import { dist } from './geom.js'
-import { rToNumber, type Rational } from './rational.js'
+import { rAdd, rFromClaim, rInt, rSub, rToNumber, type Rational } from './rational.js'
 import type { Pt, Scene } from './types.js'
 
 export type Measure =
@@ -93,6 +93,62 @@ registerMeasurer((_scene, canon, points, target) => {
   const to = points.get(angle.to)
   if (!vertex || !from || !to) return { status: 'unverifiable' }
   return approx(angleAt(from, vertex, to))
+})
+
+registerMeasurer((_scene, canon, _points, target) => {
+  if (!target.startsWith('value:')) return null
+  const id = target.slice('value:'.length)
+  const bar = canon.find((item) => item.kind === 'fraction_bar' && item.id === id)
+  if (bar && bar.kind === 'fraction_bar') {
+    let sum = rInt(0n)
+    for (const part of bar.parts) {
+      const piece = rFromClaim(`${part.n}/${part.d}`)
+      if (!sum || !piece) return { status: 'unverifiable' }
+      sum = rAdd(sum, piece)
+      if (!sum) return { status: 'unverifiable' }
+    }
+    if (!sum) return { status: 'unverifiable' }
+    return exact(sum)
+  }
+  const column = canon.find((item) => item.kind === 'column_op' && item.id === id)
+  if (column && column.kind === 'column_op') {
+    const left = rInt(BigInt(column.operands[0]))
+    const right = rInt(BigInt(column.operands[1]))
+    if (!left || !right) return { status: 'unverifiable' }
+    const sum = rAdd(left, right)
+    return sum ? exact(sum) : { status: 'unverifiable' }
+  }
+  return { status: 'unverifiable' }
+})
+
+registerMeasurer((_scene, canon, _points, target) => {
+  if (!target.startsWith('total:') && !target.startsWith('diff:')) return null
+  const kind = target.startsWith('total:') ? 'total' : 'diff'
+  const rest = target.slice(kind.length + 1)
+  const chartId = kind === 'total' ? rest : rest.split(':')[0]
+  const chart = canon.find((item) => item.kind === 'bar_chart' && item.id === chartId)
+  if (!chart || chart.kind !== 'bar_chart') return { status: 'unverifiable' }
+  if (kind === 'total') {
+    let sum = rInt(0n)
+    for (const category of chart.categories) {
+      const piece = rInt(BigInt(category.value))
+      if (!sum || !piece) return { status: 'unverifiable' }
+      sum = rAdd(sum, piece)
+      if (!sum) return { status: 'unverifiable' }
+    }
+    if (!sum) return { status: 'unverifiable' }
+    return exact(sum)
+  }
+  const parts = rest.split(':')
+  if (parts.length !== 3) return { status: 'unverifiable' }
+  const from = chart.categories.find((category) => category.label === parts[1])
+  const to = chart.categories.find((category) => category.label === parts[2])
+  if (!from || !to) return { status: 'unverifiable' }
+  const left = rInt(BigInt(from.value))
+  const right = rInt(BigInt(to.value))
+  if (!left || !right) return { status: 'unverifiable' }
+  const gap = rSub(left, right)
+  return gap ? exact(gap) : { status: 'unverifiable' }
 })
 
 registerMeasurer((scene, canon, _points, target) => {

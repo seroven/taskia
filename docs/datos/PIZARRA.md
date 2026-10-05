@@ -119,6 +119,14 @@ Una etiqueta `3x` es la ecuación `3x = medida exacta`. Cada letra sale de una s
 
 Las marcas (`right_angle`, `equal_side`, `parallel`, `dimension`, `angle_arc`) no entran al solver. Se arman después de pasar a celdas, con tamaño fijo, con línea, flecha y texto. Una marca que contradice la figura es `BAD_SCHEMA`.
 
+### Fracciones, barras y columna
+
+`fraction_bar` dibuja de 2 a 4 barras. Cada una tiene numerador y denominador, el denominador va de 1 a 12 y el numerador no lo pasa. La suma es `value:f` y es una fracción exacta. `2/5 + 1/5` es `3/5`. El resultado no se escribe en la figura.
+
+`bar_chart` tiene de 1 a 10 categorías, etiqueta de hasta 12 caracteres y valor entero desde 0. La altura es solo el dibujo. `total:c` suma los datos y `diff:c:Martes:Lunes` resta esas dos. El eje usa pasos 1, 2, 5 o 10.
+
+`column_op` suma dos enteros. Dibuja las cifras, el signo y la línea, y deja vacías las celdas del resultado. `347 + 285` se califica como `value:op` igual a 632. No hay modo de revelar la cuenta.
+
 ## El pipeline
 
 `prepareScene` corre en este orden. El primero que falla corta.
@@ -170,4 +178,4 @@ No hay sellos ni lápiz libre. El arrastre de una forma violeta no existe. Resal
 
 ## Qué este motor no hace
 
-No hay fracciones dibujadas, gráfico de barras ni suma en columna. El catálogo del prompt está escrito en `prompt.ts`. Un test falla si un expansor registrado no aparece ahí con su nombre. El registro (`registerExpander`, `registerMeasurer`) existe para que una primitiva nueva sume su expansor y su medidor sin reescribir el solver. Taskia dibuja el enunciado, no la solución.
+No hay círculo de fracciones, tabla, pictograma ni material de base diez. El catálogo del prompt está escrito en `prompt.ts`. Un test falla si un expansor registrado no aparece ahí con su nombre. El registro (`registerExpander`, `registerMeasurer`) existe para que una primitiva nueva sume su expansor y su medidor sin reescribir el solver. Taskia dibuja el enunciado, no la solución.

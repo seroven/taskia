@@ -12,6 +12,9 @@ export type Canon =
   | { kind: 'label'; id: string; text: string; of: string; sourceId: string }
   | { kind: 'caption'; id: string; text: string; sourceId: string; interactive?: boolean }
   | { kind: 'number_line'; id: string; min: number; max: number; step: number; sourceId: string; interactive?: boolean }
+  | { kind: 'fraction_bar'; id: string; parts: Array<{ n: number; d: number }>; sourceId: string; interactive?: boolean }
+  | { kind: 'bar_chart'; id: string; categories: Array<{ label: string; value: number }>; sourceId: string; interactive?: boolean }
+  | { kind: 'column_op'; id: string; operands: [number, number]; sourceId: string; interactive?: boolean }
   | { kind: 'expression'; id: string; text: string; math: ParsedMath; sourceId: string; interactive?: boolean }
   | { kind: 'midpoint'; id: string; of: [string, string]; sourceId: string }
   | { kind: 'parallel'; id: string; of: string; through: string; length: number; side: 'left' | 'right'; sourceId: string }
@@ -406,6 +409,39 @@ registerExpander('number_line', (object, out) => {
     min: Number(object.min),
     max: Number(object.max),
     step: object.step == null ? 1 : Number(object.step),
+    sourceId: object.id,
+    interactive: interactive(object),
+  })
+})
+
+registerExpander('fraction_bar', (object, out) => {
+  const parts = object.parts as Array<{ n: number; d: number }>
+  out.push({
+    kind: 'fraction_bar',
+    id: object.id,
+    parts: parts.map((part) => ({ n: Number(part.n), d: Number(part.d) })),
+    sourceId: object.id,
+    interactive: interactive(object),
+  })
+})
+
+registerExpander('bar_chart', (object, out) => {
+  const categories = object.categories as Array<{ label: string; value: number }>
+  out.push({
+    kind: 'bar_chart',
+    id: object.id,
+    categories: categories.map((row) => ({ label: String(row.label).trim(), value: Number(row.value) })),
+    sourceId: object.id,
+    interactive: interactive(object),
+  })
+})
+
+registerExpander('column_op', (object, out) => {
+  const operands = object.operands as [number, number]
+  out.push({
+    kind: 'column_op',
+    id: object.id,
+    operands: [Number(operands[0]), Number(operands[1])],
     sourceId: object.id,
     interactive: interactive(object),
   })

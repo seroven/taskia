@@ -69,11 +69,17 @@ export function rFromClaim(value: number | string): Rational | null {
     if (Number.isInteger(value)) return rInt(BigInt(value))
     return rFromDecimal(String(value))
   }
-  const text = value.trim().replace('°', '')
+  const text = value.trim().replace('°', '').replace(/\s+/g, '')
   if (text.startsWith('-')) {
-    const inner = rFromDecimal(text.slice(1))
+    const inner = rFromUnsigned(text.slice(1))
     return inner ? rNeg(inner) : null
   }
+  return rFromUnsigned(text)
+}
+
+function rFromUnsigned(text: string): Rational | null {
+  const slash = /^(\d+)\/(\d+)$/.exec(text)
+  if (slash) return rat(BigInt(slash[1]!), BigInt(slash[2]!))
   return rFromDecimal(text)
 }
 

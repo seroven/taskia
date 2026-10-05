@@ -20,6 +20,9 @@ const TYPES = new Set([
   'label',
   'caption',
   'number_line',
+  'fraction_bar',
+  'bar_chart',
+  'column_op',
   'expression',
   'midpoint',
   'parallel_to',
@@ -209,6 +212,9 @@ function checkObject(object: SceneObject): SceneIssue | null {
     }
     return null
   }
+  if (object.type === 'fraction_bar') return fractionOk(object, id)
+  if (object.type === 'bar_chart') return chartOk(object, id)
+  if (object.type === 'column_op') return columnOk(object, id)
   if (object.type === 'number_line') {
     const min = num(object.min)
     const max = num(object.max)
@@ -284,6 +290,47 @@ function parseTask(raw: unknown): { ok: true; task: SceneTask } | { ok: false; i
   return { ok: true, task }
 }
 
+function fractionOk(object: SceneObject, id: string): SceneIssue | null {
+  if (!Array.isArray(object.parts) || object.parts.length < 2 || object.parts.length > 4) {
+    return { code: 'BAD_SCHEMA', objectId: id }
+  }
+  for (const part of object.parts) {
+    if (!part || typeof part !== 'object') return { code: 'BAD_SCHEMA', objectId: id }
+    const row = part as { n?: unknown; d?: unknown }
+    const denominator = whole(row.d, 12)
+    const numerator = whole(row.n, 12)
+    if (denominator == null || denominator < 1 || numerator == null || numerator > denominator) {
+      return { code: 'BAD_SCHEMA', objectId: id }
+    }
+  }
+  return null
+}
+
+function chartOk(object: SceneObject, id: string): SceneIssue | null {
+  if (!Array.isArray(object.categories) || object.categories.length < 1 || object.categories.length > 10) {
+    return { code: 'BAD_SCHEMA', objectId: id }
+  }
+  const labels = new Set<string>()
+  for (const category of object.categories) {
+    if (!category || typeof category !== 'object') return { code: 'BAD_SCHEMA', objectId: id }
+    const row = category as { label?: unknown; value?: unknown }
+    const label = typeof row.label === 'string' ? row.label.trim() : ''
+    if (!label || label.length > 12 || label.includes(':') || labels.has(label)) {
+      return { code: 'BAD_SCHEMA', objectId: id }
+    }
+    if (whole(row.value, 10000) == null) return { code: 'BAD_SCHEMA', objectId: id }
+    labels.add(label)
+  }
+  return null
+}
+
+function columnOk(object: SceneObject, id: string): SceneIssue | null {
+  if (object.operator !== '+') return { code: 'BAD_SCHEMA', objectId: id }
+  if (!Array.isArray(object.operands) || object.operands.length !== 2) return { code: 'BAD_SCHEMA', objectId: id }
+  if (object.operands.some((value) => whole(value, 999999) == null)) return { code: 'BAD_SCHEMA', objectId: id }
+  return null
+}
+
 function triangleOk(object: SceneObject, id: string): SceneIssue | null {
   const hasSides = Array.isArray(object.sides)
   const hasAngles = Array.isArray(object.angles)
@@ -337,6 +384,11 @@ function isRef(value: unknown) {
 function positive(value: unknown) {
   const n = num(value)
   return n != null && n > 0 && n <= 10000
+}
+
+function whole(value: unknown, max: number) {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > max) return null
+  return value
 }
 
 function acute(value: unknown) {

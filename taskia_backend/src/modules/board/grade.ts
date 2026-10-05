@@ -1,7 +1,7 @@
 import { bindLabels } from './algebra.js'
 import { expandScene } from './expand.js'
 import { nearly } from './geom.js'
-import { rEq, rFromClaim } from './rational.js'
+import { rEq, rFromClaim, rToNumber, type Rational } from './rational.js'
 import { measureTarget } from './measure.js'
 import { parseScene } from './schema.js'
 import { solveCanon } from './solve.js'
@@ -34,6 +34,7 @@ export function gradeBoard(opts: {
   if (parsed.scene.task.type === 'multiple_choice' && parsed.scene.task.choices) {
     return gradeChoice(parsed.scene.task.choices, answer, opts.board, opts.childMessage)
   }
+  if (answer.exact === 'exact') return gradeExact(answer.rational, answer.value, opts.board, opts.childMessage)
   const got = readChildValue(opts.board, opts.childMessage, answer.value, solved)
   if (got == null) return { verdict: 'unverifiable', expected: round(answer.value), got: null }
   const ok = closeEnough(got, answer.value)
@@ -56,6 +57,32 @@ export function applyVerdictToMastery(opts: {
     contextSummary = contextSummary.replace(/solo bien:\s*\d+\s*\/\s*2/i, `Solo bien: ${previous}/2`)
   }
   return { passed: false, contextSummary }
+}
+
+function gradeExact(
+  expected: Rational,
+  shown: number,
+  board: unknown,
+  message: string | undefined,
+): BoardVerdict {
+  const got = readChildRational(board, message)
+  if (!got) return { verdict: 'unverifiable', expected: round(shown), got: null }
+  return {
+    verdict: rEq(got, expected) ? 'correct' : 'incorrect',
+    expected: round(shown),
+    got: round(rToNumber(got)),
+  }
+}
+
+function readChildRational(board: unknown, message: string | undefined) {
+  const texts = [message ?? '', ...writtenText(board).split('\n')]
+  for (const text of texts) {
+    const slash = text.match(/\d+\s*\/\s*\d+/)
+    const loose = text.match(/-?\d+(?:[.,]\d+)?/)
+    const parsed = rFromClaim(slash?.[0] ?? loose?.[0] ?? '')
+    if (parsed) return parsed
+  }
+  return null
 }
 
 function gradeChoice(

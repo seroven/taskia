@@ -56,6 +56,13 @@ Marcas. Son decoración. No agregan una medida que el enunciado no tenga.
 multiple_choice no se dibuja y no se marca la alternativa correcta. Va en task:
 {"type":"multiple_choice","target":"x+y","unit":"°","choices":[{"id":"a","text":"50°"},{"id":"c","text":"75°"}]}
 target puede ser length:s, angle:i1, o una expresión de incógnitas ya etiquetadas, como x+y.
+Fracciones, barras y columna. No escribas el resultado: el código lo calcula.
+- fraction_bar: {"id":"f","type":"fraction_bar","parts":[{"n":2,"d":5},{"n":1,"d":5}]}
+  Cada barra muestra su fracción. La suma es value:f, exacta, y no se dibuja.
+- bar_chart: {"id":"c","type":"bar_chart","categories":[{"label":"Lunes","value":4},{"label":"Martes","value":7},{"label":"Miércoles","value":5}]}
+  Hasta 10 categorías, valores enteros desde 0. total:c suma los datos. diff:c:Martes:Lunes resta esas dos. No midas las barras.
+- column_op: {"id":"op","type":"column_op","operator":"+","operands":[347,285]}
+  Dos enteros. Las celdas del resultado quedan vacías. La suma es value:op.
 `
 
 export const SCENE_RETRY_SYSTEM = `${SCENE_DRAW_PROMPT}

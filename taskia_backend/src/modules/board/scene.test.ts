@@ -549,6 +549,107 @@ test('dos ángulos de 50° y 60° dejan el tercero en 70, sin depender de la bas
   if (!wide.ok) assert.equal(wide.issues[0]?.code, 'OVERCONSTRAINED')
 })
 
+test('2/5 + 1/5 es 3/5 exacto y no se escribe en la barra', () => {
+  const prepared = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'f', type: 'fraction_bar', parts: [{ n: 2, d: 5 }, { n: 1, d: 5 }] }],
+    task: { type: 'enter_value', target: 'value:f', claimedAnswer: '3/5' },
+  })
+  assert.equal(prepared.ok, true)
+  if (!prepared.ok || prepared.answer.status !== 'value') return
+  assert.equal(prepared.answer.exact, 'exact')
+  assert.equal(prepared.answer.rational.n, 3n)
+  assert.equal(prepared.answer.rational.d, 5n)
+  const texts = prepared.items.map((item) => item.text)
+  assert.equal(texts.includes('2/5'), true)
+  assert.equal(texts.includes('3/5'), false)
+  const good = gradeBoard({ scene: prepared.scene, board: { items: [] }, childMessage: '3/5' })
+  assert.equal(good.verdict, 'correct')
+  const bad = gradeBoard({ scene: prepared.scene, board: { items: [] }, childMessage: '3' })
+  assert.equal(bad.verdict, 'incorrect')
+
+  const mixed = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'f', type: 'fraction_bar', parts: [{ n: 1, d: 2 }, { n: 1, d: 3 }] }],
+    task: { type: 'enter_value', target: 'value:f', claimedAnswer: '5/6' },
+  })
+  assert.equal(mixed.ok, true)
+  if (mixed.ok && mixed.answer.status === 'value') {
+    assert.equal(mixed.answer.rational.n, 5n)
+    assert.equal(mixed.answer.rational.d, 6n)
+  }
+  const tooFull = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'f', type: 'fraction_bar', parts: [{ n: 3, d: 2 }, { n: 1, d: 2 }] }],
+  })
+  assert.equal(tooFull.ok, false)
+  if (!tooFull.ok) assert.equal(tooFull.issues[0]?.code, 'BAD_SCHEMA')
+})
+
+test('el gráfico responde con los datos: el martes tiene 3 más y el total es 16', () => {
+  const objects = [
+    {
+      id: 'c',
+      type: 'bar_chart',
+      categories: [
+        { label: 'Lunes', value: 4 },
+        { label: 'Martes', value: 7 },
+        { label: 'Miércoles', value: 5 },
+      ],
+    },
+  ]
+  const diff = prepareScene({
+    schemaVersion: 1,
+    objects,
+    task: { type: 'enter_value', target: 'diff:c:Martes:Lunes', claimedAnswer: 3 },
+  })
+  const total = prepareScene({
+    schemaVersion: 1,
+    objects,
+    task: { type: 'enter_value', target: 'total:c', claimedAnswer: 16 },
+  })
+  assert.equal(diff.ok, true)
+  assert.equal(total.ok, true)
+  if (diff.ok && diff.answer.status === 'value') {
+    assert.equal(diff.answer.exact, 'exact')
+    assert.equal(diff.answer.value, 3)
+    const texts = diff.items.map((item) => item.text)
+    assert.equal(texts.includes('16'), false)
+    assert.equal(texts.includes('3'), false)
+    assert.equal(texts.includes('7'), true)
+  }
+  if (total.ok && total.answer.status === 'value') assert.equal(total.answer.value, 16)
+})
+
+test('347 + 285 se califica 632 y las celdas del resultado quedan vacías', () => {
+  const prepared = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'op', type: 'column_op', operator: '+', operands: [347, 285] }],
+    task: { type: 'enter_value', target: 'value:op', claimedAnswer: 632 },
+  })
+  assert.equal(prepared.ok, true)
+  if (!prepared.ok || prepared.answer.status !== 'value') return
+  assert.equal(prepared.answer.exact, 'exact')
+  assert.equal(prepared.answer.value, 632)
+  const texts = prepared.items.map((item) => item.text).filter(Boolean)
+  assert.equal(texts.includes('632'), false)
+  assert.equal(texts.includes('+'), true)
+  assert.equal(texts.includes('3'), true)
+  const blanks = prepared.items.filter((item) => item.id.startsWith('op.blank'))
+  assert.equal(blanks.length, 3)
+  assert.ok(blanks.every((item) => item.text == null))
+  const good = gradeBoard({ scene: prepared.scene, board: { items: [] }, childMessage: '632' })
+  assert.equal(good.verdict, 'correct')
+  const bad = gradeBoard({ scene: prepared.scene, board: { items: [] }, childMessage: '600' })
+  assert.equal(bad.verdict, 'incorrect')
+  const minus = prepareScene({
+    schemaVersion: 1,
+    objects: [{ id: 'op', type: 'column_op', operator: '-', operands: [347, 285] }],
+  })
+  assert.equal(minus.ok, false)
+  if (!minus.ok) assert.equal(minus.issues[0]?.code, 'BAD_SCHEMA')
+})
+
 test('una marca de ángulo recto sobre un ángulo de 60° se rechaza', () => {
   const prepared = prepareScene({
     schemaVersion: 1,

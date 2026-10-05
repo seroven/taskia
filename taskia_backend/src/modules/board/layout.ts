@@ -102,6 +102,9 @@ export function compileBoard(
         color,
       })
     }
+    if (item.kind === 'fraction_bar') drawFractionBar(items, item, layer, color)
+    if (item.kind === 'bar_chart') drawBarChart(items, item, layer, color)
+    if (item.kind === 'column_op') drawColumn(items, item, layer, color)
     if (item.kind === 'number_line') {
       const span = item.max - item.min
       const left = MARGIN + 8
@@ -411,6 +414,138 @@ function normalStep(a: Placed, b: Placed, cells: number): Placed {
   const dy = b.row - a.row
   const len = Math.hypot(dx, dy) || 1
   return { col: Math.round((-dy / len) * cells), row: Math.round((dx / len) * cells) }
+}
+
+function drawFractionBar(
+  items: BoardItem[],
+  item: Extract<Canon, { kind: 'fraction_bar' }>,
+  layer: 'ai' | 'student',
+  color: string,
+) {
+  const part = 4
+  let row = 30
+  for (let index = 0; index < item.parts.length; index += 1) {
+    const piece = item.parts[index]!
+    const label = `${piece.n}/${piece.d}`
+    items.push(textItem(`${item.id}.name${index}`, 12, row + 1, label, layer, color))
+    for (let cell = 0; cell < piece.d; cell += 1) {
+      const col = 20 + cell * part
+      items.push(boxItem(`${item.id}.p${index}.${cell}`, col, row, part, part, layer, color))
+      if (cell < piece.n) {
+        items.push(lineItem(`${item.id}.h${index}.${cell}`, { col: col + 1, row: row + 1 }, { col: col + part - 1, row: row + part - 1 }, layer, color))
+      }
+    }
+    row += part + 2
+  }
+}
+
+function drawBarChart(
+  items: BoardItem[],
+  item: Extract<Canon, { kind: 'bar_chart' }>,
+  layer: 'ai' | 'student',
+  color: string,
+) {
+  const barW = 6
+  const gap = 3
+  const barH = 24
+  const baseRow = 68
+  const originCol = 28
+  const max = Math.max(0, ...item.categories.map((category) => category.value))
+  const step = niceStep(max)
+  const axisMax = Math.max(step, Math.ceil(max / step) * step)
+  items.push(lineItem(`${item.id}.y`, { col: originCol, row: baseRow - barH }, { col: originCol, row: baseRow }, layer, color))
+  items.push(lineItem(`${item.id}.x`, { col: originCol, row: baseRow }, { col: originCol + item.categories.length * (barW + gap), row: baseRow }, layer, color))
+  for (let tick = 0; tick <= axisMax; tick += step) {
+    const row = baseRow - Math.round((tick / axisMax) * barH)
+    items.push(textItem(`${item.id}.tick${tick}`, originCol - 4, row, String(tick), layer, color))
+  }
+  item.categories.forEach((category, index) => {
+    const col = originCol + 2 + index * (barW + gap)
+    const height = category.value === 0 ? 0 : Math.max(1, Math.round((category.value / axisMax) * barH))
+    if (height > 0) {
+      items.push(boxItem(`${item.id}.bar${index}`, col, baseRow - height, barW, height, layer, color))
+      items.push(textItem(`${item.id}.val${index}`, col, baseRow - height - 2, String(category.value), layer, color))
+    }
+    items.push(textItem(`${item.id}.cat${index}`, col, baseRow + 2, category.label, layer, color))
+  })
+}
+
+function drawColumn(
+  items: BoardItem[],
+  item: Extract<Canon, { kind: 'column_op' }>,
+  layer: 'ai' | 'student',
+  color: string,
+) {
+  const [left, right] = item.operands
+  const width = Math.max(String(left).length, String(right).length, String(left + right).length)
+  const originCol = 48
+  const top = 36
+  writeDigits(items, item.id, 'a', left, width, originCol, top, layer, color)
+  items.push(textItem(`${item.id}.op`, originCol - 2, top + 2, '+', layer, color))
+  writeDigits(items, item.id, 'b', right, width, originCol, top + 2, layer, color)
+  items.push(
+    lineItem(
+      `${item.id}.line`,
+      { col: originCol - 2, row: top + 3 },
+      { col: originCol + width, row: top + 3 },
+      layer,
+      color,
+    ),
+  )
+  for (let index = 0; index < width; index += 1) {
+    items.push(boxItem(`${item.id}.blank${index}`, originCol + index, top + 4, 1, 1, layer, color))
+  }
+}
+
+function writeDigits(
+  items: BoardItem[],
+  id: string,
+  name: string,
+  value: number,
+  width: number,
+  originCol: number,
+  row: number,
+  layer: 'ai' | 'student',
+  color: string,
+) {
+  const digits = String(value).padStart(width, ' ')
+  for (let index = 0; index < digits.length; index += 1) {
+    const digit = digits[index]!
+    if (digit === ' ') continue
+    items.push(textItem(`${id}.${name}${index}`, originCol + index, row, digit, layer, color))
+  }
+}
+
+function niceStep(max: number) {
+  if (max <= 1) return 1
+  const rough = max / 4
+  const power = 10 ** Math.floor(Math.log10(rough))
+  const fraction = rough / power
+  const nice = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10
+  return nice * power
+}
+
+function boxItem(
+  id: string,
+  col: number,
+  row: number,
+  w: number,
+  h: number,
+  layer: 'ai' | 'student',
+  color: string,
+): BoardItem {
+  return { id, layer, kind: 'rectangle', col, row, w, h, color }
+}
+
+function textItem(
+  id: string,
+  col: number,
+  row: number,
+  text: string,
+  layer: 'ai' | 'student',
+  color: string,
+): BoardItem {
+  return { id, layer, kind: 'text', col, row, w: Math.max(1, text.length), h: 1, text, color }
 }
 
 function lineItem(id: string, a: Placed, b: Placed, layer: 'ai' | 'student', color: string): BoardItem {
