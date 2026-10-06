@@ -16,6 +16,7 @@ import { WorldsNav } from '../../components/worlds/WorldsNav'
 import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import { challengeDifficultyIcon } from '../../components/worlds/worldsIcons'
 import { errorMessage } from '../../lib/errors'
+import { plainMathText } from '../../lib/plainMath'
 import { type BoardSheet, type StudyBoardScene } from '../../lib/studyProtocol'
 import { applySheet, emptyGridScene, hasStudentWork, normalizeScene } from '../../lib/gridBoardModel'
 import { compressStudyPhoto } from '../../lib/studyPhoto'
@@ -60,7 +61,7 @@ function isBoardQuestion(q: Pick<ChallengeQuestionPublic, 'kind' | 'requires_boa
 function sheetFromOps(raw: unknown): BoardSheet | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const rec = raw as Record<string, unknown>
-  if (typeof rec.text === 'string' && rec.text.trim()) return { text: rec.text }
+  if (typeof rec.text === 'string' && rec.text.trim()) return { text: plainMathText(rec.text) }
   if (typeof rec.imageSrc === 'string' && rec.imageSrc.trim()) return { imageSrc: rec.imageSrc }
   return null
 }
@@ -612,7 +613,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
             </p>
           )}
 
-          <p className="challenge-prompt">{current.prompt}</p>
+          <p className="challenge-prompt">{plainMathText(current.prompt)}</p>
 
           {current.kind === 'multiple_choice' &&
             current.options &&
@@ -630,7 +631,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
                       disabled={submitting || grading}
                     >
                       <strong className="worlds-choice-letter">{letter}</strong>
-                      <span>{opt.replace(/^[A-D][).:\-]\s*/i, '')}</span>
+                      <span>{plainMathText(opt.replace(/^[A-D][).:\-]\s*/i, ''))}</span>
                     </button>
                   )
                 })}

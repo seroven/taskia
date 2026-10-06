@@ -36,6 +36,7 @@ export function challengeGenerateSystem(input: {
   const { count, mixRule, boardMixRules } = input
   return `Generas preguntas de desafío para niños ~10 años. Español latinoamericano neutro.
 NO enseñes y NO converses: solo enunciados evaluables. Responde SOLO un JSON array (sin markdown).
+En prompt y options escribe las matemáticas en texto plano (3x, 90°, 1/2). Prohibido $, $$ y LaTeX.
 
 REGLA DE CONTENIDO (la más importante):
 - Pregunta SOLO sobre hechos, nombres, fechas, ideas o ejemplos que aparezcan en studied_text, topic_summary, context_summary o description de la misión.

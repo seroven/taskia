@@ -8,8 +8,10 @@ import {
   type ReactNode,
 } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { createPortal } from 'react-dom'
 import { Camera, Microphone, Stop, X } from '@phosphor-icons/react'
 import { api } from '../../api'
+import { plainMathText } from '../../lib/plainMath'
 import { compressStudyPhoto } from '../../lib/studyPhoto'
 import { ModalShell } from '../ui/ModalShell'
 import { errorMessage } from '../../lib/errors'
@@ -128,6 +130,7 @@ export function StudyChat({
   const [draft, setDraft] = useState('')
   const [fromVoiceDraft, setFromVoiceDraft] = useState(false)
   const [photoData, setPhotoData] = useState<string | null>(null)
+  const [zoomSrc, setZoomSrc] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -203,6 +206,15 @@ export function StudyChat({
       if (tickRef.current != null) window.clearInterval(tickRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!zoomSrc) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setZoomSrc(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [zoomSrc])
 
   useEffect(() => {
     if (voiceEnabled) return
@@ -479,13 +491,20 @@ export function StudyChat({
                   {message.role === 'user' ? 'Tú' : 'Taskia'}
                 </span>
                 {message.image_url ? (
-                  <img
-                    className="study-bubble-photo"
-                    src={message.image_url}
-                    alt="Foto del ejercicio"
-                  />
+                  <button
+                    type="button"
+                    className="study-bubble-photo-btn"
+                    onClick={() => setZoomSrc(message.image_url ?? null)}
+                    aria-label="Ver la foto en grande"
+                  >
+                    <img
+                      className="study-bubble-photo"
+                      src={message.image_url}
+                      alt="Foto del ejercicio"
+                    />
+                  </button>
                 ) : null}
-                <p>{message.content}</p>
+                <p>{message.role === 'assistant' ? plainMathText(message.content) : message.content}</p>
               </motion.div>
             )
           })}
@@ -514,7 +533,7 @@ export function StudyChat({
               </p>
             ) : (
               <TypewriterText
-                text={liveAssistant.message.content}
+                text={plainMathText(liveAssistant.message.content)}
                 active
                 onTick={scrollToBottom}
                 onDone={() => {
@@ -711,6 +730,21 @@ export function StudyChat({
         </button>
         </div>
       </form>
+
+      {zoomSrc
+        ? createPortal(
+            <div
+              className="study-photo-zoom"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Foto en grande"
+              onClick={() => setZoomSrc(null)}
+            >
+              <img src={zoomSrc} alt="Foto en grande" onClick={(event) => event.stopPropagation()} />
+            </div>,
+            document.body,
+          )
+        : null}
 
       <KidAskDialog
         open={voicePrompt === 'intro'}

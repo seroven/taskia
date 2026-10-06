@@ -6,6 +6,7 @@ import {
   loadReferencePhoto,
   planExerciseSheet,
   stripDrewPhrase,
+  stripMathDelimiters,
   type BoardSheet,
   type SheetPlan,
 } from '../../board/sheet.js'
@@ -408,8 +409,8 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       450,
     )
   }
-  reply.speak_to_child = truncateChars(stripDrewPhrase(reply.speak_to_child), 450)
-  const boardText = String(value.board_text ?? '').trim()
+  reply.speak_to_child = truncateChars(stripMathDelimiters(stripDrewPhrase(reply.speak_to_child)), 450)
+  const boardText = stripMathDelimiters(String(value.board_text ?? '').trim())
   if (sheetPlan.mode === 'image') reply.board_sheet = { imageSrc: sheetPlan.imageSrc }
   else if (sheetPlan.mode === 'text' && boardText) reply.board_sheet = { text: boardText.slice(0, 800) }
   let visible = reply.speak_to_child

@@ -23,6 +23,7 @@ import {
   loadReferencePhoto,
   planExerciseSheet,
   stripDrewPhrase,
+  stripMathDelimiters,
   type BoardSheet,
   type SheetPlan,
 } from '../../board/sheet.js'
@@ -330,7 +331,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       }
     }
 
-    let speakSafe = stripDrewPhrase(speakToChild)
+    let speakSafe = stripMathDelimiters(stripDrewPhrase(speakToChild))
     if (!passed && looksLikeCelebratingTaskReady(speakSafe)) {
       const stripped = stripPrematureReadyCelebration(speakSafe)
       speakSafe = truncateChars(
@@ -340,7 +341,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         MAX_SPEAK,
       )
     }
-    const boardText = String(value.board_text ?? '').trim()
+    const boardText = stripMathDelimiters(String(value.board_text ?? '').trim())
     let boardSheet: BoardSheet | null = null
     if (sheetPlan.mode === 'image') boardSheet = { imageSrc: sheetPlan.imageSrc }
     else if (sheetPlan.mode === 'text' && boardText) boardSheet = { text: boardText.slice(0, 800) }

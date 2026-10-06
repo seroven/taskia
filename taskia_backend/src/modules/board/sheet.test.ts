@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { exerciseReference, parseGraphicFlag, stripDrewPhrase } from './sheet.js'
+import { exerciseReference, parseGraphicFlag, stripDrewPhrase, stripMathDelimiters } from './sheet.js'
 
 test('exercise reference drops short requests', () => {
   assert.equal(
@@ -18,4 +18,13 @@ test('graphic flag is true only when the model says so', () => {
 
 test('drew phrase is removed', () => {
   assert.equal(stripDrewPhrase('Mira. Te lo dibujé en la pizarra. ¿Qué ves?'), 'Mira. ¿Qué ves?')
+})
+
+test('math delimiters become plain text', () => {
+  assert.equal(
+    stripMathDelimiters('¿Cuánto crees que mide el ángulo $3x$?'),
+    '¿Cuánto crees que mide el ángulo 3x?',
+  )
+  assert.equal(stripMathDelimiters('cuesta $3 pesos'), 'cuesta $3 pesos')
+  assert.equal(stripMathDelimiters('mira \\(3x\\) y $$90^\\circ$$'), 'mira 3x y 90^\\circ')
 })

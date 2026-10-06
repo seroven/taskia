@@ -1,5 +1,5 @@
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
-import { sheetForPrompt, type BoardSheet } from '../../board/sheet.js'
+import { sheetForPrompt, stripMathDelimiters, type BoardSheet } from '../../board/sheet.js'
 import { CHALLENGE_GRADE_SYSTEM, challengeGenerateSystem } from '../../../prompts/challenge.js'
 import { awardXp, xpForChallenge } from '../../../services/xp.js'
 import { AppError, extractJson, truncateChars } from '../../../utils/helpers.js'
@@ -101,7 +101,7 @@ async function attachChallengeSheets(
     if (!Number.isFinite(mid) || !byId.has(mid)) mid = missions[0]?.id ?? 0
     const mission = byId.get(mid)
     if (!itemWantsBoard(item, Boolean(mission?.uses_board))) continue
-    const prompt = typeof item.prompt === 'string' ? item.prompt : '¿Listo?'
+    const prompt = stripMathDelimiters(typeof item.prompt === 'string' ? item.prompt : '¿Listo?')
     const sheet: BoardSheet = await sheetForPrompt(prompt, { userId, kind: 'board_facts' })
     item.sheet = sheet
   }
@@ -241,6 +241,7 @@ export async function getChallengeDetail(challengeId: number, userId: number) {
       console.warn('[challenge:detail] MCQ without usable options', Number(question.id), question.options_json)
       options = null
     }
+    if (options) options = options.map((option) => stripMathDelimiters(option))
     const answerKey = String(question.answer_key ?? '')
     const base = {
       id: Number(question.id),
@@ -249,7 +250,7 @@ export async function getChallengeDetail(challengeId: number, userId: number) {
       course_name: question.course_name == null ? null : String(question.course_name),
       sort_order: Number(question.sort_order),
       kind,
-      prompt: String(question.prompt),
+      prompt: stripMathDelimiters(String(question.prompt)),
       options,
       requires_board: Number(question.requires_board) !== 0,
       prompt_draw_ops:
@@ -416,7 +417,7 @@ export async function startChallenge(userId: number, body: Record<string, unknow
       if (kind === 'board_prompt') kind = 'multiple_choice'
       if (!['multiple_choice', 'short_text', 'fill_blank'].includes(kind)) kind = 'multiple_choice'
     }
-    const prompt = typeof item.prompt === 'string' ? item.prompt : '¿Listo?'
+    const prompt = stripMathDelimiters(typeof item.prompt === 'string' ? item.prompt : '¿Listo?')
     let options = normalizeOptionsList(item.options)
     if (kind === 'multiple_choice') {
       if (!options || options.length < 2) {
@@ -436,6 +437,7 @@ export async function startChallenge(userId: number, body: Record<string, unknow
     } else {
       options = null
     }
+    if (options) options = options.map((option) => stripMathDelimiters(option))
     const answerKey = normalizeAnswerKey(
       kind,
       typeof item.answer_key === 'string' ? item.answer_key : '',
