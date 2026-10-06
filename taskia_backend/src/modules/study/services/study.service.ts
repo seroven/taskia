@@ -18,6 +18,7 @@ import {
 import { fetchTask } from '../../tasks/services/task.service.js'
 import { parseChatMessage, parseTranscribeBody } from '../schemas/study.schema.js'
 import { tutorSystemPrompt } from '../../../prompts/study-tutor.js'
+import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../board/exerciseBrief.js'
 import {
   exerciseReference,
   loadReferencePhoto,
@@ -57,6 +58,7 @@ import {
   loadUserMemory,
   markStudyPassed,
   saveBoard,
+  saveExerciseBrief,
   saveSessionMeta,
   saveUserMemory,
 } from '../repositories/study.repository.js'
@@ -131,7 +133,7 @@ export async function openSession(userId: number, taskId: number) {
       await saveSessionMeta(context)
     }
 
-    return { context, board, task }
+    return { context: hideExerciseBrief(context), board, task }
 }
 
 export async function saveTaskBoard(userId: number, taskId: number, body: Record<string, unknown>) {
@@ -172,15 +174,40 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         .reverse()
         .find((m) => m.role === 'assistant')
         ?.content ?? ''
-    const intent = task.uses_board
+    const usesBoard = task.uses_board
+    const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
+    const intent = usesBoard || photo
       ? await classifyBoardIntent({
           message,
           previous: truncateChars(lastTutor, 180),
           usage: { userId, kind: 'board_intent' },
         })
-      : { reviewDrawing: false, drawExercise: false }
-    const usesBoard = task.uses_board
-    const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
+      : { reviewDrawing: false, drawExercise: false, helpExercise: false }
+    const memory = planExerciseMemory({
+      help: intent.helpExercise,
+      review: intent.reviewDrawing,
+      hasPhoto: Boolean(photo),
+      hasBrief: Boolean(context.exercise_brief),
+    })
+    if (memory.solve) {
+      const image =
+        photoData ??
+        (await loadReferencePhoto(
+          null,
+          context.messages.map((item) => item.image_url),
+        ))
+      const brief = await solveExerciseBrief({
+        text: message,
+        photoBase64: image,
+        usage: { userId, kind: 'board_facts' },
+      })
+      if (brief) {
+        context.exercise_brief = brief
+        await saveExerciseBrief(taskId, brief)
+      }
+    }
+    const tutorPhoto =
+      memory.sendPhoto || (memory.solve && !context.exercise_brief) ? photoData : null
     const referencePhoto = usesBoard
       ? await loadReferencePhoto(
           photoData,
@@ -214,7 +241,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       instruction +=
         ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
     }
-    if (photo && intent.reviewDrawing) {
+    if (tutorPhoto && intent.reviewDrawing) {
       instruction +=
         ' El niño adjuntó una foto del cuaderno. Léela y decide si el ejercicio está bien. No es la pizarra.'
     }
@@ -256,7 +283,8 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       user_memory_summary: truncateChars(userMemory, MAX_MEMORY),
       hints_level: context.hints_level,
       board_has_drawing: boardHas,
-      photo_attached: Boolean(photo),
+      photo_attached: Boolean(tutorPhoto),
+      ...(context.exercise_brief ? { exercise_solution: context.exercise_brief } : {}),
       child_message: truncateChars(message, fromVoice ? 4000 : 800),
       ...(usesBoard ? { board_mode: sheetPlan.mode } : {}),
       // Texto de coords solo si no hay imagen (fallback).
@@ -269,7 +297,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       system: tutorSystemPrompt(usesBoard),
       user: JSON.stringify(payload),
       boardImageBase64: boardImageRaw || null,
-      photoBase64: photo ? `data:${photo.mime};base64,${photo.base64}` : null,
+      photoBase64: tutorPhoto,
       usage: { userId, kind: 'task_tutor' },
     })
 
@@ -425,7 +453,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
 
     return {
       reply,
-      context,
+      context: hideExerciseBrief(context),
       study_passed: task.study_passed || reply.study_eval.passed,
       xp_gained: xpAward?.xp_gained ?? 0,
       xp: xpAward,

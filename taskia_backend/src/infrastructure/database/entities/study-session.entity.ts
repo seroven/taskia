@@ -22,6 +22,10 @@ export class StudySession {
   @Column({ type: 'text', nullable: true })
   pendingBoardFacts!: string | null
 
+  /** Desarrollo privado del ejercicio. No se manda al navegador. */
+  @Column({ type: 'text', nullable: true })
+  exerciseBrief!: string | null
+
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   createdAt!: Date
 

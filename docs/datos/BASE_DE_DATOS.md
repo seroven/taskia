@@ -179,6 +179,7 @@ El estado de la sesión: una fila por tarea, no una por conversación. La PK **e
 | `context_summary` | text | resumen vivo de la charla |
 | `hints_level` | int | pistas dadas |
 | `pending_board_facts` | text | hechos de una foto, esperando el sí; se borra al dibujar o al seguir de largo |
+| `exercise_brief` | text | desarrollo privado del ejercicio, con la respuesta. No se envía al navegador |
 | `created_at` / `updated_at` | timestamptz | |
 
 `context_summary` es lo que hace que el tutor no repita preguntas: en cada turno se le manda este resumen, no el chat crudo. `tutor_phase` son las tres fases que el alumno ve en pantalla.
@@ -291,6 +292,7 @@ Mismo patrón que el tutor del tablero, pero colgando de `study_missions`. Son t
 | `notebook_context` | text | el relato del cuaderno, fijo |
 | `hints_level` | int | |
 | `pending_board_facts` | text | igual que en la sesión de una tarea |
+| `exercise_brief` | text | igual que en la sesión de una tarea |
 | `updated_at` | timestamptz | |
 
 La diferencia con `study_sessions` son dos columnas: acá está `notebook_context` y no está `created_at`. `notebook_context` guarda el primer relato del alumno sobre su cuaderno y **no se vuelve a tocar**: el tutor lo recibe completo en cada turno para no preguntar cosas que no estén ahí, mientras `context_summary` sí se va actualizando.

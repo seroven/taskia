@@ -1,6 +1,7 @@
 import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
 import { callGemini, classifyBoardIntent } from '../../../infrastructure/gemini/gemini.client.js'
 import { missionTutorPrompt } from '../../../prompts/mission-tutor.js'
+import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../board/exerciseBrief.js'
 import {
   exerciseReference,
   loadReferencePhoto,
@@ -42,6 +43,7 @@ import {
   loadMissionSession,
   maxMissionSort,
   maxWorldCourseSort,
+  saveExerciseBrief,
   saveMissionBoard,
   saveSessionGreeting,
   saveSessionMeta,
@@ -200,7 +202,7 @@ export async function openMissionSession(userId: number, missionId: number) {
     }
     await saveSessionGreeting(missionId, context.topic_summary, context.context_summary)
   }
-  return { context, board, mission }
+  return { context: hideExerciseBrief(context), board, mission }
 }
 
 export async function saveBoard(userId: number, missionId: number, body: Record<string, unknown>) {
@@ -240,15 +242,39 @@ export async function chatMission(userId: number, missionId: number, body: Recor
 
   const lastTutorMsg = [...context.messages].reverse().find((message) => message.role === 'assistant')
   const lastTutor = lastTutorMsg ? truncateChars(lastTutorMsg.content, 320) : ''
-  const intent = mission.uses_board
+  const usesBoard = mission.uses_board
+  const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
+  const intent = usesBoard || photo
     ? await classifyBoardIntent({
         message: parsed.message,
         previous: truncateChars(lastTutor, 180),
         usage: { userId, kind: 'board_intent' },
       })
-    : { reviewDrawing: false, drawExercise: false }
-  const usesBoard = mission.uses_board
-  const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
+    : { reviewDrawing: false, drawExercise: false, helpExercise: false }
+  const memory = planExerciseMemory({
+    help: intent.helpExercise,
+    review: intent.reviewDrawing,
+    hasPhoto: Boolean(photo),
+    hasBrief: Boolean(context.exercise_brief),
+  })
+  if (memory.solve) {
+    const image =
+      photoData ??
+      (await loadReferencePhoto(
+        null,
+        context.messages.map((item) => item.image_url),
+      ))
+    const brief = await solveExerciseBrief({
+      text: parsed.message,
+      photoBase64: image,
+      usage: { userId, kind: 'board_facts' },
+    })
+    if (brief) {
+      context.exercise_brief = brief
+      await saveExerciseBrief(missionId, brief)
+    }
+  }
+  const tutorPhoto = memory.sendPhoto || (memory.solve && !context.exercise_brief) ? photoData : null
   const referencePhoto = usesBoard
     ? await loadReferencePhoto(
         photoData,
@@ -278,7 +304,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     instruction +=
       ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
   }
-  if (photo && intent.reviewDrawing) {
+  if (tutorPhoto && intent.reviewDrawing) {
     instruction +=
       ' El niño adjuntó una foto del cuaderno. Léela y decide si el ejercicio está bien. No es la pizarra.'
   }
@@ -321,7 +347,8 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     hints_level: context.hints_level,
     ...(usesBoard ? { board_mode: sheetPlan.mode } : {}),
     board_has_drawing: boardHas,
-    photo_attached: Boolean(photo),
+    photo_attached: Boolean(tutorPhoto),
+    ...(context.exercise_brief ? { exercise_solution: context.exercise_brief } : {}),
     ...(!boardImageRaw && boardDescription?.trim()
       ? { board_drawing: truncateChars(boardDescription, 500) }
       : {}),
@@ -335,7 +362,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     system: missionTutorPrompt(usesBoard),
     user: payload,
     boardImageBase64: boardImageRaw || null,
-    photoBase64: photo ? `data:${photo.mime};base64,${photo.base64}` : null,
+    photoBase64: tutorPhoto,
     usage: { userId, kind: 'mission_tutor' },
   })
 
@@ -451,9 +478,9 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       effortScore: effort,
       reason: reply.study_eval.evidence || 'Misión dominada',
     })
-    return { reply, context, mission, xp_gained: xpAward.xp_gained, xp: xpAward }
+    return { reply, context: hideExerciseBrief(context), mission, xp_gained: xpAward.xp_gained, xp: xpAward }
   }
-  return { reply, context, mission }
+  return { reply, context: hideExerciseBrief(context), mission }
 }
 
 export async function listImportable(userId: number, worldId: number, courseId: number) {

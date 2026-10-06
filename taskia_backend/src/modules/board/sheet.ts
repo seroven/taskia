@@ -14,10 +14,10 @@ const GRAPHIC_SYSTEM = `Miras un ejercicio de primaria. Responde SOLO JSON {"gra
 graphic=true solo si hace falta una figura, gráfica, diagrama o dibujo para entender el ejercicio.
 graphic=false si basta con el enunciado escrito.`
 
-const IMAGE_SYSTEM = `Genera UNA imagen de un ejercicio de primaria parecido al referente, con otros datos.
-Hoja limpia: fondo blanco, tinta oscura, letra grande y clara.
-Sin marcos, sin adornos, sin marca de agua y sin la solución.
-Solo el enunciado y la figura necesaria.`
+const IMAGE_SYSTEM = `Genera UNA ficha nueva del mismo ejercicio, con otros números.
+Conserva la figura: los mismos puntos, qué toca qué y los ángulos rectos. No inventes otra.
+Fondo blanco, horizontal, solo el enunciado y la figura, sin opciones.
+No copies el papel, la letra a mano ni si la foto está torcida o vertical.`
 
 const SHORT_REQUEST =
   /^(s[ií]|ok|dale|ya|listo|otro|un ejercicio|dame un ejercicio|hazme un ejercicio|otro ejercicio|uno similar|parecido)[.!?\s]*$/i
@@ -121,7 +121,9 @@ export async function planExerciseSheet(opts: {
   if (!graphic) return { mode: 'text' }
   const image = await callGeminiImage({
     system: IMAGE_SYSTEM,
-    user: text || 'El referente está en la foto. Arma un ejercicio parecido, con otros datos.',
+    user:
+      text ||
+      'Misma figura que la foto, otros números. Fondo blanco, horizontal, enunciado y figura, sin opciones.',
     photoBase64: opts.photoBase64,
     usage: opts.usage,
   })

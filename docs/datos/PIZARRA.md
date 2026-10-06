@@ -1,6 +1,6 @@
 # Cómo funciona la pizarra
 
-La pizarra de estudio, misión y desafío es el mismo lienzo. Taskia no dibuja formas. El niño escribe, traza líneas y usa el pincel. Si el ejercicio es solo texto, el servidor lo deja fijo. Si hace falta una gráfica, Gemini genera una imagen fija. Lo que ve el niño, en el chat y en el enunciado, va en texto plano: `3x`, no `$3x$`.
+La pizarra de estudio, misión y desafío es el mismo lienzo. Taskia no dibuja formas. El niño escribe, traza líneas y usa el pincel. Si el ejercicio es solo texto, el servidor lo deja fijo. Si hace falta una gráfica, Gemini genera una ficha horizontal de fondo blanco, a la mitad del tamaño anterior, con el enunciado y la misma figura del referente y otros números, sin opciones. No copia el papel ni la orientación de la foto. Lo que ve el niño, en el chat y en el enunciado, va en texto plano: `3x`, no `$3x$`. La primera vez que pide ayuda, la foto del ejercicio se lee una sola vez y el desarrollo queda guardado en la sesión; después la guía usa ese texto y no vuelve a mandar la foto.
 
 El motor de escena (`taskia_backend/src/modules/board/`, hechos, solver y primitivas) sigue en el repo y tiene tests, pero estudio, misión y desafío ya no lo llaman.
 

@@ -36,6 +36,7 @@ export async function callGemini(opts: {
   boardImageBase64?: string | null
   boardImages?: Array<{ data: string; caption?: string; mimeType?: string }>
   photoBase64?: string | null
+  photoCaption?: string
   usage?: LlmUsageContext
 }): Promise<string> {
   const apiKey = env.gemini.apiKey.trim().replace(/^["']|["']$/g, '')
@@ -59,6 +60,7 @@ export async function callGemini(opts: {
       data: opts.photoBase64,
       mimeType: 'image/jpeg',
       caption:
+        opts.photoCaption ??
         'Foto del cuaderno. Léela para ver su respuesta. No es la pizarra.',
     })
   }
@@ -98,20 +100,20 @@ export async function callGemini(opts: {
   return generated.text
 }
 
-const NONE_INTENT = { reviewDrawing: false, drawExercise: false }
+const NONE_INTENT = { reviewDrawing: false, drawExercise: false, helpExercise: false }
 
 /** Pregunta barata: solo la frase del niño y la última de Taskia. Sin imagen ni resumen. */
 export async function classifyBoardIntent(opts: {
   message: string
   previous: string
   usage?: LlmUsageContext
-}): Promise<{ reviewDrawing: boolean; drawExercise: boolean }> {
+}): Promise<{ reviewDrawing: boolean; drawExercise: boolean; helpExercise: boolean }> {
   const apiKey = env.gemini.apiKey.trim().replace(/^["']|["']$/g, '')
   if (!apiKey) return NONE_INTENT
   const model = env.gemini.model.trim().replace(/^["']|["']$/g, '') || 'gemini-2.0-flash'
   const modelL = model.toLowerCase()
   const generationConfig: Record<string, unknown> = {
-    maxOutputTokens: 40,
+    maxOutputTokens: 80,
     temperature: 0,
     responseMimeType: 'application/json',
   }
@@ -156,7 +158,7 @@ export async function classifyBoardIntent(opts: {
   }
 }
 
-function parseBoardIntent(raw: string): { reviewDrawing: boolean; drawExercise: boolean } {
+function parseBoardIntent(raw: string): { reviewDrawing: boolean; drawExercise: boolean; helpExercise: boolean } {
   const start = raw.indexOf('{')
   const end = raw.lastIndexOf('}')
   if (start < 0 || end <= start) return NONE_INTENT
@@ -164,10 +166,12 @@ function parseBoardIntent(raw: string): { reviewDrawing: boolean; drawExercise: 
     const value = JSON.parse(raw.slice(start, end + 1)) as {
       review_drawing?: unknown
       draw_exercise?: unknown
+      help_exercise?: unknown
     }
     return {
       reviewDrawing: value.review_drawing === true,
       drawExercise: value.draw_exercise === true,
+      helpExercise: value.help_exercise === true,
     }
   } catch {
     return NONE_INTENT
@@ -344,7 +348,12 @@ export async function callGeminiImage(opts: {
   const parts: Array<Record<string, unknown>> = [{ text: opts.user }]
   if (opts.photoBase64?.trim()) {
     const inline = readInlineImage(opts.photoBase64, 'image/jpeg')
-    if (inline.data) parts.push({ inline_data: { mime_type: inline.mime, data: inline.data } })
+    if (inline.data) {
+      parts.push({
+        text: 'Copia esta figura (qué toca qué). Cambia solo los números. Dibújala limpia, horizontal, fondo blanco, sin opciones. Ignora si la foto está torcida.',
+      })
+      parts.push({ inline_data: { mime_type: inline.mime, data: inline.data } })
+    }
   }
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
   try {
@@ -354,7 +363,10 @@ export async function callGeminiImage(opts: {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: opts.system }] },
         contents: [{ role: 'user', parts }],
-        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+        generationConfig: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          imageConfig: { aspectRatio: '4:3' },
+        },
       }),
     })
     const payload = (await response.json()) as Record<string, unknown>

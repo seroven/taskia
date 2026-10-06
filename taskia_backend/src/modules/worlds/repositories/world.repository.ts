@@ -471,6 +471,7 @@ export async function loadMissionSession(missionId: number) {
     notebook_context: String(session.notebookContext ?? ''),
     hints_level: Number(session.hintsLevel),
     pending_board_facts: session.pendingBoardFacts,
+    exercise_brief: session.exerciseBrief ?? '',
     messages: messages.map((message) => ({
       role: message.role,
       content: message.content,
@@ -507,6 +508,10 @@ export async function saveSessionGreeting(
     { missionId },
     { topicSummary, contextSummary },
   )
+}
+
+export async function saveExerciseBrief(missionId: number, brief: string) {
+  await AppDataSource.getRepository(StudyMissionSession).update({ missionId }, { exerciseBrief: brief })
 }
 
 export async function savePendingBoardFacts(missionId: number, raw: string | null) {
