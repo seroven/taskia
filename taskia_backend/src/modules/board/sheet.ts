@@ -1,3 +1,4 @@
+import { env } from '../../config/env.js'
 import { decodeStudyPhoto, uploadStudyPhoto } from '../../infrastructure/cloudinary/cloudinary.client.js'
 import { callGemini, callGeminiImage, type LlmUsageContext } from '../../infrastructure/gemini/gemini.client.js'
 import { extractJson } from '../../utils/helpers.js'
@@ -21,6 +22,13 @@ No copies el papel, la letra a mano ni si la foto está torcida o vertical.`
 
 const SHORT_REQUEST =
   /^(s[ií]|ok|dale|ya|listo|otro|un ejercicio|dame un ejercicio|hazme un ejercicio|otro ejercicio|uno similar|parecido)[.!?\s]*$/i
+
+/** Fotos que subió el explorador. La ficha que generó Taskia no es la referencia. */
+export function userReferencePhotos(
+  messages: Array<{ role: string; image_url?: string | null }>,
+): Array<string | null | undefined> {
+  return messages.filter((item) => item.role === 'user').map((item) => item.image_url)
+}
 
 /** Textos que sí son un ejercicio de referencia. Omite pedidos cortos de “otro”. */
 export function exerciseReference(parts: string[]): string {
@@ -125,6 +133,7 @@ export async function planExerciseSheet(opts: {
       text ||
       'Misma figura que la foto, otros números. Fondo blanco, horizontal, enunciado y figura, sin opciones.',
     photoBase64: opts.photoBase64,
+    model: env.gemini.proModel,
     usage: opts.usage,
   })
   if (!image) return { mode: 'text' }
@@ -138,6 +147,7 @@ export async function sheetForPrompt(prompt: string, usage: LlmUsageContext): Pr
   const image = await callGeminiImage({
     system: IMAGE_SYSTEM,
     user: text,
+    model: env.gemini.proModel,
     usage,
   })
   if (!image) return { text }

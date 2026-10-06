@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { exerciseReference, parseGraphicFlag, stripDrewPhrase, stripMathDelimiters } from './sheet.js'
+import {
+  exerciseReference,
+  parseGraphicFlag,
+  stripDrewPhrase,
+  stripMathDelimiters,
+  userReferencePhotos,
+} from './sheet.js'
+
+test('exercise reference photos are only the ones the child uploaded', () => {
+  assert.deepEqual(
+    userReferencePhotos([
+      { role: 'user', image_url: 'https://child.example/photo.jpg' },
+      { role: 'assistant', image_url: 'https://taskia.example/sheet.png' },
+      { role: 'user', image_url: null },
+    ]),
+    ['https://child.example/photo.jpg', null],
+  )
+})
 
 test('exercise reference drops short requests', () => {
   assert.equal(

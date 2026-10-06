@@ -22,6 +22,7 @@ import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../..
 import {
   exerciseReference,
   loadReferencePhoto,
+  userReferencePhotos,
   planExerciseSheet,
   stripDrewPhrase,
   stripMathDelimiters,
@@ -209,10 +210,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     const tutorPhoto =
       memory.sendPhoto || (memory.solve && !context.exercise_brief) ? photoData : null
     const referencePhoto = usesBoard
-      ? await loadReferencePhoto(
-          photoData,
-          context.messages.map((item) => item.image_url),
-        )
+      ? await loadReferencePhoto(photoData, userReferencePhotos(context.messages))
       : null
     const referenceText = exerciseReference([
       task.description ?? '',

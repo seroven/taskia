@@ -64,7 +64,7 @@ Tras migrar en vacío queda el admin `Sebastian` / `123456`, el explorador `Sero
 
 Plantillas: `.env.example`, `.env.example.qa`, `.env.example.pd`, `.env.example.production`.
 
-Variables principales: `PORT`, `CORS_ORIGIN`, `PG_DSN` o `PG_HOST`/`PG_PORT`/`PG_USER`/`PG_PASSWORD`/`PG_DATABASE`, `PG_SCHEMA`, `PG_SSLMODE`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `COOKIE_NAME`, `COOKIE_SECURE`, `COOKIE_SAME_SITE`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_IMAGE_MODEL`.
+Variables principales: `PORT`, `CORS_ORIGIN`, `PG_DSN` o `PG_HOST`/`PG_PORT`/`PG_USER`/`PG_PASSWORD`/`PG_DATABASE`, `PG_SCHEMA`, `PG_SSLMODE`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `COOKIE_NAME`, `COOKIE_SECURE`, `COOKIE_SAME_SITE`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_IMAGE_MODEL`, `GEMINI_PRO_MODEL`.
 
 En un host tipo Render, configura esas variables en el panel. `npm start` no lee `.env.pd` del repo.
 

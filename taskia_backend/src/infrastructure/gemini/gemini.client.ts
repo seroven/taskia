@@ -339,12 +339,13 @@ export async function callGeminiImage(opts: {
   system: string
   user: string
   photoBase64?: string | null
+  model?: string
   usage?: LlmUsageContext
 }): Promise<{ mime: string; base64: string } | null> {
   const apiKey = env.gemini.apiKey.trim().replace(/^["']|["']$/g, '')
   if (!apiKey) return null
   const model =
-    env.gemini.imageModel.trim().replace(/^["']|["']$/g, '') || 'gemini-2.5-flash-image'
+    (opts.model ?? env.gemini.imageModel).trim().replace(/^["']|["']$/g, '') || 'gemini-2.5-flash-image'
   const parts: Array<Record<string, unknown>> = [{ text: opts.user }]
   if (opts.photoBase64?.trim()) {
     const inline = readInlineImage(opts.photoBase64, 'image/jpeg')
