@@ -393,27 +393,48 @@ export const api = {
     difficulty: string
     mission_id?: number | null
     course_id?: number | null
+    discard_in_progress?: boolean
   }) {
-    return request<ChallengeDetail>('/worlds/challenges/start', {
-      method: 'POST',
-      body: JSON.stringify({
-        world_id: input.world_id,
-        scope: input.scope,
-        difficulty: input.difficulty,
-        mission_id: input.mission_id ?? null,
-        course_id: input.course_id ?? null,
-      }),
-    })
+    return request<ChallengeDetail | { conflict: true; in_progress: ChallengeDetail }>(
+      '/worlds/challenges/start',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          world_id: input.world_id,
+          scope: input.scope,
+          difficulty: input.difficulty,
+          mission_id: input.mission_id ?? null,
+          course_id: input.course_id ?? null,
+          discard_in_progress: Boolean(input.discard_in_progress),
+        }),
+      },
+    )
   },
   getChallenge(challenge_id: number) {
     return request<ChallengeDetail>(`/worlds/challenges/${challenge_id}`)
+  },
+  saveChallengeProgress(
+    challenge_id: number,
+    body: { elapsed_ms: number; cursor: number; answers: ChallengeAnswerPayload[] },
+  ) {
+    return request<{ ok: boolean; elapsed_ms: number }>(
+      `/worlds/challenges/${challenge_id}/progress`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      },
+    )
   },
   abandonChallenge(challenge_id: number) {
     return request<{ ok: boolean }>(`/worlds/challenges/${challenge_id}`, {
       method: 'DELETE',
     }).then(() => undefined)
   },
-  completeChallenge(challenge_id: number, answers: ChallengeAnswerPayload[]) {
+  completeChallenge(
+    challenge_id: number,
+    answers: ChallengeAnswerPayload[],
+    elapsed_ms = 0,
+  ) {
     return request<
       ChallengeDetail & {
         xp_gained?: number
@@ -428,7 +449,7 @@ export const api = {
       }
     >(`/worlds/challenges/${challenge_id}/complete`, {
       method: 'POST',
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify({ answers, elapsed_ms }),
     })
   },
   listStudents() {

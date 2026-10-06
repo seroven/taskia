@@ -1,8 +1,10 @@
 import type {
+  BoardSheet,
   DrawOp,
   GridColor,
   GridItem,
   GridItemKind,
+  GridPoint,
   GridStampId,
   StudyBoardScene,
 } from './studyProtocol'
@@ -49,6 +51,18 @@ export function isGridScene(raw: unknown): raw is StudyBoardScene {
   return rec.type === 'taskia-grid' || rec.source === 'taskia-grid'
 }
 
+function parsePoints(raw: unknown): GridPoint[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const points = raw.flatMap((point) => {
+    if (!point || typeof point !== 'object') return []
+    const x = Number((point as { x?: unknown }).x)
+    const y = Number((point as { y?: unknown }).y)
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return []
+    return [{ x, y }]
+  })
+  return points.length > 0 ? points : undefined
+}
+
 export function newItemId() {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 12)
 }
@@ -70,7 +84,23 @@ export function lineEnds(item: GridItem): { c1: number; r1: number; c2: number; 
   return { c1, r1, c2, r2 }
 }
 
+export function isLockedItem(item: GridItem) {
+  return item.locked === true || item.layer === 'ai'
+}
+
 export function itemBBox(item: GridItem) {
+  if (item.kind === 'brush' && item.points && item.points.length > 0) {
+    const xs = item.points.map((point) => point.x)
+    const ys = item.points.map((point) => point.y)
+    const minX = Math.min(...xs)
+    const minY = Math.min(...ys)
+    return {
+      col: minX,
+      row: minY,
+      w: Math.max(0.4, Math.max(...xs) - minX),
+      h: Math.max(0.4, Math.max(...ys) - minY),
+    }
+  }
   if (isStrokeKind(item.kind)) {
     const { c1, r1, c2, r2 } = lineEnds(item)
     const col = Math.min(c1, c2)
@@ -356,6 +386,53 @@ export function applyDrawOpsToGrid(
   }
 }
 
+export function sheetItems(sheet: BoardSheet | null): GridItem[] {
+  if (!sheet) return []
+  if ('imageSrc' in sheet && sheet.imageSrc.trim()) {
+    return [
+      {
+        id: 'sheet',
+        layer: 'ai',
+        kind: 'image',
+        col: 24,
+        row: 6,
+        w: 112,
+        h: 78,
+        src: sheet.imageSrc.trim(),
+        locked: true,
+        color: 'black',
+      },
+    ]
+  }
+  if ('text' in sheet && sheet.text.trim()) {
+    return [
+      {
+        id: 'sheet',
+        layer: 'ai',
+        kind: 'text',
+        col: 16,
+        row: 8,
+        w: 90,
+        h: 12,
+        text: sheet.text.trim(),
+        locked: true,
+        color: 'black',
+      },
+    ]
+  }
+  return []
+}
+
+export function applySheet(current: StudyBoardScene, sheet: BoardSheet | null): StudyBoardScene {
+  const kept = current.items.filter((item) => item.layer !== 'ai')
+  return {
+    ...current,
+    items: [...sheetItems(sheet), ...kept],
+    scene: undefined,
+    highlightIds: [],
+  }
+}
+
 export function applyAiItems(
   current: StudyBoardScene,
   items: GridItem[],
@@ -421,6 +498,8 @@ export function normalizeScene(raw: unknown): StudyBoardScene {
             'arrow',
             'text',
             'stamp',
+            'brush',
+            'image',
           ].includes(kind)
         })
         .map((item) =>
@@ -443,6 +522,9 @@ export function normalizeScene(raw: unknown): StudyBoardScene {
                     ? 'blue'
                     : parseGridColor(item.color),
               stamp: item.stamp,
+              points: parsePoints(item.points),
+              src: typeof item.src === 'string' ? item.src : undefined,
+              locked: item.locked === true || item.layer === 'ai',
             },
             cols,
             rows,

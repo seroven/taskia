@@ -55,6 +55,7 @@ export type ChallengeView = {
   score: number | null
   started_at: string
   completed_at: string | null
+  elapsed_ms: number
 }
 
 type MissionRaw = {
@@ -114,6 +115,7 @@ function toChallenge(
     score: number | null
     started_at: Date | string
     completed_at: Date | string | null
+    elapsed_ms?: number | string | null
     course_name?: string | null
     mission_title?: string | null
   },
@@ -135,6 +137,7 @@ function toChallenge(
     score: row.score == null ? null : Number(row.score),
     started_at: toInstantISO(row.started_at) ?? '',
     completed_at: toInstantISO(row.completed_at),
+    elapsed_ms: Math.max(0, Number(row.elapsed_ms ?? 0) || 0),
   }
 }
 
@@ -640,6 +643,24 @@ export async function deleteInProgressChallenges(userId: number) {
   await AppDataSource.getRepository(StudyChallenge).delete({ userId, status: 'in_progress' })
 }
 
+export async function findInProgressChallenge(userId: number) {
+  return AppDataSource.getRepository(StudyChallenge).findOne({
+    where: { userId, status: 'in_progress' },
+    order: { startedAt: 'DESC' },
+  })
+}
+
+export async function saveChallengeProgressRow(
+  challengeId: number,
+  elapsedMs: number,
+  progress: unknown,
+) {
+  await AppDataSource.getRepository(StudyChallenge).update(
+    { id: challengeId },
+    { elapsedMs, progressJson: (progress ?? null) as never },
+  )
+}
+
 export async function insertChallenge(input: {
   userId: number
   worldId: number
@@ -722,6 +743,7 @@ export function challengeViewFromEntity(row: StudyChallenge): ChallengeView {
     score: row.score,
     started_at: row.startedAt,
     completed_at: row.completedAt,
+    elapsed_ms: row.elapsedMs,
   })
 }
 

@@ -39,6 +39,7 @@ export const env = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY ?? '',
     model: process.env.GEMINI_MODEL ?? 'gemini-2.0-flash',
+    imageModel: process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image',
   },
   cloudinary: {
     cloudName: (process.env.CLOUDINARY_CLOUD_NAME ?? '').trim(),

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+  Camera,
   CaretLeft,
   PaperPlaneTilt,
   Question,
@@ -15,8 +16,9 @@ import { WorldsNav } from '../../components/worlds/WorldsNav'
 import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import { challengeDifficultyIcon } from '../../components/worlds/worldsIcons'
 import { errorMessage } from '../../lib/errors'
-import { type StudyBoardScene } from '../../lib/studyProtocol'
-import { emptyGridScene, figureToScene, hasStudentWork, normalizeScene } from '../../lib/gridBoardModel'
+import { type BoardSheet, type StudyBoardScene } from '../../lib/studyProtocol'
+import { applySheet, emptyGridScene, hasStudentWork, normalizeScene } from '../../lib/gridBoardModel'
+import { compressStudyPhoto } from '../../lib/studyPhoto'
 import {
   DIFFICULTY_LABEL,
   type ChallengeAnswerPayload,
@@ -55,8 +57,28 @@ function isBoardQuestion(q: Pick<ChallengeQuestionPublic, 'kind' | 'requires_boa
   return q.kind === 'board_prompt' || q.requires_board
 }
 
+function sheetFromOps(raw: unknown): BoardSheet | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const rec = raw as Record<string, unknown>
+  if (typeof rec.text === 'string' && rec.text.trim()) return { text: rec.text }
+  if (typeof rec.imageSrc === 'string' && rec.imageSrc.trim()) return { imageSrc: rec.imageSrc }
+  return null
+}
+
 function promptSceneFor(q: ChallengeQuestionPublic): StudyBoardScene {
-  return figureToScene(q.prompt_draw_ops)
+  const sheet = sheetFromOps(q.prompt_draw_ops)
+  if (!sheet) return emptyGridScene()
+  return applySheet(emptyGridScene(), sheet)
+}
+
+function formatClock(ms: number) {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = total % 60
+  const mm = String(minutes).padStart(2, '0')
+  const ss = String(seconds).padStart(2, '0')
+  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`
 }
 
 export function ChallengePlayPage({ challengeId, onBack }: Props) {
@@ -74,21 +96,65 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
   const [cursor, setCursor] = useState(0)
   const [pending, setPending] = useState<Record<number, ChallengeAnswerPayload>>({})
   const [showResult, setShowResult] = useState(false)
+  const [clockMs, setClockMs] = useState(0)
   const boardRef = useRef<GridBoardHandle>(null)
-  const abandonedRef = useRef(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const elapsedBase = useRef(0)
+  const runningFrom = useRef<number | null>(null)
+  const cursorRef = useRef(0)
+  const pendingRef = useRef(pending)
+  const doneRef = useRef(false)
 
   const isCompleted =
     showResult || detail?.challenge.status === 'completed'
+  cursorRef.current = cursor
+  pendingRef.current = pending
+  doneRef.current = isCompleted
+
+  function readElapsed() {
+    const extra = runningFrom.current != null ? Date.now() - runningFrom.current : 0
+    return elapsedBase.current + extra
+  }
+
+  function freezeClock(paint = true) {
+    if (runningFrom.current != null) {
+      elapsedBase.current += Date.now() - runningFrom.current
+      runningFrom.current = null
+    }
+    if (paint) setClockMs(elapsedBase.current)
+  }
+
+  function resumeClock() {
+    if (document.visibilityState !== 'visible' || doneRef.current) return
+    if (runningFrom.current == null) runningFrom.current = Date.now()
+  }
+
+  async function persistProgress(freeze = false) {
+    if (doneRef.current) return
+    if (freeze) freezeClock(false)
+    else {
+      elapsedBase.current = readElapsed()
+      if (runningFrom.current != null) runningFrom.current = Date.now()
+    }
+    try {
+      await api.saveChallengeProgress(challengeId, {
+        elapsed_ms: elapsedBase.current,
+        cursor: cursorRef.current,
+        answers: Object.values(pendingRef.current).map((answer) => ({
+          question_id: answer.question_id,
+          user_answer: answer.user_answer,
+          board_json: answer.board_json,
+          board_description: answer.board_description,
+          notebook_image_base64: answer.notebook_image_base64,
+        })),
+      })
+    } catch {
+      // ignore
+    }
+  }
 
   async function leaveChallenge() {
-    if (!abandonedRef.current && !isCompleted) {
-      abandonedRef.current = true
-      try {
-        await api.abandonChallenge(challengeId)
-      } catch {
-        // ignore
-      }
-    }
+    if (!doneRef.current) await persistProgress(true)
     onBack()
   }
 
@@ -99,11 +165,23 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
       try {
         const next = await api.getChallenge(challengeId)
         setDetail(next)
+        elapsedBase.current = next.challenge.elapsed_ms ?? 0
+        runningFrom.current = document.visibilityState === 'visible' ? Date.now() : null
+        setClockMs(elapsedBase.current)
         if (next.challenge.status === 'completed') {
           setShowResult(true)
         } else {
-          setCursor(0)
-          setPending({})
+          const saved = next.progress
+          const map: Record<number, ChallengeAnswerPayload> = {}
+          for (const answer of saved?.answers ?? []) map[answer.question_id] = answer
+          const nextCursor = Math.min(
+            Math.max(0, saved?.cursor ?? 0),
+            Math.max(0, next.questions.length - 1),
+          )
+          setPending(map)
+          setCursor(nextCursor)
+          const q = next.questions[nextCursor]
+          if (q) applySaved(q, map[q.id])
         }
       } catch (err) {
         setLoadError(errorMessage(err))
@@ -112,6 +190,22 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
       }
     })()
   }, [challengeId])
+
+  useEffect(() => {
+    if (loading || isCompleted) return
+    resumeClock()
+    const id = window.setInterval(() => setClockMs(readElapsed()), 1000)
+    function onVis() {
+      if (document.visibilityState === 'hidden') void persistProgress(true)
+      else resumeClock()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVis)
+      if (!doneRef.current) void persistProgress(true)
+    }
+  }, [loading, isCompleted, challengeId])
 
   const questions = detail?.questions ?? []
   const current = !showResult && questions.length > 0 ? questions[cursor] ?? null : null
@@ -163,12 +257,14 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
         boardRef.current?.getScene() ?? pending[current.id]?.board_json
       const attach = await boardRef.current?.getBoardAttachment()
       const note = answer.trim()
+      const photoNote = pending[current.id]?.notebook_image_base64 ?? ''
       const scene = asBoardScene(boardJson)
-      if (!hasUserBoardWork(scene) && !note) return pending[current.id] ?? null
+      if (!hasUserBoardWork(scene) && !note && !photoNote) return pending[current.id] ?? null
       return {
         question_id: current.id,
-        user_answer: note || '(respuesta en pizarra)',
+        user_answer: note || (photoNote ? '(respuesta en el cuaderno)' : '(respuesta en pizarra)'),
         board_json: boardJson,
+        notebook_image_base64: photoNote,
         ...(attach?.imageBase64
           ? { board_image_base64: attach.imageBase64 }
           : { board_description: attach?.description }),
@@ -183,8 +279,11 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
     const snap = await captureCurrent()
     const nextPending = snap ? { ...pending, [current.id]: snap } : pending
     if (snap) setPending(nextPending)
+    pendingRef.current = nextPending
+    cursorRef.current = index
     applySaved(questions[index]!, nextPending[questions[index]!.id])
     setCursor(index)
+    void persistProgress()
   }
 
   async function onSubmit() {
@@ -214,16 +313,17 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
       } else if (isBoardQuestion(current)) {
         boardJson = boardRef.current?.getScene() ?? null
         const attach = await boardRef.current?.getBoardAttachment()
-        if (!hasUserBoardWork(asBoardScene(boardJson)) && !userAnswer) {
+        const photoNote = pending[current.id]?.notebook_image_base64 ?? ''
+        if (!hasUserBoardWork(asBoardScene(boardJson)) && !userAnswer && !photoNote) {
           showToast({
             title: 'Falta tu respuesta',
-            subtitle: 'Dibuja en la pizarra o escribe una nota.',
+            subtitle: 'Escribe en la pizarra, deja una nota o manda una foto del cuaderno.',
             tone: 'warning',
           })
           setSubmitting(false)
           return
         }
-        userAnswer = userAnswer || '(respuesta en pizarra)'
+        userAnswer = userAnswer || (photoNote ? '(respuesta en el cuaderno)' : '(respuesta en pizarra)')
         if (attach?.imageBase64) {
           boardImage = attach.imageBase64
         } else {
@@ -247,14 +347,18 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
           board_json: boardJson,
           board_description: boardDescription,
           board_image_base64: boardImage,
+          notebook_image_base64: pending[current.id]?.notebook_image_base64,
         },
       }
       setPending(nextPending)
+      pendingRef.current = nextPending
 
       if (!isLast) {
         const nextQ = questions[cursor + 1]
         if (nextQ) applySaved(nextQ, nextPending[nextQ.id])
+        cursorRef.current = cursor + 1
         setCursor((c) => c + 1)
+        void persistProgress()
         return
       }
 
@@ -272,8 +376,10 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
       }
 
       setGrading(true)
+      doneRef.current = true
+      freezeClock()
       const payload = questions.map((q) => nextPending[q.id]!)
-      const completed = await api.completeChallenge(challengeId, payload)
+      const completed = await api.completeChallenge(challengeId, payload, elapsedBase.current)
       setDetail(completed)
       setShowResult(true)
       if (completed.xp && completed.xp_gained && completed.xp_gained > 0) {
@@ -462,6 +568,8 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
             <>
               {DIFFICULTY_LABEL[detail.challenge.difficulty] ?? detail.challenge.difficulty} ·{' '}
               {progress.label}
+              {' · '}
+              <span className="challenge-clock">{formatClock(clockMs)}</span>
             </>
           }
         />
@@ -551,7 +659,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
               className="field-control challenge-text-input"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
-              placeholder="Opcional: explicale a Taskia lo que dibujaste"
+              placeholder="Opcional: una nota sobre tu respuesta"
               disabled={submitting || grading}
             />
           )}
@@ -577,6 +685,58 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
             </button>
           </div>
           </div>
+
+          {isBoardQuestion(current) && (
+            <div className="challenge-notebook">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  event.target.value = ''
+                  if (!file || !current) return
+                  void compressStudyPhoto(file)
+                    .then((data) => {
+                      setPending((prev) => ({
+                        ...prev,
+                        [current.id]: {
+                          ...(prev[current.id] ?? {
+                            question_id: current.id,
+                            user_answer: '',
+                          }),
+                          notebook_image_base64: data,
+                        },
+                      }))
+                    })
+                    .catch((err) => {
+                      showToast({
+                        title: 'No se pudo leer la foto',
+                        subtitle: errorMessage(err),
+                        tone: 'warning',
+                      })
+                    })
+                }}
+              />
+              <button
+                type="button"
+                className="ghost"
+                disabled={submitting || grading}
+                onClick={() => photoInputRef.current?.click()}
+              >
+                <Camera size={18} weight="fill" />
+                Foto del cuaderno
+              </button>
+              {pending[current.id]?.notebook_image_base64 ? (
+                <img
+                  className="challenge-notebook-preview"
+                  src={pending[current.id]?.notebook_image_base64}
+                  alt="Foto del cuaderno"
+                />
+              ) : null}
+            </div>
+          )}
 
           {isBoardQuestion(current) && (
             <div className="challenge-board">

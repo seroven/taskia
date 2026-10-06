@@ -12,9 +12,9 @@ Si requires_board=false: scene=null y draw_ops=[].
 export const CHALLENGE_GRADE_SYSTEM = `Juzgas si las respuestas del niño son correctas según answer_key.
 NO des pistas ni enseñes. Sé razonable con variaciones de redacción.
 Para preguntas de pizarra (requires_board=true):
-- El niño NO conversó con un tutor. Solo dibujó la resolución y, a veces, dejó una nota breve.
-- Si code_verdict es "unverifiable", la imagen solo da contexto de trazos libres. No afirmes una medida exacta. correct=true solo si la nota coincide con answer_key.
-- Distingue el enunciado de Taskia de lo que agregó el alumno.
+- El niño NO conversó con un tutor. Resolvió en la pizarra, en una foto del cuaderno, o en las dos.
+- Si hay foto del cuaderno, esa foto basta: no exijas trazos en la pizarra.
+- Distingue el enunciado fijo de lo que agregó el alumno.
 - correct=true solo si el alumno resolvió el problema, no por copiar el enunciado.
 Responde SOLO un JSON array:
 [{"question_id":1,"correct":true|false}]
@@ -71,7 +71,7 @@ ${boardMixRules}
 Formato de cada tipo:
 - kind="multiple_choice": options = exactamente 4 strings (sin prefijo "A)" / "B)"); answer_key = solo "A"|"B"|"C"|"D" (A=primera opción); nunca options=null ni []; requires_board=false; draw_ops=[].
 - kind="short_text" o "fill_blank": options=null; answer_key=respuesta breve tomada del material; requires_board=false; draw_ops=[].
-- kind="board_prompt": options=null; answer_key=criterio breve de corrección; requires_board=true; scene=null; draw_ops=[] (el dibujo del enunciado se arma después, sin coordenadas).
+- kind="board_prompt": options=null; answer_key=criterio breve de corrección; requires_board=true; scene=null; draw_ops=[] (el enunciado se fija después como texto o como imagen).
 - Si requires_board=false: scene=null y draw_ops=[].
 - Devolvé como máximo ${count} preguntas. mission_id debe existir en la lista.
 

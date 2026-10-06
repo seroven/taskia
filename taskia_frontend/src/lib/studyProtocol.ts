@@ -53,6 +53,13 @@ export type GridItemKind =
   | 'arrow'
   | 'text'
   | 'stamp'
+  | 'brush'
+  | 'image'
+
+export interface GridPoint {
+  x: number
+  y: number
+}
 
 export interface GridItem {
   id: string
@@ -68,7 +75,14 @@ export interface GridItem {
   /** Extremo final de línea/flecha (celda). El origen es col/row. */
   endCol?: number
   endRow?: number
+  /** Trazo del pincel, en celdas. */
+  points?: GridPoint[]
+  /** Imagen fija del ejercicio. */
+  src?: string
+  locked?: boolean
 }
+
+export type BoardSheet = { text: string } | { imageSrc: string }
 
 export type DrawOp =
   | { op: 'clear_board' }
@@ -105,6 +119,7 @@ export interface GeminiTutorReply {
   exercise: StudyExercise | null
   draw_ops: DrawOp[]
   board_items?: GridItem[]
+  board_sheet?: BoardSheet | null
   scene?: unknown
   highlight?: string[]
   board_fallback?: string | null

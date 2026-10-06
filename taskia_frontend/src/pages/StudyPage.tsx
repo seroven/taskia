@@ -10,7 +10,6 @@ import { StudyChat } from '../components/study/StudyChat'
 import { TaskEditPanel } from '../components/study/TaskEditPanel'
 import { errorMessage } from '../lib/errors'
 import {
-  parseDrawOps,
   type StudyBoardScene,
   type StudyContext,
   type StudyExercise,
@@ -154,16 +153,8 @@ export function StudyPage({ taskId, onBack }: Props) {
         const copy = xpToastCopy(result.xp_gained)
         if (copy) showToast({ tone: 'success', ...copy })
       }
-      const items = result.reply.board_items ?? []
-      if (items.length > 0 && task?.uses_board) {
-        boardRef.current?.applyAiItems(items, result.reply.scene, result.reply.highlight)
-      } else if ((result.reply.highlight?.length ?? 0) > 0 && task?.uses_board) {
-        boardRef.current?.applyAiItems([], undefined, result.reply.highlight)
-      } else {
-        const ops = parseDrawOps(result.reply.draw_ops)
-        if (ops.length > 0 && task?.uses_board) {
-          boardRef.current?.applyDrawOps(ops)
-        }
+      if (result.reply.board_sheet && task?.uses_board) {
+        boardRef.current?.applySheet(result.reply.board_sheet)
       }
     } catch (err) {
       setChatError(errorMessage(err))

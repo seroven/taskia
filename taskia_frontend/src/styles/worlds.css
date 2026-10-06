@@ -1164,6 +1164,25 @@ button.ghost.worlds-back {
   min-height: 0;
 }
 
+.challenge-clock {
+  font-variant-numeric: tabular-nums;
+}
+
+.challenge-notebook {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.challenge-notebook-preview {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
 .challenge-prompt {
   font-family: var(--font-display);
   font-size: 1.28rem;

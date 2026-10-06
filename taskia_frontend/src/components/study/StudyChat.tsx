@@ -641,7 +641,7 @@ export function StudyChat({
           }}
           placeholder={
             boardControls
-              ? 'Escribe tu duda. Si quieres, pide que revise tu dibujo o que te dibuje el ejercicio.'
+              ? 'Escribe tu duda. Si quieres, pide que revise tu pizarra o que te ponga un ejercicio.'
               : voiceEnabled
                 ? 'Cuéntale a Taskia lo de tu tema. Puedes grabar varias veces, sumarlo aquí y enviar cuando esté listo.'
                 : 'Escribe tu duda o lo que acabas de entender…'

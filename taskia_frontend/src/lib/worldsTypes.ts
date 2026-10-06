@@ -147,6 +147,7 @@ export interface StudyChallenge {
   score: number | null
   started_at: string
   completed_at: string | null
+  elapsed_ms?: number
 }
 
 export interface ChallengePreset {
@@ -175,10 +176,16 @@ export interface ChallengeQuestionPublic {
   correct_answer?: string | null
 }
 
+export interface ChallengeProgress {
+  cursor?: number
+  answers?: ChallengeAnswerPayload[]
+}
+
 export interface ChallengeDetail {
   challenge: StudyChallenge
   questions: ChallengeQuestionPublic[]
   current_index: number
+  progress?: ChallengeProgress | null
 }
 
 export interface ChallengeAnswerPayload {
@@ -187,6 +194,7 @@ export interface ChallengeAnswerPayload {
   board_json?: unknown
   board_description?: string
   board_image_base64?: string
+  notebook_image_base64?: string
 }
 
 export const MISSION_STATUS_LABEL: Record<string, string> = {

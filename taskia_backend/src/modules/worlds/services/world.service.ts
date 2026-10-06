@@ -2,13 +2,13 @@ import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/clou
 import { callGemini, classifyBoardIntent } from '../../../infrastructure/gemini/gemini.client.js'
 import { missionTutorPrompt } from '../../../prompts/mission-tutor.js'
 import {
-  applyVerdictToMastery,
-  gradeBoard,
-  highlightFromModel,
-  planBoardDraw,
-  settleBoardDraw,
-  type DrawPlan,
-} from '../../board/index.js'
+  exerciseReference,
+  loadReferencePhoto,
+  planExerciseSheet,
+  stripDrewPhrase,
+  type BoardSheet,
+  type SheetPlan,
+} from '../../board/sheet.js'
 import { awardXp, clampEffortScore, xpForMission } from '../../../services/xp.js'
 import {
   AppError,
@@ -42,7 +42,6 @@ import {
   maxMissionSort,
   maxWorldCourseSort,
   saveMissionBoard,
-  savePendingBoardFacts,
   saveSessionGreeting,
   saveSessionMeta,
   setMissionStatus,
@@ -247,68 +246,57 @@ export async function chatMission(userId: number, missionId: number, body: Recor
         usage: { userId, kind: 'board_intent' },
       })
     : { reviewDrawing: false, drawExercise: false }
-  const allowAiDraw = intent.drawExercise
-  const incomingBoard = body.board_json ?? body.boardJson
-  const boardState = mission.uses_board
-    ? incomingBoard && typeof incomingBoard === 'object'
-      ? incomingBoard
-      : await loadMissionBoard(missionId)
+  const usesBoard = mission.uses_board
+  const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
+  const referencePhoto = usesBoard
+    ? await loadReferencePhoto(
+        photoData,
+        context.messages.map((item) => item.image_url),
+      )
     : null
-  const verdict =
-    mission.uses_board && (intent.reviewDrawing || photo)
-      ? gradeBoard({
-          scene:
-            boardState && typeof boardState === 'object'
-              ? (boardState as { scene?: unknown }).scene
-              : null,
-          board: boardState,
-          childMessage: parsed.message,
-        })
-      : null
-  const boardImageRaw =
-    intent.reviewDrawing && verdict?.verdict === 'unverifiable' && !photo ? boardImageSent : ''
+  const referenceText = exerciseReference([
+    mission.description ?? '',
+    ...context.messages.filter((item) => item.role === 'user').map((item) => item.content),
+  ])
+  const sheetPlan: SheetPlan = usesBoard
+    ? await planExerciseSheet({
+        draw: intent.drawExercise,
+        referenceText,
+        photoBase64: intent.drawExercise ? referencePhoto : null,
+        usage: { userId, kind: 'board_facts' },
+      })
+    : { mode: 'none' }
+  const boardImageRaw = intent.reviewDrawing ? boardImageSent : ''
   const boardDescription = intent.reviewDrawing ? boardDescriptionSent : null
-  const boardHas = Boolean(boardDescription?.trim() || boardImageRaw)
+  const boardHas = Boolean(boardDescription?.trim() || boardImageRaw || (intent.reviewDrawing && photo))
 
-  let instruction = allowAiDraw
-    ? 'Responde breve. Conserva ejercicio activo. Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina. Incluye scene con la figura o la expresión. draw_ops [].'
+  let instruction = usesBoard
+    ? 'Responde breve. Conserva ejercicio activo. Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina. No dibujes. board_text según board_mode.'
     : 'Responde breve. Enseña el tema completo (básico + observación) SOLO con notebook_context + título/descripción. Conserva ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 10+N. Pregunta todo lo posible de ese relato. Al cumplir el piso pregunta si queda más contenido (passed=false); passed=true solo si declina. Sin pizarra.'
   if (parsed.fromVoice) {
     instruction +=
       ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
   }
-  if (photo) {
+  if (photo && intent.reviewDrawing) {
     instruction +=
-      ' El niño adjuntó una foto de un ejercicio resuelto en papel. Léela y úsala como referencia. No es la pizarra.'
+      ' El niño adjuntó una foto del cuaderno. Léela y decide si el ejercicio está bien. No es la pizarra.'
   }
   if (intent.reviewDrawing && !boardHas) {
-    instruction += ' Pidió que revises su dibujo, pero la pizarra está vacía. Pídele que dibuje primero.'
-  }
-  if (intent.reviewDrawing && boardHas && !allowAiDraw) {
-    instruction += ' El niño pidió que mires su dibujo de la pizarra. Úsalo para responder.'
-  }
-  if (verdict?.verdict === 'correct' || verdict?.verdict === 'incorrect') {
-    instruction += ` code_verdict=${verdict.verdict} expected=${verdict.expected} got=${verdict.got}. Explícalo y no lo cambies. Si es incorrecto, ese ejercicio no suma a Solo bien.`
-  } else if (verdict?.verdict === 'unverifiable' && (intent.reviewDrawing || photo)) {
-    instruction += ' code_verdict=unverifiable. No afirmes si está bien o mal.'
-  }
-  const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
-  const drawPlan: DrawPlan = mission.uses_board
-    ? await planBoardDraw({
-        draw: allowAiDraw,
-        photoBase64: photoData,
-        message: parsed.message,
-        pendingRaw: context.pending_board_facts ?? null,
-        source: `${parsed.message}\n${truncateChars(lastTutor, 180)}`,
-        usage: { userId, kind: 'board_facts' },
-      })
-    : { mode: 'none', pendingWrite: 'keep' }
-  if (drawPlan.mode === 'draw') {
     instruction +=
-      ' board_facts están congelados: incluye scene que los cubra y no agregues ni quites hechos. draw_ops []. No digas que ya dibujaste.'
+      ' Pidió que revises su trabajo, pero no hay captura ni foto. Pídele que escriba en la pizarra o mande una foto.'
   }
-  if (drawPlan.mode === 'confirm' || drawPlan.mode === 'gap') {
-    instruction += ' No incluyas scene.'
+  if (intent.reviewDrawing && boardHas) {
+    instruction +=
+      ' Mira la captura de la pizarra o la foto y decide si está bien. Si lo resolvió solo, puede sumar a Solo bien.'
+  }
+  if (sheetPlan.mode === 'need_reference') {
+    instruction += ' board_mode=need_reference. Pide un ejercicio de ejemplo. No inventes uno.'
+  } else if (sheetPlan.mode === 'text') {
+    instruction +=
+      ' board_mode=text. Escribe el enunciado nuevo en board_text y en speak_to_child. Sin la respuesta.'
+  } else if (sheetPlan.mode === 'image') {
+    instruction +=
+      ' board_mode=image. La imagen ya está hecha. board_text vacío. Habla del ejercicio. No digas que lo dibujaste.'
   }
 
   const payload = JSON.stringify({
@@ -330,14 +318,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       : { notebook_context: truncateChars(context.notebook_context, MAX_NOTEBOOK) }),
     last_tutor_message: lastTutor,
     hints_level: context.hints_level,
-    ...(allowAiDraw ? { allow_ai_draw: true } : {}),
-    ...(drawPlan.mode === 'draw'
-      ? {
-          board_facts: drawPlan.facts,
-          ...(drawPlan.statement ? { board_statement: drawPlan.statement } : {}),
-        }
-      : {}),
-    ...(verdict ? { code_verdict: verdict } : {}),
+    ...(usesBoard ? { board_mode: sheetPlan.mode } : {}),
     board_has_drawing: boardHas,
     photo_attached: Boolean(photo),
     ...(!boardImageRaw && boardDescription?.trim()
@@ -350,7 +331,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   })
 
   const raw = await callGemini({
-    system: missionTutorPrompt(allowAiDraw || drawPlan.mode === 'draw'),
+    system: missionTutorPrompt(usesBoard),
     user: payload,
     boardImageBase64: boardImageRaw || null,
     photoBase64: photo ? `data:${photo.mime};base64,${photo.base64}` : null,
@@ -382,10 +363,10 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     ),
     draw_ops: [],
     board_items: [] as unknown[],
+    board_sheet: null as BoardSheet | null,
     scene: null as unknown,
-    highlight: highlightFromModel(value),
+    highlight: [] as string[],
     board_fallback: null as string | null,
-    verdict,
     hints_level: typeof value.hints_level === 'number' ? value.hints_level : 0,
     study_eval: {
       passed: Boolean(studyEvalRaw.passed),
@@ -393,7 +374,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     },
   }
 
-  if (!allowAiDraw) {
+  if (!usesBoard) {
     if (userTurns < requiredChatTurns(10, reply.context_summary)) reply.study_eval.passed = false
     const askingMoreContent =
       looksLikeAskingMoreTopicContent(reply.speak_to_child) ||
@@ -409,23 +390,13 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   }
   if (reply.phase !== 'reviewing') reply.study_eval.passed = false
   if (!reply.study_eval.evidence.trim()) reply.study_eval.passed = false
-  if (allowAiDraw) {
+  if (usesBoard) {
     const offeringMore =
       looksLikeOfferingMorePractice(reply.speak_to_child) ||
       reply.ask_questions.some((question) => looksLikeOfferingMorePractice(question))
     if (offeringMore) reply.study_eval.passed = false
     const score = soloBienCount(reply.context_summary)
     if (score !== null && score < 2) reply.study_eval.passed = false
-  }
-  if (mission.status !== 'mastered' && verdict?.verdict === 'incorrect') {
-    const gated = applyVerdictToMastery({
-      verdict,
-      passed: reply.study_eval.passed,
-      contextSummary: reply.context_summary,
-      previousSummary: context.context_summary,
-    })
-    reply.study_eval.passed = gated.passed
-    reply.context_summary = truncateChars(gated.contextSummary, 400)
   }
   if (mission.status === 'mastered') reply.study_eval.passed = true
   if (!reply.study_eval.passed && looksLikeCelebratingMissionMastered(reply.speak_to_child)) {
@@ -437,20 +408,22 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       450,
     )
   }
-  const settled = await settleBoardDraw({
-    plan: drawPlan,
-    speak: reply.speak_to_child,
-    modelValue: value,
-    usage: { userId, kind: 'mission_tutor' },
-    origin: 'mission',
-    maxSpeak: 450,
-  })
-  reply.speak_to_child = settled.speak
-  reply.board_items = settled.items
-  reply.scene = settled.scene
-  reply.board_fallback = settled.fallback
+  reply.speak_to_child = truncateChars(stripDrewPhrase(reply.speak_to_child), 450)
+  const boardText = String(value.board_text ?? '').trim()
+  if (sheetPlan.mode === 'image') reply.board_sheet = { imageSrc: sheetPlan.imageSrc }
+  else if (sheetPlan.mode === 'text' && boardText) reply.board_sheet = { text: boardText.slice(0, 800) }
+  let visible = reply.speak_to_child
+  if (reply.board_sheet && 'text' in reply.board_sheet && !visible.includes(reply.board_sheet.text.slice(0, 24))) {
+    visible = truncateChars(`${visible}\n${reply.board_sheet.text}`, 1600)
+  }
 
-  const saved = await insertMissionMessage(missionId, 'assistant', reply.speak_to_child)
+  const saved = await insertMissionMessage(
+    missionId,
+    'assistant',
+    visible,
+    false,
+    reply.board_sheet && 'imageSrc' in reply.board_sheet ? reply.board_sheet.imageSrc : null,
+  )
   context.messages.push(saved)
   context.tutor_phase = reply.phase
   if (reply.topic_summary.trim()) context.topic_summary = truncateChars(reply.topic_summary, 120)
@@ -462,10 +435,6 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     contextSummary: context.context_summary,
     hintsLevel: context.hints_level,
   })
-  if (settled.pendingWrite !== 'keep') {
-    await savePendingBoardFacts(missionId, settled.pendingWrite)
-  }
-
   if (reply.study_eval.passed && mission.status !== 'mastered') {
     await setMissionStatus(missionId, 'mastered')
     mission.status = 'mastered'

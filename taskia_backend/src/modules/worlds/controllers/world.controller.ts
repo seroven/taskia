@@ -34,6 +34,16 @@ export const getChallenge = asyncHandler(async (req, res) => {
   res.json(await challengeService.getChallenge(req.user!.id, Number(req.params.challengeId)))
 })
 
+export const saveChallengeProgress = asyncHandler(async (req, res) => {
+  res.json(
+    await challengeService.saveChallengeProgress(
+      req.user!.id,
+      Number(req.params.challengeId),
+      req.body,
+    ),
+  )
+})
+
 export const discardChallenge = asyncHandler(async (req, res) => {
   res.json(await challengeService.discardChallenge(req.user!.id, Number(req.params.challengeId)))
 })

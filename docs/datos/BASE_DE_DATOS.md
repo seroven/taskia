@@ -327,6 +327,8 @@ Un intento de desafío.
 | `score` | smallint | `NULL`, o entre 0 y 100 |
 | `started_at` | timestamptz | por defecto `NOW()` |
 | `completed_at` | timestamptz | `NULL` hasta que se entrega |
+| `elapsed_ms` | bigint | tiempo con la pantalla visible; migración `007` |
+| `progress_json` | jsonb | índice, respuestas y pizarra de un intento a medias |
 
 `ck_study_challenges_scope` obliga el alcance:
 
@@ -354,8 +356,8 @@ Las preguntas que generó la IA para ese intento.
 | `prompt` | text | el enunciado |
 | `options_json` | jsonb | opciones, solo en opción múltiple |
 | `answer_key` | text | la respuesta esperada |
-| `requires_board` | boolean | hay que dibujar para responder |
-| `prompt_draw_ops` | jsonb | dibujo del enunciado |
+| `requires_board` | boolean | se responde en la pizarra o con una foto |
+| `prompt_draw_ops` | jsonb | enunciado fijo: `{ text }` o `{ imageSrc }` |
 | `created_at` | timestamptz | |
 
 Acá sí se usa `JSONB` y no `TEXT`, en `options_json` y `prompt_draw_ops`. Se leen ordenadas por `(challenge_id, sort_order)`, que es el índice que existe.

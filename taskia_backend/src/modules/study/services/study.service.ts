@@ -19,13 +19,13 @@ import { fetchTask } from '../../tasks/services/task.service.js'
 import { parseChatMessage, parseTranscribeBody } from '../schemas/study.schema.js'
 import { tutorSystemPrompt } from '../../../prompts/study-tutor.js'
 import {
-  applyVerdictToMastery,
-  gradeBoard,
-  highlightFromModel,
-  planBoardDraw,
-  settleBoardDraw,
-  type DrawPlan,
-} from '../../board/index.js'
+  exerciseReference,
+  loadReferencePhoto,
+  planExerciseSheet,
+  stripDrewPhrase,
+  type BoardSheet,
+  type SheetPlan,
+} from '../../board/sheet.js'
 
 export function canOpenStudy(task: { status: string; difficulty_code: string }) {
   return (
@@ -56,7 +56,6 @@ import {
   loadUserMemory,
   markStudyPassed,
   saveBoard,
-  savePendingBoardFacts,
   saveSessionMeta,
   saveUserMemory,
 } from '../repositories/study.repository.js'
@@ -179,39 +178,34 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
           usage: { userId, kind: 'board_intent' },
         })
       : { reviewDrawing: false, drawExercise: false }
-    const allowAiDraw = intent.drawExercise
-    const incomingBoard = body.board_json ?? body.boardJson
-    const boardState = task.uses_board
-      ? incomingBoard && typeof incomingBoard === 'object'
-        ? incomingBoard
-        : await loadBoard(taskId)
+    const usesBoard = task.uses_board
+    const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
+    const referencePhoto = usesBoard
+      ? await loadReferencePhoto(
+          photoData,
+          context.messages.map((item) => item.image_url),
+        )
       : null
-    const verdict =
-      task.uses_board && (intent.reviewDrawing || photo)
-        ? gradeBoard({
-            scene:
-              boardState && typeof boardState === 'object'
-                ? (boardState as { scene?: unknown }).scene
-                : null,
-            board: boardState,
-            childMessage: message,
-          })
-        : null
-    const boardImageRaw =
-      intent.reviewDrawing && verdict?.verdict === 'unverifiable' && !photo ? boardImageSent : ''
+    const referenceText = exerciseReference([
+      task.description ?? '',
+      ...context.messages.filter((item) => item.role === 'user').map((item) => item.content),
+    ])
+    const sheetPlan: SheetPlan = usesBoard
+      ? await planExerciseSheet({
+          draw: intent.drawExercise,
+          referenceText,
+          photoBase64: intent.drawExercise ? referencePhoto : null,
+          usage: { userId, kind: 'board_facts' },
+        })
+      : { mode: 'none' }
+    const boardImageRaw = intent.reviewDrawing ? boardImageSent : ''
     const boardDescription = intent.reviewDrawing ? boardDescriptionRaw : null
-    const boardHas = Boolean(boardDescription?.trim() || boardImageRaw)
+    const boardHas = Boolean(boardDescription?.trim() || boardImageRaw || (intent.reviewDrawing && photo))
 
     const boardMasteryHint =
       ' Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina.'
-    let instruction = allowAiDraw
-      ? boardHas
-        ? 'Responde breve. Usa context + last_tutor_message + mensaje + pizarra. Conserva el ejercicio activo.' +
-          boardMasteryHint +
-          ' Incluye scene con la figura o la expresión. draw_ops [].'
-        : 'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo.' +
-          boardMasteryHint +
-          ' Incluye scene con la figura o la expresión (no dejes el ejercicio solo en el chat). draw_ops [].'
+    let instruction = usesBoard
+      ? 'Responde breve. Conserva el ejercicio activo.' + boardMasteryHint + ' No dibujes. board_text según board_mode.'
       : boardHas
         ? 'Responde breve. Usa context + last_tutor_message + mensaje + pizarra. Conserva el ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
         : 'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo. Ignora pizarra. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
@@ -219,35 +213,26 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       instruction +=
         ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
     }
-    if (photo) {
+    if (photo && intent.reviewDrawing) {
       instruction +=
-        ' El niño adjuntó una foto de un ejercicio resuelto en papel. Léela y úsala como referencia. No es la pizarra.'
+        ' El niño adjuntó una foto del cuaderno. Léela y decide si el ejercicio está bien. No es la pizarra.'
     }
     if (intent.reviewDrawing && !boardHas) {
-      instruction += ' Pidió que revises su dibujo, pero la pizarra está vacía. Pídele que dibuje primero.'
-    }
-    if (verdict?.verdict === 'correct' || verdict?.verdict === 'incorrect') {
-      instruction += ` code_verdict=${verdict.verdict} expected=${verdict.expected} got=${verdict.got}. Explícalo y no lo cambies. Si es incorrecto, ese ejercicio no suma a Solo bien.`
-    } else if (verdict?.verdict === 'unverifiable' && (intent.reviewDrawing || photo)) {
-      instruction += ' code_verdict=unverifiable. No afirmes si está bien o mal.'
-    }
-    const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
-    const drawPlan: DrawPlan = task.uses_board
-      ? await planBoardDraw({
-          draw: allowAiDraw,
-          photoBase64: photoData,
-          message,
-          pendingRaw: context.pending_board_facts ?? null,
-          source: `${message}\n${truncateChars(lastTutor, 180)}`,
-          usage: { userId, kind: 'board_facts' },
-        })
-      : { mode: 'none', pendingWrite: 'keep' }
-    if (drawPlan.mode === 'draw') {
       instruction +=
-        ' board_facts están congelados: incluye scene que los cubra y no agregues ni quites hechos. draw_ops []. No digas que ya dibujaste.'
+        ' Pidió que revises su trabajo, pero no hay captura ni foto. Pídele que escriba en la pizarra o mande una foto.'
     }
-    if (drawPlan.mode === 'confirm' || drawPlan.mode === 'gap') {
-      instruction += ' No incluyas scene.'
+    if (intent.reviewDrawing && boardHas) {
+      instruction +=
+        ' Mira la captura de la pizarra o la foto y decide si está bien. Si lo resolvió solo, puede sumar a Solo bien.'
+    }
+    if (sheetPlan.mode === 'need_reference') {
+      instruction += ' board_mode=need_reference. Pide un ejercicio de ejemplo. No inventes uno.'
+    } else if (sheetPlan.mode === 'text') {
+      instruction +=
+        ' board_mode=text. Escribe el enunciado nuevo en board_text y en speak_to_child. Sin la respuesta.'
+    } else if (sheetPlan.mode === 'image') {
+      instruction +=
+        ' board_mode=image. La imagen ya está hecha. board_text vacío. Habla del ejercicio. No digas que lo dibujaste.'
     }
 
     const payload = {
@@ -272,14 +257,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       board_has_drawing: boardHas,
       photo_attached: Boolean(photo),
       child_message: truncateChars(message, fromVoice ? 4000 : 800),
-      ...(allowAiDraw ? { allow_ai_draw: true } : {}),
-      ...(drawPlan.mode === 'draw'
-        ? {
-            board_facts: drawPlan.facts,
-            ...(drawPlan.statement ? { board_statement: drawPlan.statement } : {}),
-          }
-        : {}),
-      ...(verdict ? { code_verdict: verdict } : {}),
+      ...(usesBoard ? { board_mode: sheetPlan.mode } : {}),
       // Texto de coords solo si no hay imagen (fallback).
       ...(!boardImageRaw && boardDescription?.trim()
         ? { board_drawing: truncateChars(boardDescription, MAX_BOARD) }
@@ -287,7 +265,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     }
 
     const raw = await callGemini({
-      system: tutorSystemPrompt(allowAiDraw || drawPlan.mode === 'draw'),
+      system: tutorSystemPrompt(usesBoard),
       user: JSON.stringify(payload),
       boardImageBase64: boardImageRaw || null,
       photoBase64: photo ? `data:${photo.mime};base64,${photo.base64}` : null,
@@ -340,30 +318,19 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     if (task.study_passed) {
       passed = true
     } else {
-      if (!allowAiDraw) {
+        if (!usesBoard) {
         if (userTurns < requiredChatTurns(6, contextSummaryDraft)) passed = false
       }
       if (phase !== 'reviewing') passed = false
       if (!evidence) passed = false
-      if (allowAiDraw) {
+      if (usesBoard) {
         if (offeringMore) passed = false
         const n = soloBienCount(contextSummaryDraft)
         if (n !== null && n < 2) passed = false
       }
     }
 
-    // Si el servidor negó el visto, no dejar que el texto diga "ya puedes a Listo".
-    let speakSafe = speakToChild
-    if (!task.study_passed && verdict?.verdict === 'incorrect') {
-      const gated = applyVerdictToMastery({
-        verdict,
-        passed,
-        contextSummary: contextSummaryDraft,
-        previousSummary: context.context_summary,
-      })
-      passed = gated.passed
-      contextSummaryDraft = gated.contextSummary
-    }
+    let speakSafe = stripDrewPhrase(speakToChild)
     if (!passed && looksLikeCelebratingTaskReady(speakSafe)) {
       const stripped = stripPrematureReadyCelebration(speakSafe)
       speakSafe = truncateChars(
@@ -373,16 +340,10 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         MAX_SPEAK,
       )
     }
-    const settled = await settleBoardDraw({
-      plan: drawPlan,
-      speak: speakSafe,
-      modelValue: value,
-      usage: { userId, kind: 'task_tutor' },
-      origin: 'study',
-      maxSpeak: MAX_SPEAK,
-    })
-    speakSafe = settled.speak
-    const boardFallback = settled.fallback
+    const boardText = String(value.board_text ?? '').trim()
+    let boardSheet: BoardSheet | null = null
+    if (sheetPlan.mode === 'image') boardSheet = { imageSrc: sheetPlan.imageSrc }
+    else if (sheetPlan.mode === 'text' && boardText) boardSheet = { text: boardText.slice(0, 800) }
 
     const reply = {
       phase,
@@ -402,11 +363,11 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       ),
       exercise,
       draw_ops: [],
-      board_items: settled.items,
-      scene: settled.scene,
-      highlight: highlightFromModel(value),
-      board_fallback: boardFallback,
-      verdict,
+      board_items: [],
+      board_sheet: boardSheet,
+      scene: null,
+      highlight: [] as string[],
+      board_fallback: null,
       hints_level: Number(value.hints_level ?? 0),
       study_eval: {
         passed,
@@ -423,14 +384,22 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
 
     // ask_questions queda para lógica interna; no se lista al niño (evita preguntas duplicadas).
     let visible = reply.speak_to_child
+    if (boardSheet && 'text' in boardSheet && !visible.includes(boardSheet.text.slice(0, 24))) {
+      visible += `\n${boardSheet.text}`
+    }
     if (reply.exercise) {
       visible += `\nEjercicio: ${reply.exercise.title}\n${reply.exercise.instructions}`
     }
-    context.messages.push(await insertMessage(taskId, 'assistant', visible))
+    context.messages.push(
+      await insertMessage(
+        taskId,
+        'assistant',
+        truncateChars(visible, 1600),
+        false,
+        boardSheet && 'imageSrc' in boardSheet ? boardSheet.imageSrc : null,
+      ),
+    )
     await saveSessionMeta(context)
-    if (settled.pendingWrite !== 'keep') {
-      await savePendingBoardFacts(taskId, settled.pendingWrite)
-    }
     if (updateUserMemory) await saveUserMemory(userId, reply.user_memory_summary)
 
     let xpAward = null as Awaited<ReturnType<typeof awardXp>> | null

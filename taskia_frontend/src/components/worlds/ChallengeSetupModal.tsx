@@ -42,10 +42,12 @@ export function ChallengeSetupModal({
   const [loading, setLoading] = useState(false)
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pausedId, setPausedId] = useState<number | null>(null)
 
   useEffect(() => {
     if (!open) return
     setError(null)
+    setPausedId(null)
     setDifficulty('warm')
     setLoading(true)
     void api
@@ -69,7 +71,7 @@ export function ChallengeSetupModal({
     [presets, scope],
   )
 
-  async function onStart() {
+  async function onStart(discard = false) {
     setStarting(true)
     setError(null)
     try {
@@ -79,7 +81,13 @@ export function ChallengeSetupModal({
         difficulty,
         course_id: courseId ?? null,
         mission_id: missionId ?? null,
+        discard_in_progress: discard,
       })
+      if ('conflict' in detail && detail.conflict) {
+        setPausedId(detail.in_progress.challenge.id)
+        setStarting(false)
+        return
+      }
       showToast({
         tone: 'success',
         title: '¡Desafío listo!',
@@ -110,8 +118,8 @@ export function ChallengeSetupModal({
         <>
           {title ? `Sobre: ${title}. ` : ''}
           En el desafío Taskia no habla: solo corrige al final. Si el tema usa
-          pizarra, dibuja el problema y tú resuelves ahí; al final revisa todas
-          las respuestas.
+          pizarra, el enunciado queda fijo y tú resuelves ahí o con una foto
+          del cuaderno. Al final revisa todas las respuestas.
         </>
       }
       icon={Trophy}
@@ -136,18 +144,40 @@ export function ChallengeSetupModal({
                 ))}
               </div>
               {error && <p className="form-error">{error}</p>}
+              {pausedId != null && (
+                <p className="form-error">
+                  Tienes un desafío a medias. Puedes seguirlo o descartarlo y empezar este.
+                </p>
+              )}
               <div className="modal-actions">
                 <button type="button" className="ghost" onClick={onClose} disabled={starting}>
                   Cancelar
                 </button>
+                {pausedId != null && (
+                  <button
+                    type="button"
+                    className="ghost"
+                    disabled={starting}
+                    onClick={() => {
+                      onStarted(pausedId)
+                      onClose()
+                    }}
+                  >
+                    Continuar
+                  </button>
+                )}
                 <button
                   type="button"
                   className="primary"
                   disabled={starting || loading}
-                  onClick={() => void onStart()}
+                  onClick={() => void onStart(pausedId != null)}
                 >
                   <Play size={18} weight="fill" />
-                  {starting ? 'Generando preguntas…' : '¡Empezar!'}
+                  {starting
+                    ? 'Generando preguntas…'
+                    : pausedId != null
+                      ? 'Descartar y empezar'
+                      : '¡Empezar!'}
                 </button>
               </div>
             </div>

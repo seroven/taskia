@@ -14,7 +14,7 @@ import { StudyChat } from '../../components/study/StudyChat'
 import { TextAreaField, TextField } from '../../components/ui/Field'
 import { WorldsStatusPill } from '../../components/worlds/WorldsStatusPill'
 import { errorMessage } from '../../lib/errors'
-import { parseDrawOps, type StudyBoardScene } from '../../lib/studyProtocol'
+import { type StudyBoardScene } from '../../lib/studyProtocol'
 import type { MissionContext, StudyMission } from '../../lib/worldsTypes'
 import { mergeXpIntoUser, xpToastCopy } from '../../lib/xp'
 import { useAuth } from '../../auth'
@@ -138,14 +138,8 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         const copy = xpToastCopy(result.xp_gained)
         if (copy) showToast({ tone: 'success', ...copy })
       }
-      const items = result.reply.board_items ?? []
-      if (items.length > 0 && mission?.uses_board) {
-        boardRef.current?.applyAiItems(items, result.reply.scene, result.reply.highlight)
-      } else if ((result.reply.highlight?.length ?? 0) > 0 && mission?.uses_board) {
-        boardRef.current?.applyAiItems([], undefined, result.reply.highlight)
-      } else {
-        const ops = parseDrawOps(result.reply.draw_ops)
-        if (ops.length > 0) boardRef.current?.applyDrawOps(ops)
+      if (result.reply.board_sheet && mission?.uses_board) {
+        boardRef.current?.applySheet(result.reply.board_sheet)
       }
     } catch (err) {
       setChatError(errorMessage(err))

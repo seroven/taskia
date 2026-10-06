@@ -1,38 +1,19 @@
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
-import {
-  auditScene,
-  gradeBoard,
-  isSceneRecord,
-  readBoardFactsList,
-  recordBoardGap,
-  SCENE_RETRY_SYSTEM,
-  type BoardFact,
-  type BoardFactsResult,
-} from '../../board/index.js'
-import {
-  CHALLENGE_GRADE_SYSTEM,
-  CHALLENGE_STATEMENT_DRAW_SYSTEM,
-  challengeGenerateSystem,
-} from '../../../prompts/challenge.js'
+import { sheetForPrompt, type BoardSheet } from '../../board/sheet.js'
+import { CHALLENGE_GRADE_SYSTEM, challengeGenerateSystem } from '../../../prompts/challenge.js'
 import { awardXp, xpForChallenge } from '../../../services/xp.js'
 import { AppError, extractJson, truncateChars } from '../../../utils/helpers.js'
 import {
   describeBoardJson,
   distributeQuestionCounts,
-  drawOpsFitPrompt,
   estimateMaxQuestionsFromMaterial,
-  fallbackSceneForPrompt,
-  figureFitsPrompt,
   formatCorrectAnswer,
   gradeMultipleChoice,
   groupMissionsByCourse,
   itemWantsBoard,
   normalizeAnswerKey,
-  normalizeDrawOps,
   normalizeOptionsList,
-  packScene,
   publishPromptFigure,
-  sanitizeFittedDrawOps,
   shuffleArray,
 } from '../lib/challenge-logic.js'
 import {
@@ -40,6 +21,7 @@ import {
   completeChallenge,
   deleteChallenge,
   deleteInProgressChallenges,
+  findInProgressChallenge,
   findActiveMission,
   findActiveWorld,
   findOwnedChallenge,
@@ -54,6 +36,7 @@ import {
   loadMissionStudyBits,
   presetQuestionCount,
   replaceChallengeAnswers,
+  saveChallengeProgressRow,
   setChallengeQuestionCount,
   type MissionView,
 } from '../repositories/world.repository.js'
@@ -107,153 +90,20 @@ async function loadMissionStudyMaterial(missionId: number) {
   }
 }
 
-function challengeSceneOk(prompt: string, raw: unknown, facts: BoardFact[]) {
-  return auditScene(raw, facts).ok && figureFitsPrompt(prompt, raw)
-}
-
-async function ensureChallengeBoardDrawOps(
+async function attachChallengeSheets(
   items: Array<Record<string, unknown>>,
   missions: MissionView[],
   userId: number,
 ) {
   const byId = new Map(missions.map((mission) => [mission.id, mission]))
-  const boardItems: Array<{ item: Record<string, unknown>; prompt: string }> = []
   for (const item of items) {
     let mid = typeof item.mission_id === 'number' ? item.mission_id : Number(item.mission_id)
     if (!Number.isFinite(mid) || !byId.has(mid)) mid = missions[0]?.id ?? 0
     const mission = byId.get(mid)
     if (!itemWantsBoard(item, Boolean(mission?.uses_board))) continue
-    boardItems.push({
-      item,
-      prompt: typeof item.prompt === 'string' ? item.prompt : '¿Listo?',
-    })
-  }
-  if (boardItems.length === 0) return
-  let factRows: BoardFactsResult[] = boardItems.map(() => ({ facts: [], statement: '', unsupported: null }))
-  try {
-    factRows = await readBoardFactsList(
-      boardItems.map((row) => row.prompt),
-      { userId, kind: 'board_facts' },
-    )
-  } catch (err) {
-    console.info('[board] facts failed', err instanceof Error ? err.name : 'error')
-  }
-  const rows = boardItems.map((row, index) => ({
-    ...row,
-    facts: factRows[index] ?? { facts: [], statement: '', unsupported: null as string | null },
-    dropped: false,
-  }))
-  for (const row of rows) {
-    if (!row.facts.unsupported) continue
-    row.dropped = true
-    await recordBoardGap({
-      code: 'UNSUPPORTED',
-      gapKey: row.facts.unsupported,
-      origin: 'challenge',
-      attempts: 0,
-    })
-    row.item.scene = null
-    row.item.draw_ops = fallbackSceneForPrompt(row.prompt)
-  }
-  let pending = rows.filter(
-    (row) => !row.dropped && !challengeSceneOk(row.prompt, row.item.scene ?? row.item.draw_ops, row.facts.facts),
-  )
-  for (let attempt = 0; attempt < 3 && pending.length > 0; attempt += 1) {
-    try {
-      const raw = await callGemini({
-        system: attempt === 0 ? CHALLENGE_STATEMENT_DRAW_SYSTEM : SCENE_RETRY_SYSTEM,
-        user: JSON.stringify(
-          attempt === 0
-            ? {
-                problems: pending.map((row, index) => ({
-                  index,
-                  prompt: row.prompt,
-                  answer_key: typeof row.item.answer_key === 'string' ? row.item.answer_key : '',
-                  facts: row.facts.facts,
-                })),
-              }
-            : {
-                scenes: pending.map((row, index) => {
-                  const checked = auditScene(row.item.scene, row.facts.facts)
-                  return {
-                    index,
-                    scene: row.item.scene ?? null,
-                    facts: row.facts.facts,
-                    errors: checked.ok ? [] : checked.issues,
-                  }
-                }),
-              },
-        ),
-        usage: { userId, kind: 'challenge_generate' },
-      })
-      const parsed = JSON.parse(extractJson(raw)) as unknown
-      const still: typeof pending = []
-      if (Array.isArray(parsed)) {
-        const used = new Set<number>()
-        for (const row of parsed) {
-          if (!row || typeof row !== 'object') continue
-          const rec = row as Record<string, unknown>
-          const index = Number(rec.index)
-          if (!Number.isFinite(index) || !pending[index] || used.has(index)) continue
-          used.add(index)
-          const scene = rec.scene ?? rec
-          const checked = auditScene(scene, pending[index]!.facts.facts)
-          if (checked.ok && figureFitsPrompt(pending[index]!.prompt, scene)) {
-            pending[index]!.item.scene = scene
-          } else if (!checked.ok && checked.stop) {
-            pending[index]!.dropped = true
-            await recordBoardGap({
-              code: 'UNSUPPORTED',
-              gapKey: checked.issues[0]?.objectId ?? 'other',
-              origin: 'challenge',
-              attempts: attempt + 1,
-            })
-            pending[index]!.item.scene = null
-            pending[index]!.item.draw_ops = fallbackSceneForPrompt(pending[index]!.prompt)
-          } else {
-            pending[index]!.item.scene = scene
-            still.push(pending[index]!)
-          }
-        }
-        pending.forEach((row, index) => {
-          if (!used.has(index)) still.push(row)
-        })
-      } else {
-        still.push(...pending)
-      }
-      pending = still
-    } catch (err) {
-      console.info('[board] scene retry failed', err instanceof Error ? err.name : 'error')
-      break
-    }
-  }
-  for (const row of rows) {
-    if (row.dropped) continue
-    const missed = auditScene(row.item.scene ?? row.item.draw_ops, row.facts.facts)
-    if (!missed.ok && missed.issues.some((issue) => issue.code === 'MISSING_FACT' || issue.code === 'UNSUPPORTED')) {
-      await recordBoardGap({
-        code: missed.issues[0]?.code ?? 'MISSING_FACT',
-        gapKey: missed.issues[0]?.objectId ?? 'other',
-        origin: 'challenge',
-        attempts: 3,
-      })
-    }
-  }
-  for (const row of rows) {
-    if (row.dropped) continue
-    const current = row.item.scene ?? row.item.draw_ops
-    if (isSceneRecord(current) && challengeSceneOk(row.prompt, current, row.facts.facts)) {
-      const packed = packScene(current)
-      if (packed) {
-        row.item.draw_ops = packed
-        continue
-      }
-    }
-    if (Array.isArray(current) && drawOpsFitPrompt(row.prompt, current)) {
-      row.item.draw_ops = sanitizeFittedDrawOps(row.prompt, current)
-      continue
-    }
-    row.item.draw_ops = fallbackSceneForPrompt(row.prompt)
+    const prompt = typeof item.prompt === 'string' ? item.prompt : '¿Listo?'
+    const sheet: BoardSheet = await sheetForPrompt(prompt, { userId, kind: 'board_facts' })
+    item.sheet = sheet
   }
 }
 
@@ -421,7 +271,8 @@ export async function getChallengeDetail(challengeId: number, userId: number) {
       currentIndex = questions.length
     }
   }
-  return { challenge, questions, current_index: currentIndex }
+  const progress = row.progressJson ?? null
+  return { challenge, questions, current_index: currentIndex, progress }
 }
 
 async function gradeOpenAnswersBatch(
@@ -434,13 +285,15 @@ async function gradeOpenAnswersBatch(
     board_description: string
   }>,
   userId: number,
-  boardImages: Array<{ question_id: number; data: string }> = [],
+  boardImages: Array<{ question_id: number; data: string; caption?: string }> = [],
 ) {
   const results = new Map<number, boolean>()
   if (items.length === 0) return results
-  const images = boardImages.slice(0, 6).map((image) => ({
+  const images = boardImages.slice(0, 12).map((image) => ({
     data: image.data,
-    caption: `Pizarra del alumno para question_id=${image.question_id}. Úsala para juzgar el dibujo, no el enunciado de la IA.`,
+    caption:
+      image.caption ??
+      `Pizarra del alumno para question_id=${image.question_id}. Úsala para juzgar su respuesta, no el enunciado.`,
   }))
   const raw = await callGemini({
     system: CHALLENGE_GRADE_SYSTEM,
@@ -479,7 +332,11 @@ export async function startChallenge(userId: number, body: Record<string, unknow
   const start = parseChallengeStart(body)
   const world = await findActiveWorld(start.worldId, userId)
   if (!world) throw new AppError('Mundo no encontrado', 404)
-  await deleteInProgressChallenges(userId)
+  const existing = await findInProgressChallenge(userId)
+  if (existing && !start.discardInProgress) {
+    return { conflict: true as const, in_progress: await getChallengeDetail(Number(existing.id), userId) }
+  }
+  if (start.discardInProgress) await deleteInProgressChallenges(userId)
   const questionCount = await presetQuestionCount(start.scope, start.difficulty)
   if (questionCount == null) throw new AppError('Dificultad o alcance no válido')
   const missions = await missionsForChallenge(
@@ -539,7 +396,7 @@ export async function startChallenge(userId: number, body: Record<string, unknow
     throw err
   }
   try {
-    await ensureChallengeBoardDrawOps(generated, missions, userId)
+    await attachChallengeSheets(generated, missions, userId)
   } catch (err) {
     console.error('[challenge:start] ensure board draw_ops failed', err)
   }
@@ -585,13 +442,9 @@ export async function startChallenge(userId: number, body: Record<string, unknow
       options,
     )
     const promptDrawOps = requiresBoard
-      ? isSceneRecord(item.scene) && figureFitsPrompt(prompt, item.scene)
-        ? packScene(item.scene)
-        : isSceneRecord(item.draw_ops) && figureFitsPrompt(prompt, item.draw_ops)
-          ? packScene(item.draw_ops)
-          : Array.isArray(item.draw_ops) && drawOpsFitPrompt(prompt, item.draw_ops)
-            ? normalizeDrawOps(item.draw_ops)
-            : fallbackSceneForPrompt(prompt)
+      ? item.sheet && typeof item.sheet === 'object'
+        ? item.sheet
+        : { text: prompt }
       : null
     await insertChallengeQuestion({
       challengeId,
@@ -620,6 +473,38 @@ export async function getChallenge(userId: number, challengeId: number) {
   return getChallengeDetail(challengeId, userId)
 }
 
+export async function saveChallengeProgress(
+  userId: number,
+  challengeId: number,
+  body: Record<string, unknown>,
+) {
+  const row = await findOwnedChallenge(challengeId, userId)
+  if (!row) throw new AppError('Desafío no encontrado', 404)
+  if (row.status !== 'in_progress') return { ok: true, elapsed_ms: Number(row.elapsedMs) || 0 }
+  const elapsed = Math.max(0, Math.min(Number(body.elapsed_ms) || 0, 6 * 60 * 60 * 1000))
+  const cursor = Math.max(0, Math.floor(Number(body.cursor) || 0))
+  const rawAnswers = Array.isArray(body.answers) ? body.answers.slice(0, 80) : []
+  const answers = rawAnswers.flatMap((answer) => {
+    if (!answer || typeof answer !== 'object') return []
+    const obj = answer as Record<string, unknown>
+    const questionId = Number(obj.question_id)
+    if (!Number.isFinite(questionId)) return []
+    return [
+      {
+        question_id: questionId,
+        user_answer: typeof obj.user_answer === 'string' ? obj.user_answer.slice(0, 800) : '',
+        board_json: obj.board_json ?? null,
+        board_description:
+          typeof obj.board_description === 'string' ? obj.board_description.slice(0, 1600) : '',
+        notebook_image_base64:
+          typeof obj.notebook_image_base64 === 'string' ? obj.notebook_image_base64 : '',
+      },
+    ]
+  })
+  await saveChallengeProgressRow(challengeId, elapsed, { cursor, answers })
+  return { ok: true, elapsed_ms: elapsed }
+}
+
 export async function discardChallenge(userId: number, challengeId: number) {
   const row = await findOwnedChallenge(challengeId, userId)
   if (!row) throw new AppError('Desafío no encontrado', 404)
@@ -646,6 +531,7 @@ export async function finishChallenge(
       board_json: unknown
       board_description: string
       board_image_base64: string
+      notebook_image_base64: string
     }
   >()
   for (const answer of answersRaw) {
@@ -658,6 +544,8 @@ export async function finishChallenge(
       board_json: obj.board_json ?? null,
       board_description: typeof obj.board_description === 'string' ? obj.board_description : '',
       board_image_base64: typeof obj.board_image_base64 === 'string' ? obj.board_image_base64 : '',
+      notebook_image_base64:
+        typeof obj.notebook_image_base64 === 'string' ? obj.notebook_image_base64 : '',
     })
   }
   const questions = await listChallengeQuestions(challengeId)
@@ -675,7 +563,7 @@ export async function finishChallenge(
     requires_board: boolean
     board_description: string
   }> = []
-  const boardImages: Array<{ question_id: number; data: string }> = []
+  const boardImages: Array<{ question_id: number; data: string; caption: string }> = []
   const graded = new Map<number, boolean>()
   for (const question of questions) {
     const questionId = Number(question.id)
@@ -683,29 +571,6 @@ export async function finishChallenge(
     const requiresBoard = question.requiresBoard
     if (question.kind === 'multiple_choice') {
       graded.set(questionId, gradeMultipleChoice(submitted.user_answer, question.answerKey))
-    } else if (requiresBoard && isSceneRecord(question.promptDrawOps)) {
-      const verdict = gradeBoard({
-        scene: question.promptDrawOps,
-        board: submitted.board_json,
-        childMessage: submitted.user_answer,
-      })
-      if (verdict.verdict === 'correct' || verdict.verdict === 'incorrect') {
-        graded.set(questionId, verdict.verdict === 'correct')
-      } else {
-        const boardDescription =
-          submitted.board_description.trim() || describeBoardJson(submitted.board_json)
-        openItems.push({
-          question_id: questionId,
-          prompt: String(question.prompt ?? ''),
-          answer_key: question.answerKey,
-          child_answer: truncateChars(submitted.user_answer, 800),
-          requires_board: true,
-          board_description: truncateChars(`code_verdict=unverifiable. ${boardDescription}`, 1600),
-        })
-        if (submitted.board_image_base64.trim()) {
-          boardImages.push({ question_id: questionId, data: submitted.board_image_base64 })
-        }
-      }
     } else {
       const boardDescription =
         submitted.board_description.trim() || describeBoardJson(submitted.board_json)
@@ -718,7 +583,18 @@ export async function finishChallenge(
         board_description: truncateChars(boardDescription, 1600),
       })
       if (requiresBoard && submitted.board_image_base64.trim()) {
-        boardImages.push({ question_id: questionId, data: submitted.board_image_base64 })
+        boardImages.push({
+          question_id: questionId,
+          data: submitted.board_image_base64,
+          caption: `Pizarra del alumno para question_id=${questionId}.`,
+        })
+      }
+      if (requiresBoard && submitted.notebook_image_base64.trim()) {
+        boardImages.push({
+          question_id: questionId,
+          data: submitted.notebook_image_base64,
+          caption: `Foto del cuaderno para question_id=${questionId}. Basta para calificar aunque la pizarra esté vacía.`,
+        })
       }
     }
   }
@@ -739,12 +615,24 @@ export async function finishChallenge(
   })
   await replaceChallengeAnswers(challengeId, stored)
   const score = Math.round((correctCount / questions.length) * 100)
+  const sentElapsed = Number(body.elapsed_ms ?? body.elapsedMs)
+  const elapsedMs = Math.max(
+    Number(row.elapsedMs) || 0,
+    Number.isFinite(sentElapsed) ? Math.max(0, sentElapsed) : 0,
+  )
+  await saveChallengeProgressRow(challengeId, elapsedMs, row.progressJson ?? null)
   await completeChallenge(challengeId, score)
   const xpAward = await awardXp({
     userId,
     sourceType: 'challenge',
     sourceId: challengeId,
-    amount: xpForChallenge(String(row.scope ?? 'mission'), String(row.difficulty ?? 'quest'), score),
+    amount: xpForChallenge(
+      String(row.scope ?? 'mission'),
+      String(row.difficulty ?? 'quest'),
+      score,
+      elapsedMs,
+      questions.length,
+    ),
     reason: `Desafío ${score}%`,
   })
   const detail = await getChallengeDetail(challengeId, userId)

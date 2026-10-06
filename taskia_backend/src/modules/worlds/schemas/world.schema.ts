@@ -63,6 +63,7 @@ export function parseChallengeStart(body: Record<string, unknown>) {
     difficulty: parsed.data.difficulty,
     missionId: body.mission_id != null ? Number(body.mission_id) : null,
     courseId: body.course_id != null ? Number(body.course_id) : null,
+    discardInProgress: Boolean(body.discard_in_progress ?? body.discardInProgress),
   }
 }
 

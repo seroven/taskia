@@ -38,4 +38,10 @@ export class StudyChallenge {
 
   @Column({ type: 'timestamptz', nullable: true })
   completedAt!: Date | null
+
+  @Column({ type: 'bigint', default: 0, transformer: bigintTransformer })
+  elapsedMs!: number
+
+  @Column({ type: 'jsonb', nullable: true })
+  progressJson!: unknown | null
 }

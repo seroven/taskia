@@ -99,15 +99,28 @@ export function xpForMission(effortScore: number): number {
   return Math.max(1, Math.round((MISSION_BASE * effortScore) / 100))
 }
 
+/** esperado / tardado, entre 0,7 y 1,15. esperado = 90 s por pregunta. */
+export function challengeTimeFactor(elapsedMs: number, questionCount: number): number {
+  const expected = 90_000 * Math.max(1, questionCount)
+  const elapsed = Math.max(1, elapsedMs)
+  return Math.min(1.15, Math.max(0.7, expected / elapsed))
+}
+
 export function xpForChallenge(
   scope: string,
   difficulty: string,
   scorePercent: number,
+  elapsedMs?: number,
+  questionCount?: number,
 ): number {
   const base =
     CHALLENGE_BASE[scope]?.[difficulty] ?? CHALLENGE_BASE.mission!.quest!
   const performance = Math.min(1, Math.max(0, scorePercent / 100))
-  const raw = Math.floor(base * performance)
+  const time =
+    elapsedMs != null && questionCount != null
+      ? challengeTimeFactor(elapsedMs, questionCount)
+      : 1
+  const raw = Math.floor(base * performance * time)
   const floor = Math.floor(base * 0.05)
   return Math.max(floor, raw, 1)
 }
