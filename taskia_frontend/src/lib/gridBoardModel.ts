@@ -548,8 +548,9 @@ export function normalizeScene(raw: unknown): StudyBoardScene {
 export function describeGridScene(scene: StudyBoardScene): string {
   const items = scene.items ?? []
   const header = `Grilla ${scene.cols}x${scene.rows} (col 0–${scene.cols - 1}, fila 0–${scene.rows - 1}). Origen arriba-izquierda.`
-  if (items.length === 0) return `${header}\nLa pizarra está vacía.`
-  const lines = items.slice(0, 40).map((item) => {
+  const visible = items.filter((item) => item.kind !== 'text' || item.layer === 'ai' || textChars(item.text ?? '').length > 0)
+  if (visible.length === 0) return `${header}\nLa pizarra está vacía.`
+  const lines = visible.slice(0, 40).map((item) => {
     const who = item.layer === 'ai' ? 'AI' : 'Alumno'
     const kind = item.kind === 'stamp' ? item.stamp ?? 'stamp' : item.kind
     const label = item.text?.trim() ? ` "${item.text.trim()}"` : ''
@@ -560,12 +561,16 @@ export function describeGridScene(scene: StudyBoardScene): string {
     return `${who}: ${kind}${label} en (${item.col},${item.row}) ${item.w}x${item.h}`
   })
   const extra =
-    items.length > 40 ? `\n…y ${items.length - 40} formas más.` : ''
+    visible.length > 40 ? `\n…y ${visible.length - 40} formas más.` : ''
   return `${header}\n${lines.join('\n')}${extra}`
 }
 
 export function hasStudentWork(scene: StudyBoardScene | null | undefined) {
-  return Boolean(scene?.items?.some((item) => item.layer === 'student'))
+  return Boolean(
+    scene?.items?.some(
+      (item) => item.layer === 'student' && (item.kind !== 'text' || textChars(item.text ?? '').length > 0),
+    ),
+  )
 }
 
 export function makeStudentItem(
