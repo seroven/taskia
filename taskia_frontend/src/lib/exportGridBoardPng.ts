@@ -57,7 +57,7 @@ export async function exportSvgBoardToPngBase64(
   const clone = svg.cloneNode(true) as SVGSVGElement
   clone
     .querySelectorAll(
-      '.grid-board-marquee, .grid-board-handle, .grid-board-caret, .grid-board-caret-cell',
+      '.grid-board-marquee, .grid-board-handle, .grid-board-caret, .grid-board-caret-cell, .grid-board-select, .grid-board-hover, .grid-board-stroke-select, .grid-board-stroke-gap, .grid-board-stroke-hover',
     )
     .forEach((el) => el.remove())
 

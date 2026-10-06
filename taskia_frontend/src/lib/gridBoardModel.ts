@@ -10,7 +10,7 @@ import type {
 } from './studyProtocol'
 import { GRID_COLS, GRID_ROWS, parseDrawOps } from './studyProtocol'
 
-export const GRID_CELL = 28
+export const GRID_CELL = 18
 
 export const GRID_COLORS: Record<GridColor, string> = {
   white: '#f8fafc',

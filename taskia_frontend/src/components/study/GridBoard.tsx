@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -62,13 +63,20 @@ type Tool = 'select' | 'line' | 'brush'
 
 const COLOR_ORDER: GridColor[] = ['white', 'black', 'blue', 'red', 'green', 'orange', 'gray']
 const SNAP = (6 * Math.PI) / 180
+const MIN_ZOOM = 0.15
+const MAX_ZOOM = 2.2
+
+function clampZoom(value: number) {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
+}
 
 type Drag =
   | { mode: 'pan'; x: number; y: number; panX: number; panY: number }
-  | { mode: 'move'; id: string; x0: number; y0: number; origin: GridItem }
+  | { mode: 'move'; x0: number; y0: number; origins: GridItem[]; hitId: string; additive: boolean; shifted: boolean }
+  | { mode: 'marquee'; x0: number; y0: number; additive: boolean; base: string[] }
   | { mode: 'line'; id: string }
   | { mode: 'brush'; id: string }
-  | { mode: 'press'; x: number; y: number; cx: number; cy: number; panX: number; panY: number }
+  | { mode: 'press'; x: number; y: number; cx: number; cy: number; panX: number; panY: number; additive: boolean }
   | null
 
 function cellPoint(clientX: number, clientY: number, svg: SVGSVGElement, zoom: number, panX: number, panY: number) {
@@ -97,6 +105,22 @@ function distToSegment(px: number, py: number, x1: number, y1: number, x2: numbe
   if (len === 0) return Math.hypot(px - x1, py - y1)
   const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len))
   return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy))
+}
+
+function studentIdsInRect(items: GridItem[], x0: number, y0: number, x1: number, y1: number) {
+  const left = Math.min(x0, x1)
+  const right = Math.max(x0, x1)
+  const top = Math.min(y0, y1)
+  const bottom = Math.max(y0, y1)
+  return items
+    .filter((item) => {
+      if (isLockedItem(item)) return false
+      const box = itemBBox(item)
+      const width = Math.max(box.w, 0.35)
+      const height = Math.max(box.h, 0.35)
+      return box.col <= right && box.col + width >= left && box.row <= bottom && box.row + height >= top
+    })
+    .map((item) => item.id)
 }
 
 function hitsStudent(item: GridItem, x: number, y: number) {
@@ -160,14 +184,19 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
   const [tool, setTool] = useState<Tool>('select')
   const [colorsOpen, setColorsOpen] = useState(false)
   const [color, setColor] = useState<GridColor>(() => themeDefaultColor(theme))
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const selectedRef = useRef<string[]>([])
+  const [hoverId, setHoverId] = useState<string | null>(null)
+  const gridPatternId = `taskia-grid-${useId().replace(/:/g, '')}`
   const [editingId, setEditingId] = useState<string | null>(null)
   const [caretIndex, setCaretIndex] = useState(0)
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [panning, setPanning] = useState(false)
   const [guide, setGuide] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
+  const [marquee, setMarquee] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
+  const colorPopRef = useRef<HTMLDivElement>(null)
   const textEditRef = useRef<HTMLInputElement>(null)
   const sceneRef = useRef(scene)
   const zoomRef = useRef(zoom)
@@ -182,6 +211,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
   const drag = useRef<Drag>(null)
   const caretRef = useRef(0)
   const editingRef = useRef<string | null>(null)
+  const spaceRef = useRef(false)
 
   sceneRef.current = scene
   zoomRef.current = zoom
@@ -190,6 +220,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
   toolRef.current = tool
   caretRef.current = caretIndex
   editingRef.current = editingId
+  selectedRef.current = selectedIds
 
   const persist = useCallback(
     (next: StudyBoardScene) => {
@@ -220,7 +251,8 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
     setScene(prev)
     sceneRef.current = prev
     persist(prev)
-    setSelectedId(null)
+    selectedRef.current = []
+    setSelectedIds([])
     setEditingId(null)
   }, [persist])
 
@@ -231,7 +263,8 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
     setScene(next)
     sceneRef.current = next
     persist(next)
-    setSelectedId(null)
+    selectedRef.current = []
+    setSelectedIds([])
     setEditingId(null)
   }, [persist])
 
@@ -242,15 +275,18 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
         const next = applyDrawOpsToGrid(emptyGridScene(), ops)
         const kept = sceneRef.current.items.filter((item) => item.layer === 'student')
         commit({ ...next, items: [...next.items.filter((item) => item.layer === 'ai'), ...kept] })
-        setSelectedId(null)
+        selectedRef.current = []
+        setSelectedIds([])
       },
       applyAiItems(items: GridItem[], nextScene?: unknown, highlightIds?: string[]) {
         commit(applyAiItems(sceneRef.current, items, nextScene, highlightIds))
-        setSelectedId(null)
+        selectedRef.current = []
+        setSelectedIds([])
       },
       applySheet(sheet: BoardSheet | null) {
         commit(applySheet(sceneRef.current, sheet))
-        setSelectedId(null)
+        selectedRef.current = []
+        setSelectedIds([])
       },
       async getBoardAttachment() {
         const current = sceneRef.current
@@ -312,6 +348,48 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
     }
   }, [])
 
+  function zoomAt(nextZoom: number, sx: number, sy: number) {
+    const current = zoomRef.current
+    const next = clampZoom(nextZoom)
+    if (next === current) return
+    const pan = panRef.current
+    const worldX = (sx - pan.x) / current
+    const worldY = (sy - pan.y) / current
+    const nextPan = { x: sx - worldX * next, y: sy - worldY * next }
+    panRef.current = nextPan
+    zoomRef.current = next
+    setPan(nextPan)
+    setZoom(next)
+  }
+
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      const rect = svg.getBoundingClientRect()
+      const factor = event.deltaY < 0 ? 1.08 : 1 / 1.08
+      zoomAt(zoomRef.current * factor, event.clientX - rect.left, event.clientY - rect.top)
+    }
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    return () => svg.removeEventListener('wheel', onWheel)
+  }, [])
+
+  useEffect(() => {
+    if (!colorsOpen) return
+    const close = (event: PointerEvent) => {
+      if (colorPopRef.current?.contains(event.target as Node)) return
+      setColorsOpen(false)
+    }
+    window.addEventListener('pointerdown', close)
+    return () => window.removeEventListener('pointerdown', close)
+  }, [colorsOpen])
+
+  function chooseTool(next: Tool) {
+    setTool(next)
+    setColorsOpen(false)
+  }
+
   useEffect(() => {
     if (!editingId) return
     const timer = window.setTimeout(() => textEditRef.current?.focus(), 0)
@@ -334,7 +412,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
         const text = chars.join('')
         caretRef.current = Math.max(0, at - 1)
         setCaretIndex(caretRef.current)
-        patchItem(item.id, { text, w: Math.max(2, textChars(text).length) })
+        patchItem(item.id, { text, w: Math.max(1, textChars(text).length), h: 1 })
         return
       }
       if (event.key === 'ArrowLeft') {
@@ -357,7 +435,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
       const text = chars.join('')
       caretRef.current = at + 1
       setCaretIndex(caretRef.current)
-      patchItem(item.id, { text, w: Math.max(2, textChars(text).length) })
+      patchItem(item.id, { text, w: Math.max(1, textChars(text).length), h: 1 })
     }
     window.addEventListener('keydown', onKey, true)
     return () => {
@@ -378,11 +456,42 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
       } else if (key === 'y') {
         event.preventDefault()
         redo()
+      } else if (key === 'a') {
+        event.preventDefault()
+        const ids = sceneRef.current.items.filter((item) => !isLockedItem(item)).map((item) => item.id)
+        selectedRef.current = ids
+        setSelectedIds(ids)
       }
     }
+    const onSpaceDown = (event: KeyboardEvent) => {
+      if (event.key !== ' ' || editingRef.current || event.repeat) return
+      spaceRef.current = true
+      event.preventDefault()
+    }
+    const onSpaceUp = (event: KeyboardEvent) => {
+      if (event.key === ' ') spaceRef.current = false
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onSpaceDown)
+    window.addEventListener('keyup', onSpaceUp)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keydown', onSpaceDown)
+      window.removeEventListener('keyup', onSpaceUp)
+    }
   }, [redo, undo])
+
+  function setSelection(ids: string[]) {
+    const prev = selectedRef.current
+    if (prev.length === ids.length && prev.every((id, index) => id === ids[index])) return
+    selectedRef.current = ids
+    setSelectedIds(ids)
+  }
+
+  function selectInMarquee(x0: number, y0: number, x1: number, y1: number, additive: boolean, base: string[]) {
+    const inside = studentIdsInRect(sceneRef.current.items, x0, y0, x1, y1)
+    setSelection(additive ? [...new Set([...base, ...inside])] : inside)
+  }
 
   function patchItem(id: string, patch: Partial<GridItem>) {
     const current = sceneRef.current
@@ -398,13 +507,13 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
   }
 
   function placeText(x: number, y: number) {
-    const item = makeStudentItem('text', x, y, colorRef.current, undefined, '')
-    item.w = 2
-    item.h = 1.4
+    const item = makeStudentItem('text', Math.floor(x), Math.floor(y), colorRef.current, undefined, '')
+    item.w = 1
+    item.h = 1
     const current = sceneRef.current
     gestureBase.current = null
     commit({ ...current, items: [...current.items, item] })
-    setSelectedId(item.id)
+    setSelection([item.id])
     caretRef.current = 0
     setCaretIndex(0)
     setEditingId(item.id)
@@ -431,7 +540,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
       gestureBase.current = sceneRef.current
       commit({ ...sceneRef.current, items: [...sceneRef.current.items, item] })
       drag.current = { mode: 'line', id: item.id }
-      setSelectedId(item.id)
+      setSelection([item.id])
       setEditingId(null)
       return
     }
@@ -450,16 +559,52 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
       gestureBase.current = sceneRef.current
       commit({ ...sceneRef.current, items: [...sceneRef.current.items, item] })
       drag.current = { mode: 'brush', id: item.id }
-      setSelectedId(item.id)
+      setSelection([item.id])
       setEditingId(null)
       return
     }
+    if (event.button === 1 || spaceRef.current) {
+      event.preventDefault()
+      drag.current = {
+        mode: 'pan',
+        x: event.clientX,
+        y: event.clientY,
+        panX: panRef.current.x,
+        panY: panRef.current.y,
+      }
+      setPanning(true)
+      return
+    }
+    const additive = event.ctrlKey || event.metaKey
     const hit = topStudentAt(point.x, point.y)
     if (hit) {
+      const currentIds = selectedRef.current
+      const already = currentIds.includes(hit.id)
+      let nextIds = currentIds
+      if (additive) {
+        nextIds = already ? currentIds.filter((id) => id !== hit.id) : [...currentIds, hit.id]
+        setSelection(nextIds)
+        setEditingId(null)
+        if (!nextIds.includes(hit.id)) {
+          drag.current = null
+          return
+        }
+      } else if (!already) {
+        nextIds = [hit.id]
+        setSelection(nextIds)
+      }
+      const origins = sceneRef.current.items.filter((item) => nextIds.includes(item.id) && !isLockedItem(item))
       gestureBase.current = sceneRef.current
-      drag.current = { mode: 'move', id: hit.id, x0: point.x, y0: point.y, origin: hit }
-      setSelectedId(hit.id)
-      if (hit.kind === 'text') {
+      drag.current = {
+        mode: 'move',
+        x0: point.x,
+        y0: point.y,
+        origins,
+        hitId: hit.id,
+        additive,
+        shifted: false,
+      }
+      if (nextIds.length === 1 && hit.kind === 'text' && !additive) {
         caretRef.current = textChars(hit.text ?? '').length
         setCaretIndex(caretRef.current)
         setEditingId(hit.id)
@@ -468,7 +613,6 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
       }
       return
     }
-    setSelectedId(null)
     setEditingId(null)
     drag.current = {
       mode: 'press',
@@ -478,24 +622,43 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
       cy: event.clientY,
       panX: panRef.current.x,
       panY: panRef.current.y,
+      additive,
     }
   }
 
   function onPointerMove(event: ReactPointerEvent<SVGSVGElement>) {
     const svg = svgRef.current
-    const currentDrag = drag.current
-    if (!svg || !currentDrag) return
+    if (!svg) return
     const point = cellPoint(event.clientX, event.clientY, svg, zoomRef.current, panRef.current.x, panRef.current.y)
+    const currentDrag = drag.current
+    if (!currentDrag) {
+      if (toolRef.current !== 'select') {
+        setHoverId(null)
+        return
+      }
+      const hit = topStudentAt(point.x, point.y)
+      const next = hit?.id ?? null
+      setHoverId((prev) => (prev === next ? prev : next))
+      return
+    }
+    if (hoverId) setHoverId(null)
     if (currentDrag.mode === 'press') {
       if (Math.hypot(event.clientX - currentDrag.cx, event.clientY - currentDrag.cy) < 6) return
       drag.current = {
-        mode: 'pan',
-        x: event.clientX,
-        y: event.clientY,
-        panX: currentDrag.panX,
-        panY: currentDrag.panY,
+        mode: 'marquee',
+        x0: currentDrag.x,
+        y0: currentDrag.y,
+        additive: currentDrag.additive,
+        base: currentDrag.additive ? selectedRef.current : [],
       }
-      setPanning(true)
+      setMarquee({ x1: currentDrag.x, y1: currentDrag.y, x2: point.x, y2: point.y })
+      selectInMarquee(currentDrag.x, currentDrag.y, point.x, point.y, currentDrag.additive, currentDrag.additive ? selectedRef.current : [])
+      return
+    }
+    if (currentDrag.mode === 'marquee') {
+      const box = { x1: currentDrag.x0, y1: currentDrag.y0, x2: point.x, y2: point.y }
+      setMarquee(box)
+      selectInMarquee(box.x1, box.y1, box.x2, box.y2, currentDrag.additive, currentDrag.base)
       return
     }
     if (currentDrag.mode === 'pan') {
@@ -508,9 +671,18 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
     if (currentDrag.mode === 'move') {
       const dx = point.x - currentDrag.x0
       const dy = point.y - currentDrag.y0
-      const moved = shiftItem(currentDrag.origin, dx, dy)
+      if (Math.hypot(dx, dy) > 0.2) currentDrag.shifted = true
+      const moved = new Map(
+        currentDrag.origins.map((origin) => {
+          const item =
+            origin.kind === 'text'
+              ? { ...origin, col: Math.round(origin.col + dx), row: Math.round(origin.row + dy) }
+              : shiftItem(origin, dx, dy)
+          return [origin.id, item] as const
+        }),
+      )
       const current = sceneRef.current
-      const next = { ...current, items: current.items.map((item) => (item.id === moved.id ? moved : item)) }
+      const next = { ...current, items: current.items.map((item) => moved.get(item.id) ?? item) }
       setScene(next)
       sceneRef.current = next
       persist(next)
@@ -548,7 +720,11 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
     drag.current = null
     setPanning(false)
     setGuide(null)
-    if (currentDrag?.mode === 'press') placeText(currentDrag.x, currentDrag.y)
+    setMarquee(null)
+    if (currentDrag?.mode === 'press' && !currentDrag.additive) placeText(currentDrag.x, currentDrag.y)
+    if (currentDrag?.mode === 'move' && !currentDrag.shifted && !currentDrag.additive) {
+      setSelection([currentDrag.hitId])
+    }
     if (currentDrag?.mode === 'line') {
       const item = sceneRef.current.items.find((row) => row.id === currentDrag.id)
       if (item && Math.hypot((item.endCol ?? item.col) - item.col, (item.endRow ?? item.row) - item.row) < 0.35) {
@@ -578,38 +754,44 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
   }
 
   function deleteSelected() {
-    if (!selectedId) return
-    const item = scene.items.find((row) => row.id === selectedId)
-    if (!item || isLockedItem(item)) return
+    const ids = new Set(selectedRef.current)
+    if (ids.size === 0) return
     gestureBase.current = null
-    commit({ ...scene, items: scene.items.filter((row) => row.id !== selectedId) })
-    setSelectedId(null)
+    commit({
+      ...scene,
+      items: scene.items.filter((item) => isLockedItem(item) || !ids.has(item.id)),
+    })
+    setSelection([])
     setEditingId(null)
   }
 
   function paintColor(next: GridColor) {
     setColor(next)
     setColorsOpen(false)
-    if (!selectedId) return
-    const item = sceneRef.current.items.find((row) => row.id === selectedId)
-    if (!item || isLockedItem(item)) return
-    patchItem(item.id, { color: next })
+    const ids = new Set(selectedRef.current)
+    if (ids.size === 0) return
+    const current = sceneRef.current
+    commit({
+      ...current,
+      items: current.items.map((item) => (ids.has(item.id) && !isLockedItem(item) ? { ...item, color: next } : item)),
+    })
   }
 
   const width = scene.cols * GRID_CELL
   const height = scene.rows * GRID_CELL
-  const selected = scene.items.find((item) => item.id === selectedId && !isLockedItem(item))
+  const selected = selectedIds.length > 0
 
   return (
     <div className={`grid-board${theme === 'dark' ? ' is-dark' : ''}`}>
+      <div className="grid-board-stage">
       <div className="grid-board-toolbar" role="toolbar" aria-label="Herramientas de pizarra">
         <button
           type="button"
           className={`grid-board-tool${tool === 'select' ? ' is-on' : ''}`}
-          title="Mover"
-          aria-label="Mover"
+          title="Seleccionar"
+          aria-label="Seleccionar"
           aria-pressed={tool === 'select'}
-          onClick={() => setTool('select')}
+          onClick={() => chooseTool('select')}
         >
           <Cursor size={16} weight="bold" />
         </button>
@@ -619,7 +801,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
           title="Línea"
           aria-label="Línea"
           aria-pressed={tool === 'line'}
-          onClick={() => setTool('line')}
+          onClick={() => chooseTool('line')}
         >
           <LineSegment size={16} weight="bold" />
         </button>
@@ -629,11 +811,11 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
           title="Pincel"
           aria-label="Pincel"
           aria-pressed={tool === 'brush'}
-          onClick={() => setTool('brush')}
+          onClick={() => chooseTool('brush')}
         >
           <PaintBrush size={16} weight="bold" />
         </button>
-        <div className="grid-board-pop">
+        <div className="grid-board-pop" ref={colorPopRef}>
           <button
             type="button"
             className={`grid-board-tool${colorsOpen ? ' is-on' : ''}`}
@@ -671,7 +853,10 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
             type="button"
             className="grid-board-tool"
             aria-label="Alejar"
-            onClick={() => setZoom((value) => Math.max(0.15, Number((value - 0.15).toFixed(2))))}
+            onClick={() => {
+              const svg = svgRef.current
+              zoomAt(zoomRef.current / 1.15, (svg?.clientWidth ?? 0) / 2, (svg?.clientHeight ?? 0) / 2)
+            }}
           >
             <MagnifyingGlassMinus size={16} weight="bold" />
           </button>
@@ -679,7 +864,10 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
             type="button"
             className="grid-board-tool"
             aria-label="Acercar"
-            onClick={() => setZoom((value) => Math.min(2.2, Number((value + 0.15).toFixed(2))))}
+            onClick={() => {
+              const svg = svgRef.current
+              zoomAt(zoomRef.current * 1.15, (svg?.clientWidth ?? 0) / 2, (svg?.clientHeight ?? 0) / 2)
+            }}
           >
             <MagnifyingGlassPlus size={16} weight="bold" />
           </button>
@@ -694,23 +882,50 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
           </button>
         </span>
       </div>
-      <div className="grid-board-stage">
         <input ref={textEditRef} className="grid-board-text-edit" aria-hidden tabIndex={-1} />
         <svg
           ref={svgRef}
-          className={`grid-board-svg${tool === 'select' ? ' is-select' : ' is-draw'}${panning ? ' is-panning' : ''}`}
+          className={`grid-board-svg${tool === 'select' ? ' is-select' : ' is-draw'}${hoverId ? ' is-hover' : ''}${panning ? ' is-panning' : ''}`}
           width="100%"
           height="100%"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onPointerLeave={() => setHoverId(null)}
         >
           <g transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}>
+            <defs>
+              <pattern
+                id={gridPatternId}
+                width={GRID_CELL}
+                height={GRID_CELL}
+                patternUnits="userSpaceOnUse"
+              >
+                <path className="grid-board-line" d={`M ${GRID_CELL} 0 L 0 0 0 ${GRID_CELL}`} />
+              </pattern>
+            </defs>
             <rect className="grid-board-paper" x={0} y={0} width={width} height={height} />
+            <rect x={0} y={0} width={width} height={height} fill={`url(#${gridPatternId})`} />
             {scene.items.map((item) => (
-              <BoardShape key={item.id} item={item} selected={item.id === selectedId} editing={item.id === editingId} caret={caretIndex} />
+              <BoardShape
+                key={item.id}
+                item={item}
+                selected={selectedIds.includes(item.id)}
+                hovered={item.id === hoverId && !selectedIds.includes(item.id)}
+                editing={item.id === editingId}
+                caret={caretIndex}
+              />
             ))}
+            {marquee && (
+              <rect
+                className="grid-board-marquee"
+                x={Math.min(marquee.x1, marquee.x2) * GRID_CELL}
+                y={Math.min(marquee.y1, marquee.y2) * GRID_CELL}
+                width={Math.abs(marquee.x2 - marquee.x1) * GRID_CELL}
+                height={Math.abs(marquee.y2 - marquee.y1) * GRID_CELL}
+              />
+            )}
             {guide && (
               <line
                 className="grid-board-snap"
@@ -722,6 +937,9 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
             )}
           </g>
         </svg>
+        <p className="grid-board-zoom" aria-label={`Zoom ${Math.round(zoom * 100)} por ciento`}>
+          {Math.round(zoom * 100)}%
+        </p>
       </div>
     </div>
   )
@@ -730,11 +948,13 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
 function BoardShape({
   item,
   selected,
+  hovered,
   editing,
   caret,
 }: {
   item: GridItem
   selected: boolean
+  hovered: boolean
   editing: boolean
   caret: number
 }) {
@@ -752,38 +972,57 @@ function BoardShape({
       />
     )
   }
-  if (item.kind === 'text') {
-    const size = item.layer === 'ai' ? 26 : 22
-    const lines = wrapLines(item.text || (editing ? '' : ''), item.layer === 'ai' ? 42 : 80)
+  if (item.kind === 'text' && item.layer === 'ai') {
+    const size = 20
+    const lines = wrapLines(item.text || '', 36)
     const x = item.col * GRID_CELL
     const y = item.row * GRID_CELL + size
     return (
+      <text className="grid-board-ai-text" x={x} y={y} fontSize={size}>
+        {lines.map((line, index) => (
+          <tspan key={index} x={x} dy={index === 0 ? 0 : size * 1.25}>
+            {line || ' '}
+          </tspan>
+        ))}
+      </text>
+    )
+  }
+  if (item.kind === 'text') {
+    const chars = textChars(item.text ?? '')
+    const cells = Math.max(1, chars.length)
+    const mark = hovered ? 'grid-board-hover' : selected ? 'grid-board-select' : ''
+    return (
       <g>
-        {selected && (
+        {mark && (
           <rect
-            x={x - 4}
-            y={item.row * GRID_CELL - 4}
-            width={Math.max(28, (item.w || 2) * GRID_CELL)}
-            height={Math.max(size + 8, lines.length * size * 1.25)}
-            fill="none"
-            stroke="var(--accent)"
-            strokeDasharray="4 3"
+            className={mark}
+            x={item.col * GRID_CELL}
+            y={item.row * GRID_CELL}
+            width={cells * GRID_CELL}
+            height={GRID_CELL}
+            rx={4}
           />
         )}
-        <text x={x} y={y} fill={ink} fontSize={size}>
-          {lines.map((line, index) => (
-            <tspan key={index} x={x} dy={index === 0 ? 0 : size * 1.25}>
-              {line || (editing ? '' : ' ')}
-            </tspan>
-          ))}
-        </text>
+        {chars.map((ch, index) => (
+          <text
+            key={index}
+            x={(item.col + index) * GRID_CELL + GRID_CELL / 2}
+            y={item.row * GRID_CELL + GRID_CELL * 0.74}
+            textAnchor="middle"
+            fill={ink}
+            fontSize={GRID_CELL * 0.72}
+          >
+            {ch}
+          </text>
+        ))}
         {editing && (
           <rect
-            className="grid-board-caret"
-            x={x + Math.min(caret, textChars(item.text ?? '').length) * size * 0.55}
-            y={item.row * GRID_CELL + 4}
-            width={2}
-            height={size}
+            className="grid-board-caret-cell"
+            x={(item.col + Math.min(caret, chars.length)) * GRID_CELL + 1}
+            y={item.row * GRID_CELL + 1}
+            width={GRID_CELL - 2}
+            height={GRID_CELL - 2}
+            rx={3}
           />
         )}
       </g>
@@ -794,14 +1033,18 @@ function BoardShape({
       .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x * GRID_CELL} ${point.y * GRID_CELL}`)
       .join(' ')
     return (
-      <path
-        d={d}
-        fill="none"
-        stroke={ink}
-        strokeWidth={selected ? 4.5 : 3.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <g>
+        {selected && (
+          <>
+            <path className="grid-board-stroke-select" d={d} />
+            <path className="grid-board-stroke-gap" d={d} />
+          </>
+        )}
+        {hovered && !selected && (
+          <path className="grid-board-stroke-hover" d={d} />
+        )}
+        <path d={d} fill="none" stroke={ink} strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
+      </g>
     )
   }
   if (item.kind === 'line' || item.kind === 'arrow') {
@@ -810,15 +1053,18 @@ function BoardShape({
     const x2 = (item.endCol ?? item.col) * GRID_CELL
     const y2 = (item.endRow ?? item.row) * GRID_CELL
     return (
-      <line
-        x1={x1}
-        y1={y1}
-        x2={x2}
-        y2={y2}
-        stroke={ink}
-        strokeWidth={selected ? 4 : 3}
-        strokeLinecap="round"
-      />
+      <g>
+        {selected && (
+          <>
+            <line className="grid-board-stroke-select" x1={x1} y1={y1} x2={x2} y2={y2} />
+            <line className="grid-board-stroke-gap" x1={x1} y1={y1} x2={x2} y2={y2} />
+          </>
+        )}
+        {hovered && !selected && (
+          <line className="grid-board-stroke-hover" x1={x1} y1={y1} x2={x2} y2={y2} />
+        )}
+        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={ink} strokeWidth={3} strokeLinecap="round" />
+      </g>
     )
   }
   const box = itemBBox(item)

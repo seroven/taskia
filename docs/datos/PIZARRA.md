@@ -6,9 +6,9 @@ El motor de escena (`taskia_backend/src/modules/board/`, hechos, solver y primit
 
 ## Lienzo
 
-El componente es `taskia_frontend/src/components/study/GridBoard.tsx`. No hay grilla visible, menú de formas ni sellos.
+El componente es `taskia_frontend/src/components/study/GridBoard.tsx`. La cuadrícula se ve, con celdas de 18 px. No hay menú de formas ni sellos.
 
-- Un clic en el vacío abre un texto. Arrastrar el fondo desplaza la vista.
+- Un clic en el vacío abre un texto. Cada letra del niño ocupa un cuadrito. Arrastrar el fondo desplaza la vista. La rueda acerca y aleja el punto bajo el cursor; el porcentaje queda abajo a la derecha. Al pasar el cursor en modo selector, lo que se puede mover se resalta. Arrastrar en el vacío marca un recuadro y selecciona lo que queda dentro; si hay varios marcados, se mueven juntos. Ctrl+clic suma o quita uno. La vista se desplaza con el botón del medio o manteniendo espacio.
 - Una línea sale en cualquier ángulo. Si queda a unos 6° de horizontal o vertical, se endereza y se ve una guía corta.
 - El pincel libre es un solo trazo. Texto, línea y trazo del niño se arrastran enteros.
 - Los textos del niño usan Fredoka (`--font-display`). El selector de color vale solo para lo que escribe el niño.
