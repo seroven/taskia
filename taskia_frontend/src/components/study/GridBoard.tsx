@@ -107,6 +107,13 @@ function distToSegment(px: number, py: number, x1: number, y1: number, x2: numbe
   return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy))
 }
 
+function isTypingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  if (target.isContentEditable) return true
+  const tag = target.tagName
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON'
+}
+
 function blankStudentText(item: GridItem) {
   return item.kind === 'text' && !isLockedItem(item) && textChars(item.text ?? '').length === 0
 }
@@ -478,7 +485,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (editingRef.current) return
+      if (editingRef.current || isTypingTarget(event.target)) return
       if (!(event.ctrlKey || event.metaKey)) return
       const key = event.key.toLowerCase()
       if (key === 'z') {
@@ -498,7 +505,7 @@ export const GridBoard = forwardRef<GridBoardHandle, Props>(function GridBoard({
       }
     }
     const onSpaceDown = (event: KeyboardEvent) => {
-      if (event.key !== ' ' || editingRef.current || event.repeat) return
+      if (event.key !== ' ' || editingRef.current || event.repeat || isTypingTarget(event.target)) return
       spaceRef.current = true
       event.preventDefault()
     }
