@@ -1,15 +1,13 @@
 import 'reflect-metadata'
 import { AppDataSource, initDataSource } from '../src/infrastructure/database/data-source.js'
-import { Course, Difficulty, StudyBoard, Task, UserStudyMemory } from '../src/infrastructure/database/entities/index.js'
+import { Course, Difficulty, Task, UserStudyMemory } from '../src/infrastructure/database/entities/index.js'
 import { insertTask } from '../src/modules/tasks/repositories/task.repository.js'
 import {
   ensureSession,
   insertMessage,
-  loadBoard,
   loadContext,
   loadUserMemory,
   markStudyPassed,
-  saveBoard,
   saveSessionMeta,
   saveUserMemory,
 } from '../src/modules/study/repositories/study.repository.js'
@@ -35,7 +33,6 @@ async function main() {
     description: null,
     taskKind: 'daily',
     boardOrder: 0,
-    usesBoard: true,
     dueDate: '2026-10-03',
   })
 
@@ -58,22 +55,6 @@ async function main() {
       throw new Error('la sesión no guardó la fase')
     }
 
-    const drawn = {
-      type: 'taskia-grid',
-      version: 1,
-      source: 'taskia-grid',
-      cols: 160,
-      rows: 100,
-      items: [{ id: 'a' }],
-    }
-    await saveBoard(taskId, drawn)
-    await saveBoard(taskId, { ...drawn, items: [{ id: 'b' }] })
-    const boards = await AppDataSource.getRepository(StudyBoard).count({ where: { taskId } })
-    if (boards !== 1) throw new Error(`pizarra duplicada: ${boards}`)
-    const board = await loadBoard(taskId)
-    const items = (board as { items?: Array<{ id?: string }> }).items ?? []
-    if (items[0]?.id !== 'b') throw new Error('el segundo guardado de pizarra no reemplazó')
-
     await saveUserMemory(course.userId, 'primera')
     await saveUserMemory(course.userId, 'segunda')
     const memories = await AppDataSource.getRepository(UserStudyMemory).count({
@@ -93,7 +74,7 @@ async function main() {
     const task = await AppDataSource.getRepository(Task).findOneByOrFail({ id: taskId })
     if (!task.studyPassed) throw new Error('study_passed no quedó en true')
 
-    console.log(JSON.stringify({ taskId, phase: meta.tutor_phase, board: items[0]?.id, memory: 'segunda' }))
+    console.log(JSON.stringify({ taskId, phase: meta.tutor_phase, memory: 'segunda' }))
   } finally {
     await AppDataSource.getRepository(Task).delete({ id: taskId })
     if (previousMemory) await saveUserMemory(course.userId, previousMemory)

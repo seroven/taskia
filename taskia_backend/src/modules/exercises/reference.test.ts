@@ -3,10 +3,9 @@ import test from 'node:test'
 import {
   exerciseReference,
   parseGraphicFlag,
-  stripDrewPhrase,
-  stripMathDelimiters,
   userReferencePhotos,
-} from './sheet.js'
+} from './reference.js'
+import { stripDrewPhrase, stripMathDelimiters } from './text.js'
 
 test('exercise reference photos are only the ones the child uploaded', () => {
   assert.deepEqual(

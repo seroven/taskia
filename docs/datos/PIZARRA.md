@@ -1,41 +1,32 @@
-# Cómo funciona la pizarra
+# El lienzo ya no existe
 
-La pizarra de estudio, misión y desafío es el mismo lienzo. Taskia no dibuja formas. El niño escribe, traza líneas y usa el pincel. Si el ejercicio es solo texto, el servidor lo deja fijo. Si hace falta una gráfica, Gemini genera un ejercicio similar al referente. Si la foto está vertical, la ficha va en horizontal. Sigue a la mitad del tamaño anterior. Lo que ve el niño, en el chat y en el enunciado, va en texto plano: `3x`, no `$3x$`. La primera vez que pide ayuda, la foto del ejercicio se lee una sola vez y el desarrollo queda guardado en la sesión; después la guía usa ese texto y no vuelve a mandar la foto.
+Estudio, misión y desafío son solo chat. No hay cuadrícula, no se generan imágenes de ejercicios y no queda el motor de escena.
 
-El motor de escena (`taskia_backend/src/modules/board/`, hechos, solver y primitivas) sigue en el repo y tiene tests, pero estudio, misión y desafío ya no lo llaman.
+`study_missions.uses_board` sigue en la base. Ya no abre un lienzo: marca un tema práctico (figuras, tablas o un procedimiento). En la interfaz se dice «tema práctico». En las tareas esa marca se quitó: entrar a estudiar abre el chat.
 
-## Lienzo
+El tablero del Campamento no es este lienzo. `tasks.board_order` y `BoardPage` siguen ordenando las tarjetas.
 
-El componente es `taskia_frontend/src/components/study/GridBoard.tsx`. La cuadrícula se ve, con celdas de 18 px. No hay menú de formas ni sellos.
+## Estudio y misión
 
-- Un clic en el vacío abre un texto. Si no se escribe nada, ese cuadrito no se queda. Doble clic en un texto ya escrito lo abre con una barra vertical al final. Un clic dentro mueve esa barra; retroceso borra lo que queda detrás. Un clic fuera de la pizarra suelta el texto y la selección. Cada letra del niño ocupa un cuadrito. Arrastrar el fondo desplaza la vista. La rueda acerca y aleja el punto bajo el cursor; el porcentaje queda abajo a la derecha. Al pasar el cursor en modo selector, lo que se puede mover se resalta. Arrastrar en el vacío marca un recuadro y selecciona lo que queda dentro; si hay varios marcados, se mueven juntos. Ctrl+clic suma o quita uno. La vista se desplaza con el botón del medio o manteniendo espacio.
-- Una línea sale en cualquier ángulo. Si queda a unos 6° de horizontal o vertical, se endereza y se ve una guía corta.
-- El pincel libre es un solo trazo. Texto, línea y trazo del niño se arrastran enteros.
-- Los textos del niño usan Fredoka (`--font-display`). El selector de color vale solo para lo que escribe el niño.
-- Lo de Taskia va en una capa fija, debajo, que no se mueve ni se borra. Una petición nueva de ejercicio reemplaza esa capa.
+Si el niño manda una foto o pide ayuda, el desarrollo privado (`exercise_brief`) resuelve el procedimiento y el resultado, lo guarda y el chat lo usa sin dictarlo. Vive en `taskia_backend/src/modules/exercises/`.
 
-## Texto o imagen
+Si pide un ejercicio nuevo, una pasada corta (`needsGraphic`) mira el referente:
 
-Antes de generar, una pasada corta (`needsGraphic` en `sheet.ts`) mira el referente y responde solo si hace falta gráfica.
+- Si hace falta figura, tabla o dibujo, no se genera nada. El chat dice: «Ese ejercicio lleva un dibujo y yo no puedo armarlo. Si me mandas la foto de uno parecido, te ayudo con gusto.»
+- Si basta con texto o números, el tutor lo escribe en el mensaje.
 
-- El referente es el enunciado escrito, si el ejercicio es eso, o la foto, si al leerla hay gráficos.
-- Sin referente en ese estudio o esa misión, no se genera ejercicio: Taskia pide un ejemplo.
-- Si no hace falta gráfica, el tutor redacta el enunciado en `board_text`. El servidor lo coloca como texto fijo y también va en el mensaje. No hay imagen.
-- Si hace falta gráfica, `callGeminiImage` usa la misma API key y el modelo de `GEMINI_PRO_MODEL` (por defecto `gemini-3-pro-image`). El chat sigue en `GEMINI_MODEL`. Esa llamada de imagen se anota en `llm_usage` como `board_image`, aparte del chat. La referencia de esa ficha es la foto que subió el explorador, la de este turno o la última suya; no es el desarrollo guardado ni la ficha anterior. La ficha es un ejercicio similar a esa captura. Si la foto está vertical, el ejercicio va en horizontal. La hoja se lee igual en claro y en oscuro, y no se vuelve a pintar si cambia el tema. La imagen va adjunta al mensaje y, la misma, fija en la pizarra.
-- En un desafío el referente es el enunciado que acaba de armar el generador. Se guarda en `prompt_draw_ops` como `{ text }` o `{ imageSrc }`.
+El dominio del estudio es el del chat: piso de turnos y «Errores: N». El de la misión es el del cuaderno: diez turnos y «Errores: N», también en un tema práctico.
 
-La frase «Te lo dibujé en la pizarra» no sale de este flujo.
+## Desafío
 
-## Calificar
+Un tema que no es práctico sigue con preguntas de texto o de opción.
 
-En estudio y misión, la IA lee la captura de la pizarra o la foto del cuaderno y decide si el ejercicio está bien. El visto sigue exigiendo dos ejercicios resueltos solo, de inicio a fin. Al notar que entendió, pregunta si quiere otro tipo. `passed` queda en true solo si dice que no. El veredicto numérico del motor de escena ya no apaga ese visto.
+En un tema práctico la mezcla se mantiene, cerca de una teórica por cada diez prácticas. La práctica sale de fotos que el niño ya subió en esa misión (`role = user`). No se repite la misma foto y no se inventa una figura. Si no alcanzan fotos, esas preguntas quedan teóricas.
 
-En un desafío de pizarra se puede mandar una foto del cuaderno además de la captura. La calificación mira las dos. No hace falta haber dibujado en la pizarra si la foto trae la resolución.
+Una llamada de texto, con esas fotos, escribe el enunciado, cuatro opciones y la clave. Queda en `reference_image_url`, `options_json` y `answer_key`.
 
-## Reloj del desafío
+En el juego se ve la foto, el enunciado y las opciones. Para seguir hay que marcar una opción y subir la foto de cómo lo resolvió. La opción se coteja en el servidor. Las fotos van en otra llamada, `kind = challenge_photo_grade`: cada par es la imagen del ejercicio y la resolución, y el veredicto es solo de ese par. La pregunta cuenta como bien solo si las dos cosas coinciden.
 
-Salir no borra el intento: sigue `in_progress`. Se guardan el índice, las respuestas, la pizarra y el tiempo (`elapsed_ms`, `progress_json`, migración `007`). El reloj corre solo con la pantalla abierta y visible. Al salir o al ocultar la pestaña se suma lo corrido y se congela. No hay tiempo límite.
+El reloj (`elapsed_ms`, `progress_json`) y el factor de XP siguen igual.
 
-Empezar otro desafío mientras hay uno a medias no lo borra: se ofrece continuar o descartarlo a propósito.
-
-La experiencia es `base * (acierto / 100) * (esperado / tardado)`. `esperado` son 90 segundos por pregunta. Ese factor queda entre 0,7 y 1,15. El piso del 5 % de la base se aplica después.
+Las filas viejas de `llm_usage` con `kind = board_image` se conservan. El panel las muestra en Imágenes. Ya no se escriben filas nuevas de ese tipo.

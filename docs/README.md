@@ -12,8 +12,8 @@ Qué hace la app y cómo se usa.
 ## Datos
 
 - [BASE_DE_DATOS.md](datos/BASE_DE_DATOS.md) — tablas, relaciones y cómo se migran. El DDL vive en `taskia_backend/db/migrations/`.
-- [PIZARRA.md](datos/PIZARRA.md) — cómo se describe, resuelve, dibuja y califica una escena de la pizarra.
-- [ESTUDIO_TAREA.md](datos/ESTUDIO_TAREA.md) — un turno de chat en una tarea con pizarra: cada llamada, el prompt y qué dato entra.
+- [PIZARRA.md](datos/PIZARRA.md) — el lienzo ya no existe; estudio en chat y desafío práctico con fotos del niño.
+- [ESTUDIO_TAREA.md](datos/ESTUDIO_TAREA.md) — un turno de chat al estudiar una tarea: cada llamada y qué dato entra.
 
 ## Planes
 

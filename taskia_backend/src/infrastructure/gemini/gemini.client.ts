@@ -11,6 +11,7 @@ export type LlmUsageKind =
   | 'transcribe'
   | 'challenge_generate'
   | 'challenge_grade'
+  | 'challenge_photo_grade'
   | 'parent_tutor'
   | 'planet_generate'
   | 'daily_summary'
@@ -53,7 +54,7 @@ export async function callGemini(opts: {
       data: opts.boardImageBase64,
       mimeType: 'image/png',
       caption:
-        'Imagen de la pizarra del niño. Léela para ver su respuesta.',
+        'Imagen adjunta. Léela para ver la respuesta.',
     })
   }
   if (opts.photoBase64?.trim()) {
@@ -62,7 +63,7 @@ export async function callGemini(opts: {
       mimeType: 'image/jpeg',
       caption:
         opts.photoCaption ??
-        'Foto del cuaderno. Léela para ver su respuesta. No es la pizarra.',
+        'Foto del cuaderno. Léela para ver su respuesta.',
     })
   }
   for (const image of images) {
@@ -321,81 +322,6 @@ async function generateGeminiText(opts: {
     usage: { prompt, output, total },
   }
 }
-
-function imageFromParts(parts: Array<Record<string, unknown>>) {
-  for (const part of parts) {
-    const inline = (part.inlineData ?? part.inline_data) as
-      | { mimeType?: string; mime_type?: string; data?: string }
-      | undefined
-    const data = typeof inline?.data === 'string' ? inline.data.replace(/\s/g, '') : ''
-    if (!data) continue
-    const mime = inline?.mimeType || inline?.mime_type || 'image/png'
-    return { mime, base64: data }
-  }
-  return null
-}
-
-/** Imagen de una hoja de ejercicio. Null si el modelo no devuelve bitmap. */
-export async function callGeminiImage(opts: {
-  system: string
-  user: string
-  photoBase64?: string | null
-  model?: string
-  usage?: LlmUsageContext
-}): Promise<{ mime: string; base64: string } | null> {
-  const apiKey = env.gemini.apiKey.trim().replace(/^["']|["']$/g, '')
-  if (!apiKey) return null
-  const model =
-    (opts.model ?? env.gemini.imageModel).trim().replace(/^["']|["']$/g, '') || 'gemini-2.5-flash-image'
-  const parts: Array<Record<string, unknown>> = [{ text: opts.user }]
-  if (opts.photoBase64?.trim()) {
-    const inline = readInlineImage(opts.photoBase64, 'image/jpeg')
-    if (inline.data) {
-      parts.push({
-        text: 'Genera un ejercicio similar a esta captura. Si la foto está vertical, el ejercicio va en horizontal.',
-      })
-      parts.push({ inline_data: { mime_type: inline.mime, data: inline.data } })
-    }
-  }
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: opts.system }] },
-        contents: [{ role: 'user', parts }],
-        generationConfig: {
-          responseModalities: ['TEXT', 'IMAGE'],
-          imageConfig: { aspectRatio: '4:3' },
-        },
-      }),
-    })
-    const payload = (await response.json()) as Record<string, unknown>
-    if (!response.ok) return null
-    const candidates = payload.candidates as
-      | Array<{ content?: { parts?: Array<Record<string, unknown>> } }>
-      | undefined
-    const partsOut = candidates?.[0]?.content?.parts ?? []
-    const image = imageFromParts(partsOut)
-    if (opts.usage) {
-      const meta = payload.usageMetadata as
-        | { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number }
-        | undefined
-      const prompt = Number(meta?.promptTokenCount ?? 0)
-      const output = Number(meta?.candidatesTokenCount ?? 0)
-      void recordLlmUsage({ userId: opts.usage.userId, kind: 'board_image' }, model, {
-        prompt,
-        output,
-        total: Number(meta?.totalTokenCount ?? prompt + output),
-      })
-    }
-    return image
-  } catch {
-    return null
-  }
-}
-
 async function recordLlmUsage(
   ctx: LlmUsageContext,
   model: string,

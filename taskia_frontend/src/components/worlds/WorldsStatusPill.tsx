@@ -37,7 +37,7 @@ export function WorldsBoardPill() {
   return (
     <span className="worlds-pill">
       <PencilLine size={14} weight="fill" />
-      Pizarra
+      Práctico
     </span>
   )
 }

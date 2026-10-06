@@ -25,7 +25,6 @@ import { KanbanColumn } from '../components/KanbanColumn'
 import { TaskCardView } from '../components/TaskCard'
 import { TaskDetailModal } from '../components/TaskDetailModal'
 import { TaskFormModal } from '../components/TaskFormModal'
-import { StudyBoardChoiceModal } from '../components/StudyBoardChoiceModal'
 import { AppearanceTools } from '../components/AppearanceTools'
 import { ExpandIconButton } from '../components/ExpandIconButton'
 import { ExplorerXpBar } from '../components/ExplorerXpBar'
@@ -89,7 +88,6 @@ export function BoardPage({
   const [error, setError] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [studyChoiceTask, setStudyChoiceTask] = useState<Task | null>(null)
   const requestId = useRef(0)
 
   const sensors = useSensors(
@@ -405,8 +403,7 @@ export function BoardPage({
                     setSelectedTask(task)
                     return
                   }
-                  if (task.study_mode_chosen) onOpenStudy(task)
-                  else setStudyChoiceTask(task)
+                  onOpenStudy(task)
                 }}
               />
             ))}
@@ -439,14 +436,6 @@ export function BoardPage({
         }}
       />
 
-      <StudyBoardChoiceModal
-        task={studyChoiceTask}
-        onClose={() => setStudyChoiceTask(null)}
-        onReady={(task) => {
-          void loadTasks(filters)
-          onOpenStudy(task)
-        }}
-      />
     </div>
   )
 }

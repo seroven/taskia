@@ -22,7 +22,7 @@ Antes de mirar tabla por tabla, conviene saber estas seis reglas, porque se repi
 
 **Listas de valores.** No se usa el tipo `ENUM`. Los campos con opciones fijas son `TEXT` con un `CHECK`, así agregar un valor es un `ALTER` y no una migración de tipo. El resumen de todos está en [Valores permitidos](#valores-permitidos).
 
-**`updated_at`.** Donde existe, lo mantiene el trigger `set_updated_at()`, que corre `BEFORE UPDATE`. No hay que actualizarlo a mano. Lo tienen, entre otras: `users`, `tasks`, `study_sessions`, `study_boards`, `user_study_memory`, `study_worlds`, `study_missions`, `study_mission_sessions`, `study_mission_boards`, `troops`, y tablas del Guardián con el mismo patrón.
+**`updated_at`.** Donde existe, lo mantiene el trigger `set_updated_at()`, que corre `BEFORE UPDATE`. No hay que actualizarlo a mano. Lo tienen, entre otras: `users`, `tasks`, `study_sessions`, `user_study_memory`, `study_worlds`, `study_missions`, `study_mission_sessions`, `troops`, y tablas del Guardián con el mismo patrón.
 
 ---
 
@@ -30,15 +30,13 @@ Antes de mirar tabla por tabla, conviene saber estas seis reglas, porque se repi
 
 ```
 users ─┬─ courses ────────────────┬─ tasks ─┬─ study_sessions
-       │                          │         ├─ study_messages
-       │                          │         └─ study_boards
+       │                          │         └─ study_messages
        ├─ user_study_memory       │
        ├─ xp_awards               │
        │                          │
        ├─ study_worlds ─┬─ study_world_courses (courses)
        │                └─ study_missions ─┬─ study_mission_sessions
-       │                                   ├─ study_mission_messages
-       │                                   └─ study_mission_boards
+       │                                   └─ study_mission_messages
        │
        ├─ study_challenges ─── study_challenge_questions ─── study_challenge_answers
        ├─ troop_members ─── troops ─── troop_invites
@@ -146,8 +144,6 @@ Una fila por tarjeta del tablero. Es la tabla con más columnas y la que más í
 | `status` | text | `pending`, `in_progress`, `studying`, `done` |
 | `board_order` | int | orden dentro de la columna |
 | `study_passed` | boolean | el visto del tutor |
-| `uses_board` | boolean | la sesión usa pizarra |
-| `study_mode_chosen` | boolean | ya eligió chat o pizarra |
 | `due_date` | date | día de entrega |
 | `created_at` / `updated_at` | timestamptz | |
 
@@ -165,7 +161,7 @@ La clave `fk_tasks_course_owner` ata `(course_id, user_id)` a `courses (id, user
 
 ## 3. El tutor del tablero
 
-Cuatro tablas que guardan la conversación de una tarea. Las tres primeras cuelgan de `tasks` y se borran con ella.
+Tres tablas que guardan la conversación de una tarea. La sesión y los mensajes cuelgan de `tasks` y se borran con ella.
 
 ### `study_sessions`
 
@@ -178,7 +174,6 @@ El estado de la sesión: una fila por tarea, no una por conversación. La PK **e
 | `topic_summary` | text | de qué se trata la tarea |
 | `context_summary` | text | resumen vivo de la charla |
 | `hints_level` | int | pistas dadas |
-| `pending_board_facts` | text | hechos de una foto, esperando el sí; se borra al dibujar o al seguir de largo |
 | `exercise_brief` | text | desarrollo privado del ejercicio, con la respuesta. No se envía al navegador |
 | `created_at` / `updated_at` | timestamptz | |
 
@@ -199,18 +194,6 @@ El chat, un mensaje por fila.
 | `created_at` | timestamptz | |
 
 Se lee siempre ordenado por `(task_id, created_at)`, que es justo el índice que existe. `from_voice` es lo que permite contar transcripciones aparte en el panel.
-
-### `study_boards`
-
-La pizarra de la tarea: una fila por tarea, con el dibujo entero serializado.
-
-| Columna | Tipo | Nota |
-| --- | --- | --- |
-| `task_id` | bigint | PK y → `tasks`, cascada |
-| `board_json` | text | grilla serializada |
-| `updated_at` | timestamptz | |
-
-`board_json` es `TEXT`, no `JSONB`: la app lo guarda y lo devuelve tal cual, nunca consulta dentro.
 
 ### `user_study_memory`
 
@@ -259,7 +242,7 @@ Cada misión es un tema de estudio dentro de una materia de un mundo.
 | `title` | varchar(255) | |
 | `description` | text | opcional |
 | `status` | text | `pending`, `studying`, `mastered` |
-| `uses_board` | boolean | el tema se practica en pizarra |
+| `uses_board` | boolean | tema práctico: figuras, tablas o procedimiento. El estudio sigue siendo chat |
 | `is_active` | boolean | `false` = el tema ya no se ofrece |
 | `source_mission_id` | bigint | → `study_missions`, se pone en `NULL` |
 | `sort_order` | int | |
@@ -291,7 +274,6 @@ Mismo patrón que el tutor del tablero, pero colgando de `study_missions`. Son t
 | `context_summary` | text | resumen vivo de la charla |
 | `notebook_context` | text | el relato del cuaderno, fijo |
 | `hints_level` | int | |
-| `pending_board_facts` | text | igual que en la sesión de una tarea |
 | `exercise_brief` | text | igual que en la sesión de una tarea |
 | `updated_at` | timestamptz | |
 
@@ -300,10 +282,6 @@ La diferencia con `study_sessions` son dos columnas: acá está `notebook_contex
 ### `study_mission_messages`
 
 Igual que `study_messages` pero con `mission_id`: `id`, `mission_id`, `role`, `content`, `from_voice`, `image_url`, `created_at`. Su índice es `(mission_id, id)` en lugar de `(mission_id, created_at)`, así el orden de lectura es estable incluso entre mensajes del mismo segundo.
-
-### `study_mission_boards`
-
-Igual que `study_boards` pero por misión: `mission_id` como PK, `board_json` y `updated_at`.
 
 ---
 
@@ -330,7 +308,7 @@ Un intento de desafío.
 | `started_at` | timestamptz | por defecto `NOW()` |
 | `completed_at` | timestamptz | `NULL` hasta que se entrega |
 | `elapsed_ms` | bigint | tiempo con la pantalla visible; migración `007` |
-| `progress_json` | jsonb | índice, respuestas y pizarra de un intento a medias |
+| `progress_json` | jsonb | índice, respuestas y, si hace falta, la foto de la resolución |
 
 `ck_study_challenges_scope` obliga el alcance:
 
@@ -354,15 +332,14 @@ Las preguntas que generó la IA para ese intento.
 | `challenge_id` | bigint | → `study_challenges`, cascada |
 | `mission_id` | bigint | de qué tema salió; se pone en `NULL` |
 | `sort_order` | int | orden de presentación |
-| `kind` | text | `multiple_choice`, `short_text`, `fill_blank`, `board_prompt` |
+| `kind` | text | `multiple_choice`, `short_text`, `fill_blank` |
 | `prompt` | text | el enunciado |
 | `options_json` | jsonb | opciones, solo en opción múltiple |
 | `answer_key` | text | la respuesta esperada |
-| `requires_board` | boolean | se responde en la pizarra o con una foto |
-| `prompt_draw_ops` | jsonb | enunciado fijo: `{ text }` o `{ imageSrc }` |
+| `reference_image_url` | text | foto del niño, si la pregunta práctica sale de una captura suya |
 | `created_at` | timestamptz | |
 
-Acá sí se usa `JSONB` y no `TEXT`, en `options_json` y `prompt_draw_ops`. Se leen ordenadas por `(challenge_id, sort_order)`, que es el índice que existe.
+Acá sí se usa `JSONB`, en `options_json`. Se leen ordenadas por `(challenge_id, sort_order)`, que es el índice que existe. Una pregunta práctica es `multiple_choice` con `reference_image_url`.
 
 Guardar `mission_id` en cada pregunta es lo que permite que un desafío de materia o de mundo mezcle temas y después se sepa de dónde vino cada una.
 
@@ -374,8 +351,8 @@ Lo que respondió el alumno.
 | --- | --- | --- |
 | `id` | bigint | PK |
 | `question_id` | bigint | → preguntas, cascada; **único** |
-| `user_answer` | text | opcional |
-| `board_json` | text | lo que dibujó |
+| `user_answer` | text | la opción o el texto |
+| `solution_image_url` | text | foto de cómo lo resolvió, en una pregunta práctica |
 | `is_correct` | boolean | `NULL` mientras no se corrige |
 | `answered_at` | timestamptz | |
 
@@ -492,26 +469,11 @@ Una fila por llamada al modelo. Es lo que alimenta las gráficas de uso y el cos
 | `total_tokens` | int | |
 | `created_at` | timestamptz | |
 
-`kind` dice qué disparó la llamada. La ficha de un ejercicio es `board_image`; el chat y el resto no entran ahí. La lista completa está en la tabla de valores permitidos. Guardar el `model` en cada fila importa porque el precio por token depende de él y cambia con el tiempo.
+`kind` dice qué disparó la llamada. `board_image` queda solo por el historial: ya no se generan fichas. `challenge_photo_grade` es la llamada que mira cada foto del ejercicio junto con la resolución del niño. La lista completa está en la tabla de valores permitidos. Guardar el `model` en cada fila importa porque el precio por token depende de él y cambia con el tiempo.
 
 Tiene dos índices pensados para el panel: `(user_id, created_at)` y `(kind, created_at)`.
 
 El registro es deliberadamente tolerante a fallos: si insertar acá falla, la sesión del alumno sigue igual. Medir no puede romper lo que se está midiendo.
-
-### `board_gaps`
-
-Un hueco de la pizarra: la escena no cubrió un hecho o pidió una primitiva que no existe. No guarda usuario ni texto.
-
-| Columna | Tipo | Nota |
-| --- | --- | --- |
-| `id` | bigint | PK |
-| `created_at` | timestamptz | |
-| `code` | text | `MISSING_FACT` o `UNSUPPORTED` |
-| `gap_key` | varchar(40) | nombre normalizado, o `other` |
-| `origin` | text | `study`, `mission` o `challenge` |
-| `attempts` | int | reintentos de esa escena |
-
-Al insertar se borran filas de más de 180 días. Índice `(gap_key, created_at)`.
 
 ---
 
@@ -553,8 +515,8 @@ Todos los campos con opciones fijas, en un solo lugar. Cambiarlos es tocar el `C
 | `study_challenges` | `scope` | `mission`, `course`, `world` |
 | `study_challenges` | `difficulty` | `warm`, `quest`, `boss` |
 | `study_challenges` | `status` | `in_progress`, `completed`, `abandoned` |
-| `study_challenge_questions` | `kind` | `multiple_choice`, `short_text`, `fill_blank`, `board_prompt` |
-| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade`, `parent_tutor`, `planet_generate`, `daily_summary`, `board_intent`, `board_facts`, `board_image` |
+| `study_challenge_questions` | `kind` | `multiple_choice`, `short_text`, `fill_blank` |
+| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade`, `challenge_photo_grade`, `parent_tutor`, `planet_generate`, `daily_summary`, `board_intent`, `board_facts`, `board_image` |
 | `xp_awards` | `source_type` | `task_done_simple`, `task_study`, `mission`, `challenge` |
 | `troop_members` | `role` | `captain`, `copilot`, `member` |
 | `troop_invites` | `status` | `pending`, `accepted`, `rejected`, `cancelled` |
@@ -565,7 +527,7 @@ Todos los campos con opciones fijas, en un solo lugar. Cambiarlos es tocar el `C
 
 ## Qué se borra con qué
 
-Hay dos capas. La app, cuando el alumno “borra” un mundo, una materia dentro del mundo o una misión, **no destruye la fila**: pone `is_active = FALSE`. Las sesiones, los mensajes, las pizarras y los desafíos siguen colgando de esa fila. Lo inactivo deja de salir en las listas; abrirlo por URL responde como si no existiera.
+Hay dos capas. La app, cuando el alumno “borra” un mundo, una materia dentro del mundo o una misión, **no destruye la fila**: pone `is_active = FALSE`. Las sesiones, los mensajes y los desafíos siguen colgando de esa fila. Lo inactivo deja de salir en las listas; abrirlo por URL responde como si no existiera.
 
 La cascada lógica, en una sola transacción:
 
@@ -577,7 +539,7 @@ Volver a agregar la materia reactiva solo el vínculo. Los temas que se habían 
 
 Las claves foráneas, en cambio, actúan cuando sí hay un `DELETE` físico (borrar la cuenta del alumno, descartar un desafío a medias, o la cascada de esos borrados).
 
-**`ON DELETE CASCADE` — se va con el dueño.** Borrar un `user` se lleva sus materias, tareas, mundos, desafíos, uso de IA, `xp_awards`, memberships e invites donde figura. Borrar una `troop` se lleva miembros e invites. Borrar una `task` se lleva su sesión, sus mensajes y su pizarra. Borrar una `study_mission` se lleva su sesión, mensajes y pizarra. Borrar un `study_challenge` se lleva sus preguntas, y cada pregunta sus respuestas. Borrar un vínculo mundo-materia se lleva las misiones de ese par; la app ya no hace ese `DELETE`, pero la cascada sigue ahí por si se borra el mundo junto con el alumno.
+**`ON DELETE CASCADE` — se va con el dueño.** Borrar un `user` se lleva sus materias, tareas, mundos, desafíos, uso de IA, `xp_awards`, memberships e invites donde figura. Borrar una `troop` se lleva miembros e invites. Borrar una `task` se lleva su sesión y sus mensajes. Borrar una `study_mission` se lleva su sesión y sus mensajes. Borrar un `study_challenge` se lleva sus preguntas, y cada pregunta sus respuestas. Borrar un vínculo mundo-materia se lleva las misiones de ese par; la app ya no hace ese `DELETE`, pero la cascada sigue ahí por si se borra el mundo junto con el alumno.
 
 **`ON DELETE RESTRICT` — protege el historial.** Una `course` no se puede borrar si tiene tareas o está en un mundo, y una `difficulty` no se puede borrar si hay tareas que la usan. Para eso está archivar (`is_active = FALSE`) en lugar de borrar. La misma idea de “mismo dueño” está en `fk_tasks_course_owner`, en el `user_id` de `study_world_courses` y en `fk_study_challenges_world_owner`.
 
@@ -608,7 +570,7 @@ El schema se elige con `PG_SCHEMA` (por defecto `taskia`) y la conexión con `PG
 
 ## Entidades y transformers
 
-Las 28 tablas de aplicación tienen entidad. El `DataSource` usa `schema: PG_SCHEMA`, así que TypeORM califica las tablas (`"taskia"."users"`). Cada conexión también fija `search_path` a ese schema: los triggers diferidos, como `assert_active_mission_link`, nombran `study_worlds` sin schema y fallan si la sesión mira solo `public`. Un fragmento SQL suelto (`FROM xp_awards` dentro de un subquery) tampoco hereda el schema del ORM: el join tiene que ser contra la entidad.
+Las 26 tablas de aplicación tienen entidad. El `DataSource` usa `schema: PG_SCHEMA`, así que TypeORM califica las tablas (`"taskia"."users"`). Cada conexión también fija `search_path` a ese schema: los triggers diferidos, como `assert_active_mission_link`, nombran `study_worlds` sin schema y fallan si la sesión mira solo `public`. Un fragmento SQL suelto (`FROM xp_awards` dentro de un subquery) tampoco hereda el schema del ORM: el join tiene que ser contra la entidad.
 
 **Bigint.** Postgres lo devuelve como string. `bigintTransformer` lo deja como número en la API. Un campo omitido (`undefined`) no se escribe: vale el default de la columna. `null` explícito sí se inserta como `NULL`. Por eso un alta de `users` manda `xpTotal: 0` (la columna no acepta nulo).
 
@@ -616,7 +578,7 @@ Las 28 tablas de aplicación tienen entidad. El `DataSource` usa `schema: PG_SCH
 
 **Instantes.** `created_at` y `updated_at` los pone la base (default y trigger `set_updated_at`). Las entidades no usan `@CreateDateColumn` ni `@UpdateDateColumn`.
 
-**Sin `id` propio.** La clave es `@PrimaryColumn`: `study_sessions`, `study_boards`, `user_study_memory`, `study_mission_sessions`, `study_mission_boards`, `study_world_courses` (`world_id`, `course_id`), `study_challenge_presets` (`scope`, `difficulty`), `parent_student_links` (`parent_id`, `student_id`) y `parent_notify_prefs` (`parent_id`).
+**Sin `id` propio.** La clave es `@PrimaryColumn`: `study_sessions`, `user_study_memory`, `study_mission_sessions`, `study_world_courses` (`world_id`, `course_id`), `study_challenge_presets` (`scope`, `difficulty`), `parent_student_links` (`parent_id`, `student_id`) y `parent_notify_prefs` (`parent_id`).
 
 **Índices parciales.** Están en las migraciones (por ejemplo un solo miembro activo por tripulación). La entidad los documenta; el ORM no los recrea.
 

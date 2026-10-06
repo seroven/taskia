@@ -4,9 +4,7 @@ import { AppError } from '../../../shared/errors/app-error.js'
 import {
   extractJson,
   looksLikeCelebratingTaskReady,
-  looksLikeOfferingMorePractice,
   requiredChatTurns,
-  soloBienCount,
   stripPrematureReadyCelebration,
   truncateChars,
 } from '../../../utils/helpers.js'
@@ -18,17 +16,17 @@ import {
 import { fetchTask } from '../../tasks/services/task.service.js'
 import { parseChatMessage, parseTranscribeBody } from '../schemas/study.schema.js'
 import { tutorSystemPrompt } from '../../../prompts/study-tutor.js'
-import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../board/exerciseBrief.js'
+import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../exercises/exerciseBrief.js'
 import {
   exerciseReference,
+  exerciseTurnInstruction,
   loadReferencePhoto,
+  planExerciseTurn,
+  speakForTurn,
   userReferencePhotos,
-  planExerciseSheet,
-  stripDrewPhrase,
-  stripMathDelimiters,
-  type BoardSheet,
-  type SheetPlan,
-} from '../../board/sheet.js'
+  type ExerciseTurn,
+} from '../../exercises/reference.js'
+import { stripDrewPhrase } from '../../exercises/text.js'
 
 export function canOpenStudy(task: { status: string; difficulty_code: string }) {
   return (
@@ -37,28 +35,11 @@ export function canOpenStudy(task: { status: string; difficulty_code: string }) 
   )
 }
 
-export function normalizeDrawOps(raw: unknown): unknown[] {
-  if (Array.isArray(raw)) return raw
-  if (typeof raw === 'string') {
-    try {
-      const parsed = JSON.parse(raw) as unknown
-      return Array.isArray(parsed) ? parsed : []
-    } catch {
-      return []
-    }
-  }
-  return []
-}
-
-
 import {
-  emptyBoard,
   insertMessage,
-  loadBoard,
   loadContext,
   loadUserMemory,
   markStudyPassed,
-  saveBoard,
   saveExerciseBrief,
   saveSessionMeta,
   saveUserMemory,
@@ -67,7 +48,6 @@ import {
 const MAX_CONTEXT = 400
 const MAX_MEMORY = 600
 const MAX_SPEAK = 450
-const MAX_BOARD = 1600
 const MAX_LAST_TUTOR = 320
 
 
@@ -117,7 +97,6 @@ export async function openSession(userId: number, taskId: number) {
       )
     }
     const context = await loadContext(taskId)
-    const board = task.uses_board ? await loadBoard(taskId) : emptyBoard()
     const userMemory = await loadUserMemory(userId)
 
     if (context.messages.length === 0) {
@@ -134,14 +113,7 @@ export async function openSession(userId: number, taskId: number) {
       await saveSessionMeta(context)
     }
 
-    return { context: hideExerciseBrief(context), board, task }
-}
-
-export async function saveTaskBoard(userId: number, taskId: number, body: Record<string, unknown>) {
-    const task = await fetchTask(taskId, userId)
-    if (!task.uses_board) throw new AppError('Esta tarea no usa pizarra')
-    await saveBoard(taskId, body.board ?? body)
-    return { ok: true }
+    return { context: hideExerciseBrief(context), task }
 }
 
 export async function chat(userId: number, taskId: number, body: Record<string, unknown>) {
@@ -156,12 +128,6 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     const message = parsedTurn.message
     const photo = parsedTurn.photoRaw ? decodeStudyPhoto(parsedTurn.photoRaw) : null
     const imageUrl = photo ? await uploadStudyPhoto(photo) : null
-    const boardDescriptionRaw = task.uses_board
-      ? ((body.board_description ?? body.boardDescription) as string | null)
-      : null
-    const boardImageSent = task.uses_board
-      ? String(body.board_image_base64 ?? body.boardImageBase64 ?? '').trim()
-      : ''
     const fromVoice = Boolean(body.from_voice ?? body.fromVoice)
 
     const context = await loadContext(taskId)
@@ -175,15 +141,12 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         .reverse()
         .find((m) => m.role === 'assistant')
         ?.content ?? ''
-    const usesBoard = task.uses_board
     const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
-    const intent = usesBoard || photo
-      ? await classifyBoardIntent({
-          message,
-          previous: truncateChars(lastTutor, 180),
-          usage: { userId, kind: 'board_intent' },
-        })
-      : { reviewDrawing: false, drawExercise: false, helpExercise: false }
+    const intent = await classifyBoardIntent({
+      message,
+      previous: truncateChars(lastTutor, 180),
+      usage: { userId, kind: 'board_intent' },
+    })
     const memory = planExerciseMemory({
       help: intent.helpExercise,
       review: intent.reviewDrawing,
@@ -209,32 +172,20 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     }
     const tutorPhoto =
       memory.sendPhoto || (memory.solve && !context.exercise_brief) ? photoData : null
-    const referencePhoto = usesBoard
-      ? await loadReferencePhoto(photoData, userReferencePhotos(context.messages))
-      : null
+    const referencePhoto = await loadReferencePhoto(photoData, userReferencePhotos(context.messages))
     const referenceText = exerciseReference([
       task.description ?? '',
       ...context.messages.filter((item) => item.role === 'user').map((item) => item.content),
     ])
-    const sheetPlan: SheetPlan = usesBoard
-      ? await planExerciseSheet({
-          draw: intent.drawExercise,
-          referenceText,
-          photoBase64: intent.drawExercise ? referencePhoto : null,
-          usage: { userId, kind: 'board_facts' },
-        })
-      : { mode: 'none' }
-    const boardImageRaw = intent.reviewDrawing ? boardImageSent : ''
-    const boardDescription = intent.reviewDrawing ? boardDescriptionRaw : null
-    const boardHas = Boolean(boardDescription?.trim() || boardImageRaw || (intent.reviewDrawing && photo))
+    const exerciseTurn: ExerciseTurn = await planExerciseTurn({
+      draw: intent.drawExercise,
+      referenceText,
+      photoBase64: intent.drawExercise ? referencePhoto : null,
+      usage: { userId, kind: 'board_facts' },
+    })
 
-    const boardMasteryHint =
-      ' Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina.'
-    let instruction = usesBoard
-      ? 'Responde breve. Conserva el ejercicio activo.' + boardMasteryHint + ' No dibujes. board_text según board_mode.'
-      : boardHas
-        ? 'Responde breve. Usa context + last_tutor_message + mensaje + pizarra. Conserva el ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
-        : 'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo. Ignora pizarra. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
+    let instruction =
+      'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
     if (fromVoice) {
       instruction +=
         ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
@@ -243,23 +194,13 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       instruction +=
         ' El niño adjuntó una foto del cuaderno. Léela y decide si el ejercicio está bien. No es la pizarra.'
     }
-    if (intent.reviewDrawing && !boardHas) {
-      instruction +=
-        ' Pidió que revises su trabajo, pero no hay captura ni foto. Pídele que escriba en la pizarra o mande una foto.'
+    if (intent.reviewDrawing && !tutorPhoto) {
+      instruction += ' Pidió que revises su trabajo, pero no hay foto. Pídele que mande una foto del cuaderno.'
     }
-    if (intent.reviewDrawing && boardHas) {
-      instruction +=
-        ' Mira la captura de la pizarra o la foto y decide si está bien. Si lo resolvió solo, puede sumar a Solo bien.'
+    if (intent.reviewDrawing && tutorPhoto) {
+      instruction += ' Mira la foto y decide si está bien.'
     }
-    if (sheetPlan.mode === 'need_reference') {
-      instruction += ' board_mode=need_reference. Pide un ejercicio de ejemplo. No inventes uno.'
-    } else if (sheetPlan.mode === 'text') {
-      instruction +=
-        ' board_mode=text. Escribe el enunciado nuevo en board_text y en speak_to_child. Sin la respuesta.'
-    } else if (sheetPlan.mode === 'image') {
-      instruction +=
-        ' board_mode=image. La imagen ya está hecha. board_text vacío. Habla del ejercicio. No digas que lo dibujaste.'
-    }
+    instruction += exerciseTurnInstruction(exerciseTurn)
 
     const payload = {
       instruction,
@@ -280,21 +221,14 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       last_tutor_message: truncateChars(lastTutor, MAX_LAST_TUTOR),
       user_memory_summary: truncateChars(userMemory, MAX_MEMORY),
       hints_level: context.hints_level,
-      board_has_drawing: boardHas,
       photo_attached: Boolean(tutorPhoto),
       ...(context.exercise_brief ? { exercise_solution: context.exercise_brief } : {}),
       child_message: truncateChars(message, fromVoice ? 4000 : 800),
-      ...(usesBoard ? { board_mode: sheetPlan.mode } : {}),
-      // Texto de coords solo si no hay imagen (fallback).
-      ...(!boardImageRaw && boardDescription?.trim()
-        ? { board_drawing: truncateChars(boardDescription, MAX_BOARD) }
-        : {}),
     }
 
     const raw = await callGemini({
-      system: tutorSystemPrompt(usesBoard),
+      system: tutorSystemPrompt(),
       user: JSON.stringify(payload),
-      boardImageBase64: boardImageRaw || null,
       photoBase64: tutorPhoto,
       usage: { userId, kind: 'task_tutor' },
     })
@@ -334,9 +268,6 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     const askQuestions = Array.isArray(value.ask_questions)
       ? (value.ask_questions as unknown[]).map(String)
       : []
-    const offeringMore =
-      looksLikeOfferingMorePractice(speakToChild) ||
-      askQuestions.some((q) => looksLikeOfferingMorePractice(q))
 
     // Red de seguridad: Gemini tiende a aprobar pronto; forzar criterios duros.
     let passed = Boolean(
@@ -344,20 +275,13 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     )
     if (task.study_passed) {
       passed = true
-    } else {
-        if (!usesBoard) {
-        if (userTurns < requiredChatTurns(6, contextSummaryDraft)) passed = false
-      }
+    }     else {
+      if (userTurns < requiredChatTurns(6, contextSummaryDraft)) passed = false
       if (phase !== 'reviewing') passed = false
       if (!evidence) passed = false
-      if (usesBoard) {
-        if (offeringMore) passed = false
-        const n = soloBienCount(contextSummaryDraft)
-        if (n !== null && n < 2) passed = false
-      }
     }
 
-    let speakSafe = stripMathDelimiters(stripDrewPhrase(speakToChild))
+    let speakSafe = speakForTurn(exerciseTurn, stripDrewPhrase(speakToChild))
     if (!passed && looksLikeCelebratingTaskReady(speakSafe)) {
       const stripped = stripPrematureReadyCelebration(speakSafe)
       speakSafe = truncateChars(
@@ -367,11 +291,6 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         MAX_SPEAK,
       )
     }
-    const boardText = stripMathDelimiters(String(value.board_text ?? '').trim())
-    let boardSheet: BoardSheet | null = null
-    if (sheetPlan.mode === 'image') boardSheet = { imageSrc: sheetPlan.imageSrc }
-    else if (sheetPlan.mode === 'text' && boardText) boardSheet = { text: boardText.slice(0, 800) }
-
     const reply = {
       phase,
       speak_to_child: speakSafe,
@@ -389,12 +308,6 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         MAX_MEMORY,
       ),
       exercise,
-      draw_ops: [],
-      board_items: [],
-      board_sheet: boardSheet,
-      scene: null,
-      highlight: [] as string[],
-      board_fallback: null,
       hints_level: Number(value.hints_level ?? 0),
       study_eval: {
         passed,
@@ -411,9 +324,6 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
 
     // ask_questions queda para lógica interna; no se lista al niño (evita preguntas duplicadas).
     let visible = reply.speak_to_child
-    if (boardSheet && 'text' in boardSheet && !visible.includes(boardSheet.text.slice(0, 24))) {
-      visible += `\n${boardSheet.text}`
-    }
     if (reply.exercise) {
       visible += `\nEjercicio: ${reply.exercise.title}\n${reply.exercise.instructions}`
     }
@@ -422,8 +332,6 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         taskId,
         'assistant',
         truncateChars(visible, 1600),
-        false,
-        boardSheet && 'imageSrc' in boardSheet ? boardSheet.imageSrc : null,
       ),
     )
     await saveSessionMeta(context)

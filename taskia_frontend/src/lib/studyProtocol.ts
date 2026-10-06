@@ -148,7 +148,6 @@ export interface StudyBoardScene {
 
 export interface StudySession {
   context: StudyContext
-  board: StudyBoardScene
   task: import('../types').Task
 }
 

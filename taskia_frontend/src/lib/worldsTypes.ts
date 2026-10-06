@@ -6,11 +6,7 @@ export type ChallengeDifficulty = 'warm' | 'quest' | 'boss'
 
 export type ChallengeStatus = 'in_progress' | 'completed' | 'abandoned'
 
-export type ChallengeQuestionKind =
-  | 'multiple_choice'
-  | 'short_text'
-  | 'fill_blank'
-  | 'board_prompt'
+export type ChallengeQuestionKind = 'multiple_choice' | 'short_text' | 'fill_blank'
 
 export interface StudyWorld {
   id: number
@@ -93,7 +89,6 @@ export interface MissionContext {
 
 export interface MissionSession {
   context: MissionContext
-  board: import('./studyProtocol').StudyBoardScene
   mission: StudyMission
 }
 
@@ -166,8 +161,7 @@ export interface ChallengeQuestionPublic {
   kind: ChallengeQuestionKind | string
   prompt: string
   options: string[] | null
-  requires_board: boolean
-  prompt_draw_ops?: unknown
+  reference_image_url?: string | null
   answered: boolean
   is_correct: boolean | null
   /** Solo en desafíos completados */
@@ -191,10 +185,7 @@ export interface ChallengeDetail {
 export interface ChallengeAnswerPayload {
   question_id: number
   user_answer: string
-  board_json?: unknown
-  board_description?: string
-  board_image_base64?: string
-  notebook_image_base64?: string
+  solution_image_base64?: string
 }
 
 export const MISSION_STATUS_LABEL: Record<string, string> = {

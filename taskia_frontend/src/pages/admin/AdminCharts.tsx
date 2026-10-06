@@ -360,7 +360,7 @@ export function AdminDashboardCharts({
             {usage
               ? ` ${usage.totals.calls} llamadas · ${formatUsd(usage.totals.estimated_usd)}.`
               : ''}{' '}
-            Desafíos suma generar, pizarra del enunciado y corrección.
+            Desafíos suma generar y corrección. Imágenes son llamadas viejas.
           </p>
         </div>
         {hasUsageCalls ? (
@@ -437,7 +437,7 @@ export function AdminDashboardCharts({
         <div className="admin-section-head">
           <h2>Consumo por tipo</h2>
           <p className="muted">
-            Gasto estimado en Gemini. Desafíos agrupa generar, pizarra del enunciado y
+            Gasto estimado en Gemini. Desafíos agrupa generar y
             corrección. Un mensaje de chat es una llamada; si fue por voz suma también la
             transcripción.
           </p>

@@ -9,7 +9,6 @@ router.use(requireStudent)
 
 router.post('/transcribe', studyController.transcribe)
 router.get('/:taskId', studyController.openSession)
-router.put('/:taskId/board', studyController.saveBoard)
 router.post('/:taskId/chat', studyController.chat)
 
 export default router

@@ -9,12 +9,6 @@ export const openSession = asyncHandler(async (req, res) => {
   res.json(await studyService.openSession(req.user!.id, Number(req.params.taskId)))
 })
 
-export const saveBoard = asyncHandler(async (req, res) => {
-  res.json(
-    await studyService.saveTaskBoard(req.user!.id, Number(req.params.taskId), req.body),
-  )
-})
-
 export const chat = asyncHandler(async (req, res) => {
   res.json(await studyService.chat(req.user!.id, Number(req.params.taskId), req.body))
 })

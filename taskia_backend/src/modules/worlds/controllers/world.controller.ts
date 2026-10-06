@@ -18,10 +18,6 @@ export const openSession = asyncHandler(async (req, res) => {
   res.json(await worldService.openMissionSession(req.user!.id, Number(req.params.missionId)))
 })
 
-export const saveBoard = asyncHandler(async (req, res) => {
-  res.json(await worldService.saveBoard(req.user!.id, Number(req.params.missionId), req.body))
-})
-
 export const chat = asyncHandler(async (req, res) => {
   res.json(await worldService.chatMission(req.user!.id, Number(req.params.missionId), req.body))
 })

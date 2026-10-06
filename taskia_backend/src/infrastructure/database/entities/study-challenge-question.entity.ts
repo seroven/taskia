@@ -27,11 +27,9 @@ export class StudyChallengeQuestion {
   @Column({ type: 'text' })
   answerKey!: string
 
-  @Column({ type: 'boolean', default: false })
-  requiresBoard!: boolean
-
-  @Column({ type: 'jsonb', nullable: true })
-  promptDrawOps!: unknown | null
+  /** Foto del niño que es el enunciado, cuando la pregunta es práctica. */
+  @Column({ type: 'text', nullable: true })
+  referenceImageUrl!: string | null
 
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   createdAt!: Date

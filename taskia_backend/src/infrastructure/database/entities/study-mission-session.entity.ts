@@ -22,9 +22,6 @@ export class StudyMissionSession {
   @Column({ type: 'int', default: 0 })
   hintsLevel!: number
 
-  @Column({ type: 'text', nullable: true })
-  pendingBoardFacts!: string | null
-
   /** Desarrollo privado del ejercicio. No se manda al navegador. */
   @Column({ type: 'text', nullable: true })
   exerciseBrief!: string | null

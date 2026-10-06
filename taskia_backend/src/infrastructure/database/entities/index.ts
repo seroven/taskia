@@ -1,4 +1,3 @@
-import { BoardGap } from './board-gap.entity.js'
 import { Course } from './course.entity.js'
 import { Difficulty } from './difficulty.entity.js'
 import { LlmUsage } from './llm-usage.entity.js'
@@ -7,13 +6,11 @@ import { ParentNotifyPrefs } from './parent-notify-prefs.entity.js'
 import { ParentStudentLink } from './parent-student-link.entity.js'
 import { Role } from './role.entity.js'
 import { StudentDailySummary } from './student-daily-summary.entity.js'
-import { StudyBoard } from './study-board.entity.js'
 import { StudyChallengeAnswer } from './study-challenge-answer.entity.js'
 import { StudyChallengePreset } from './study-challenge-preset.entity.js'
 import { StudyChallengeQuestion } from './study-challenge-question.entity.js'
 import { StudyChallenge } from './study-challenge.entity.js'
 import { StudyMessage } from './study-message.entity.js'
-import { StudyMissionBoard } from './study-mission-board.entity.js'
 import { StudyMissionMessage } from './study-mission-message.entity.js'
 import { StudyMissionSession } from './study-mission-session.entity.js'
 import { StudyMission } from './study-mission.entity.js'
@@ -30,7 +27,6 @@ import { XpAward } from './xp-award.entity.js'
 
 /** Las tablas de Taskia. schema_migrations no entra. */
 export const entities = [
-  BoardGap,
   Role,
   User,
   Course,
@@ -38,14 +34,12 @@ export const entities = [
   Task,
   StudySession,
   StudyMessage,
-  StudyBoard,
   UserStudyMemory,
   StudyWorld,
   StudyWorldCourse,
   StudyMission,
   StudyMissionSession,
   StudyMissionMessage,
-  StudyMissionBoard,
   StudyChallenge,
   StudyChallengeQuestion,
   StudyChallengeAnswer,
@@ -62,7 +56,6 @@ export const entities = [
 ]
 
 export {
-  BoardGap,
   Course,
   Difficulty,
   LlmUsage,
@@ -71,14 +64,12 @@ export {
   ParentStudentLink,
   Role,
   StudentDailySummary,
-  StudyBoard,
   StudyChallenge,
   StudyChallengeAnswer,
   StudyChallengePreset,
   StudyChallengeQuestion,
   StudyMessage,
   StudyMission,
-  StudyMissionBoard,
   StudyMissionMessage,
   StudyMissionSession,
   StudySession,

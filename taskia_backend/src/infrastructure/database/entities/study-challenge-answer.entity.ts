@@ -13,8 +13,9 @@ export class StudyChallengeAnswer {
   @Column({ type: 'text', nullable: true })
   userAnswer!: string | null
 
+  /** Foto de cómo resolvió la pregunta práctica. */
   @Column({ type: 'text', nullable: true })
-  boardJson!: string | null
+  solutionImageUrl!: string | null
 
   @Column({ type: 'boolean', nullable: true })
   isCorrect!: boolean | null

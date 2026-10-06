@@ -75,7 +75,6 @@ export async function createTask(userId: number, body: Record<string, unknown>, 
   const description = readDescription(body.description)
   const courseId = Number(body.course_id)
   const difficultyId = Number(body.difficulty_id)
-  const usesBoard = body.uses_board === undefined ? false : Boolean(body.uses_board)
 
   if (!(await tasks.findOwnedCourse(courseId, userId, true))) {
     throw new AppError('Curso no válido')
@@ -94,7 +93,6 @@ export async function createTask(userId: number, body: Record<string, unknown>, 
     description,
     taskKind: kind,
     boardOrder: nextOrder,
-    usesBoard,
     dueDate,
   })
   return requireTask(taskId, userId)
@@ -115,7 +113,6 @@ export async function updateTask(
   const description = readDescription(body.description)
   const courseId = Number(body.course_id)
   const difficultyId = Number(body.difficulty_id)
-  const usesBoard = body.uses_board === undefined ? undefined : Boolean(body.uses_board)
 
   if (!(await tasks.findOwnedCourse(courseId, userId, false))) {
     throw new AppError('Curso no válido')
@@ -139,12 +136,6 @@ export async function updateTask(
     boardOrder = await tasks.nextBoardOrder(userId, status)
   }
 
-  const nextUsesBoard = usesBoard === undefined ? current.uses_board : usesBoard
-  const nextModeChosen =
-    body.study_mode_chosen === undefined
-      ? current.study_mode_chosen
-      : Boolean(body.study_mode_chosen)
-
   const affected = await tasks.updateTask({
     taskId,
     userId,
@@ -156,8 +147,6 @@ export async function updateTask(
     dueDate,
     status,
     boardOrder,
-    usesBoard: nextUsesBoard,
-    studyModeChosen: nextModeChosen,
   })
   if (affected === 0) throw new AppError('Tarea no encontrada', 404)
   const xp = await maybeAwardTaskDoneXp({

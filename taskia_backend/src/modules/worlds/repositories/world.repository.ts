@@ -7,7 +7,6 @@ import {
   StudyChallengePreset,
   StudyChallengeQuestion,
   StudyMission,
-  StudyMissionBoard,
   StudyMissionMessage,
   StudyMissionSession,
   StudyWorld,
@@ -470,7 +469,6 @@ export async function loadMissionSession(missionId: number) {
     context_summary: session.contextSummary,
     notebook_context: String(session.notebookContext ?? ''),
     hints_level: Number(session.hintsLevel),
-    pending_board_facts: session.pendingBoardFacts,
     exercise_brief: session.exerciseBrief ?? '',
     messages: messages.map((message) => ({
       role: message.role,
@@ -514,13 +512,6 @@ export async function saveExerciseBrief(missionId: number, brief: string) {
   await AppDataSource.getRepository(StudyMissionSession).update({ missionId }, { exerciseBrief: brief })
 }
 
-export async function savePendingBoardFacts(missionId: number, raw: string | null) {
-  await AppDataSource.getRepository(StudyMissionSession).update(
-    { missionId },
-    { pendingBoardFacts: raw },
-  )
-}
-
 export async function saveSessionMeta(
   missionId: number,
   input: {
@@ -533,49 +524,21 @@ export async function saveSessionMeta(
   await AppDataSource.getRepository(StudyMissionSession).update({ missionId }, input)
 }
 
-export function emptyBoard() {
-  return {
-    type: 'taskia-grid',
-    version: 1,
-    source: 'taskia-grid',
-    cols: 160,
-    rows: 100,
-    items: [],
-  }
-}
-
-export function coerceBoard(raw: unknown) {
-  if (raw && typeof raw === 'object') {
-    const rec = raw as { type?: string; source?: string }
-    if (rec.type === 'taskia-grid' || rec.source === 'taskia-grid') return raw
-  }
-  return emptyBoard()
-}
-
-export async function saveMissionBoard(missionId: number, board: unknown) {
-  await AppDataSource.getRepository(StudyMissionBoard)
-    .createQueryBuilder()
-    .insert()
-    .into(StudyMissionBoard)
-    .values({ missionId, boardJson: JSON.stringify(board) })
-    .orUpdate(['board_json'], ['mission_id'])
-    .execute()
-}
-
-export async function loadMissionBoard(missionId: number) {
-  const row = await AppDataSource.getRepository(StudyMissionBoard).findOne({
-    where: { missionId },
+export async function listUserMissionPhotos(missionId: number): Promise<string[]> {
+  const rows = await AppDataSource.getRepository(StudyMissionMessage).find({
+    where: { missionId, role: 'user' },
+    order: { createdAt: 'ASC', id: 'ASC' },
   })
-  if (row?.boardJson) {
-    try {
-      return coerceBoard(JSON.parse(row.boardJson) as unknown)
-    } catch {
-      /* fall through */
+  const seen = new Set<string>()
+  const urls: string[] = []
+  for (const row of rows) {
+    const url = row.imageUrl
+    if (typeof url === 'string' && url.startsWith('https://') && !seen.has(url)) {
+      seen.add(url)
+      urls.push(url)
     }
   }
-  const board = emptyBoard()
-  await saveMissionBoard(missionId, board)
-  return board
+  return urls
 }
 
 export async function insertMissionMessage(
@@ -711,8 +674,7 @@ export async function insertChallengeQuestion(input: {
   prompt: string
   options: string[] | null
   answerKey: string
-  requiresBoard: boolean
-  promptDrawOps: unknown | null
+  referenceImageUrl: string | null
 }) {
   const repo = AppDataSource.getRepository(StudyChallengeQuestion)
   await repo.save(
@@ -724,8 +686,7 @@ export async function insertChallengeQuestion(input: {
       prompt: input.prompt,
       optionsJson: input.options,
       answerKey: input.answerKey,
-      requiresBoard: input.requiresBoard,
-      promptDrawOps: input.promptDrawOps,
+      referenceImageUrl: input.referenceImageUrl,
     }),
   )
 }
@@ -760,8 +721,7 @@ export type ChallengeQuestionDetail = {
   prompt: string
   options_json: unknown
   answer_key: string
-  requires_board: unknown
-  prompt_draw_ops: unknown
+  reference_image_url: string | null
   is_correct: unknown
   user_answer: string | null
   course_id: number | null
@@ -781,8 +741,7 @@ export async function listChallengeQuestionDetails(challengeId: number) {
     .addSelect('q.prompt', 'prompt')
     .addSelect('q.options_json', 'options_json')
     .addSelect('q.answer_key', 'answer_key')
-    .addSelect('q.requires_board', 'requires_board')
-    .addSelect('q.prompt_draw_ops', 'prompt_draw_ops')
+    .addSelect('q.reference_image_url', 'reference_image_url')
     .addSelect('a.is_correct', 'is_correct')
     .addSelect('a.user_answer', 'user_answer')
     .addSelect('m.course_id', 'course_id')
@@ -805,7 +764,7 @@ export async function replaceChallengeAnswers(
   answers: Array<{
     questionId: number
     userAnswer: string
-    boardJson: string | null
+    solutionImageUrl: string | null
     isCorrect: boolean
   }>,
 ) {
@@ -823,7 +782,7 @@ export async function replaceChallengeAnswers(
       repo.create({
         questionId: answer.questionId,
         userAnswer: answer.userAnswer,
-        boardJson: answer.boardJson,
+        solutionImageUrl: answer.solutionImageUrl,
         isCorrect: answer.isCorrect,
       }),
     )

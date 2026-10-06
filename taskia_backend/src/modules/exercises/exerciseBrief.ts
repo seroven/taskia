@@ -1,5 +1,5 @@
 import { callGemini, type LlmUsageContext } from '../../infrastructure/gemini/gemini.client.js'
-import { stripMathDelimiters } from './sheet.js'
+import { stripMathDelimiters } from './text.js'
 
 const MAX_BRIEF = 2200
 

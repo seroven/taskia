@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -7,18 +7,13 @@ import {
 } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
-import { GridBoard, type GridBoardHandle } from '../../components/study/GridBoard'
-import { StudyBoardPane } from '../../components/study/StudyBoardPane'
-import { StudyBoardToggle } from '../../components/study/StudyBoardToggle'
 import { StudyChat } from '../../components/study/StudyChat'
 import { TextAreaField, TextField } from '../../components/ui/Field'
 import { WorldsStatusPill } from '../../components/worlds/WorldsStatusPill'
 import { errorMessage } from '../../lib/errors'
-import { type StudyBoardScene } from '../../lib/studyProtocol'
 import type { MissionContext, StudyMission } from '../../lib/worldsTypes'
 import { mergeXpIntoUser, xpToastCopy } from '../../lib/xp'
 import { useAuth } from '../../auth'
-import { useTheme } from '../../theme'
 import { useToast } from '../../toast'
 
 interface Props {
@@ -27,14 +22,11 @@ interface Props {
 }
 
 export function MissionStudyPage({ missionId, onBack }: Props) {
-  const { theme } = useTheme()
   const { user, setUser } = useAuth()
   const { showToast } = useToast()
   const [mode, setMode] = useState<'study' | 'edit'>('study')
   const [mission, setMission] = useState<StudyMission | null>(null)
   const [context, setContext] = useState<MissionContext | null>(null)
-  const [board, setBoard] = useState<StudyBoardScene | null>(null)
-  const [boardReady, setBoardReady] = useState(false)
   const [phase, setPhase] = useState('understanding')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -42,13 +34,8 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
   const [chatError, setChatError] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
-  const [editUsesBoard, setEditUsesBoard] = useState(false)
+  const [editPractical, setEditPractical] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
-  const [togglingBoard, setTogglingBoard] = useState<'on' | 'off' | null>(null)
-  const [boardOpen, setBoardOpen] = useState(false)
-  const [threadEl, setThreadEl] = useState<HTMLDivElement | null>(null)
-  const boardRef = useRef<GridBoardHandle>(null)
-  const saveBoardRef = useRef<(scene: StudyBoardScene) => void>(() => {})
 
   useEffect(() => {
     void (async () => {
@@ -58,12 +45,10 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         const session = await api.missionLoadSession(missionId)
         setMission(session.mission)
         setContext(session.context)
-        setBoard(session.board)
         setPhase(session.context.tutor_phase)
         setEditTitle(session.mission.title)
         setEditDescription(session.mission.description ?? '')
-        setEditUsesBoard(session.mission.uses_board)
-        setBoardReady(true)
+        setEditPractical(session.mission.uses_board)
       } catch (err) {
         setError(errorMessage(err))
       } finally {
@@ -71,24 +56,6 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
       }
     })()
   }, [missionId])
-
-  const persistBoard = useCallback(
-    (scene: StudyBoardScene) => {
-      if (!mission?.uses_board) return
-      void api.missionSaveBoard(missionId, scene).catch((err) => {
-        setChatError(errorMessage(err))
-      })
-    },
-    [missionId, mission?.uses_board],
-  )
-
-  useEffect(() => {
-    saveBoardRef.current = persistBoard
-  }, [persistBoard])
-
-  const onBoardSave = useCallback((scene: StudyBoardScene) => {
-    saveBoardRef.current(scene)
-  }, [])
 
   async function onSend(
     message: string,
@@ -100,24 +67,10 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
     setSending(true)
     setChatError(null)
     try {
-      let boardAttach:
-        | { description?: string; image_base64?: string | null; board_json?: unknown }
-        | undefined
-      if (mission?.uses_board) {
-        const attachment = await boardRef.current?.getBoardAttachment()
-        const boardJson = boardRef.current?.getScene()
-        if ((attachment?.elementCount ?? 0) > 0) {
-          boardAttach = attachment?.imageBase64
-            ? { image_base64: attachment.imageBase64, board_json: boardJson }
-            : { description: attachment?.description, board_json: boardJson }
-        } else {
-          boardAttach = { board_json: boardJson }
-        }
-      }
       const result = await api.missionChat(
         missionId,
         message,
-        boardAttach,
+        undefined,
         false,
         Boolean(options.fromVoice),
         options.photoBase64 ?? null,
@@ -138,61 +91,11 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         const copy = xpToastCopy(result.xp_gained)
         if (copy) showToast({ tone: 'success', ...copy })
       }
-      if (result.reply.board_sheet && mission?.uses_board) {
-        boardRef.current?.applySheet(result.reply.board_sheet)
-      }
     } catch (err) {
       setChatError(errorMessage(err))
       throw err
     } finally {
       setSending(false)
-    }
-  }
-
-  async function applyUsesBoard(next: boolean) {
-    if (!mission) return
-    const updated = await api.updateMission({
-      mission_id: mission.id,
-      title: mission.title,
-      description: mission.description ?? undefined,
-      uses_board: next,
-    })
-    if (updated.uses_board) {
-      const session = await api.missionLoadSession(missionId)
-      setBoard(session.board)
-      setBoardReady(true)
-    } else {
-      setBoardOpen(false)
-    }
-    setMission(updated)
-    setEditUsesBoard(updated.uses_board)
-    return updated
-  }
-
-  async function onToggleBoard(next: boolean) {
-    if (!mission || togglingBoard) return
-    if (next === mission.uses_board) {
-      if (next) setBoardOpen(true)
-      return
-    }
-    setTogglingBoard(next ? 'on' : 'off')
-    try {
-      await applyUsesBoard(next)
-      showToast({
-        tone: 'success',
-        title: next ? '¡Pizarra lista!' : 'Ahora solo hablamos',
-        subtitle: next
-          ? 'Ya puedes dibujar junto a Taskia.'
-          : 'Si quieres dibujar después, toca Pizarra.',
-      })
-    } catch (err) {
-      showToast({
-        tone: 'error',
-        title: 'No se pudo cambiar',
-        subtitle: errorMessage(err),
-      })
-    } finally {
-      setTogglingBoard(null)
     }
   }
 
@@ -204,13 +107,8 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         mission_id: mission.id,
         title: editTitle.trim(),
         description: editDescription.trim() || undefined,
-        uses_board: editUsesBoard,
+        uses_board: editPractical,
       })
-      if (updated.uses_board) {
-        const session = await api.missionLoadSession(missionId)
-        setBoard(session.board)
-        setBoardReady(true)
-      }
       setMission(updated)
       setMode('study')
       showToast({
@@ -278,13 +176,6 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
           </div>
         </div>
         <div className="study-header-actions">
-          {mode === 'study' && (
-            <StudyBoardToggle
-              usesBoard={mission.uses_board}
-              disabled={Boolean(togglingBoard)}
-              onChange={(next) => void onToggleBoard(next)}
-            />
-          )}
           <div className="study-mode-toggle" role="group" aria-label="Modo">
             <button
               type="button"
@@ -329,14 +220,15 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
             <label className="worlds-switch-row">
               <input
                 type="checkbox"
-                checked={editUsesBoard}
-                onChange={(e) => setEditUsesBoard(e.target.checked)}
+                checked={editPractical}
+                onChange={(e) => setEditPractical(e.target.checked)}
               />
               <span>
                 <strong className="worlds-switch-label">
                   <PencilLine size={18} weight="fill" />
-                  ¿Quieres dibujar en una pizarra?
+                  Tema práctico
                 </strong>
+                <span className="muted">Figuras, tablas o un procedimiento que se resuelve mirando una foto.</span>
               </span>
             </label>
             <div className="modal-actions">
@@ -357,7 +249,7 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         ) : (
           <motion.div
             key="study"
-            className={`study-layout${mission.uses_board ? '' : ' study-layout-chat-only'}`}
+            className="study-layout study-layout-chat-only"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.99 }}
@@ -369,42 +261,11 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
               exercise={null}
               sending={sending}
               error={chatError}
-              boardControls={mission.uses_board}
-              boardOpen={boardOpen}
-              onToggleBoardView={() => setBoardOpen((open) => !open)}
-              onThreadEl={setThreadEl}
               onSend={onSend}
             />
-            {mission.uses_board && (
-              <StudyBoardPane
-                open={boardOpen}
-                onClose={() => setBoardOpen(false)}
-                portalParent={threadEl}
-              >
-                {boardReady && (
-                  <GridBoard
-                    key={`mission-board-${mission.id}-${theme}-${mission.uses_board}`}
-                    ref={boardRef}
-                    initialBoard={board}
-                    onSave={onBoardSave}
-                    theme={theme}
-                  />
-                )}
-              </StudyBoardPane>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
-      {togglingBoard && (
-        <div className="study-page-loader">
-          <AppLoader
-            message={
-              togglingBoard === 'on' ? 'Abriendo pizarra…' : 'Quitando pizarra…'
-            }
-            variant="section"
-          />
-        </div>
-      )}
       </div>
     </div>
   )

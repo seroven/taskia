@@ -1,27 +1,24 @@
-import { env } from '../../config/env.js'
-import { decodeStudyPhoto, uploadStudyPhoto } from '../../infrastructure/cloudinary/cloudinary.client.js'
-import { callGemini, callGeminiImage, type LlmUsageContext } from '../../infrastructure/gemini/gemini.client.js'
+import { callGemini, type LlmUsageContext } from '../../infrastructure/gemini/gemini.client.js'
 import { extractJson } from '../../utils/helpers.js'
+import { stripMathDelimiters } from './text.js'
 
-export type BoardSheet = { text: string } | { imageSrc: string }
-
-export type SheetPlan =
-  | { mode: 'none' }
-  | { mode: 'need_reference' }
-  | { mode: 'text' }
-  | { mode: 'image'; imageSrc: string }
+export const GRAPHIC_DECLINE =
+  'Ese ejercicio lleva un dibujo y yo no puedo armarlo. Si me mandas la foto de uno parecido, te ayudo con gusto.'
 
 const GRAPHIC_SYSTEM = `Miras un ejercicio de primaria. Responde SOLO JSON {"graphic":true|false}.
-graphic=true solo si hace falta una figura, gráfica, diagrama o dibujo para entender el ejercicio.
-graphic=false si basta con el enunciado escrito.`
-
-const IMAGE_SYSTEM = `Genera UN ejercicio similar al referente.
-Si la imagen de referencia está vertical, el ejercicio va en horizontal.`
+graphic=true solo si hace falta una figura, gráfica, diagrama, tabla o dibujo para entender el ejercicio.
+graphic=false si basta con el enunciado escrito o con números.`
 
 const SHORT_REQUEST =
   /^(s[ií]|ok|dale|ya|listo|otro|un ejercicio|dame un ejercicio|hazme un ejercicio|otro ejercicio|uno similar|parecido)[.!?\s]*$/i
 
-/** Fotos que subió el explorador. La ficha que generó Taskia no es la referencia. */
+export type ExerciseTurn =
+  | { mode: 'none' }
+  | { mode: 'need_reference' }
+  | { mode: 'text' }
+  | { mode: 'decline' }
+
+/** Fotos que subió el explorador. Una ficha generada no es la referencia. */
 export function userReferencePhotos(
   messages: Array<{ role: string; image_url?: string | null }>,
 ): Array<string | null | undefined> {
@@ -45,19 +42,6 @@ export function parseGraphicFlag(raw: string): boolean {
   }
 }
 
-export function stripDrewPhrase(speak: string): string {
-  return speak.replace(/te lo dibuj[eé] en la pizarra\.?\s*/gi, '').trim()
-}
-
-/** Quita delimitadores de fórmula ($3x$, $$…$$, \(…\)) y deja el texto de adentro. */
-export function stripMathDelimiters(text: string): string {
-  return text
-    .replace(/\$\$([\s\S]+?)\$\$/g, '$1')
-    .replace(/\\\[([\s\S]+?)\\\]/g, '$1')
-    .replace(/\\\(([\s\S]+?)\\\)/g, '$1')
-    .replace(/(^|[^$\\])\$(?!\$)([^$\n]+?)\$(?!\$)/g, '$1$2')
-}
-
 export async function loadReferencePhoto(
   current: string | null,
   imageUrls: Array<string | null | undefined>,
@@ -75,17 +59,6 @@ export async function loadReferencePhoto(
     return `data:${mime};base64,${buf.toString('base64')}`
   } catch {
     return null
-  }
-}
-
-async function publishImage(mime: string, base64: string): Promise<string> {
-  const dataUrl = `data:${mime};base64,${base64}`
-  try {
-    const photo = decodeStudyPhoto(dataUrl)
-    if (!photo) return dataUrl
-    return await uploadStudyPhoto(photo)
-  } catch {
-    return dataUrl
   }
 }
 
@@ -110,12 +83,13 @@ export async function needsGraphic(opts: {
   }
 }
 
-export async function planExerciseSheet(opts: {
+/** Si pidió un ejercicio: texto en el chat, o un no amable cuando hace falta figura. */
+export async function planExerciseTurn(opts: {
   draw: boolean
   referenceText: string
   photoBase64: string | null
   usage: LlmUsageContext
-}): Promise<SheetPlan> {
+}): Promise<ExerciseTurn> {
   if (!opts.draw) return { mode: 'none' }
   const text = opts.referenceText.trim()
   if (!text && !opts.photoBase64) return { mode: 'need_reference' }
@@ -124,28 +98,23 @@ export async function planExerciseSheet(opts: {
     photoBase64: opts.photoBase64,
     usage: opts.usage,
   })
-  if (!graphic) return { mode: 'text' }
-  const image = await callGeminiImage({
-    system: IMAGE_SYSTEM,
-    user: text || 'Un ejercicio similar a la captura. Si la foto está vertical, el ejercicio va en horizontal.',
-    photoBase64: opts.photoBase64,
-    model: env.gemini.proModel,
-    usage: opts.usage,
-  })
-  if (!image) return { mode: 'text' }
-  return { mode: 'image', imageSrc: await publishImage(image.mime, image.base64) }
+  return graphic ? { mode: 'decline' } : { mode: 'text' }
 }
 
-export async function sheetForPrompt(prompt: string, usage: LlmUsageContext): Promise<BoardSheet> {
-  const text = prompt.trim() || 'Resuelve el ejercicio.'
-  const graphic = await needsGraphic({ text, photoBase64: null, usage })
-  if (!graphic) return { text }
-  const image = await callGeminiImage({
-    system: IMAGE_SYSTEM,
-    user: text,
-    model: env.gemini.proModel,
-    usage,
-  })
-  if (!image) return { text }
-  return { imageSrc: await publishImage(image.mime, image.base64) }
+export function exerciseTurnInstruction(turn: ExerciseTurn): string {
+  if (turn.mode === 'need_reference') {
+    return ' Pide un ejercicio de ejemplo, escrito o en foto. No inventes uno.'
+  }
+  if (turn.mode === 'decline') {
+    return ` No armes ese ejercicio. En speak_to_child escribe exactamente: ${GRAPHIC_DECLINE}`
+  }
+  if (turn.mode === 'text') {
+    return ' Escribe el ejercicio nuevo en speak_to_child, con otros números si el ejemplo ya los trae, y sin la respuesta. No digas que lo dibujaste.'
+  }
+  return ''
+}
+
+export function speakForTurn(turn: ExerciseTurn, speak: string): string {
+  if (turn.mode === 'decline') return GRAPHIC_DECLINE
+  return stripMathDelimiters(speak)
 }

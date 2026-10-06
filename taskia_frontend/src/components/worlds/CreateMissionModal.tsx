@@ -83,11 +83,11 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
                 <span>
                   <strong className="worlds-switch-label">
                     <PencilLine size={18} weight="fill" />
-                    ¿Usar pizarra?
+                    Tema práctico
                   </strong>
                   <span className="muted">
                     {' '}
-                    Actívalo si el tema se practica dibujando (geometría, esquemas…).
+                    Figuras, tablas o un procedimiento. El desafío usa fotos que ya subiste.
                   </span>
                 </span>
               </label>

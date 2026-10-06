@@ -18,7 +18,6 @@ import { errorMessage } from '../../lib/errors'
 import type { StudyContext, StudyExercise, StudyMessage, TutorPhase } from '../../lib/studyProtocol'
 import { phaseLabel } from '../../lib/studyProtocol'
 import { MAX_VOICE_SECONDS, VoiceRecorder } from '../../lib/voiceRecorder'
-import { useCompactStudyBoard } from './StudyBoardPane'
 
 interface Props {
   context: StudyContext | null
@@ -26,10 +25,6 @@ interface Props {
   exercise: StudyExercise | null
   sending: boolean
   error: string | null
-  /** Si false, el estudio no usa pizarra y habilita el micrófono. Default true. */
-  boardControls?: boolean
-  boardOpen?: boolean
-  onToggleBoardView?: () => void
   onThreadEl?: (el: HTMLDivElement | null) => void
   onSend: (
     message: string,
@@ -120,13 +115,10 @@ export function StudyChat({
   exercise,
   sending,
   error,
-  boardControls = true,
-  boardOpen = false,
-  onToggleBoardView,
   onThreadEl,
   onSend,
 }: Props) {
-  const voiceEnabled = !boardControls
+  const voiceEnabled = true
   const [draft, setDraft] = useState('')
   const [fromVoiceDraft, setFromVoiceDraft] = useState(false)
   const [photoData, setPhotoData] = useState<string | null>(null)
@@ -196,9 +188,6 @@ export function StudyChat({
   }, [displayMessages, liveAssistant])
 
   const voiceBusy = voiceStatus !== 'idle' || voicePrompt !== null
-  const compactBoard = useCompactStudyBoard()
-  const showBoardViewToggle =
-    Boolean(boardControls && onToggleBoardView) && compactBoard
 
   useEffect(() => {
     return () => {
@@ -658,13 +647,7 @@ export function StudyChat({
             setDraft(e.target.value)
             if (fromVoiceDraft) setFromVoiceDraft(true)
           }}
-          placeholder={
-            boardControls
-              ? 'Escribe tu duda. Si quieres, pide que revise tu pizarra o que te ponga un ejercicio.'
-              : voiceEnabled
-                ? 'Cuéntale a Taskia lo de tu tema. Puedes grabar varias veces, sumarlo aquí y enviar cuando esté listo.'
-                : 'Escribe tu duda o lo que acabas de entender…'
-          }
+          placeholder="Cuéntale a Taskia lo de tu tema. Puedes grabar varias veces, sumarlo aquí y enviar cuando esté listo."
           rows={3}
           disabled={sending || voiceBusy}
         />
@@ -685,16 +668,6 @@ export function StudyChat({
             <Camera size={18} weight="fill" />
             Foto
           </button>
-          {showBoardViewToggle ? (
-            <button
-              type="button"
-              className="ghost study-open-board-btn"
-              disabled={sending || voiceBusy}
-              onClick={onToggleBoardView}
-            >
-              {boardOpen ? 'Chat' : 'Pizarra'}
-            </button>
-          ) : null}
           <button
             type="submit"
             className={`primary study-send-btn${sending ? ' is-loading' : ''}`}

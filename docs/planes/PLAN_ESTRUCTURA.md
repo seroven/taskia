@@ -53,7 +53,7 @@ Las páginas importan ese objeto y mezclan fetch, estado y JSX. Las más grandes
 | `pages/GuardianPage.tsx` | 420 |
 | `pages/BoardPage.tsx` | 413 |
 
-`components/study/GridBoard.tsx` (~1221) es UI del tablero. Se mueve de carpeta; no se parte salvo que al moverlo se vea lógica de API mezclada.
+El estudio ya no tiene lienzo. `StudyChat.tsx` es la UI del chat y se mueve de carpeta; no se parte salvo que al moverlo se vea lógica de API mezclada.
 
 La navegación del explorador es un `useState` de vistas dentro de `App.tsx` (hub, tropas, campamento, estudio, mundos, desafío). Admin y Guardián son pantallas aparte según el rol.
 

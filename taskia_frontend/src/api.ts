@@ -21,7 +21,7 @@ import type {
   StudyWorldCourse,
 } from './lib/worldsTypes'
 import type { PlanetConfig } from './lib/planet/engine'
-import type { StudyBoardScene, StudyChatResponse, StudySession } from './lib/studyProtocol'
+import type { StudyChatResponse, StudySession } from './lib/studyProtocol'
 import type {
   AdminCourse,
   AdminCourseImportResult,
@@ -165,7 +165,6 @@ export const api = {
     difficulty_id: number
     task_kind: TaskKind
     due_date?: string
-    uses_board?: boolean
   }) {
     return request<Task>('/tasks', {
       method: 'POST',
@@ -181,8 +180,6 @@ export const api = {
     task_kind: TaskKind
     due_date?: string
     status: TaskStatus
-    uses_board?: boolean
-    study_mode_chosen?: boolean
   }) {
     const { task_id, ...body } = input
     return request<Task>(`/tasks/${task_id}`, {
@@ -206,12 +203,6 @@ export const api = {
   },
   studyLoadSession(task_id: number) {
     return request<StudySession>(`/study/${task_id}`)
-  },
-  studySaveBoard(task_id: number, board: StudyBoardScene) {
-    return request<{ ok: boolean }>(`/study/${task_id}/board`, {
-      method: 'PUT',
-      body: JSON.stringify({ board }),
-    }).then(() => undefined)
   },
   studyChat(
     task_id: number,
@@ -340,12 +331,6 @@ export const api = {
   },
   missionLoadSession(mission_id: number) {
     return request<MissionSession>(`/worlds/missions/${mission_id}/session`)
-  },
-  missionSaveBoard(mission_id: number, board: StudyBoardScene) {
-    return request<{ ok: boolean }>(`/worlds/missions/${mission_id}/board`, {
-      method: 'PUT',
-      body: JSON.stringify({ board }),
-    }).then(() => undefined)
   },
   missionChat(
     mission_id: number,

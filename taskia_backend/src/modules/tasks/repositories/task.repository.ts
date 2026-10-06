@@ -25,8 +25,6 @@ export type TaskRecord = {
   status: string
   board_order: number
   study_passed: boolean
-  uses_board: boolean
-  study_mode_chosen: boolean
   due_date: string
   created_at: string
   updated_at: string
@@ -51,8 +49,6 @@ function mapTask(task: Task, course: Course, difficulty: Difficulty): TaskRecord
     status: task.status,
     board_order: task.boardOrder,
     study_passed: task.studyPassed,
-    uses_board: task.usesBoard,
-    study_mode_chosen: task.studyModeChosen,
     due_date: formatCivilDate(task.dueDate),
     created_at: toInstantISO(task.createdAt) ?? '',
     updated_at: toInstantISO(task.updatedAt) ?? '',
@@ -145,7 +141,6 @@ export async function insertTask(input: {
   description: string | null
   taskKind: string
   boardOrder: number
-  usesBoard: boolean
   dueDate: string
 }) {
   const repo = tasksOf()
@@ -159,7 +154,6 @@ export async function insertTask(input: {
       taskKind: input.taskKind,
       status: 'pending',
       boardOrder: input.boardOrder,
-      usesBoard: input.usesBoard,
       dueDate: input.dueDate,
     }),
   )
@@ -177,8 +171,6 @@ export async function updateTask(input: {
   dueDate: string
   status: string
   boardOrder: number
-  usesBoard: boolean
-  studyModeChosen: boolean
 }) {
   const result = await tasksOf().update(
     { id: input.taskId, userId: input.userId },
@@ -191,8 +183,6 @@ export async function updateTask(input: {
       dueDate: input.dueDate,
       status: input.status,
       boardOrder: input.boardOrder,
-      usesBoard: input.usesBoard,
-      studyModeChosen: input.studyModeChosen,
     },
   )
   return result.affected ?? 0

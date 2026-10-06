@@ -1,27 +1,21 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft } from '@phosphor-icons/react'
 import { api } from '../api'
 import { AppLoader } from '../components/AppLoader'
-import { GridBoard, type GridBoardHandle } from '../components/study/GridBoard'
-import { StudyBoardPane } from '../components/study/StudyBoardPane'
-import { StudyBoardToggle } from '../components/study/StudyBoardToggle'
 import { StudyChat } from '../components/study/StudyChat'
 import { TaskEditPanel } from '../components/study/TaskEditPanel'
 import { errorMessage } from '../lib/errors'
 import {
-  type StudyBoardScene,
   type StudyContext,
   type StudyExercise,
   type TutorPhase,
 } from '../lib/studyProtocol'
 import { mergeXpIntoUser, xpToastCopy } from '../lib/xp'
 import { useAuth } from '../auth'
-import { useTheme } from '../theme'
 import { useToast } from '../toast'
 import {
   canOpenStudyMode,
-  taskStudyPatch,
   type Course,
   type Difficulty,
   type Task,
@@ -33,14 +27,11 @@ interface Props {
 }
 
 export function StudyPage({ taskId, onBack }: Props) {
-  const { theme } = useTheme()
   const { user, setUser } = useAuth()
   const { showToast } = useToast()
   const [mode, setMode] = useState<'study' | 'edit'>('study')
   const [task, setTask] = useState<Task | null>(null)
   const [context, setContext] = useState<StudyContext | null>(null)
-  const [board, setBoard] = useState<StudyBoardScene | null>(null)
-  const [boardReady, setBoardReady] = useState(false)
   const [courses, setCourses] = useState<Course[]>([])
   const [difficulties, setDifficulties] = useState<Difficulty[]>([])
   const [phase, setPhase] = useState<TutorPhase | string>('understanding')
@@ -49,11 +40,6 @@ export function StudyPage({ taskId, onBack }: Props) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [chatError, setChatError] = useState<string | null>(null)
-  const [togglingBoard, setTogglingBoard] = useState<'on' | 'off' | null>(null)
-  const [boardOpen, setBoardOpen] = useState(false)
-  const [threadEl, setThreadEl] = useState<HTMLDivElement | null>(null)
-  const boardRef = useRef<GridBoardHandle>(null)
-  const saveBoardRef = useRef<(scene: StudyBoardScene) => void>(() => {})
 
   useEffect(() => {
     void (async () => {
@@ -67,11 +53,9 @@ export function StudyPage({ taskId, onBack }: Props) {
         ])
         setTask(session.task)
         setContext(session.context)
-        setBoard(session.board)
         setPhase(session.context.tutor_phase)
         setCourses(nextCourses)
         setDifficulties(nextDifficulties)
-        setBoardReady(true)
       } catch (err) {
         setError(errorMessage(err))
       } finally {
@@ -79,24 +63,6 @@ export function StudyPage({ taskId, onBack }: Props) {
       }
     })()
   }, [taskId])
-
-  const persistBoard = useCallback(
-    (scene: StudyBoardScene) => {
-      if (!task?.uses_board) return
-      void api.studySaveBoard(taskId, scene).catch((err) => {
-        setChatError(errorMessage(err))
-      })
-    },
-    [taskId, task?.uses_board],
-  )
-
-  useEffect(() => {
-    saveBoardRef.current = persistBoard
-  }, [persistBoard])
-
-  const onBoardSave = useCallback((scene: StudyBoardScene) => {
-    saveBoardRef.current(scene)
-  }, [])
 
   async function onSend(
     message: string,
@@ -108,24 +74,10 @@ export function StudyPage({ taskId, onBack }: Props) {
     setSending(true)
     setChatError(null)
     try {
-      let boardAttach:
-        | { description?: string; image_base64?: string | null; board_json?: unknown }
-        | undefined
-      if (task?.uses_board) {
-        const attachment = await boardRef.current?.getBoardAttachment()
-        const boardJson = boardRef.current?.getScene()
-        if ((attachment?.elementCount ?? 0) > 0) {
-          boardAttach = attachment?.imageBase64
-            ? { image_base64: attachment.imageBase64, board_json: boardJson }
-            : { description: attachment?.description, board_json: boardJson }
-        } else {
-          boardAttach = { board_json: boardJson }
-        }
-      }
       const result = await api.studyChat(
         taskId,
         message,
-        boardAttach,
+        undefined,
         false,
         Boolean(options.fromVoice),
         options.photoBase64 ?? null,
@@ -153,61 +105,11 @@ export function StudyPage({ taskId, onBack }: Props) {
         const copy = xpToastCopy(result.xp_gained)
         if (copy) showToast({ tone: 'success', ...copy })
       }
-      if (result.reply.board_sheet && task?.uses_board) {
-        boardRef.current?.applySheet(result.reply.board_sheet)
-      }
     } catch (err) {
       setChatError(errorMessage(err))
       throw err
     } finally {
       setSending(false)
-    }
-  }
-
-  async function applyUsesBoard(next: boolean) {
-    if (!task) return
-    const updated = await api.updateTask(
-      taskStudyPatch(task, {
-        uses_board: next,
-        study_mode_chosen: true,
-      }),
-    )
-    if (next) {
-      const session = await api.studyLoadSession(taskId)
-      setBoard(session.board)
-      setBoardReady(true)
-    } else {
-      setBoardOpen(false)
-    }
-    setTask(updated)
-    return updated
-  }
-
-  async function onToggleBoard(next: boolean) {
-    if (!task || togglingBoard) return
-    if (next === task.uses_board) {
-      if (next) setBoardOpen(true)
-      return
-    }
-    setTogglingBoard(next ? 'on' : 'off')
-    setChatError(null)
-    try {
-      await applyUsesBoard(next)
-      showToast({
-        tone: 'success',
-        title: next ? '¡Pizarra lista!' : 'Ahora solo hablamos',
-        subtitle: next
-          ? 'Ya puedes dibujar junto a Taskia.'
-          : 'Si quieres dibujar después, toca Pizarra.',
-      })
-    } catch (err) {
-      showToast({
-        tone: 'error',
-        title: 'No se pudo cambiar',
-        subtitle: errorMessage(err),
-      })
-    } finally {
-      setTogglingBoard(null)
     }
   }
 
@@ -252,13 +154,6 @@ export function StudyPage({ taskId, onBack }: Props) {
           </div>
         </div>
         <div className="study-header-actions">
-          {mode === 'study' && (
-            <StudyBoardToggle
-              usesBoard={task.uses_board}
-              disabled={Boolean(togglingBoard)}
-              onChange={(next) => void onToggleBoard(next)}
-            />
-          )}
           <div className="study-mode-toggle" role="group" aria-label="Modo">
             <button
               type="button"
@@ -294,15 +189,7 @@ export function StudyPage({ taskId, onBack }: Props) {
               courses={courses}
               difficulties={difficulties}
               onSave={async (input) => {
-                const updated = await api.updateTask({
-                  ...input,
-                  study_mode_chosen: true,
-                })
-                if (updated.uses_board) {
-                  const session = await api.studyLoadSession(taskId)
-                  setBoard(session.board)
-                  setBoardReady(true)
-                }
+                const updated = await api.updateTask(input)
                 setTask(updated)
                 if (!canOpenStudyMode(updated)) {
                   onBack()
@@ -314,7 +201,7 @@ export function StudyPage({ taskId, onBack }: Props) {
         ) : (
           <motion.div
             key="study"
-            className={`study-layout${task.uses_board ? '' : ' study-layout-chat-only'}`}
+            className="study-layout study-layout-chat-only"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.99 }}
@@ -327,41 +214,10 @@ export function StudyPage({ taskId, onBack }: Props) {
               sending={sending}
               error={chatError}
               onSend={onSend}
-              boardControls={task.uses_board}
-              boardOpen={boardOpen}
-              onToggleBoardView={() => setBoardOpen((open) => !open)}
-              onThreadEl={setThreadEl}
             />
-            {task.uses_board && (
-              <StudyBoardPane
-                open={boardOpen}
-                onClose={() => setBoardOpen(false)}
-                portalParent={threadEl}
-              >
-                {boardReady && (
-                  <GridBoard
-                    key={`board-${task.id}-${theme}-${task.uses_board}`}
-                    ref={boardRef}
-                    initialBoard={board}
-                    onSave={onBoardSave}
-                    theme={theme}
-                  />
-                )}
-              </StudyBoardPane>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
-      {togglingBoard && (
-        <div className="study-page-loader">
-          <AppLoader
-            message={
-              togglingBoard === 'on' ? 'Abriendo pizarra…' : 'Quitando pizarra…'
-            }
-            variant="section"
-          />
-        </div>
-      )}
       </div>
     </div>
   )

@@ -1,7 +1,9 @@
 import type { ChallengeQuestionPublic } from './worldsTypes'
 
-export function isBoardQuestion(q: ChallengeQuestionPublic) {
-  return q.kind === 'board_prompt' || q.requires_board
+export function isPhotoQuestion(
+  q: Pick<ChallengeQuestionPublic, 'reference_image_url'>,
+) {
+  return Boolean(q.reference_image_url)
 }
 
 export function formatUserAnswer(
@@ -18,29 +20,10 @@ export function formatUserAnswer(
   return text
 }
 
-export function formatSaidAnswer(
-  q: ChallengeQuestionPublic,
-  voice: 'student' | 'admin' = 'student',
-) {
-  const drew = voice === 'admin' ? 'Lo dibujó' : 'Lo dibujaste'
-  if (isBoardQuestion(q)) {
-    const extra = (q.user_answer ?? '').trim()
-    if (
-      !extra ||
-      extra.startsWith('{') ||
-      extra.startsWith('[') ||
-      extra === '(respuesta en pizarra)'
-    ) {
-      return drew
-    }
-    return `${drew}. ${extra}`
-  }
+export function formatSaidAnswer(q: ChallengeQuestionPublic) {
   return formatUserAnswer(q, q.user_answer)
 }
 
 export function formatExpectedAnswer(q: ChallengeQuestionPublic) {
-  if (isBoardQuestion(q)) {
-    return (q.correct_answer ?? '').trim() || '—'
-  }
   return formatUserAnswer(q, q.correct_answer)
 }

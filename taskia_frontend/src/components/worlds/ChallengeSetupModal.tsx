@@ -7,6 +7,7 @@ import { challengeDifficultyIcon } from './worldsIcons'
 import { errorMessage } from '../../lib/errors'
 import {
   DIFFICULTY_LABEL,
+  type ChallengeDetail,
   type ChallengeDifficulty,
   type ChallengePreset,
   type ChallengeScope,
@@ -88,12 +89,13 @@ export function ChallengeSetupModal({
         setStarting(false)
         return
       }
+      const started = detail as ChallengeDetail
       showToast({
         tone: 'success',
         title: '¡Desafío listo!',
-        subtitle: `${detail.questions.length} preguntas te esperan`,
+        subtitle: `${started.questions.length} preguntas te esperan`,
       })
-      onStarted(detail.challenge.id)
+      onStarted(started.challenge.id)
       onClose()
     } catch (err) {
       const msg = errorMessage(err)
@@ -117,9 +119,9 @@ export function ChallengeSetupModal({
       lead={
         <>
           {title ? `Sobre: ${title}. ` : ''}
-          En el desafío Taskia no habla: solo corrige al final. Si el tema usa
-          pizarra, el enunciado queda fijo y tú resuelves ahí o con una foto
-          del cuaderno. Al final revisa todas las respuestas.
+          En el desafío Taskia no habla: solo corrige al final. Si el tema es
+          práctico, ves una foto tuya, marcas una opción y subes cómo lo
+          resolviste. Al final revisa todas las respuestas.
         </>
       }
       icon={Trophy}

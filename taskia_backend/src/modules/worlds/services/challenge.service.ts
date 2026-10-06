@@ -1,19 +1,23 @@
+import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
-import { sheetForPrompt, stripMathDelimiters, type BoardSheet } from '../../board/sheet.js'
-import { CHALLENGE_GRADE_SYSTEM, challengeGenerateSystem } from '../../../prompts/challenge.js'
+import { loadReferencePhoto } from '../../exercises/reference.js'
+import { stripMathDelimiters } from '../../exercises/text.js'
+import {
+  CHALLENGE_GRADE_SYSTEM,
+  CHALLENGE_PHOTO_GRADE_SYSTEM,
+  CHALLENGE_PHOTO_QUESTION_SYSTEM,
+  challengeGenerateSystem,
+} from '../../../prompts/challenge.js'
 import { awardXp, xpForChallenge } from '../../../services/xp.js'
 import { AppError, extractJson, truncateChars } from '../../../utils/helpers.js'
 import {
-  describeBoardJson,
   distributeQuestionCounts,
   estimateMaxQuestionsFromMaterial,
   formatCorrectAnswer,
   gradeMultipleChoice,
   groupMissionsByCourse,
-  itemWantsBoard,
   normalizeAnswerKey,
   normalizeOptionsList,
-  publishPromptFigure,
   shuffleArray,
 } from '../lib/challenge-logic.js'
 import {
@@ -31,6 +35,7 @@ import {
   listChallengeQuestionDetails,
   listChallengeQuestions,
   listCompletedChallenges,
+  listUserMissionPhotos,
   listCourseMissions,
   listWorldMissions,
   loadMissionStudyBits,
@@ -90,21 +95,71 @@ async function loadMissionStudyMaterial(missionId: number) {
   }
 }
 
-async function attachChallengeSheets(
-  items: Array<Record<string, unknown>>,
-  missions: MissionView[],
+async function pickPhotoJobs(missions: MissionView[], count: number) {
+  const pool: Array<{ missionId: number; url: string }> = []
+  for (const mission of missions) {
+    if (!mission.uses_board) continue
+    for (const url of await listUserMissionPhotos(mission.id)) {
+      pool.push({ missionId: mission.id, url })
+    }
+  }
+  if (pool.length === 0) return []
+  const theory = Math.round(count / 11)
+  const room = Math.max(0, count - theory)
+  return shuffleArray(pool).slice(0, Math.min(pool.length, room))
+}
+
+async function buildPhotoQuestions(
+  jobs: Array<{ missionId: number; url: string }>,
   userId: number,
 ) {
-  const byId = new Map(missions.map((mission) => [mission.id, mission]))
-  for (const item of items) {
-    let mid = typeof item.mission_id === 'number' ? item.mission_id : Number(item.mission_id)
-    if (!Number.isFinite(mid) || !byId.has(mid)) mid = missions[0]?.id ?? 0
-    const mission = byId.get(mid)
-    if (!itemWantsBoard(item, Boolean(mission?.uses_board))) continue
-    const prompt = stripMathDelimiters(typeof item.prompt === 'string' ? item.prompt : '¿Listo?')
-    const sheet: BoardSheet = await sheetForPrompt(prompt, { userId, kind: 'board_facts' })
-    item.sheet = sheet
+  const ready: Array<{ missionId: number; url: string; data: string }> = []
+  for (const job of jobs) {
+    const data = await loadReferencePhoto(null, [job.url])
+    if (data) ready.push({ ...job, data })
   }
+  if (ready.length === 0) return []
+  const raw = await callGemini({
+    system: CHALLENGE_PHOTO_QUESTION_SYSTEM,
+    user: JSON.stringify({
+      fotos: ready.map((job, index) => ({ index, mission_id: job.missionId })),
+    }),
+    boardImages: ready.map((job, index) => ({
+      data: job.data,
+      caption: `Foto index=${index}. Es el ejercicio. Arma la pregunta de esta foto.`,
+    })),
+    usage: { userId, kind: 'challenge_generate' },
+  })
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(extractJson(raw))
+  } catch {
+    return []
+  }
+  const rows = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === 'object' && Array.isArray((parsed as { items?: unknown }).items)
+      ? (parsed as { items: unknown[] }).items
+      : []
+  const questions: Array<Record<string, unknown>> = []
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue
+    const obj = row as Record<string, unknown>
+    const index = Number(obj.index)
+    const job = ready[index]
+    if (!job) continue
+    const options = normalizeOptionsList(obj.options)
+    if (!options || options.length < 2) continue
+    questions.push({
+      mission_id: job.missionId,
+      kind: 'multiple_choice',
+      prompt: stripMathDelimiters(typeof obj.prompt === 'string' ? obj.prompt : 'Mira la imagen y resuelve lo que pide.'),
+      options: options.slice(0, 4).map((option) => stripMathDelimiters(option)),
+      answer_key: typeof obj.answer_key === 'string' ? obj.answer_key : 'A',
+      reference_image_url: job.url,
+    })
+  }
+  return questions
 }
 
 async function generateQuestionsBatch(
@@ -134,39 +189,17 @@ async function generateQuestionsBatch(
       : options.scope === 'world'
         ? `- Alcance MUNDO: estas misiones son de UNA sola materia. Mezcla los temas DENTRO de esta materia.`
         : `- Alcance TEMA: todas las preguntas son de esta misión.`
-  const boardMissionCount = missions.filter((mission) => mission.uses_board).length
-  const maxTheoIfBoard = Math.round(count / 11)
-  const minBoardIfBoard = Math.max(0, count - maxTheoIfBoard)
-  const boardMixRules =
-    boardMissionCount === 0
-      ? `Reglas de tipo (SIN pizarra):
-- NUNCA kind="board_prompt"; requires_board=false; draw_ops=[].
-- La mayoría deben ser EJERCICIOS en texto (aplicar, elegir un caso concreto). Teóricas (definir, “qué es…”, nombrar SIN resolver) como máximo 1 o 2 en el lote, salvo que el material sea solo conceptual.`
-      : `Reglas de tipo (PIZARRA):
-- Primero decidí si el tema de cada misión REQUIERE pizarra para practicar.
-  SÍ requiere: hay que calcular, despejar, construir, dibujar una figura/diagrama o mostrar un procedimiento en el lienzo.
-  NO requiere: solo se nombra, define, fecha, clasifica o reconoce (aunque uses_board=true). Entonces NO uses pizarra: trátalo como teórico (MCQ/texto).
-- Si SÍ requiere pizarra: priorizá ejercicios prácticos en el lienzo. Relación OBLIGATORIA ≈ 1 pregunta teórica por cada 10 de pizarra (unas 1 de cada 11 es teórica).
-  Teórica = multiple_choice / short_text / fill_blank (definir o nombrar). El resto = kind="board_prompt".
-  NO conviertas un cálculo o procedimiento en opción múltiple para evitar la pizarra.
-${
-  boardMissionCount === missions.length
-    ? `  En ESTE lote de ${count}: máximo ${maxTheoIfBoard} teórica(s) y al menos ${minBoardIfBoard} board_prompt (si el tema sí se resuelve en el lienzo).`
-    : `  Aplica esa proporción 1/10 a las preguntas de las misiones que sí se resuelven en el lienzo. Misiones uses_board=false: NUNCA board_prompt.`
-}
-- uses_board=false: NUNCA board_prompt; requires_board=false; draw_ops=[].`
+  const boardMixRules = `Reglas de tipo:
+- Solo multiple_choice, short_text o fill_blank.
+- La mayoría deben ser EJERCICIOS en texto (aplicar, elegir un caso concreto). Teóricas (definir, “qué es…”, nombrar SIN resolver) como máximo 1 o 2 en el lote, salvo que el material sea solo conceptual.
+- No pidas dibujar ni armes una figura.`
   const system = challengeGenerateSystem({ count, mixRule, boardMixRules })
   const user = JSON.stringify({
     target_count: count,
     batch_offset: batchOffset,
     already_asked: options.avoidPrompts ?? [],
     missions: catalog,
-    instruction:
-      boardMissionCount === 0
-        ? `Genera ${count} preguntas nuevas, distintas entre sí y distintas de already_asked. Casi todas EJERCICIOS en texto; teóricas como máximo 1 o 2 (salvo material solo conceptual). Sin pizarra. ÚNICAMENTE con base en studied_text / topic_summary / context_summary / description.`
-        : boardMissionCount === missions.length
-          ? `Genera ${count} preguntas nuevas, distintas entre sí y distintas de already_asked. Si el tema se resuelve en el lienzo: máximo ${maxTheoIfBoard} teórica(s) y al menos ${minBoardIfBoard} board_prompt (relación 1 teórica / 10 pizarra). Si el tema NO pide pizarra para practicar (solo nombrar/definir), no inventes board_prompt. ÚNICAMENTE con base en studied_text / topic_summary / context_summary / description.`
-          : `Genera ${count} preguntas nuevas, distintas entre sí y distintas de already_asked. En misiones que sí se resuelven en pizarra: ~1 teórica por cada 10 board_prompt. En misiones conceptuales o uses_board=false: texto/MCQ, sin pizarra. ÚNICAMENTE con base en studied_text / topic_summary / context_summary / description.`,
+    instruction: `Genera ${count} preguntas nuevas, distintas entre sí y distintas de already_asked. Casi todas EJERCICIOS en texto; teóricas como máximo 1 o 2 (salvo material solo conceptual). Sin figuras. ÚNICAMENTE con base en studied_text / topic_summary / context_summary / description.`,
   })
   const raw = await callGemini({
     system,
@@ -196,6 +229,8 @@ async function generateQuestionsUpTo(
   userId: number,
 ) {
   if (count <= 0 || missions.length === 0) return []
+  const photoJobs = await pickPhotoJobs(missions, count)
+  const textTarget = Math.max(0, count - photoJobs.length)
   const collected: Array<Record<string, unknown>> = []
   const seen = new Set<string>()
   let emptyStreak = 0
@@ -207,12 +242,12 @@ async function generateQuestionsUpTo(
       seen.add(prompt)
       collected.push(item)
       added += 1
-      if (collected.length >= count) break
+      if (collected.length >= textTarget) break
     }
     return added
   }
-  while (collected.length < count && emptyStreak < 2) {
-    const need = Math.min(12, count - collected.length)
+  while (collected.length < textTarget && emptyStreak < 2) {
+    const need = Math.min(12, textTarget - collected.length)
     const part = await generateQuestionsBatch(missions, need, collected.length, {
       scope,
       avoidPrompts: [...seen],
@@ -222,7 +257,8 @@ async function generateQuestionsUpTo(
     if (added === 0) emptyStreak += 1
     else emptyStreak = 0
   }
-  return collected.slice(0, count)
+  const photos = photoJobs.length > 0 ? await buildPhotoQuestions(photoJobs, userId) : []
+  return [...collected, ...photos].slice(0, count)
 }
 
 export async function getChallengeDetail(challengeId: number, userId: number) {
@@ -252,9 +288,10 @@ export async function getChallengeDetail(challengeId: number, userId: number) {
       kind,
       prompt: stripMathDelimiters(String(question.prompt)),
       options,
-      requires_board: Number(question.requires_board) !== 0,
-      prompt_draw_ops:
-        Number(question.requires_board) !== 0 ? publishPromptFigure(question.prompt_draw_ops) : [],
+      reference_image_url:
+        typeof question.reference_image_url === 'string' && question.reference_image_url
+          ? question.reference_image_url
+          : null,
       answered,
       is_correct: question.is_correct == null ? null : Number(question.is_correct) !== 0,
       user_answer: null as string | null,
@@ -276,30 +313,70 @@ export async function getChallengeDetail(challengeId: number, userId: number) {
   return { challenge, questions, current_index: currentIndex, progress }
 }
 
+async function gradePhotoPairs(
+  pairs: Array<{ questionId: number; exerciseUrl: string; solutionRaw: string }>,
+  userId: number,
+) {
+  const results = new Map<number, boolean>()
+  const ready: Array<{ questionId: number; exercise: string; solution: string }> = []
+  for (const pair of pairs) {
+    const exercise = await loadReferencePhoto(null, [pair.exerciseUrl])
+    const solution = pair.solutionRaw.trim()
+    if (!exercise || !solution) continue
+    ready.push({ questionId: pair.questionId, exercise, solution })
+  }
+  for (let offset = 0; offset < ready.length; offset += 6) {
+    const chunk = ready.slice(offset, offset + 6)
+    const images = chunk.flatMap((pair) => [
+      {
+        data: pair.exercise,
+        caption: `Ejercicio de question_id=${pair.questionId}. Esta es la pregunta, no la resolución.`,
+      },
+      {
+        data: pair.solution,
+        caption: `Resolución del niño para question_id=${pair.questionId}.`,
+      },
+    ])
+    const raw = await callGemini({
+      system: CHALLENGE_PHOTO_GRADE_SYSTEM,
+      user: JSON.stringify({
+        pairs: chunk.map((pair) => ({ question_id: pair.questionId })),
+      }),
+      boardImages: images,
+      usage: { userId, kind: 'challenge_photo_grade' },
+    })
+    let value: unknown
+    try {
+      value = JSON.parse(extractJson(raw))
+    } catch {
+      value = []
+    }
+    if (!Array.isArray(value)) continue
+    for (const row of value) {
+      if (!row || typeof row !== 'object') continue
+      const obj = row as Record<string, unknown>
+      const id = Number(obj.question_id)
+      if (!Number.isFinite(id)) continue
+      results.set(id, Boolean(obj.correct))
+    }
+  }
+  return results
+}
+
 async function gradeOpenAnswersBatch(
   items: Array<{
     question_id: number
     prompt: string
     answer_key: string
     child_answer: string
-    requires_board: boolean
-    board_description: string
   }>,
   userId: number,
-  boardImages: Array<{ question_id: number; data: string; caption?: string }> = [],
 ) {
   const results = new Map<number, boolean>()
   if (items.length === 0) return results
-  const images = boardImages.slice(0, 12).map((image) => ({
-    data: image.data,
-    caption:
-      image.caption ??
-      `Pizarra del alumno para question_id=${image.question_id}. Úsala para juzgar su respuesta, no el enunciado.`,
-  }))
   const raw = await callGemini({
     system: CHALLENGE_GRADE_SYSTEM,
     user: JSON.stringify({ items }),
-    boardImages: images,
     usage: { userId, kind: 'challenge_grade' },
   })
   console.log('[challenge:grade-batch] raw Gemini response:\n', raw)
@@ -396,11 +473,6 @@ export async function startChallenge(userId: number, body: Record<string, unknow
     await deleteChallenge(challengeId)
     throw err
   }
-  try {
-    await attachChallengeSheets(generated, missions, userId)
-  } catch (err) {
-    console.error('[challenge:start] ensure board draw_ops failed', err)
-  }
   const missionIds = new Set(missions.map((mission) => mission.id))
   let sortOrder = 0
   for (const item of generated.slice(0, total)) {
@@ -408,15 +480,13 @@ export async function startChallenge(userId: number, body: Record<string, unknow
     if (!Number.isFinite(mid) || !missionIds.has(mid)) mid = missions[0]!.id
     const mission = missions.find((row) => row.id === mid) ?? missions[0]!
     let kind = typeof item.kind === 'string' ? item.kind : 'short_text'
-    const wantsBoard = itemWantsBoard(item, mission.uses_board)
-    let requiresBoard = wantsBoard
-    if (wantsBoard) {
-      kind = 'board_prompt'
-    } else {
-      requiresBoard = false
-      if (kind === 'board_prompt') kind = 'multiple_choice'
-      if (!['multiple_choice', 'short_text', 'fill_blank'].includes(kind)) kind = 'multiple_choice'
+    if (kind === 'board_prompt' || !['multiple_choice', 'short_text', 'fill_blank'].includes(kind)) {
+      kind = 'multiple_choice'
     }
+    const referenceImageUrl =
+      typeof item.reference_image_url === 'string' && item.reference_image_url.startsWith('https://')
+        ? item.reference_image_url
+        : null
     const prompt = stripMathDelimiters(typeof item.prompt === 'string' ? item.prompt : '¿Listo?')
     let options = normalizeOptionsList(item.options)
     if (kind === 'multiple_choice') {
@@ -443,11 +513,6 @@ export async function startChallenge(userId: number, body: Record<string, unknow
       typeof item.answer_key === 'string' ? item.answer_key : '',
       options,
     )
-    const promptDrawOps = requiresBoard
-      ? item.sheet && typeof item.sheet === 'object'
-        ? item.sheet
-        : { text: prompt }
-      : null
     await insertChallengeQuestion({
       challengeId,
       missionId: mid,
@@ -456,8 +521,7 @@ export async function startChallenge(userId: number, body: Record<string, unknow
       prompt,
       options,
       answerKey,
-      requiresBoard,
-      promptDrawOps,
+      referenceImageUrl,
     })
     sortOrder += 1
   }
@@ -495,11 +559,12 @@ export async function saveChallengeProgress(
       {
         question_id: questionId,
         user_answer: typeof obj.user_answer === 'string' ? obj.user_answer.slice(0, 800) : '',
-        board_json: obj.board_json ?? null,
-        board_description:
-          typeof obj.board_description === 'string' ? obj.board_description.slice(0, 1600) : '',
-        notebook_image_base64:
-          typeof obj.notebook_image_base64 === 'string' ? obj.notebook_image_base64 : '',
+        solution_image_base64:
+          typeof obj.solution_image_base64 === 'string'
+            ? obj.solution_image_base64
+            : typeof obj.notebook_image_base64 === 'string'
+              ? obj.notebook_image_base64
+              : '',
       },
     ]
   })
@@ -530,10 +595,7 @@ export async function finishChallenge(
     number,
     {
       user_answer: string
-      board_json: unknown
-      board_description: string
-      board_image_base64: string
-      notebook_image_base64: string
+      solution_image_base64: string
     }
   >()
   for (const answer of answersRaw) {
@@ -541,13 +603,15 @@ export async function finishChallenge(
     const obj = answer as Record<string, unknown>
     const questionId = Number(obj.question_id)
     if (!Number.isFinite(questionId)) continue
+    const solution =
+      typeof obj.solution_image_base64 === 'string'
+        ? obj.solution_image_base64
+        : typeof obj.notebook_image_base64 === 'string'
+          ? obj.notebook_image_base64
+          : ''
     answerMap.set(questionId, {
       user_answer: typeof obj.user_answer === 'string' ? obj.user_answer : '',
-      board_json: obj.board_json ?? null,
-      board_description: typeof obj.board_description === 'string' ? obj.board_description : '',
-      board_image_base64: typeof obj.board_image_base64 === 'string' ? obj.board_image_base64 : '',
-      notebook_image_base64:
-        typeof obj.notebook_image_base64 === 'string' ? obj.notebook_image_base64 : '',
+      solution_image_base64: solution,
     })
   }
   const questions = await listChallengeQuestions(challengeId)
@@ -562,46 +626,53 @@ export async function finishChallenge(
     prompt: string
     answer_key: string
     child_answer: string
-    requires_board: boolean
-    board_description: string
   }> = []
-  const boardImages: Array<{ question_id: number; data: string; caption: string }> = []
+  const photoPairs: Array<{
+    questionId: number
+    exerciseUrl: string
+    solutionRaw: string
+  }> = []
+  const solutionUrls = new Map<number, string | null>()
   const graded = new Map<number, boolean>()
   for (const question of questions) {
     const questionId = Number(question.id)
     const submitted = answerMap.get(questionId)!
-    const requiresBoard = question.requiresBoard
-    if (question.kind === 'multiple_choice') {
-      graded.set(questionId, gradeMultipleChoice(submitted.user_answer, question.answerKey))
+    const optionOk =
+      question.kind === 'multiple_choice'
+        ? gradeMultipleChoice(submitted.user_answer, question.answerKey)
+        : null
+    if (question.referenceImageUrl) {
+      graded.set(questionId, false)
+      if (optionOk && submitted.solution_image_base64.trim()) {
+        photoPairs.push({
+          questionId,
+          exerciseUrl: question.referenceImageUrl,
+          solutionRaw: submitted.solution_image_base64,
+        })
+      }
+    } else if (optionOk != null) {
+      graded.set(questionId, optionOk)
     } else {
-      const boardDescription =
-        submitted.board_description.trim() || describeBoardJson(submitted.board_json)
       openItems.push({
         question_id: questionId,
         prompt: String(question.prompt ?? ''),
         answer_key: question.answerKey,
         child_answer: truncateChars(submitted.user_answer, 800),
-        requires_board: requiresBoard,
-        board_description: truncateChars(boardDescription, 1600),
       })
-      if (requiresBoard && submitted.board_image_base64.trim()) {
-        boardImages.push({
-          question_id: questionId,
-          data: submitted.board_image_base64,
-          caption: `Pizarra del alumno para question_id=${questionId}.`,
-        })
-      }
-      if (requiresBoard && submitted.notebook_image_base64.trim()) {
-        boardImages.push({
-          question_id: questionId,
-          data: submitted.notebook_image_base64,
-          caption: `Foto del cuaderno para question_id=${questionId}. Basta para calificar aunque la pizarra esté vacía.`,
-        })
-      }
+    }
+    if (question.referenceImageUrl && submitted.solution_image_base64.trim()) {
+      const photo = decodeStudyPhoto(submitted.solution_image_base64)
+      solutionUrls.set(questionId, photo ? await uploadStudyPhoto(photo) : null)
+    } else {
+      solutionUrls.set(questionId, null)
     }
   }
-  const openGrades = await gradeOpenAnswersBatch(openItems, userId, boardImages)
+  const openGrades = await gradeOpenAnswersBatch(openItems, userId)
   for (const [questionId, correct] of openGrades) graded.set(questionId, correct)
+  const pairGrades = await gradePhotoPairs(photoPairs, userId)
+  for (const [questionId, correct] of pairGrades) {
+    if (correct) graded.set(questionId, true)
+  }
   let correctCount = 0
   const stored = questions.map((question) => {
     const questionId = Number(question.id)
@@ -611,7 +682,7 @@ export async function finishChallenge(
     return {
       questionId,
       userAnswer: submitted.user_answer,
-      boardJson: submitted.board_json != null ? JSON.stringify(submitted.board_json) : null,
+      solutionImageUrl: solutionUrls.get(questionId) ?? null,
       isCorrect,
     }
   })

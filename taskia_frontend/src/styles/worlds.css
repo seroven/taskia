@@ -846,49 +846,6 @@ button.ghost.worlds-back {
   opacity: 0.85;
 }
 
-.study-board-choice {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.study-board-choice-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  text-align: left;
-  padding: 16px 14px;
-  border-radius: calc(var(--radius) + 6px);
-  border: 2px solid var(--line);
-  background: var(--panel);
-  color: inherit;
-  cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
-}
-
-.study-board-choice-btn:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
-}
-
-.study-board-choice-btn.is-active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
-
-.study-board-choice-btn strong {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-}
-
-.study-board-choice-btn span {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--muted);
-  line-height: 1.35;
-}
-
 .worlds-progress {
   width: 100%;
   height: 10px;
@@ -1135,35 +1092,6 @@ button.ghost.worlds-back {
   width: 100%;
 }
 
-.challenge-play--board .worlds-content {
-  overflow: hidden;
-  padding-bottom: 12px;
-}
-
-.challenge-play--board .challenge-play-enter,
-.challenge-play--board .challenge-play-body {
-  flex: 1;
-  min-height: 0;
-}
-
-.challenge-play--board .challenge-play-body {
-  max-width: none;
-  gap: 16px;
-}
-
-.challenge-play--board .challenge-board {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-}
-
-.challenge-play--board .challenge-board .study-board-wrap {
-  position: absolute;
-  inset: 0;
-  height: auto;
-  min-height: 0;
-}
-
 .challenge-clock {
   font-variant-numeric: tabular-nums;
 }
@@ -1181,6 +1109,15 @@ button.ghost.worlds-back {
   height: 72px;
   object-fit: cover;
   border-radius: 10px;
+}
+
+.challenge-reference {
+  display: block;
+  max-width: min(520px, 100%);
+  max-height: 320px;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 12px;
 }
 
 .challenge-prompt {
@@ -1223,18 +1160,6 @@ button.ghost.worlds-back {
 
 .challenge-text-input {
   width: 100%;
-}
-
-.challenge-board {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 320px;
-}
-
-.challenge-board .study-board-wrap {
-  min-height: 280px;
-  height: 320px;
 }
 
 .challenge-feedback {
@@ -1676,10 +1601,6 @@ button.ghost.worlds-back {
   }
 
   .worlds-diff-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .study-board-choice {
     grid-template-columns: 1fr;
   }
 

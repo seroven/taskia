@@ -9,7 +9,6 @@ import {
 import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
 import { EmptyState } from '../../components/EmptyState'
-import { GridBoard, type GridBoardHandle } from '../../components/study/GridBoard'
 import { ChallengeReviewAnswersList } from '../../components/worlds/ChallengeReviewAnswersList'
 import { WorldsHero } from '../../components/worlds/WorldsHero'
 import { WorldsNav } from '../../components/worlds/WorldsNav'
@@ -17,8 +16,6 @@ import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import { challengeDifficultyIcon } from '../../components/worlds/worldsIcons'
 import { errorMessage } from '../../lib/errors'
 import { plainMathText } from '../../lib/plainMath'
-import { type BoardSheet, type StudyBoardScene } from '../../lib/studyProtocol'
-import { applySheet, emptyGridScene, hasStudentWork, normalizeScene } from '../../lib/gridBoardModel'
 import { compressStudyPhoto } from '../../lib/studyPhoto'
 import {
   DIFFICULTY_LABEL,
@@ -28,7 +25,6 @@ import {
 } from '../../lib/worldsTypes'
 import { mergeXpIntoUser, xpToastCopy } from '../../lib/xp'
 import { useAuth } from '../../auth'
-import { useTheme } from '../../theme'
 import { useToast } from '../../toast'
 
 interface Props {
@@ -44,32 +40,8 @@ function reviewCheer(correct: number, total: number) {
   return '¡Seguí practicando!'
 }
 
-const EMPTY_BOARD: StudyBoardScene = emptyGridScene()
-
-function asBoardScene(raw: unknown): StudyBoardScene {
-  return normalizeScene(raw)
-}
-
-function hasUserBoardWork(scene: StudyBoardScene | null | undefined) {
-  return hasStudentWork(scene)
-}
-
-function isBoardQuestion(q: Pick<ChallengeQuestionPublic, 'kind' | 'requires_board'>) {
-  return q.kind === 'board_prompt' || q.requires_board
-}
-
-function sheetFromOps(raw: unknown): BoardSheet | null {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
-  const rec = raw as Record<string, unknown>
-  if (typeof rec.text === 'string' && rec.text.trim()) return { text: plainMathText(rec.text) }
-  if (typeof rec.imageSrc === 'string' && rec.imageSrc.trim()) return { imageSrc: rec.imageSrc }
-  return null
-}
-
-function promptSceneFor(q: ChallengeQuestionPublic): StudyBoardScene {
-  const sheet = sheetFromOps(q.prompt_draw_ops)
-  if (!sheet) return emptyGridScene()
-  return applySheet(emptyGridScene(), sheet)
+function isPhotoQuestion(q: Pick<ChallengeQuestionPublic, 'reference_image_url'>) {
+  return Boolean(q.reference_image_url)
 }
 
 function formatClock(ms: number) {
@@ -83,7 +55,6 @@ function formatClock(ms: number) {
 }
 
 export function ChallengePlayPage({ challengeId, onBack }: Props) {
-  const { theme } = useTheme()
   const { user, setUser } = useAuth()
   const { showToast } = useToast()
   const [detail, setDetail] = useState<ChallengeDetail | null>(null)
@@ -98,7 +69,6 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
   const [pending, setPending] = useState<Record<number, ChallengeAnswerPayload>>({})
   const [showResult, setShowResult] = useState(false)
   const [clockMs, setClockMs] = useState(0)
-  const boardRef = useRef<GridBoardHandle>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const elapsedBase = useRef(0)
   const runningFrom = useRef<number | null>(null)
@@ -144,9 +114,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
         answers: Object.values(pendingRef.current).map((answer) => ({
           question_id: answer.question_id,
           user_answer: answer.user_answer,
-          board_json: answer.board_json,
-          board_description: answer.board_description,
-          notebook_image_base64: answer.notebook_image_base64,
+          solution_image_base64: answer.solution_image_base64,
         })),
       })
     } catch {
@@ -239,9 +207,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
       return
     }
     setSelectedOption(null)
-    setAnswer(
-      saved.user_answer === '(respuesta en pizarra)' ? '' : saved.user_answer,
-    )
+    setAnswer(saved.user_answer)
   }
 
   async function captureCurrent(): Promise<ChallengeAnswerPayload | null> {
@@ -249,27 +215,18 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
     const isMc =
       current.kind === 'multiple_choice' &&
       Boolean(current.options && current.options.length >= 2)
+    if (isPhotoQuestion(current)) {
+      const photo = pending[current.id]?.solution_image_base64 ?? ''
+      if (!selectedOption || !photo) return pending[current.id] ?? null
+      return {
+        question_id: current.id,
+        user_answer: selectedOption,
+        solution_image_base64: photo,
+      }
+    }
     if (isMc) {
       if (!selectedOption) return pending[current.id] ?? null
       return { question_id: current.id, user_answer: selectedOption }
-    }
-    if (isBoardQuestion(current)) {
-      const boardJson =
-        boardRef.current?.getScene() ?? pending[current.id]?.board_json
-      const attach = await boardRef.current?.getBoardAttachment()
-      const note = answer.trim()
-      const photoNote = pending[current.id]?.notebook_image_base64 ?? ''
-      const scene = asBoardScene(boardJson)
-      if (!hasUserBoardWork(scene) && !note && !photoNote) return pending[current.id] ?? null
-      return {
-        question_id: current.id,
-        user_answer: note || (photoNote ? '(respuesta en el cuaderno)' : '(respuesta en pizarra)'),
-        board_json: boardJson,
-        notebook_image_base64: photoNote,
-        ...(attach?.imageBase64
-          ? { board_image_base64: attach.imageBase64 }
-          : { board_description: attach?.description }),
-      }
     }
     if (!answer.trim()) return pending[current.id] ?? null
     return { question_id: current.id, user_answer: answer.trim() }
@@ -292,11 +249,29 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
     setSubmitting(true)
     try {
       let userAnswer = answer.trim()
-      let boardJson: StudyBoardScene | null = null
-      let boardDescription: string | undefined
-      let boardImage: string | undefined
+      let solutionPhoto = pending[current.id]?.solution_image_base64
 
-      if (
+      if (isPhotoQuestion(current)) {
+        if (!selectedOption) {
+          showToast({
+            title: 'Elige una opción',
+            subtitle: 'Marca una respuesta para seguir.',
+            tone: 'warning',
+          })
+          setSubmitting(false)
+          return
+        }
+        if (!solutionPhoto) {
+          showToast({
+            title: 'Falta la foto',
+            subtitle: 'Sube una foto de cómo lo resolviste.',
+            tone: 'warning',
+          })
+          setSubmitting(false)
+          return
+        }
+        userAnswer = selectedOption
+      } else if (
         current.kind === 'multiple_choice' &&
         current.options &&
         current.options.length >= 2
@@ -311,25 +286,6 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
           return
         }
         userAnswer = selectedOption
-      } else if (isBoardQuestion(current)) {
-        boardJson = boardRef.current?.getScene() ?? null
-        const attach = await boardRef.current?.getBoardAttachment()
-        const photoNote = pending[current.id]?.notebook_image_base64 ?? ''
-        if (!hasUserBoardWork(asBoardScene(boardJson)) && !userAnswer && !photoNote) {
-          showToast({
-            title: 'Falta tu respuesta',
-            subtitle: 'Escribe en la pizarra, deja una nota o manda una foto del cuaderno.',
-            tone: 'warning',
-          })
-          setSubmitting(false)
-          return
-        }
-        userAnswer = userAnswer || (photoNote ? '(respuesta en el cuaderno)' : '(respuesta en pizarra)')
-        if (attach?.imageBase64) {
-          boardImage = attach.imageBase64
-        } else {
-          boardDescription = attach?.description
-        }
       } else if (!userAnswer) {
         showToast({
           title: 'Escribe tu respuesta',
@@ -345,10 +301,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
         [current.id]: {
           question_id: current.id,
           user_answer: userAnswer,
-          board_json: boardJson,
-          board_description: boardDescription,
-          board_image_base64: boardImage,
-          notebook_image_base64: pending[current.id]?.notebook_image_base64,
+          solution_image_base64: solutionPhoto,
         },
       }
       setPending(nextPending)
@@ -538,16 +491,8 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
     isWorldChallenge &&
     Boolean(current.course_name) &&
     current.course_name !== prevCourseName
-  const currentBoard = isBoardQuestion(current)
-    ? pending[current.id]?.board_json
-      ? asBoardScene(pending[current.id]?.board_json)
-      : promptSceneFor(current)
-    : EMPTY_BOARD
-
     return (
-    <div
-      className={`worlds-shell challenge-play${isBoardQuestion(current) ? ' challenge-play--board' : ''}`}
-    >
+    <div className="worlds-shell challenge-play">
       <WorldsNav
         backLabel="Salir"
         onBack={() => void leaveChallenge()}
@@ -613,6 +558,14 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
             </p>
           )}
 
+          {isPhotoQuestion(current) && current.reference_image_url ? (
+            <img
+              className="challenge-reference"
+              src={current.reference_image_url}
+              alt="Ejercicio"
+            />
+          ) : null}
+
           <p className="challenge-prompt">{plainMathText(current.prompt)}</p>
 
           {current.kind === 'multiple_choice' &&
@@ -655,16 +608,6 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
             />
           )}
 
-          {isBoardQuestion(current) && (
-            <input
-              className="field-control challenge-text-input"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder="Opcional: una nota sobre tu respuesta"
-              disabled={submitting || grading}
-            />
-          )}
-
           <div className="challenge-play-actions">
             <button
               type="button"
@@ -687,7 +630,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
           </div>
           </div>
 
-          {isBoardQuestion(current) && (
+          {isPhotoQuestion(current) && (
             <div className="challenge-notebook">
               <input
                 ref={photoInputRef}
@@ -707,7 +650,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
                             question_id: current.id,
                             user_answer: '',
                           }),
-                          notebook_image_base64: data,
+                          solution_image_base64: data,
                         },
                       }))
                     })
@@ -727,27 +670,15 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
                 onClick={() => photoInputRef.current?.click()}
               >
                 <Camera size={18} weight="fill" />
-                Foto del cuaderno
+                Foto de cómo lo resolviste
               </button>
-              {pending[current.id]?.notebook_image_base64 ? (
+              {pending[current.id]?.solution_image_base64 ? (
                 <img
                   className="challenge-notebook-preview"
-                  src={pending[current.id]?.notebook_image_base64}
-                  alt="Foto del cuaderno"
+                  src={pending[current.id]?.solution_image_base64}
+                  alt="Foto de la resolución"
                 />
               ) : null}
-            </div>
-          )}
-
-          {isBoardQuestion(current) && (
-            <div className="challenge-board">
-              <GridBoard
-                key={`challenge-q-${current.id}-${theme}`}
-                ref={boardRef}
-                initialBoard={currentBoard}
-                onSave={() => {}}
-                theme={theme}
-              />
             </div>
           )}
         </div>

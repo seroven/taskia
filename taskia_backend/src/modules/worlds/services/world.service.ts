@@ -1,26 +1,24 @@
 import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
 import { callGemini, classifyBoardIntent } from '../../../infrastructure/gemini/gemini.client.js'
 import { missionTutorPrompt } from '../../../prompts/mission-tutor.js'
-import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../board/exerciseBrief.js'
+import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../exercises/exerciseBrief.js'
 import {
   exerciseReference,
+  exerciseTurnInstruction,
   loadReferencePhoto,
+  planExerciseTurn,
+  speakForTurn,
   userReferencePhotos,
-  planExerciseSheet,
-  stripDrewPhrase,
-  stripMathDelimiters,
-  type BoardSheet,
-  type SheetPlan,
-} from '../../board/sheet.js'
+  type ExerciseTurn,
+} from '../../exercises/reference.js'
+import { stripDrewPhrase } from '../../exercises/text.js'
 import { awardXp, clampEffortScore, xpForMission } from '../../../services/xp.js'
 import {
   AppError,
   extractJson,
   looksLikeAskingMoreTopicContent,
   looksLikeCelebratingMissionMastered,
-  looksLikeOfferingMorePractice,
   requiredChatTurns,
-  soloBienCount,
   stripPrematureReadyCelebration,
   truncateChars,
 } from '../../../utils/helpers.js'
@@ -29,7 +27,6 @@ import {
   archiveWorld,
   countActiveWorldCourse,
   countOwnedActiveCourse,
-  emptyBoard,
   findActiveMission,
   findActiveWorld,
   insertMission,
@@ -40,12 +37,10 @@ import {
   listImportableMissions,
   listMissions,
   listWorldCourses,
-  loadMissionBoard,
   loadMissionSession,
   maxMissionSort,
   maxWorldCourseSort,
   saveExerciseBrief,
-  saveMissionBoard,
   saveSessionGreeting,
   saveSessionMeta,
   setMissionStatus,
@@ -79,10 +74,8 @@ async function requireMission(missionId: number, userId: number) {
 
 async function ensureNotebookContext(
   missionId: number,
-  usesBoard: boolean,
   context: { notebook_context: string; messages: Array<{ role: string; content: string }> },
 ) {
-  if (usesBoard) return
   if (context.notebook_context.trim()) return
   const firstUser = context.messages.find((message) => message.role === 'user')
   if (!firstUser?.content.trim()) return
@@ -187,12 +180,9 @@ export async function openMissionSession(userId: number, missionId: number) {
     mission.status = 'studying'
   }
   const context = await loadMissionSession(missionId)
-  await ensureNotebookContext(missionId, mission.uses_board, context)
-  const board = mission.uses_board ? await loadMissionBoard(missionId) : emptyBoard()
+  await ensureNotebookContext(missionId, context)
   if (context.messages.length === 0) {
-    const speak = mission.uses_board
-      ? `¡Hola! Vamos a estudiar "${mission.title}" (puedes usar la pizarra). Empezamos por lo básico y luego te haré preguntas para fijarte bien en los detalles. Cuéntame qué sabes o qué te confunde.`
-      : `¡Hola! Antes de las preguntas, quiero conocer tu tema "${mission.title}". Cuéntame lo que dice tu cuaderno: puedes escribirlo o usar “Hablar del tema” varias veces, revisar las palabras y sumarlas abajo. Cuando esté listo, envíamelo.`
+    const speak = `¡Hola! Antes de las preguntas, quiero conocer tu tema "${mission.title}". Cuéntame lo que dice tu cuaderno: puedes escribirlo o usar “Hablar del tema” varias veces, revisar las palabras y sumarlas abajo. Cuando esté listo, envíamelo.`
     context.topic_summary = mission.title
     context.context_summary = `Inicio local. Misión: "${mission.title}".`
     try {
@@ -203,14 +193,7 @@ export async function openMissionSession(userId: number, missionId: number) {
     }
     await saveSessionGreeting(missionId, context.topic_summary, context.context_summary)
   }
-  return { context: hideExerciseBrief(context), board, mission }
-}
-
-export async function saveBoard(userId: number, missionId: number, body: Record<string, unknown>) {
-  const mission = await requireMission(missionId, userId)
-  if (!mission.uses_board) throw new AppError('Esta misión no usa pizarra')
-  await saveMissionBoard(missionId, body.board ?? body)
-  return { ok: true }
+  return { context: hideExerciseBrief(context), mission }
 }
 
 export async function chatMission(userId: number, missionId: number, body: Record<string, unknown>) {
@@ -220,8 +203,6 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     await setMissionStatus(missionId, 'studying')
     mission.status = 'studying'
   }
-  const boardImageSent = mission.uses_board ? parsed.boardImageRaw : ''
-  const boardDescriptionSent = mission.uses_board ? parsed.boardDescription : null
   const photo = parsed.photoRaw ? decodeStudyPhoto(parsed.photoRaw) : null
   const imageUrl = photo ? await uploadStudyPhoto(photo) : null
   const context = await loadMissionSession(missionId)
@@ -234,24 +215,21 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   )
   context.messages.push(userMsg)
   const userTurns = context.messages.filter((message) => message.role === 'user').length
-  if (!mission.uses_board && !context.notebook_context.trim() && userTurns === 1) {
+  if (!context.notebook_context.trim() && userTurns === 1) {
     context.notebook_context = truncateChars(parsed.message, MAX_NOTEBOOK)
     await setNotebook(missionId, context.notebook_context)
   } else {
-    await ensureNotebookContext(missionId, mission.uses_board, context)
+    await ensureNotebookContext(missionId, context)
   }
 
   const lastTutorMsg = [...context.messages].reverse().find((message) => message.role === 'assistant')
   const lastTutor = lastTutorMsg ? truncateChars(lastTutorMsg.content, 320) : ''
-  const usesBoard = mission.uses_board
   const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
-  const intent = usesBoard || photo
-    ? await classifyBoardIntent({
-        message: parsed.message,
-        previous: truncateChars(lastTutor, 180),
-        usage: { userId, kind: 'board_intent' },
-      })
-    : { reviewDrawing: false, drawExercise: false, helpExercise: false }
+  const intent = await classifyBoardIntent({
+    message: parsed.message,
+    previous: truncateChars(lastTutor, 180),
+    usage: { userId, kind: 'board_intent' },
+  })
   const memory = planExerciseMemory({
     help: intent.helpExercise,
     review: intent.reviewDrawing,
@@ -276,28 +254,20 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     }
   }
   const tutorPhoto = memory.sendPhoto || (memory.solve && !context.exercise_brief) ? photoData : null
-  const referencePhoto = usesBoard
-    ? await loadReferencePhoto(photoData, userReferencePhotos(context.messages))
-    : null
+  const referencePhoto = await loadReferencePhoto(photoData, userReferencePhotos(context.messages))
   const referenceText = exerciseReference([
     mission.description ?? '',
     ...context.messages.filter((item) => item.role === 'user').map((item) => item.content),
   ])
-  const sheetPlan: SheetPlan = usesBoard
-    ? await planExerciseSheet({
-        draw: intent.drawExercise,
-        referenceText,
-        photoBase64: intent.drawExercise ? referencePhoto : null,
-        usage: { userId, kind: 'board_facts' },
-      })
-    : { mode: 'none' }
-  const boardImageRaw = intent.reviewDrawing ? boardImageSent : ''
-  const boardDescription = intent.reviewDrawing ? boardDescriptionSent : null
-  const boardHas = Boolean(boardDescription?.trim() || boardImageRaw || (intent.reviewDrawing && photo))
+  const exerciseTurn: ExerciseTurn = await planExerciseTurn({
+    draw: intent.drawExercise,
+    referenceText,
+    photoBase64: intent.drawExercise ? referencePhoto : null,
+    usage: { userId, kind: 'board_facts' },
+  })
 
-  let instruction = usesBoard
-    ? 'Responde breve. Conserva ejercicio activo. Anota "Solo bien: N/2". Evalúa study_eval: 2 problemas resueltos solo; al llegar a 2 pregunta si quiere otro tipo de ejercicio (passed=false); passed=true solo si declina. No dibujes. board_text según board_mode.'
-    : 'Responde breve. Enseña el tema completo (básico + observación) SOLO con notebook_context + título/descripción. Conserva ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 10+N. Pregunta todo lo posible de ese relato. Al cumplir el piso pregunta si queda más contenido (passed=false); passed=true solo si declina. Sin pizarra.'
+  let instruction =
+    'Responde breve. Enseña el tema completo (básico + observación) SOLO con notebook_context + título/descripción. Conserva ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 10+N. Pregunta todo lo posible de ese relato. Al cumplir el piso pregunta si queda más contenido (passed=false); passed=true solo si declina.'
   if (parsed.fromVoice) {
     instruction +=
       ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
@@ -306,23 +276,13 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     instruction +=
       ' El niño adjuntó una foto del cuaderno. Léela y decide si el ejercicio está bien. No es la pizarra.'
   }
-  if (intent.reviewDrawing && !boardHas) {
-    instruction +=
-      ' Pidió que revises su trabajo, pero no hay captura ni foto. Pídele que escriba en la pizarra o mande una foto.'
+  if (intent.reviewDrawing && !tutorPhoto) {
+    instruction += ' Pidió que revises su trabajo, pero no hay foto. Pídele que mande una foto del cuaderno.'
   }
-  if (intent.reviewDrawing && boardHas) {
-    instruction +=
-      ' Mira la captura de la pizarra o la foto y decide si está bien. Si lo resolvió solo, puede sumar a Solo bien.'
+  if (intent.reviewDrawing && tutorPhoto) {
+    instruction += ' Mira la foto y decide si está bien.'
   }
-  if (sheetPlan.mode === 'need_reference') {
-    instruction += ' board_mode=need_reference. Pide un ejercicio de ejemplo. No inventes uno.'
-  } else if (sheetPlan.mode === 'text') {
-    instruction +=
-      ' board_mode=text. Escribe el enunciado nuevo en board_text y en speak_to_child. Sin la respuesta.'
-  } else if (sheetPlan.mode === 'image') {
-    instruction +=
-      ' board_mode=image. La imagen ya está hecha. board_text vacío. Habla del ejercicio. No digas que lo dibujaste.'
-  }
+  instruction += exerciseTurnInstruction(exerciseTurn)
 
   const payload = JSON.stringify({
     instruction,
@@ -333,33 +293,25 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       title: truncateChars(mission.title, 120),
       description: truncateChars(mission.description ?? '', 220),
       course: mission.course_name,
-      uses_board: mission.uses_board,
+      practical: mission.uses_board,
     },
     phase: context.tutor_phase,
     topic_summary: truncateChars(context.topic_summary, 120),
     context_summary: truncateChars(context.context_summary, 400),
-    ...(mission.uses_board
-      ? {}
-      : { notebook_context: truncateChars(context.notebook_context, MAX_NOTEBOOK) }),
+    notebook_context: truncateChars(context.notebook_context, MAX_NOTEBOOK),
     last_tutor_message: lastTutor,
     hints_level: context.hints_level,
-    ...(usesBoard ? { board_mode: sheetPlan.mode } : {}),
-    board_has_drawing: boardHas,
     photo_attached: Boolean(tutorPhoto),
     ...(context.exercise_brief ? { exercise_solution: context.exercise_brief } : {}),
-    ...(!boardImageRaw && boardDescription?.trim()
-      ? { board_drawing: truncateChars(boardDescription, 500) }
-      : {}),
     child_message: truncateChars(
       parsed.message,
-      !mission.uses_board && userTurns === 1 ? MAX_NOTEBOOK : parsed.fromVoice ? 4000 : 800,
+      userTurns === 1 ? MAX_NOTEBOOK : parsed.fromVoice ? 4000 : 800,
     ),
   })
 
   const raw = await callGemini({
-    system: missionTutorPrompt(usesBoard),
+    system: missionTutorPrompt(),
     user: payload,
-    boardImageBase64: boardImageRaw || null,
     photoBase64: tutorPhoto,
     usage: { userId, kind: 'mission_tutor' },
   })
@@ -378,7 +330,10 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   const reply = {
     phase: typeof value.phase === 'string' ? value.phase : 'understanding',
     speak_to_child: truncateChars(
-      typeof value.speak_to_child === 'string' ? value.speak_to_child : '¡Sigue! Cuéntame más.',
+      speakForTurn(
+        exerciseTurn,
+        stripDrewPhrase(typeof value.speak_to_child === 'string' ? value.speak_to_child : '¡Sigue! Cuéntame más.'),
+      ),
       450,
     ),
     ask_questions: askQuestions,
@@ -387,12 +342,6 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       typeof value.context_summary === 'string' ? value.context_summary : context.context_summary,
       400,
     ),
-    draw_ops: [],
-    board_items: [] as unknown[],
-    board_sheet: null as BoardSheet | null,
-    scene: null as unknown,
-    highlight: [] as string[],
-    board_fallback: null as string | null,
     hints_level: typeof value.hints_level === 'number' ? value.hints_level : 0,
     study_eval: {
       passed: Boolean(studyEvalRaw.passed),
@@ -400,30 +349,20 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     },
   }
 
-  if (!usesBoard) {
-    if (userTurns < requiredChatTurns(10, reply.context_summary)) reply.study_eval.passed = false
-    const askingMoreContent =
-      looksLikeAskingMoreTopicContent(reply.speak_to_child) ||
-      reply.ask_questions.some((question) => looksLikeAskingMoreTopicContent(question))
-    if (askingMoreContent) reply.study_eval.passed = false
-    if (
-      reply.study_eval.passed &&
-      !looksLikeAskingMoreTopicContent(lastTutorMsg?.content ?? '') &&
-      !/cierre:\s*preguntado/i.test(context.context_summary)
-    ) {
-      reply.study_eval.passed = false
-    }
+  if (userTurns < requiredChatTurns(10, reply.context_summary)) reply.study_eval.passed = false
+  const askingMoreContent =
+    looksLikeAskingMoreTopicContent(reply.speak_to_child) ||
+    reply.ask_questions.some((question) => looksLikeAskingMoreTopicContent(question))
+  if (askingMoreContent) reply.study_eval.passed = false
+  if (
+    reply.study_eval.passed &&
+    !looksLikeAskingMoreTopicContent(lastTutorMsg?.content ?? '') &&
+    !/cierre:\s*preguntado/i.test(context.context_summary)
+  ) {
+    reply.study_eval.passed = false
   }
   if (reply.phase !== 'reviewing') reply.study_eval.passed = false
   if (!reply.study_eval.evidence.trim()) reply.study_eval.passed = false
-  if (usesBoard) {
-    const offeringMore =
-      looksLikeOfferingMorePractice(reply.speak_to_child) ||
-      reply.ask_questions.some((question) => looksLikeOfferingMorePractice(question))
-    if (offeringMore) reply.study_eval.passed = false
-    const score = soloBienCount(reply.context_summary)
-    if (score !== null && score < 2) reply.study_eval.passed = false
-  }
   if (mission.status === 'mastered') reply.study_eval.passed = true
   if (!reply.study_eval.passed && looksLikeCelebratingMissionMastered(reply.speak_to_child)) {
     const stripped = stripPrematureReadyCelebration(reply.speak_to_child)
@@ -434,22 +373,9 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       450,
     )
   }
-  reply.speak_to_child = truncateChars(stripMathDelimiters(stripDrewPhrase(reply.speak_to_child)), 450)
-  const boardText = stripMathDelimiters(String(value.board_text ?? '').trim())
-  if (sheetPlan.mode === 'image') reply.board_sheet = { imageSrc: sheetPlan.imageSrc }
-  else if (sheetPlan.mode === 'text' && boardText) reply.board_sheet = { text: boardText.slice(0, 800) }
   let visible = reply.speak_to_child
-  if (reply.board_sheet && 'text' in reply.board_sheet && !visible.includes(reply.board_sheet.text.slice(0, 24))) {
-    visible = truncateChars(`${visible}\n${reply.board_sheet.text}`, 1600)
-  }
 
-  const saved = await insertMissionMessage(
-    missionId,
-    'assistant',
-    visible,
-    false,
-    reply.board_sheet && 'imageSrc' in reply.board_sheet ? reply.board_sheet.imageSrc : null,
-  )
+  const saved = await insertMissionMessage(missionId, 'assistant', visible)
   context.messages.push(saved)
   context.tutor_phase = reply.phase
   if (reply.topic_summary.trim()) context.topic_summary = truncateChars(reply.topic_summary, 120)

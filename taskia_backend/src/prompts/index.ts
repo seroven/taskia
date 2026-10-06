@@ -2,9 +2,9 @@ export { TRANSCRIBE_SYSTEM } from './transcribe.js'
 export { tutorSystemPrompt } from './study-tutor.js'
 export { missionTutorPrompt } from './mission-tutor.js'
 export {
-  CHALLENGE_BOARD_DRAW_OPS,
   CHALLENGE_GRADE_SYSTEM,
-  CHALLENGE_STATEMENT_DRAW_SYSTEM,
+  CHALLENGE_PHOTO_GRADE_SYSTEM,
+  CHALLENGE_PHOTO_QUESTION_SYSTEM,
   challengeGenerateSystem,
 } from './challenge.js'
 export { guardianTutorSystem } from './guardian.js'

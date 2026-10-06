@@ -2,7 +2,7 @@
 
 Guía funcional de lo que ven **Guardián** y **Explorador** hoy: [FUNCIONES.md](FUNCIONES.md).
 
-Taskia es a la vez la app y **quien ayuda a estudiar**: para el niño, Taskia es el nombre de su guía en el chat y la pizarra. El administrador configura cuentas y materias; el **guardián** acompaña desde su panel; el **explorador** entra a un hub (Tripulación | Mundos | Campamento), gana XP y puede unirse a una tripulación.
+Taskia es a la vez la app y **quien ayuda a estudiar**: para el niño, Taskia es el nombre de su guía en el chat. El administrador configura cuentas y materias; el **guardián** acompaña desde su panel; el **explorador** entra a un hub (Tripulación | Mundos | Campamento), gana XP y puede unirse a una tripulación.
 
 No es un chat suelto con una IA ni un kanban genérico. La idea es un ciclo cerrado: **materias → tareas o temas → estudiar con Taskia → demostrar que se entendió → (en mundos) ponerse a prueba con un desafío**. Taskia no regala la respuesta: guía, pregunta y solo da el visto cuando hay evidencia real.
 
@@ -61,7 +61,6 @@ Al crear o editar una tarea elige:
 - **Dificultad:** Bajo, Medio o Alto
 - **Tipo:** diaria o proyecto (el proyecto lleva fecha de entrega)
 - Título y, si quiere, descripción
-- Si más adelante va a usar pizarra (se puede decidir también al entrar a estudiar)
 
 ### Candado para terminar
 
@@ -79,7 +78,7 @@ El modo estudio se abre cuando la tarea está **Estudiando**, o cuando ya está 
 
 ## Estudiar una tarea (con Taskia)
 
-La primera vez que entra a estudiar, si todavía no eligió modo, pregunta: **¿solo con Taskia, o también dibujando?** Esa elección queda guardada. Después puede cambiar entre chat y pizarra dentro de la sesión.
+Entrar a estudiar abre el chat.
 
 ### Cómo habla Taskia
 
@@ -91,13 +90,11 @@ La sesión recorre tres fases, que el alumno ve en pantalla:
 2. **Practicando** — ejercicios y variaciones.
 3. **Repasando** — el alumno explica o aplica el concepto con números o casos nuevos.
 
-Puede escribir o hablar (voz a texto, hasta unos 90 segundos). En sesiones **sin pizarra**, el audio no se envía solo: el alumno revisa el texto, lo corrige y lo suma a la caja de abajo, para poder grabar varias veces. Si hay pizarra, es una grilla de formas (sin lápiz): Taskia dibuja el enunciado en celdas fijas y el alumno arma la respuesta encima. En móvil, chat y pizarra se alternan; en escritorio pueden convivir.
+Puede escribir o hablar (voz a texto, hasta unos 90 segundos). El audio no se envía solo: el alumno revisa el texto, lo corrige y lo suma a la caja de abajo, para poder grabar varias veces. También puede mandar la foto de un ejercicio. Si pide uno nuevo que necesita un dibujo, Taskia no lo arma y le pide una foto parecida. Si basta con texto o números, lo escribe en el mensaje.
 
 ### Cuándo Taskia da el visto
 
-Sin pizarra (temas teóricos) hace falta un **piso de mensajes del alumno**: al menos **seis**. Cada equivocación sube ese piso y Taskia sigue con preguntas que refuerzan ese punto débil. No hace falta preguntar si quiere más: cuando el piso ya se cumple y está repasando, celebra y le dice que puede mover la tarea a Listo.
-
-Con pizarra el listón es otro: el alumno tiene que resolver **dos problemas por su cuenta**, sin que Taskia le dicte la respuesta y sin errores. Si se equivoca o recibe ayuda para resolverlo, ese intento no cuenta. Al llegar a esos dos, Taskia **aún no** marca el visto: primero pregunta, con tono amable, si quiere practicar **otro tipo de ejercicio** del mismo tema. Solo si el niño dice que no, celebra y le dice que ya puede mover la tarea a Listo.
+Hace falta un **piso de mensajes del alumno**: al menos **seis**. Cada equivocación sube ese piso y Taskia sigue con preguntas que refuerzan ese punto débil. No hace falta preguntar si quiere más: cuando el piso ya se cumple y está repasando, celebra y le dice que puede mover la tarea a Listo.
 
 Ese visto queda en la tarjeta y en el panel del adulto.
 
@@ -122,9 +119,9 @@ Se pueden **traer misiones** de otro mundo que use el mismo curso. Se copia el t
 
 ### Estudiar una misión
 
-Es la misma Taskia (chat, voz, pizarra opcional), pero el objetivo es otro: cubrir el **tema entero**, no una consigna suelta.
+Es la misma Taskia (chat y voz), también si el tema es práctico, pero el objetivo es otro: cubrir el **tema entero**, no una consigna suelta.
 
-En misiones **sin pizarra**, el primer mensaje del alumno es el relato de su cuaderno. Ese relato queda fijo: Taskia lo ve en cada turno y no debe preguntar cosas que no estén ahí. El resumen corto de la conversación sigue actualizándose aparte.
+El primer mensaje del alumno es el relato de su cuaderno. Ese relato queda fijo: Taskia lo ve en cada turno y no debe preguntar cosas que no estén ahí. El resumen corto de la conversación sigue actualizándose aparte.
 
 El recorrido que Taskia debe respetar:
 
@@ -132,9 +129,7 @@ El recorrido que Taskia debe respetar:
 2. **Comprensión** — que lo explique con sus palabras.
 3. **Observación** — detalles, causas, “¿qué pasaría si…?”, un ejemplo propio.
 
-El listón de dominio **sin pizarra** es más alto que en una tarea: al menos **diez** mensajes del alumno, y cada error sube ese piso. Taskia recorre todo lo posible del tema. Antes de marcar **Lista** pregunta si queda **más contenido** de ese tema que necesiten estudiar; solo cierra si el niño dice que no.
-
-**Con pizarra** vale el mismo criterio que en una tarea con pizarra: dos problemas resueltos solo, sin ayuda ni errores; antes de marcar **Lista**, Taskia pregunta si quiere otro tipo de ejercicio del tema; solo cierra si el niño no quiere más.
+El listón de dominio es más alto que en una tarea: al menos **diez** mensajes del alumno, y cada error sube ese piso. Taskia recorre todo lo posible del tema. Antes de marcar **Lista** pregunta si queda **más contenido** de ese tema que necesiten estudiar; solo cierra si el niño dice que no.
 
 Cuando Taskia marca que ya sabe el tema, la misión queda **Lista**. Eso alimenta el progreso del curso y habilita desafíos con más material detrás.
 
@@ -154,7 +149,7 @@ Se puede lanzar a tres alcances:
 
 Y tres intensidades: **Calentamiento**, **Aventura** y **Jefe final**. Cuanto más amplio el alcance y más dura la intensidad, más preguntas (de unas 5 en un calentamiento de tema hasta muchas más en un jefe de mundo). Si todavía hay poco material estudiado, Taskia recorta la cantidad para no inventar de la nada.
 
-Tipos de pregunta: opción múltiple, texto corto, completar, o una consigna que pide dibujar en la pizarra. En temas que **sí se resuelven en el lienzo**, el desafío prioriza práctica: unas **1 teórica por cada 10 de pizarra**. Si el tema es conceptual y no hace falta dibujar para practicar, las preguntas quedan en texto u opción múltiple.
+Tipos de pregunta: opción múltiple, texto corto o completar. En un tema práctico, la mayoría sale de fotos que el niño ya subió: ve la foto, marca una opción y sube cómo lo resolvió. Cuenta bien solo si coinciden las dos. Si no hay fotos, esas preguntas quedan en texto. La proporción sigue cerca de una teórica por cada diez prácticas.
 
 ### Cómo se juega
 
@@ -217,7 +212,7 @@ Los **desafíos** no sustituyen a Taskia: llegan después, para medir. El adulto
 
 **Por la mañana, el adulto** abre el panel, filtra la semana y ve si alguien tiene tareas atrasadas o lleva días sin estudiar. Entra a la ficha, mira si Taskia ya dio el visto en la tarea difícil, o abre un desafío de ayer para ver en qué se equivocó.
 
-**El alumno** entra al hub, abre el Campamento, arrastra “fracciones mixtas” a Estudiando, elige pizarra, practica con Taskia y, cuando celebra, mueve la tarjeta a Listo. Después abre Mundos, entra a un tema de Ciencias que todavía no sabe del todo, estudia un rato y, si ya lo tiene, lanza un calentamiento del curso.
+**El alumno** entra al hub, abre el Campamento, arrastra “fracciones mixtas” a Estudiando, practica con Taskia en el chat y, cuando celebra, mueve la tarjeta a Listo. Después abre Mundos, entra a un tema de Ciencias que todavía no sabe del todo, estudia un rato y, si ya lo tiene, lanza un calentamiento del curso.
 
 Nada de eso exige que el adulto esté sentado al lado en el chat. El adulto configura y revisa; el alumno estudia y se pone a prueba.
 

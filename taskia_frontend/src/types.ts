@@ -46,10 +46,6 @@ export interface Task {
   board_order: number
   /** True si la IA confirmó que el niño dominó la tarea (candado Alta). */
   study_passed: boolean
-  /** Si true, el modo estudio muestra la pizarra cuadriculada. */
-  uses_board: boolean
-  /** Si true, ya eligió solo chat vs pizarra (no repetir el modal). */
-  study_mode_chosen: boolean
   due_date: string
   created_at: string
   updated_at: string
@@ -110,8 +106,6 @@ export function needsStudyPassedGate(
 }
 
 export function taskStudyPatch(task: Task, overrides: Partial<{
-  uses_board: boolean
-  study_mode_chosen: boolean
   status: TaskStatus
 }>) {
   return {
@@ -123,7 +117,5 @@ export function taskStudyPatch(task: Task, overrides: Partial<{
     task_kind: task.task_kind,
     due_date: task.task_kind === 'project' ? task.due_date : undefined,
     status: overrides.status ?? task.status,
-    uses_board: overrides.uses_board ?? task.uses_board,
-    study_mode_chosen: overrides.study_mode_chosen ?? task.study_mode_chosen,
   }
 }

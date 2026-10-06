@@ -34,7 +34,6 @@ interface Props {
     task_kind: TaskKind
     due_date?: string
     status: TaskStatus
-    uses_board: boolean
   }) => Promise<void>
 }
 
@@ -53,7 +52,6 @@ export function TaskDetailModal({
   const [taskKind, setTaskKind] = useState<TaskKind>('daily')
   const [dueDate, setDueDate] = useState('')
   const [status, setStatus] = useState<TaskStatus>('pending')
-  const [usesBoard, setUsesBoard] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -66,7 +64,6 @@ export function TaskDetailModal({
     setTaskKind(task.task_kind)
     setDueDate(task.due_date)
     setStatus(task.status)
-    setUsesBoard(task.uses_board)
     setError(null)
   }, [task])
 
@@ -130,7 +127,6 @@ export function TaskDetailModal({
         task_kind: taskKind,
         due_date: taskKind === 'project' ? dueDate : undefined,
         status,
-        uses_board: usesBoard,
       })
       onClose()
     } catch (err) {
@@ -227,21 +223,6 @@ export function TaskDetailModal({
             onChange={setDueDate}
           />
         )}
-
-        <label className="worlds-switch-row">
-          <input
-            type="checkbox"
-            checked={usesBoard}
-            onChange={(e) => setUsesBoard(e.target.checked)}
-          />
-          <span>
-            <strong>¿Usar pizarra?</strong>
-            <span className="muted">
-              {' '}
-              Márcalo si quieres dibujar cuando estudies.
-            </span>
-          </span>
-        </label>
 
         {error && <p className="form-error">{error}</p>}
         <div className="modal-actions">

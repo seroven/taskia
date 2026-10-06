@@ -26,8 +26,6 @@ export type TaskEditPayload = {
   task_kind: TaskKind
   due_date?: string
   status: TaskStatus
-  uses_board: boolean
-  study_mode_chosen?: boolean
 }
 
 interface Props {
@@ -46,7 +44,6 @@ export function TaskEditPanel({ task, courses, difficulties, onSave }: Props) {
   const [taskKind, setTaskKind] = useState<TaskKind>(task.task_kind)
   const [dueDate, setDueDate] = useState(task.due_date)
   const [status, setStatus] = useState<TaskStatus>(task.status)
-  const [usesBoard, setUsesBoard] = useState(task.uses_board)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -59,7 +56,6 @@ export function TaskEditPanel({ task, courses, difficulties, onSave }: Props) {
     setTaskKind(task.task_kind)
     setDueDate(task.due_date)
     setStatus(task.status)
-    setUsesBoard(task.uses_board)
     setError(null)
     setSaved(false)
   }, [task])
@@ -105,8 +101,6 @@ export function TaskEditPanel({ task, courses, difficulties, onSave }: Props) {
         task_kind: taskKind,
         due_date: taskKind === 'project' ? dueDate : undefined,
         status,
-        uses_board: usesBoard,
-        study_mode_chosen: true,
       })
       setSaved(true)
     } catch (err) {
@@ -189,21 +183,6 @@ export function TaskEditPanel({ task, courses, difficulties, onSave }: Props) {
           onChange={setDueDate}
         />
       )}
-
-      <label className="worlds-switch-row">
-        <input
-          type="checkbox"
-          checked={usesBoard}
-          onChange={(e) => setUsesBoard(e.target.checked)}
-        />
-        <span>
-          <strong>¿Quieres dibujar en una pizarra?</strong>
-          <span className="muted">
-            {' '}
-            Si no, estudias solo hablando con Taskia.
-          </span>
-        </span>
-      </label>
 
       {error && <p className="form-error">{error}</p>}
       {saved && !error && <p className="study-saved">Cambios guardados</p>}

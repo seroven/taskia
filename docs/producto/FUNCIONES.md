@@ -31,7 +31,7 @@ Antes de las pantallas, conviene fijar estas palabras. Se repiten en toda la app
 
 ### Taskia (la guía)
 
-En el chat y la pizarra, el niño no habla con “un bot genérico”: habla con **Taskia**. Ese es el nombre de quien pregunta, anima y dibuja ejercicios. La app y la guía comparten el mismo nombre a propósito: para el niño, es una sola presencia.
+En el chat, el niño no habla con “un bot genérico”: habla con **Taskia**. Ese es el nombre de quien pregunta y anima. La app y la guía comparten el mismo nombre a propósito: para el niño, es una sola presencia.
 
 Taskia:
 
@@ -103,7 +103,7 @@ A partir de ahí:
 
 ## 4. Un día típico (para hacerse una película mental)
 
-**Por la tarde, el explorador** abre Taskia, elige **Campamento**, arrastra “fracciones mixtas” a **Estudiando**. Elige estudiar con pizarra. Taskia plantea ejercicios, el niño dibuja respuestas, corrige errores y, cuando Taskia confirma que ya entiende, el niño **mueve** la tarjeta a **Listo** (y ve un toast de XP).
+**Por la tarde, el explorador** abre Taskia, elige **Campamento**, arrastra “fracciones mixtas” a **Estudiando**. El chat se abre directo. Taskia plantea ejercicios, el niño responde, corrige errores y, cuando Taskia confirma que ya entiende, el niño **mueve** la tarjeta a **Listo** (y ve un toast de XP).
 
 Después vuelve al hub, abre **Mundos**, entra a un tema de Ciencias que todavía no termina, estudia un rato con Taskia y, si el tema ya quedó dominado, lanza un **calentamiento** (desafío corto) del curso. La puerta de **Tripulación** sigue a la vista, cerrada.
 
@@ -173,7 +173,7 @@ El resumen lo escribe un script de una sola pasada (`npm run job:daily-summary` 
 ### Qué no hace este chat
 
 - No mueve tareas del Campamento.
-- No abre la pizarra del niño.
+- No abre el estudio del niño.
 - No reemplaza una llamada o estar presentes: es un apoyo para orientarse rápido.
 
 ## A.5 Cards de progreso
@@ -315,7 +315,7 @@ La tarea nueva aparece en **Por hacer**.
 ### Abrir una tarea
 
 - Si está en **Estudiando**, o si ya está **Listo** y el nivel es **Alto**, al abrir suele ir al **estudio** (o primero alige cómo estudiar, la primera vez).
-- En otros casos abre el detalle **Tu tarea** para editar: mismos campos, más “¿Dónde está?” (columna) y si quiere usar pizarra.
+- En otros casos abre el detalle **Tu tarea** para editar: mismos campos, más “¿Dónde está?” (columna).
 
 ### El candado de Listo (importante)
 
@@ -339,14 +339,7 @@ Cuando Taskia da el visto:
 
 ## B.4 Estudiar una tarea con Taskia
 
-### Primera vez: cómo quiere estudiar
-
-Modal **¿Cómo quieres estudiar?**
-
-- **Solo con Taskia** — charla en el chat, sin dibujar.
-- **Con pizarra** — además puede dibujar; Taskia también puede plantear el ejercicio en el lienzo.
-
-La elección queda guardada para esa tarea. Luego puede alternar **Chat** y **Pizarra** dentro de la sesión.
+Entrar a estudiar abre el chat. No hay modo de dibujo.
 
 ### Pantalla de estudio
 
@@ -373,7 +366,7 @@ Taskia no debería saltar a “ya terminaste” en la primera frase: el recorrid
 - **Foto:** puede adjuntar una imagen de un ejercicio que ya resolvió, o pegarla con Ctrl+V. Taskia la mira en ese turno. La imagen queda en Cloudinary; en la base solo se guarda la ruta.
 - Puede aparecer el ejercicio activo (título e instrucciones) como parte de la guía.
 
-### Voz (solo en estudio sin pizarra)
+### Voz
 
 Puede **hablar del tema** en lugar de escribir todo:
 
@@ -383,32 +376,15 @@ Puede **hablar del tema** en lugar de escribir todo:
 
 Así puede dictar el relato del cuaderno o explicar un razonamiento con más comodidad.
 
-### Pizarra
+### Ejercicio con figura
 
-Es una grilla de **formas** (rectángulo, círculo, triángulo, línea, flecha y texto), no un lápiz libre. La barra es siempre la misma: Mover, Formas, Texto y Color. En una esquina quedan deshacer, rehacer, zoom y papelera.
-
-- El explorador arma su respuesta en el lienzo. Si selecciona una forma suya, puede escribir la medida al lado.
-- Si pide en el mensaje que miren su dibujo, el código mide lo que se puede calcular y Taskia solo explica ese resultado. Si no se puede medir, Taskia no afirma si está bien o mal. Una foto del cuaderno tampoco se califica como número exacto.
-- Si pide que se lo dibujen, Taskia describe la figura (medidas y relaciones, no coordenadas). El servidor la arma, la comprueba y la pinta en violeta. Solo entonces dice «Te lo dibujé en la pizarra». Si no logra una figura fiel, la frase queda en «No pude dibujarlo bien, ¿lo armamos juntos?» y la pizarra queda libre. Con una foto, primero muestra lo que entendió y espera un sí antes de dibujar.
-- Un ejercicio que el código marca mal no cuenta para los dos problemas ni para el visto.
-- En móvil suele alternarse la vista chat / pizarra; en pantallas grandes pueden convivir mejor.
-
-El dibujo que hace Taskia no se “empuja” como si fuera una ficha movible del niño: es parte del enunciado o la guía.
+Si pide un ejercicio que necesita un dibujo, una tabla o una figura, Taskia no lo arma. Dice que no puede y pide la foto de uno parecido. Si basta con texto o números, lo escribe en el chat. Si manda la foto de un ejercicio, Taskia guarda el desarrollo en privado y guía sin dictar la respuesta.
 
 ### Cuándo Taskia da el visto en una tarea
-
-**Sin pizarra (más teórico / conversado):**
 
 - Hace falta un recorrido real de mensajes del niño (varios turnos; si se equivoca, el listón sube y Taskia refuerza ese punto débil).
 - Cuando ya cumple lo necesario y está en fase de repaso, celebra y le dice que **ya puede mover la tarea a Listo**.
 - No debería celebrar ese cierre si todavía no se ganó el visto de verdad.
-
-**Con pizarra:**
-
-- Debe resolver **dos problemas distintos él solo**, sin que le dicten el paso clave y sin errores que anulen el intento.
-- Si se equivoca o Taskia lo ayuda a terminar ese problema, ese intento no cuenta: hay que intentar otro.
-- Al llegar a dos bien, Taskia **aún no** cierra: pregunta con buen tono si quiere **otro tipo de ejercicio** del mismo tema.
-- Solo si el niño dice que no / que ya está, celebra y le indica que puede pasar a Listo.
 
 Ese visto queda en la tarjeta para el candado del Campamento y para que un adulto (p. ej. en el panel admin) pueda ver que Taskia ya confirmó.
 
@@ -444,32 +420,26 @@ Sirve cuando el objetivo no es “terminar la hoja de hoy”, sino “dejar bien
 
 ### Dentro de un curso del mundo
 
-- **Nueva misión:** título, descripción, si usará pizarra.
+- **Nueva misión:** título, descripción y si el tema es práctico (figuras, tablas o un procedimiento).
 - **Traer** misiones desde otro mundo que use el mismo curso: copia el tema para no reescribirlo; el progreso en el mundo nuevo empieza de cero.
-- Cada misión muestra estado: **Por empezar → En marcha → Lista**, y si usa pizarra.
+- Cada misión muestra estado: **Por empezar → En marcha → Lista**, y si el tema es práctico.
 - Acciones: **Estudiar**, lanzar desafío del tema (a menudo con un icono de trofeo), ver desafíos del **curso**.
 
 ### Estudiar una misión
 
-La sensación es parecida al estudio de una tarea (chat, fases, voz si no hay pizarra, pizarra opcional), pero el objetivo es otro: **cubrir el tema completo**, no solo un ejercicio suelto.
-
-**Sin pizarra:**
+La sensación es parecida al estudio de una tarea (chat, fases y voz), pero el objetivo es otro: **cubrir el tema completo**, no solo un ejercicio suelto. También si el tema es práctico.
 
 - Suele empezar con el relato del **cuaderno** (lo que el niño sabe o trae anotado). Ese relato es la base: Taskia no debería preguntar datos que no estén ahí o en el título/descripción.
 - El recorrido buscado: lo **básico** → que lo **explique** → **observación** (detalles, causas, “¿qué pasaría si…?”, un ejemplo propio).
 - El listón es más alto que en una tarea típica (más práctica conversada; los errores alargan el camino).
 - Antes de marcar dominio, Taskia pregunta si queda **más contenido** de ese tema por estudiar; solo cierra si el niño dice que no.
 
-**Con pizarra:**
-
-- Misma lógica de **dos problemas solos** y la pregunta de si quiere otro tipo de ejercicio antes de cerrar.
-
 ### Diferencia clave al cerrar
 
 - **Tarea:** Taskia da el visto; el niño **mueve** a Listo.
 - **Misión:** cuando Taskia confirma el dominio, la misión pasa a **Lista** sola. Eso suma al progreso del curso y deja mejor base para desafíos.
 
-También puede **editar** título, descripción y uso de pizarra de la misión desde el estudio.
+También puede **editar** título, descripción y si el tema es práctico desde el estudio.
 
 ---
 
@@ -544,21 +514,21 @@ La app deja claro el trato:
 
 - Durante el desafío Taskia **no conversa** como en el estudio.
 - Corrige **al final**.
-- Si el tema usa pizarra, algunas preguntas pueden pedirle dibujar la respuesta.
+- Si el tema es práctico, algunas preguntas muestran una foto suya: marca una opción y sube cómo lo resolvió.
 
 Confirma con **¡Empezar!** (mientras genera, puede indicar que está preparando las preguntas).
 
 ### Cómo se juega
 
 1. Ve el progreso (pregunta n de total), puntos y, en desafíos grandes, a veces el curso del bloque.
-2. Responde: opción múltiple, texto corto, o pizarra (a veces con una nota opcional).
+2. Responde: opción múltiple, texto corto, o —si es práctica— una opción más la foto de cómo lo resolvió.
 3. Puede ir a **Anterior** / **Siguiente**.
 4. En la última: **¡Ya terminé!**
-5. Taskia revisa; luego ve el resultado: cuántas bien, mensaje según cómo le fue, y el desglose (qué respondió vs qué se esperaba; en dibujo, que lo planteó en la pizarra).
+5. Taskia revisa; luego ve el resultado: cuántas bien, mensaje según cómo le fue, y el desglose (qué respondió vs qué se esperaba). En una pregunta práctica hacen falta la opción correcta y que la foto coincida con el ejercicio.
 
 ### Si se sale a mitad
 
-El intento queda **abandonado** (no cuenta como completado limpio). Los completados aparecen en el **historial** del mundo o del curso (alcance, intensidad, cantidad de preguntas, puntaje si aplica). Puede reabrir un completado para revisar el desglose.
+El intento sigue a medias: se guardan el índice, las respuestas y el tiempo. Al volver puede continuar. Los completados aparecen en el **historial** del mundo o del curso (alcance, intensidad, cantidad de preguntas, puntaje si aplica). Puede reabrir un completado para revisar el desglose.
 
 ---
 

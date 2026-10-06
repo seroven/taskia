@@ -33,12 +33,6 @@ export class Task {
   @Column({ type: 'boolean', default: false })
   studyPassed!: boolean
 
-  @Column({ type: 'boolean', default: false })
-  usesBoard!: boolean
-
-  @Column({ type: 'boolean', default: false })
-  studyModeChosen!: boolean
-
   @Column({ type: 'date', transformer: civilDateTransformer })
   dueDate!: string
 

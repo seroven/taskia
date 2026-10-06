@@ -1,31 +1,24 @@
-import { SCENE_DRAW_PROMPT } from '../modules/board/prompt.js'
-
-export const CHALLENGE_BOARD_DRAW_OPS = `Enunciado en pizarra (solo si kind=board_prompt y requires_board=true):
-${SCENE_DRAW_PROMPT}
-Esto NO es un tutor: no converses, no des pistas, no dibujes la solución.
-scene = lo que el niño DEBE VER. draw_ops siempre [].
-Ecuación o cálculo: un objeto expression con el texto exacto.
-Geometría: la forma (rectangle, right_triangle, regular_polygon, path), no un recuadro de adorno.
-Si requires_board=false: scene=null y draw_ops=[].
-`
-
 export const CHALLENGE_GRADE_SYSTEM = `Juzgas si las respuestas del niño son correctas según answer_key.
 NO des pistas ni enseñes. Sé razonable con variaciones de redacción.
-Para preguntas de pizarra (requires_board=true):
-- El niño NO conversó con un tutor. Resolvió en la pizarra, en una foto del cuaderno, o en las dos.
-- Si hay foto del cuaderno, esa foto basta: no exijas trazos en la pizarra.
-- Distingue el enunciado fijo de lo que agregó el alumno.
-- correct=true solo si el alumno resolvió el problema, no por copiar el enunciado.
 Responde SOLO un JSON array:
 [{"question_id":1,"correct":true|false}]
 Debes incluir exactamente un objeto por cada pregunta recibida.`
 
-export const CHALLENGE_STATEMENT_DRAW_SYSTEM = `Dibujas el ENUNCIADO de problemas de pizarra para niños ~10 años.
-NO dibujes la solución. NO enseñes. Responde SOLO un JSON array.
-Cada ítem: {"index":0,"scene":{...}}
-${SCENE_DRAW_PROMPT}
-Si el prompt es una ecuación, la escena lleva un expression con ese texto.
-Incluye exactamente un objeto por cada problema recibido.`
+export const CHALLENGE_PHOTO_QUESTION_SYSTEM = `Armas preguntas de opción múltiple a partir de fotos de ejercicios que un niño ya tiene.
+Para cada foto, en el orden indicado:
+- prompt: una frase corta y amable, como "Mira la imagen y resuelve lo que pide".
+- options: exactamente 4 respuestas. Una es la correcta según ESA foto.
+- answer_key: A, B, C o D (A es la primera opción).
+No describas otra figura. No des la resolución en el prompt.
+Responde SOLO JSON:
+{"items":[{"index":0,"prompt":"...","options":["","","",""],"answer_key":"A"}]}`
+
+export const CHALLENGE_PHOTO_GRADE_SYSTEM = `Comparas pares de imágenes.
+Cada par es el ejercicio (la pregunta) y la foto de cómo lo resolvió el niño.
+Juzga solo ese par. correct=true solo si el procedimiento y el resultado de la resolución corresponden a ESE ejercicio.
+Responde SOLO un JSON array:
+[{"question_id":1,"correct":true|false}]
+Un objeto por cada par recibido.`
 
 
 export function challengeGenerateSystem(input: {
@@ -47,7 +40,7 @@ REGLA DE CONTENIDO (la más importante):
 
 CUOTA (obligatorio):
 - El objetivo es generar ${count} preguntas DISTINTAS. Intenta LLEGAR a esa cantidad.
-- Cubre todos los hechos útiles del material. Si el tema se resuelve en pizarra, cubrí tipos de ejercicio distintos (números o casos distintos), no un rosario de definiciones.
+- Cubre todos los hechos útiles del material. Si el tema es práctico, cubrí tipos de ejercicio distintos en texto, no un rosario de definiciones.
 - Si el tema es conceptual, cubrí personas, lugares, fechas, causas, consecuencias, ejemplos, definiciones, orden de eventos.
 - Cambia el ángulo o el formato para aprovechar el mismo material SIN repetir ni parafrasear la misma pregunta.
 - Solo devolvé MENOS de ${count} si de verdad ya no queda ningún hecho o detalle distinto. Un recorte grande está mal si el material aún da para más.
@@ -58,26 +51,20 @@ ${mixRule}
 Formato EXACTO de cada ítem:
 {
   "mission_id": <number de la lista>,
-  "kind": "multiple_choice" | "short_text" | "fill_blank" | "board_prompt",
+  "kind": "multiple_choice" | "short_text" | "fill_blank",
   "prompt": "texto de la pregunta / enunciado",
   "options": ["texto opción 1","texto opción 2","texto opción 3","texto opción 4"] | null,
-  "answer_key": "A" | "B" | "C" | "D" | "respuesta breve o criterio",
-  "requires_board": true | false,
-  "scene": null,
-  "draw_ops": []
+  "answer_key": "A" | "B" | "C" | "D" | "respuesta breve"
 }
 
 ${boardMixRules}
 
 Formato de cada tipo:
-- kind="multiple_choice": options = exactamente 4 strings (sin prefijo "A)" / "B)"); answer_key = solo "A"|"B"|"C"|"D" (A=primera opción); nunca options=null ni []; requires_board=false; draw_ops=[].
-- kind="short_text" o "fill_blank": options=null; answer_key=respuesta breve tomada del material; requires_board=false; draw_ops=[].
-- kind="board_prompt": options=null; answer_key=criterio breve de corrección; requires_board=true; scene=null; draw_ops=[] (el enunciado se fija después como texto o como imagen).
-- Si requires_board=false: scene=null y draw_ops=[].
+- kind="multiple_choice": options = exactamente 4 strings (sin prefijo "A)" / "B)"); answer_key = solo "A"|"B"|"C"|"D" (A=primera opción); nunca options=null ni [].
+- kind="short_text" o "fill_blank": options=null; answer_key=respuesta breve tomada del material.
+- NUNCA pidas dibujar ni generes una figura. Las preguntas prácticas con foto se arman aparte.
 - Devolvé como máximo ${count} preguntas. mission_id debe existir en la lista.
 
-Ejemplo teórica (solo si esos datos están en studied_text):
-{"mission_id":1,"kind":"multiple_choice","prompt":"Según lo que estudiaste, ¿quién llegó desde el sur?","options":["José de San Martín","Simón Bolívar","Francisco Pizarro","Tupac Amaru"],"answer_key":"A","requires_board":false,"draw_ops":[]}
-Ejemplo pizarra (solo si el tema se resuelve en el lienzo):
-{"mission_id":1,"kind":"board_prompt","prompt":"Resuelve en la pizarra: x + 5 = 12","options":null,"answer_key":"7","requires_board":true,"scene":null,"draw_ops":[]}`
+Ejemplo (solo si esos datos están en studied_text):
+{"mission_id":1,"kind":"multiple_choice","prompt":"Según lo que estudiaste, ¿quién llegó desde el sur?","options":["José de San Martín","Simón Bolívar","Francisco Pizarro","Tupac Amaru"],"answer_key":"A"}`
 }

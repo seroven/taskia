@@ -3,7 +3,7 @@ import { CheckCircle, XCircle } from '@phosphor-icons/react'
 import {
   formatExpectedAnswer,
   formatSaidAnswer,
-  isBoardQuestion,
+  isPhotoQuestion,
 } from '../../lib/challengeReviewFormat'
 import type { ChallengeQuestionPublic } from '../../lib/worldsTypes'
 
@@ -53,9 +53,16 @@ export function ChallengeReviewAnswersList({
                 <p className="worlds-review-prompt">{q.prompt}</p>
               </div>
               <div className="worlds-review-miss">
+                {isPhotoQuestion(q) && q.reference_image_url ? (
+                  <img
+                    className="challenge-reference"
+                    src={q.reference_image_url}
+                    alt="Ejercicio de la pregunta"
+                  />
+                ) : null}
                 <p className="worlds-review-yours">
                   {saidLabel}
-                  <strong>{formatSaidAnswer(q, voice)}</strong>
+                  <strong>{formatSaidAnswer(q)}</strong>
                 </p>
                 {isMc ? (
                   <ul className="worlds-review-options">
@@ -80,7 +87,7 @@ export function ChallengeReviewAnswersList({
                   </ul>
                 ) : (
                   <p className={`worlds-review-right${ok ? ' is-ok' : ''}`}>
-                    {isBoardQuestion(q) ? 'Se esperaba: ' : 'La respuesta era: '}
+                    La respuesta era:
                     <strong>{formatExpectedAnswer(q)}</strong>
                   </p>
                 )}

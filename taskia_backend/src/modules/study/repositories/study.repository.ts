@@ -1,6 +1,5 @@
 import { AppDataSource } from '../../../infrastructure/database/data-source.js'
 import {
-  StudyBoard,
   StudyMessage,
   StudySession,
   Task,
@@ -8,27 +7,6 @@ import {
 } from '../../../infrastructure/database/entities/index.js'
 import { toInstantISO } from '../../../utils/helpers.js'
 import { latencyForTaskReply } from '../../../utils/replyLatency.js'
-
-export function emptyBoard() {
-  return {
-    type: 'taskia-grid',
-    version: 1,
-    source: 'taskia-grid',
-    cols: 160,
-    rows: 100,
-    items: [],
-  }
-}
-
-export function coerceBoard(raw: unknown) {
-  if (raw && typeof raw === 'object') {
-    const rec = raw as { type?: string; source?: string; items?: unknown }
-    if (rec.type === 'taskia-grid' || rec.source === 'taskia-grid') {
-      return raw
-    }
-  }
-  return emptyBoard()
-}
 
 export async function ensureSession(taskId: number) {
   await AppDataSource.getRepository(StudySession)
@@ -60,7 +38,6 @@ export async function loadContext(taskId: number) {
     topic_summary: session.topicSummary,
     context_summary: session.contextSummary,
     hints_level: session.hintsLevel,
-    pending_board_facts: session.pendingBoardFacts,
     exercise_brief: session.exerciseBrief ?? '',
     messages: messages.map((message) => ({
       role: message.role,
@@ -69,31 +46,6 @@ export async function loadContext(taskId: number) {
       created_at: toInstantISO(message.createdAt) ?? '',
     })),
   }
-}
-
-export async function loadBoard(taskId: number) {
-  const row = await AppDataSource.getRepository(StudyBoard).findOne({ where: { taskId } })
-  if (row?.boardJson) {
-    try {
-      const parsed = JSON.parse(row.boardJson) as unknown
-      return coerceBoard(parsed)
-    } catch {
-      /* fallthrough */
-    }
-  }
-  const board = emptyBoard()
-  await saveBoard(taskId, board)
-  return board
-}
-
-export async function saveBoard(taskId: number, board: unknown) {
-  await AppDataSource.getRepository(StudyBoard)
-    .createQueryBuilder()
-    .insert()
-    .into(StudyBoard)
-    .values({ taskId, boardJson: JSON.stringify(board) })
-    .orUpdate(['board_json'], ['task_id'])
-    .execute()
 }
 
 export async function insertMessage(
@@ -145,10 +97,6 @@ export async function saveUserMemory(userId: number, summary: string) {
 
 export async function saveExerciseBrief(taskId: number, brief: string) {
   await AppDataSource.getRepository(StudySession).update({ taskId }, { exerciseBrief: brief })
-}
-
-export async function savePendingBoardFacts(taskId: number, raw: string | null) {
-  await AppDataSource.getRepository(StudySession).update({ taskId }, { pendingBoardFacts: raw })
 }
 
 export async function saveSessionMeta(ctx: {
