@@ -344,6 +344,7 @@ export async function dashboard(input: {
   const tutorByDay = new Map<string, number>()
   const challengeByDay = new Map<string, number>()
   const voiceByDay = new Map<string, number>()
+  const imageByDay = new Map<string, number>()
   const childByDay = new Map<string, number>()
   const tokensByDay = new Map<string, number>()
   type UserUse = {
@@ -351,6 +352,7 @@ export async function dashboard(input: {
     challenges: number
     created: number
     voice: number
+    images: number
     child: number
     prompt: number
     output: number
@@ -360,12 +362,15 @@ export async function dashboard(input: {
     challengesOutput: number
     voicePrompt: number
     voiceOutput: number
+    imagesPrompt: number
+    imagesOutput: number
   }
   const emptyUse = (): UserUse => ({
     tutor: 0,
     challenges: 0,
     created: 0,
     voice: 0,
+    images: 0,
     child: 0,
     prompt: 0,
     output: 0,
@@ -375,6 +380,8 @@ export async function dashboard(input: {
     challengesOutput: 0,
     voicePrompt: 0,
     voiceOutput: 0,
+    imagesPrompt: 0,
+    imagesOutput: 0,
   })
   const userUse = new Map<number, UserUse>()
   const bumpUser = (id: number, patch: Partial<UserUse>) => {
@@ -386,6 +393,7 @@ export async function dashboard(input: {
       challenges: cur.challenges + (patch.challenges ?? 0),
       created: cur.created + (patch.created ?? 0),
       voice: cur.voice + (patch.voice ?? 0),
+      images: cur.images + (patch.images ?? 0),
       child: cur.child + (patch.child ?? 0),
       prompt: cur.prompt + prompt,
       output: cur.output + output,
@@ -395,6 +403,8 @@ export async function dashboard(input: {
       challengesOutput: cur.challengesOutput,
       voicePrompt: cur.voicePrompt,
       voiceOutput: cur.voiceOutput,
+      imagesPrompt: cur.imagesPrompt,
+      imagesOutput: cur.imagesOutput,
     }
     if ((patch.tutor ?? 0) > 0) {
       next.tutorPrompt += prompt
@@ -405,6 +415,9 @@ export async function dashboard(input: {
     } else if ((patch.voice ?? 0) > 0) {
       next.voicePrompt += prompt
       next.voiceOutput += output
+    } else if ((patch.images ?? 0) > 0) {
+      next.imagesPrompt += prompt
+      next.imagesOutput += output
     }
     userUse.set(id, next)
   }
@@ -459,6 +472,9 @@ export async function dashboard(input: {
       if (kind === 'transcribe') {
         addNum(voiceByDay, day, count)
         bumpUser(id, { voice: count, prompt, output })
+      } else if (kind === 'board_image') {
+        addNum(imageByDay, day, count)
+        bumpUser(id, { images: count, prompt, output })
       } else if (kind === 'challenge_generate' || kind === 'challenge_grade') {
         addNum(challengeByDay, day, count)
         bumpUser(id, { challenges: count, prompt, output })
@@ -492,13 +508,15 @@ export async function dashboard(input: {
       challenges: row.challenges,
       challenges_created: row.created,
       voice: row.voice,
+      images: row.images,
       child_messages: row.child,
-      calls: row.tutor + row.challenges + row.voice,
+      calls: row.tutor + row.challenges + row.voice + row.images,
       tokens: row.prompt + row.output,
       estimated_usd: usdFromTokens(row.prompt, row.output),
       usd_tutor: usdFromTokens(row.tutorPrompt, row.tutorOutput),
       usd_challenges: usdFromTokens(row.challengesPrompt, row.challengesOutput),
       usd_voice: usdFromTokens(row.voicePrompt, row.voiceOutput),
+      usd_images: usdFromTokens(row.imagesPrompt, row.imagesOutput),
     }))
     .filter((row) => row.calls > 0 || row.child_messages > 0 || row.challenges_created > 0)
     .sort((a, b) => b.estimated_usd - a.estimated_usd || b.calls - a.calls)
@@ -507,6 +525,7 @@ export async function dashboard(input: {
     tutor: tutorByDay.get(date) ?? 0,
     challenges: challengeByDay.get(date) ?? 0,
     voice: voiceByDay.get(date) ?? 0,
+    images: imageByDay.get(date) ?? 0,
     child_messages: childByDay.get(date) ?? 0,
     tokens: tokensByDay.get(date) ?? 0,
   }))
@@ -524,6 +543,7 @@ export async function dashboard(input: {
     tutor: { calls: 0, prompt: 0, output: 0 },
     challenges: { calls: 0, prompt: 0, output: 0 },
     voice: { calls: 0, prompt: 0, output: 0 },
+    images: { calls: 0, prompt: 0, output: 0 },
   }
   for (const row of userUse.values()) {
     kindTotals.tutor.calls += row.tutor
@@ -535,6 +555,9 @@ export async function dashboard(input: {
     kindTotals.voice.calls += row.voice
     kindTotals.voice.prompt += row.voicePrompt
     kindTotals.voice.output += row.voiceOutput
+    kindTotals.images.calls += row.images
+    kindTotals.images.prompt += row.imagesPrompt
+    kindTotals.images.output += row.imagesOutput
   }
 
   return {
@@ -600,6 +623,13 @@ export async function dashboard(input: {
           calls: kindTotals.voice.calls,
           tokens: kindTotals.voice.prompt + kindTotals.voice.output,
           estimated_usd: usdFromTokens(kindTotals.voice.prompt, kindTotals.voice.output),
+        },
+        {
+          kind: 'images',
+          label: 'Imágenes',
+          calls: kindTotals.images.calls,
+          tokens: kindTotals.images.prompt + kindTotals.images.output,
+          estimated_usd: usdFromTokens(kindTotals.images.prompt, kindTotals.images.output),
         },
       ],
     },

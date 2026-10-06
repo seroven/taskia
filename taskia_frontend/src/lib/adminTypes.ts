@@ -261,6 +261,7 @@ export interface AdminUsageDay {
   tutor: number
   challenges: number
   voice: number
+  images: number
   child_messages: number
   tokens: number
 }
@@ -272,6 +273,7 @@ export interface AdminUsageStudent {
   challenges: number
   challenges_created: number
   voice: number
+  images: number
   child_messages: number
   calls: number
   tokens: number
@@ -279,6 +281,7 @@ export interface AdminUsageStudent {
   usd_tutor: number
   usd_challenges: number
   usd_voice: number
+  usd_images: number
 }
 
 export interface AdminUsageKind {

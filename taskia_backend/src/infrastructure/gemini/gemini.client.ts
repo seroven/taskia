@@ -16,6 +16,7 @@ export type LlmUsageKind =
   | 'daily_summary'
   | 'board_intent'
   | 'board_facts'
+  | 'board_image'
 
 export interface LlmUsageContext {
   userId: number
@@ -383,7 +384,7 @@ export async function callGeminiImage(opts: {
         | undefined
       const prompt = Number(meta?.promptTokenCount ?? 0)
       const output = Number(meta?.candidatesTokenCount ?? 0)
-      void recordLlmUsage(opts.usage, model, {
+      void recordLlmUsage({ userId: opts.usage.userId, kind: 'board_image' }, model, {
         prompt,
         output,
         total: Number(meta?.totalTokenCount ?? prompt + output),

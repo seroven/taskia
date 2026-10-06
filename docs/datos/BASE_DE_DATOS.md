@@ -492,7 +492,7 @@ Una fila por llamada al modelo. Es lo que alimenta las gráficas de uso y el cos
 | `total_tokens` | int | |
 | `created_at` | timestamptz | |
 
-`kind` acepta cinco valores: `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate` y `challenge_grade`. Guardar el `model` en cada fila importa porque el precio por token depende de él y cambia con el tiempo.
+`kind` dice qué disparó la llamada. La ficha de un ejercicio es `board_image`; el chat y el resto no entran ahí. La lista completa está en la tabla de valores permitidos. Guardar el `model` en cada fila importa porque el precio por token depende de él y cambia con el tiempo.
 
 Tiene dos índices pensados para el panel: `(user_id, created_at)` y `(kind, created_at)`.
 
@@ -554,7 +554,7 @@ Todos los campos con opciones fijas, en un solo lugar. Cambiarlos es tocar el `C
 | `study_challenges` | `difficulty` | `warm`, `quest`, `boss` |
 | `study_challenges` | `status` | `in_progress`, `completed`, `abandoned` |
 | `study_challenge_questions` | `kind` | `multiple_choice`, `short_text`, `fill_blank`, `board_prompt` |
-| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade`, `parent_tutor` |
+| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade`, `parent_tutor`, `planet_generate`, `daily_summary`, `board_intent`, `board_facts`, `board_image` |
 | `xp_awards` | `source_type` | `task_done_simple`, `task_study`, `mission`, `challenge` |
 | `troop_members` | `role` | `captain`, `copilot`, `member` |
 | `troop_invites` | `status` | `pending`, `accepted`, `rejected`, `cancelled` |
