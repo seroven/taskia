@@ -4,17 +4,9 @@ import {
   exerciseReference,
   parseGraphicFlag,
   stripDrewPhrase,
-  sheetVariantLine,
   stripMathDelimiters,
   userReferencePhotos,
 } from './sheet.js'
-
-test('each sheet variant asks for new numbers and a private mark', () => {
-  const line = sheetVariantLine()
-  assert.match(line, /Otra variante/)
-  assert.match(line, /No agregues medidas ni datos nuevos/)
-  assert.match(line, /No dibujes la marca [a-z]{4}/)
-})
 
 test('exercise reference photos are only the ones the child uploaded', () => {
   assert.deepEqual(

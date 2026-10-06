@@ -15,23 +15,11 @@ const GRAPHIC_SYSTEM = `Miras un ejercicio de primaria. Responde SOLO JSON {"gra
 graphic=true solo si hace falta una figura, gráfica, diagrama o dibujo para entender el ejercicio.
 graphic=false si basta con el enunciado escrito.`
 
-const IMAGE_SYSTEM = `Genera UNA ficha nueva del mismo ejercicio.
-Conserva la figura: los mismos puntos y qué toca qué. No inventes otra.
-Cambia solo los números que ya están. No agregues una medida ni un dato que la foto no traiga.
-Fondo blanco, horizontal, solo el enunciado y la figura, sin opciones.
-No copies el papel, la letra a mano ni si la foto está torcida o vertical.`
+const IMAGE_SYSTEM = `Genera UN ejercicio similar al referente.
+Si la imagen de referencia está vertical, el ejercicio va en horizontal.`
 
 const SHORT_REQUEST =
   /^(s[ií]|ok|dale|ya|listo|otro|un ejercicio|dame un ejercicio|hazme un ejercicio|otro ejercicio|uno similar|parecido)[.!?\s]*$/i
-
-const VARIANT_MARK = 'abcdefghijkmnpqrstuvwxyz'
-
-/** Cada ficha lleva una marca distinta para que el modelo no repita los mismos datos. No se dibuja. */
-export function sheetVariantLine(): string {
-  let mark = ''
-  for (let i = 0; i < 4; i += 1) mark += VARIANT_MARK[Math.floor(Math.random() * VARIANT_MARK.length)]
-  return `Otra variante. Cambia solo los números que ya están, y que no coincidan con la ficha anterior. No agregues medidas ni datos nuevos. No dibujes la marca ${mark}.`
-}
 
 /** Fotos que subió el explorador. La ficha que generó Taskia no es la referencia. */
 export function userReferencePhotos(
@@ -139,11 +127,7 @@ export async function planExerciseSheet(opts: {
   if (!graphic) return { mode: 'text' }
   const image = await callGeminiImage({
     system: IMAGE_SYSTEM,
-    user: [
-      text ||
-        'Misma figura que la foto. Cambia solo los números que ya están. No agregues medidas ni datos. Fondo blanco, horizontal, enunciado y figura, sin opciones.',
-      sheetVariantLine(),
-    ].join('\n'),
+    user: text || 'Un ejercicio similar a la captura. Si la foto está vertical, el ejercicio va en horizontal.',
     photoBase64: opts.photoBase64,
     model: env.gemini.proModel,
     usage: opts.usage,
@@ -158,7 +142,7 @@ export async function sheetForPrompt(prompt: string, usage: LlmUsageContext): Pr
   if (!graphic) return { text }
   const image = await callGeminiImage({
     system: IMAGE_SYSTEM,
-    user: `${text}\n${sheetVariantLine()}`,
+    user: text,
     model: env.gemini.proModel,
     usage,
   })

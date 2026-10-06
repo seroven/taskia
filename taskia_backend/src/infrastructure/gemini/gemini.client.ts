@@ -352,7 +352,7 @@ export async function callGeminiImage(opts: {
     const inline = readInlineImage(opts.photoBase64, 'image/jpeg')
     if (inline.data) {
       parts.push({
-        text: 'Copia esta figura (qué toca qué). Cambia solo los números que ya están; no pueden coincidir con una ficha anterior. No agregues una medida ni un dato que esta foto no traiga. Dibújala limpia, horizontal, fondo blanco, sin opciones. Ignora si la foto está torcida.',
+        text: 'Genera un ejercicio similar a esta captura. Si la foto está vertical, el ejercicio va en horizontal.',
       })
       parts.push({ inline_data: { mime_type: inline.mime, data: inline.data } })
     }
