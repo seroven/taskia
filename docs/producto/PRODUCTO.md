@@ -90,7 +90,7 @@ La sesión recorre tres fases, que el alumno ve en pantalla:
 2. **Practicando** — ejercicios y variaciones.
 3. **Repasando** — el alumno explica o aplica el concepto con números o casos nuevos.
 
-Puede escribir o pulsar Hablar. El círculo espera; al tocarlo escucha y al tocarlo otra vez guarda el texto en el chat y Taskia lee la respuesta. Abajo flotan el último globo y la mitad del anterior, sin mover el micrófono. Si adjunta una foto en esa vista, sale cuando habla. También puede mandar la foto de un ejercicio. Si pide uno nuevo que necesita un dibujo, Taskia no lo arma y le pide una foto parecida. Si basta con texto o números, lo escribe en el mensaje.
+Puede escribir o pulsar Hablar. Si hay sitio, el círculo se estira desde la izquierda, corre el chat a la derecha y los dos quedan centrados. El chat sigue visible. Si no cabe, el chat se oculta. El círculo espera; al tocarlo escucha y al tocarlo otra vez guarda el texto y Taskia lee la respuesta. En la vista estrecha los globos de abajo se desvanecen antes de tapar el círculo. Si adjunta una foto, sale cuando habla. También puede mandar la foto de un ejercicio. Si pide uno nuevo que necesita un dibujo, Taskia no lo arma y le pide una foto parecida. Si basta con texto o números, lo escribe en el mensaje.
 
 ### Cuándo Taskia da el visto
 

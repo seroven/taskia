@@ -179,14 +179,69 @@
   font-weight: 700;
 }
 
+.study-layout.study-layout-chat-only {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+
 .study-chat {
   position: relative;
   display: flex;
   flex-direction: column;
+  width: min(720px, 100%);
+  max-width: 100%;
+  flex: 0 0 auto;
   min-height: 0;
   border-right: 1px solid var(--line);
   background: var(--panel);
+  padding: 0;
+}
+
+.study-chat-column {
+  flex: 1 1 auto;
+  width: min(720px, 100%);
+  max-width: 720px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: 14px 14px 12px;
+}
+
+.study-chat.is-voice-dock {
+  flex-direction: row;
+  align-items: stretch;
+  width: max-content;
+  max-width: 100%;
+}
+
+.study-chat.is-voice-dock .study-chat-column {
+  flex: 0 0 720px;
+  width: 720px;
+}
+
+.study-voice-dock {
+  position: relative;
+  align-self: stretch;
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  transform-origin: left center;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.study-voice-dock .study-voice-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 380px;
 }
 
 .study-chat-meta {
@@ -399,7 +454,7 @@
 
 .study-chat.is-voice .study-chat-stage,
 .study-chat.is-voice .study-chat-form,
-.study-chat.is-voice > .form-error {
+.study-chat.is-voice .study-chat-column > .form-error {
   display: none;
 }
 
@@ -426,6 +481,10 @@
   gap: 18px;
 }
 
+.study-voice-stage.is-cover .study-voice-main {
+  padding-bottom: min(34%, 240px);
+}
+
 .study-voice-reel {
   position: absolute;
   left: 8px;
@@ -433,17 +492,14 @@
   bottom: 8px;
   z-index: 2;
   width: auto;
-  max-height: 46%;
+  max-height: min(30%, 210px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   pointer-events: none;
-}
-
-.study-voice-reel.is-faded {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 42%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 42%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 18%, #000 62%);
+  mask-image: linear-gradient(to bottom, transparent 0%, transparent 18%, #000 62%);
 }
 
 .study-voice-reel-track {
@@ -463,6 +519,12 @@
   align-items: center;
   gap: 6px;
   min-height: 40px;
+}
+
+.study-voice-close-icon {
+  width: 40px;
+  padding: 0;
+  justify-content: center;
 }
 
 .study-voice-photo {

@@ -17,7 +17,7 @@ No se manda una escena ni un dibujo. La foto del cuaderno se sube a Cloudinary y
 3. ¿Hace falta gráfica? (`board_facts`), solo si pidió un ejercicio nuevo. Es un sí o un no, con pensamiento mínimo. Mira el referente escrito o la foto que subió el niño.
 4. El tutor (`task_tutor` en una tarea, `mission_tutor` en una misión). Una sola llamada de texto. El niño puede escuchar ese texto con `POST /study/speak` (`speak`, modelo `GEMINI_TTS_MODEL`). No se lee el desarrollo privado.
 
-El botón Hablar abre un escenario en ese mismo chat, en reposo y sin tope de tiempo. El micrófono parte al tocar el círculo. Usa las tres llamadas que ya existen: `POST /study/transcribe`, el chat de la tarea o la misión (el texto queda en el historial) y `POST /study/speak` sobre la respuesta guardada. Abajo flotan el último globo y la mitad del anterior, sin empujar el círculo. Una foto elegida ahí, o pegada con Ctrl+V, no se envía sola: va con el siguiente turno hablado. Al volver al hilo, esos turnos ya están escritos.
+El botón Hablar, cuando la página alcanza, estira el círculo desde la izquierda y corre el chat a la derecha; el conjunto queda centrado. El chat sigue a la vista. Si no cabe, el chat se oculta y el micrófono parte al tocar el círculo, sin tope de tiempo. Usa las tres llamadas que ya existen: `POST /study/transcribe`, el chat de la tarea o la misión (el texto queda en el historial) y `POST /study/speak` sobre la respuesta guardada. En la vista estrecha los globos flotan abajo y se desvanecen antes de tapar el círculo. Una foto elegida ahí, o pegada con Ctrl+V, no se envía sola: va con el siguiente turno hablado. Al volver al hilo, esos turnos ya están escritos.
 
 ## Si pide un ejercicio nuevo
 
