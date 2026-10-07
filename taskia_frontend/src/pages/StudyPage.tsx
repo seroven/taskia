@@ -8,7 +8,6 @@ import { TaskEditPanel } from '../components/study/TaskEditPanel'
 import { errorMessage } from '../lib/errors'
 import {
   type StudyContext,
-  type StudyExercise,
   type TutorPhase,
 } from '../lib/studyProtocol'
 import { mergeXpIntoUser, xpToastCopy } from '../lib/xp'
@@ -35,7 +34,6 @@ export function StudyPage({ taskId, onBack }: Props) {
   const [courses, setCourses] = useState<Course[]>([])
   const [difficulties, setDifficulties] = useState<Difficulty[]>([])
   const [phase, setPhase] = useState<TutorPhase | string>('understanding')
-  const [exercise, setExercise] = useState<StudyExercise | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,7 +82,6 @@ export function StudyPage({ taskId, onBack }: Props) {
       )
       setContext(result.context)
       setPhase(result.reply.phase)
-      setExercise(result.reply.exercise)
       if (result.study_passed) {
         const justPassed = !task?.study_passed
         setTask((prev) =>
@@ -214,7 +211,6 @@ export function StudyPage({ taskId, onBack }: Props) {
             <StudyChat
               context={context}
               phase={phase}
-              exercise={exercise}
               sending={sending}
               error={chatError}
               onSend={onSend}

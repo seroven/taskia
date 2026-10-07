@@ -268,28 +268,6 @@
   line-height: 1.35;
 }
 
-.study-exercise {
-  flex-shrink: 0;
-  margin-bottom: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: var(--accent-soft);
-  border: 1px solid var(--line);
-}
-
-.study-exercise strong {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--ink);
-}
-
-.study-exercise p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.4;
-}
-
 .study-chat-stage {
   position: relative;
   flex: 1;
@@ -345,6 +323,31 @@
   line-height: 1.4;
   color: var(--ink);
   font-size: 0.95rem;
+}
+
+.math-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1.05;
+  margin: 0 0.16em;
+  font-size: 0.84em;
+  text-align: center;
+}
+
+.math-frac-bar {
+  align-self: stretch;
+  height: 0;
+  border-top: 1.5px solid currentColor;
+  margin: 1px 0;
+}
+
+.math-exp {
+  font-size: 0.68em;
+  line-height: 0;
+  position: relative;
+  top: -0.45em;
 }
 
 .study-bubble.is-typing p {

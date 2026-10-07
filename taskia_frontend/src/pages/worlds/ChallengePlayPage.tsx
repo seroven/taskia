@@ -15,7 +15,7 @@ import { WorldsNav } from '../../components/worlds/WorldsNav'
 import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import { challengeDifficultyIcon } from '../../components/worlds/worldsIcons'
 import { errorMessage } from '../../lib/errors'
-import { plainMathText } from '../../lib/plainMath'
+import { MathText } from '../../components/math/MathText'
 import { compressStudyPhoto } from '../../lib/studyPhoto'
 import {
   DIFFICULTY_LABEL,
@@ -566,7 +566,9 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
             />
           ) : null}
 
-          <p className="challenge-prompt">{plainMathText(current.prompt)}</p>
+          <p className="challenge-prompt">
+            <MathText text={current.prompt} />
+          </p>
 
           {current.kind === 'multiple_choice' &&
             current.options &&
@@ -584,7 +586,9 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
                       disabled={submitting || grading}
                     >
                       <strong className="worlds-choice-letter">{letter}</strong>
-                      <span>{plainMathText(opt.replace(/^[A-D][).:\-]\s*/i, ''))}</span>
+                      <span>
+                        <MathText text={opt.replace(/^[A-D][).:\-]\s*/i, '')} />
+                      </span>
                     </button>
                   )
                 })}

@@ -262,7 +262,6 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
             <StudyChat
               context={studyContext}
               phase={phase}
-              exercise={null}
               sending={sending}
               error={chatError}
               onSend={onSend}

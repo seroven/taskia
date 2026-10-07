@@ -341,11 +341,8 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     context.context_summary = reply.context_summary
     context.hints_level = reply.hints_level
 
-    // ask_questions queda para lógica interna; no se lista al niño (evita preguntas duplicadas).
-    let visible = reply.speak_to_child
-    if (reply.exercise) {
-      visible += `\nEjercicio: ${reply.exercise.title}\n${reply.exercise.instructions}`
-    }
+    // ask_questions y exercise quedan internos; el niño solo ve speak_to_child.
+    const visible = reply.speak_to_child
     context.messages.push(
       await insertMessage(
         taskId,

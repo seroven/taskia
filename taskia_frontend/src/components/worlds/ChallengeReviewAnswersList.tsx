@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { MathText } from '../math/MathText'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'
 import {
   formatExpectedAnswer,
@@ -50,7 +51,9 @@ export function ChallengeReviewAnswersList({
                   )}
                 </span>
                 <span className="worlds-review-num">{index + 1}</span>
-                <p className="worlds-review-prompt">{q.prompt}</p>
+                <p className="worlds-review-prompt">
+                  <MathText text={q.prompt} />
+                </p>
               </div>
               <div className="worlds-review-miss">
                 {isPhotoQuestion(q) && q.reference_image_url ? (
@@ -62,7 +65,9 @@ export function ChallengeReviewAnswersList({
                 ) : null}
                 <p className="worlds-review-yours">
                   {saidLabel}
-                  <strong>{formatSaidAnswer(q)}</strong>
+                  <strong>
+                    <MathText text={formatSaidAnswer(q)} />
+                  </strong>
                 </p>
                 {isMc ? (
                   <ul className="worlds-review-options">
@@ -80,7 +85,9 @@ export function ChallengeReviewAnswersList({
                           className={`worlds-review-option${isCorrect ? ' is-correct' : ''}${picked ? ' is-picked' : ''}`}
                         >
                           <strong>{letter}</strong>
-                          <span>{opt.replace(/^[A-D][).:\-]\s*/i, '')}</span>
+                          <span>
+                            <MathText text={opt.replace(/^[A-D][).:\-]\s*/i, '')} />
+                          </span>
                         </li>
                       )
                     })}
@@ -88,7 +95,9 @@ export function ChallengeReviewAnswersList({
                 ) : (
                   <p className={`worlds-review-right${ok ? ' is-ok' : ''}`}>
                     La respuesta era:
-                    <strong>{formatExpectedAnswer(q)}</strong>
+                    <strong>
+                      <MathText text={formatExpectedAnswer(q)} />
+                    </strong>
                   </p>
                 )}
               </div>

@@ -10,17 +10,17 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { Camera, Microphone, Stop, X } from '@phosphor-icons/react'
 import { api } from '../../api'
-import { plainMathText } from '../../lib/plainMath'
+import { MathText } from '../math/MathText'
+import { chatVisibleText } from '../../lib/plainMath'
 import { compressStudyPhoto } from '../../lib/studyPhoto'
 import { errorMessage } from '../../lib/errors'
-import type { StudyContext, StudyExercise, StudyMessage, TutorPhase } from '../../lib/studyProtocol'
+import type { StudyContext, StudyMessage, TutorPhase } from '../../lib/studyProtocol'
 import { phaseLabel } from '../../lib/studyProtocol'
 import { VoiceRecorder } from '../../lib/voiceRecorder'
 
 interface Props {
   context: StudyContext | null
   phase: TutorPhase | string
-  exercise: StudyExercise | null
   sending: boolean
   error: string | null
   onThreadEl?: (el: HTMLDivElement | null) => void
@@ -116,7 +116,7 @@ function TypewriterText({
 
   return (
     <p>
-      {shown}
+      <MathText text={shown} />
       {active && shown.length < text.length && (
         <span className="study-type-caret" aria-hidden />
       )}
@@ -290,12 +290,16 @@ function VoiceStageView({
                       <img className="study-bubble-photo" src={message.image_url} alt="Foto del ejercicio" />
                     ) : null}
                     {writing ? (
-                      <TypewriterText text={plainMathText(message.content)} active />
+                      <TypewriterText text={chatVisibleText(message.content)} active />
                     ) : (
                       <p>
-                        {message.role === 'assistant'
-                          ? plainMathText(message.content)
-                          : message.content}
+                        <MathText
+                          text={
+                            message.role === 'assistant'
+                              ? chatVisibleText(message.content)
+                              : message.content
+                          }
+                        />
                       </p>
                     )}
                   </motion.div>
@@ -331,7 +335,6 @@ function VoiceStageView({
 export function StudyChat({
   context,
   phase,
-  exercise,
   sending,
   error,
   onThreadEl,
@@ -690,7 +693,7 @@ export function StudyChat({
       setStage('speaking')
       const heard = await hearText(
         `circle-${reply.slice(0, 80)}`,
-        plainMathText(reply).slice(0, 1600),
+        chatVisibleText(reply).slice(0, 1600),
         true,
         () => setHoldVoiceReply(false),
       )
@@ -855,13 +858,6 @@ export function StudyChat({
         )}
       </div>
 
-      {exercise && (
-        <div className="study-exercise">
-          <strong>{exercise.title}</strong>
-          <p>{exercise.instructions}</p>
-        </div>
-      )}
-
       <div className="study-chat-messages" ref={listRef}>
         {listMessages.length === 0 && !showLiveTaskia && (
           <p className="muted study-chat-empty">Escribe tu primer mensaje para empezar.</p>
@@ -897,7 +893,15 @@ export function StudyChat({
                     />
                   </button>
                 ) : null}
-                <p>{message.role === 'assistant' ? plainMathText(message.content) : message.content}</p>
+                <p>
+                  <MathText
+                    text={
+                      message.role === 'assistant'
+                        ? chatVisibleText(message.content)
+                        : message.content
+                    }
+                  />
+                </p>
               </motion.div>
             )
           })}
@@ -926,7 +930,7 @@ export function StudyChat({
               </p>
             ) : (
               <TypewriterText
-                text={plainMathText(shownLive.message.content)}
+                text={chatVisibleText(shownLive.message.content)}
                 active
                 onTick={scrollToBottom}
                 onDone={() => {
@@ -941,7 +945,7 @@ export function StudyChat({
                   scrollToBottom()
                   if (hearAfterVoice.current) {
                     hearAfterVoice.current = false
-                    void hearText(key, plainMathText(shownLive.message.content).slice(0, 1600))
+                    void hearText(key, chatVisibleText(shownLive.message.content).slice(0, 1600))
                   }
                 }}
               />
