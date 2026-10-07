@@ -39,6 +39,7 @@ export const env = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY ?? '',
     model: process.env.GEMINI_MODEL ?? 'gemini-2.0-flash',
+    ttsModel: process.env.GEMINI_TTS_MODEL ?? 'gemini-3.8-flash-lite-tts',
   },
   cloudinary: {
     cloudName: (process.env.CLOUDINARY_CLOUD_NAME ?? '').trim(),

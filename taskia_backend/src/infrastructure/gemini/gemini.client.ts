@@ -18,6 +18,7 @@ export type LlmUsageKind =
   | 'board_intent'
   | 'board_facts'
   | 'board_image'
+  | 'speak'
 
 export interface LlmUsageContext {
   userId: number
@@ -291,6 +292,69 @@ export async function callGeminiTranscribe(opts: {
     text: cleaned,
     truncated: finishReason === 'MAX_TOKENS',
   }
+}
+
+const MAX_SPEAK_CHARS = 1600
+
+/** Lee en voz el texto que ya ve el niño. Misma API key, modelo de voz aparte. */
+export async function callGeminiSpeak(opts: {
+  text: string
+  usage?: LlmUsageContext
+}): Promise<{ audioBase64: string; mimeType: string }> {
+  const apiKey = env.gemini.apiKey.trim().replace(/^["']|["']$/g, '')
+  if (!apiKey) throw new AppError('Configura GEMINI_API_KEY en el archivo .env')
+  const text = opts.text.trim().slice(0, MAX_SPEAK_CHARS)
+  if (!text) throw new AppError('No hay texto para leer')
+  const model =
+    env.gemini.ttsModel.trim().replace(/^["']|["']$/g, '') || 'gemini-3.8-flash-lite-tts'
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text,
+              speech_metadata: { style: 'cálido y claro, en español latinoamericano' },
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        responseModalities: ['AUDIO'],
+        speechConfig: { voiceConfig: { voice: 'Leda' } },
+      },
+    }),
+  })
+  const payload = (await response.json()) as Record<string, unknown>
+  if (!response.ok) {
+    const err = payload.error as { message?: string } | undefined
+    throw new AppError(err?.message ?? 'No se pudo leer el mensaje')
+  }
+  const candidates = payload.candidates as
+    | Array<{ content?: { parts?: Array<Record<string, unknown>> } }>
+    | undefined
+  const parts = candidates?.[0]?.content?.parts ?? []
+  const audioPart = parts.find((part) => part.inlineData || part.inline_data)
+  const inline = (audioPart?.inlineData ?? audioPart?.inline_data) as
+    | { data?: string; mimeType?: string; mime_type?: string }
+    | undefined
+  const audioBase64 = String(inline?.data ?? '').replace(/\s/g, '')
+  if (!audioBase64) throw new AppError('Gemini no devolvió audio')
+  const mimeType = inline?.mimeType || inline?.mime_type || 'audio/wav'
+  const meta = payload.usageMetadata as
+    | { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number }
+    | undefined
+  if (opts.usage) {
+    const prompt = Number(meta?.promptTokenCount ?? 0)
+    const output = Number(meta?.candidatesTokenCount ?? 0)
+    const total = Number(meta?.totalTokenCount ?? prompt + output)
+    void recordLlmUsage(opts.usage, model, { prompt, output, total })
+  }
+  return { audioBase64, mimeType }
 }
 
 async function generateGeminiText(opts: {

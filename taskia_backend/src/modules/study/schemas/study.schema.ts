@@ -24,6 +24,13 @@ export function parseTranscribeBody(body: Record<string, unknown>) {
   }
 }
 
+export function parseSpeakBody(body: Record<string, unknown>) {
+  const text = String(body.text ?? '').trim()
+  const parsed = z.string().min(1, 'No hay texto para leer').max(1600).safeParse(text)
+  if (!parsed.success) throw new AppError(parsed.error.issues[0]?.message ?? 'No hay texto para leer')
+  return { text: parsed.data }
+}
+
 const PHOTO_ONLY = 'Mira la foto de mi ejercicio.'
 
 export function parseChatMessage(body: Record<string, unknown>) {

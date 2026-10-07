@@ -225,6 +225,12 @@ export const api = {
       }),
     })
   },
+  speakText(text: string) {
+    return request<{ audio_base64: string; mime_type: string }>('/study/speak', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    })
+  },
   transcribeAudio(input: {
     audio_base64: string
     mime_type: string

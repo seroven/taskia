@@ -1,6 +1,10 @@
 import { asyncHandler } from '../../../middleware/error.middleware.js'
 import * as studyService from '../services/study.service.js'
 
+export const speak = asyncHandler(async (req, res) => {
+  res.json(await studyService.speak(req.user!.id, req.body))
+})
+
 export const transcribe = asyncHandler(async (req, res) => {
   res.json(await studyService.transcribe(req.user!.id, req.body))
 })

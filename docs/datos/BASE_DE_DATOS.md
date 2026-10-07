@@ -469,7 +469,7 @@ Una fila por llamada al modelo. Es lo que alimenta las gráficas de uso y el cos
 | `total_tokens` | int | |
 | `created_at` | timestamptz | |
 
-`kind` dice qué disparó la llamada. `board_image` queda solo por el historial: ya no se generan fichas. `challenge_photo_grade` es la llamada que mira cada foto del ejercicio junto con la resolución del niño. La lista completa está en la tabla de valores permitidos. Guardar el `model` en cada fila importa porque el precio por token depende de él y cambia con el tiempo.
+`kind` dice qué disparó la llamada. `speak` es leer en voz el texto que ya ve el niño. `board_image` queda solo por el historial: ya no se generan fichas. `challenge_photo_grade` es la llamada que mira cada foto del ejercicio junto con la resolución del niño. La lista completa está en la tabla de valores permitidos. Guardar el `model` en cada fila importa porque el precio por token depende de él y cambia con el tiempo.
 
 Tiene dos índices pensados para el panel: `(user_id, created_at)` y `(kind, created_at)`.
 
@@ -516,7 +516,7 @@ Todos los campos con opciones fijas, en un solo lugar. Cambiarlos es tocar el `C
 | `study_challenges` | `difficulty` | `warm`, `quest`, `boss` |
 | `study_challenges` | `status` | `in_progress`, `completed`, `abandoned` |
 | `study_challenge_questions` | `kind` | `multiple_choice`, `short_text`, `fill_blank` |
-| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade`, `challenge_photo_grade`, `parent_tutor`, `planet_generate`, `daily_summary`, `board_intent`, `board_facts`, `board_image` |
+| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade`, `challenge_photo_grade`, `parent_tutor`, `planet_generate`, `daily_summary`, `board_intent`, `board_facts`, `board_image`, `speak` |
 | `xp_awards` | `source_type` | `task_done_simple`, `task_study`, `mission`, `challenge` |
 | `troop_members` | `role` | `captain`, `copilot`, `member` |
 | `troop_invites` | `status` | `pending`, `accepted`, `rejected`, `cancelled` |

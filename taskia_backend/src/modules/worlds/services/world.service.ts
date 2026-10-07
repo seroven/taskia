@@ -182,7 +182,7 @@ export async function openMissionSession(userId: number, missionId: number) {
   const context = await loadMissionSession(missionId)
   await ensureNotebookContext(missionId, context)
   if (context.messages.length === 0) {
-    const speak = `¡Hola! Antes de las preguntas, quiero conocer tu tema "${mission.title}". Cuéntame lo que dice tu cuaderno: puedes escribirlo o usar “Hablar del tema” varias veces, revisar las palabras y sumarlas abajo. Cuando esté listo, envíamelo.`
+    const speak = `¡Hola! Antes de las preguntas, quiero conocer tu tema "${mission.title}". Cuéntame lo que dice tu cuaderno: puedes escribirlo o usar Hablar varias veces, revisar las palabras y sumarlas abajo. Cuando esté listo, envíamelo.`
     context.topic_summary = mission.title
     context.context_summary = `Inicio local. Misión: "${mission.title}".`
     try {

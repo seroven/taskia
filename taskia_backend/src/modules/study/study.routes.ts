@@ -8,6 +8,7 @@ router.use(requireAuth)
 router.use(requireStudent)
 
 router.post('/transcribe', studyController.transcribe)
+router.post('/speak', studyController.speak)
 router.get('/:taskId', studyController.openSession)
 router.post('/:taskId/chat', studyController.chat)
 

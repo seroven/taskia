@@ -1,5 +1,5 @@
 import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
-import { callGemini, callGeminiTranscribe, classifyBoardIntent } from '../../../infrastructure/gemini/gemini.client.js'
+import { callGemini, callGeminiSpeak, callGeminiTranscribe, classifyBoardIntent } from '../../../infrastructure/gemini/gemini.client.js'
 import { AppError } from '../../../shared/errors/app-error.js'
 import {
   extractJson,
@@ -14,7 +14,7 @@ import {
   xpForTaskStudy,
 } from '../../../services/xp.js'
 import { fetchTask } from '../../tasks/services/task.service.js'
-import { parseChatMessage, parseTranscribeBody } from '../schemas/study.schema.js'
+import { parseChatMessage, parseSpeakBody, parseTranscribeBody } from '../schemas/study.schema.js'
 import { tutorSystemPrompt } from '../../../prompts/study-tutor.js'
 import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../exercises/exerciseBrief.js'
 import {
@@ -74,6 +74,15 @@ function ensureActiveExercise(
     if (prev) base = base ? `${prev}\n${base}` : prev
   }
   return truncateChars(base, MAX_CONTEXT)
+}
+
+export async function speak(userId: number, body: Record<string, unknown>) {
+  const input = parseSpeakBody(body)
+  const audio = await callGeminiSpeak({
+    text: input.text,
+    usage: { userId, kind: 'speak' },
+  })
+  return { audio_base64: audio.audioBase64, mime_type: audio.mimeType }
 }
 
 export async function transcribe(userId: number, body: Record<string, unknown>) {

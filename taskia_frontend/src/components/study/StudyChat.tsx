@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
-import { Camera, Microphone, Stop, X } from '@phosphor-icons/react'
+import { Camera, Microphone, SpeakerHigh, Stop, X } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { plainMathText } from '../../lib/plainMath'
 import { compressStudyPhoto } from '../../lib/studyPhoto'
@@ -140,6 +140,10 @@ export function StudyChat({
   const recorderRef = useRef(new VoiceRecorder())
   const tickRef = useRef<number | null>(null)
   const stoppingRef = useRef(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioCache = useRef(new Map<string, string>())
+  const hearAfterVoice = useRef(false)
+  const [hearingKey, setHearingKey] = useState<string | null>(null)
 
   const messages = context?.messages ?? []
   const displayMessages = useMemo(() => {
@@ -190,11 +194,40 @@ export function StudyChat({
   const voiceBusy = voiceStatus !== 'idle' || voicePrompt !== null
 
   useEffect(() => {
+    const cache = audioCache.current
     return () => {
       recorderRef.current.cancel()
       if (tickRef.current != null) window.clearInterval(tickRef.current)
+      audioRef.current?.pause()
+      for (const url of cache.values()) URL.revokeObjectURL(url)
     }
   }, [])
+
+  async function hearText(key: string, text: string) {
+    const spoken = text.trim()
+    if (!spoken || hearingKey) return
+    setHearingKey(key)
+    setVoiceError(null)
+    try {
+      let url = audioCache.current.get(key)
+      if (!url) {
+        const result = await api.speakText(spoken)
+        const binary = atob(result.audio_base64)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+        url = URL.createObjectURL(new Blob([bytes], { type: result.mime_type || 'audio/wav' }))
+        audioCache.current.set(key, url)
+      }
+      audioRef.current?.pause()
+      const audio = new Audio(url)
+      audioRef.current = audio
+      audio.onended = () => setHearingKey((current) => (current === key ? null : current))
+      await audio.play()
+    } catch (err) {
+      setVoiceError(errorMessage(err))
+      setHearingKey((current) => (current === key ? null : current))
+    }
+  }
 
   useEffect(() => {
     if (!zoomSrc) return
@@ -385,6 +418,7 @@ export function StudyChat({
     if ((!text && !photo) || sending || voiceBusy || pendingUser) return
     const outgoing = text || 'Mira la foto de mi ejercicio.'
     const voice = fromVoiceDraft
+    hearAfterVoice.current = voice
     setDraft('')
     setFromVoiceDraft(false)
     setPhotoData(null)
@@ -401,6 +435,7 @@ export function StudyChat({
       setPendingUser(null)
       setPendingPhoto(null)
       setExpectingReply(false)
+      hearAfterVoice.current = false
       setDraft(text)
       setPhotoData(photo)
       setFromVoiceDraft(voice)
@@ -494,6 +529,17 @@ export function StudyChat({
                   </button>
                 ) : null}
                 <p>{message.role === 'assistant' ? plainMathText(message.content) : message.content}</p>
+                {message.role === 'assistant' ? (
+                  <button
+                    type="button"
+                    className="ghost study-hear-btn"
+                    disabled={hearingKey !== null}
+                    onClick={() => void hearText(key, plainMathText(message.content).slice(0, 1600))}
+                  >
+                    <SpeakerHigh size={16} weight="fill" />
+                    {hearingKey === key ? 'Leyendo…' : 'Escuchar'}
+                  </button>
+                ) : null}
               </motion.div>
             )
           })}
@@ -535,6 +581,10 @@ export function StudyChat({
                   setTypingKey((current) => (current === key ? null : current))
                   setExpectingReply(false)
                   scrollToBottom()
+                  if (hearAfterVoice.current) {
+                    hearAfterVoice.current = false
+                    void hearText(key, plainMathText(liveAssistant.message.content).slice(0, 1600))
+                  }
                 }}
               />
             )}
@@ -564,7 +614,7 @@ export function StudyChat({
                   transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <Microphone size={18} weight="fill" />
-                  Hablar del tema
+                  Hablar
                 </motion.button>
               )}
               {voiceStatus === 'recording' && (
@@ -647,14 +697,13 @@ export function StudyChat({
             setDraft(e.target.value)
             if (fromVoiceDraft) setFromVoiceDraft(true)
           }}
-          placeholder="Cuéntale a Taskia lo de tu tema. Puedes grabar varias veces, sumarlo aquí y enviar cuando esté listo."
+          placeholder="Escríbele a Taskia o háblale. Si grabas, revisa el texto y envíalo cuando esté listo."
           rows={3}
           disabled={sending || voiceBusy}
         />
         {voiceEnabled && (
           <p className="muted study-voice-compose-hint">
-            Taskia quiere conocer tu tema. Puedes grabar varias veces, sumar las palabras aquí y
-            enviar cuando esté listo.
+            Puedes escribir o hablar. Si grabas, revisa el texto y envíalo cuando esté listo.
           </p>
         )}
         <div className="study-chat-send-row">
@@ -722,7 +771,7 @@ export function StudyChat({
       <KidAskDialog
         open={voicePrompt === 'intro'}
         titleId="study-voice-intro-title"
-        title="¿Quieres contarle tu tema?"
+        title="¿Quieres hablarle a Taskia?"
         primaryLabel="Voy a hablar"
         secondaryLabel="Mejor escribo"
         onPrimary={() => {
@@ -732,9 +781,8 @@ export function StudyChat({
         onSecondary={() => setVoicePrompt(null)}
       >
         <p>
-          Taskia quiere conocer tu tema con tus palabras. Puedes hablar un rato, revisar lo que
-          se escribió y sumarlo abajo. Si no te alcanza, graba otra vez. Cuando esté todo, envíaselo
-          con el botón de abajo.
+          Puedes hablar un rato, revisar lo que se escribió y sumarlo abajo. Si no te alcanza, graba
+          otra vez. Cuando esté todo, envíaselo con el botón de abajo.
         </p>
       </KidAskDialog>
 
