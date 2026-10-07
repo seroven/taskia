@@ -13,8 +13,8 @@ No se manda una escena ni un dibujo. La foto del cuaderno se sube a Cloudinary y
 ## Llamadas, en orden
 
 1. Intención (`board_intent`). Sirve para notar «dame un ejercicio» aunque no haya foto.
-2. Desarrollo privado (`board_facts`), si hay una foto de este turno o una ya guardada y todavía no hay `exercise_brief`. Resuelve el procedimiento y el resultado. No se le muestra al navegador. Los turnos siguientes no reenvían esa foto: usan el texto guardado.
-3. ¿Hace falta gráfica? (`board_facts`), solo si pidió un ejercicio nuevo. Mira el referente escrito o la foto que subió el niño.
+2. Desarrollo privado (`board_facts`), solo si la intención dijo ayuda, revisión o ejercicio nuevo, y todavía no hay `exercise_brief` (o la foto es un ejercicio distinto). Resuelve el procedimiento y el resultado. No se le muestra al navegador. Los turnos siguientes no reenvían esa foto: usan el texto guardado. Si las tres marcas salieron en falso, la foto la ve el tutor en ese turno y no se guarda como desarrollo.
+3. ¿Hace falta gráfica? (`board_facts`), solo si pidió un ejercicio nuevo. Es un sí o un no, con pensamiento mínimo. Mira el referente escrito o la foto que subió el niño.
 4. El tutor (`task_tutor`). Una sola llamada de texto.
 
 ## Si pide un ejercicio nuevo

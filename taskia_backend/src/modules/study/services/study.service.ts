@@ -150,6 +150,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     const memory = planExerciseMemory({
       help: intent.helpExercise,
       review: intent.reviewDrawing,
+      draw: intent.drawExercise,
       hasPhoto: Boolean(photo),
       hasBrief: Boolean(context.exercise_brief),
     })
@@ -171,7 +172,9 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       }
     }
     const tutorPhoto =
-      memory.sendPhoto || (memory.solve && !context.exercise_brief) ? photoData : null
+      memory.sendPhoto || memory.showMaterial || (memory.solve && !context.exercise_brief)
+        ? photoData
+        : null
     const referencePhoto = await loadReferencePhoto(photoData, userReferencePhotos(context.messages))
     const referenceText = exerciseReference([
       task.description ?? '',
@@ -189,6 +192,10 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     if (fromVoice) {
       instruction +=
         ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
+    }
+    if (memory.showMaterial && tutorPhoto) {
+      instruction +=
+        ' La foto de este turno es material del niño, no un ejercicio. Léela y deja lo importante en context_summary.'
     }
     if (tutorPhoto && intent.reviewDrawing) {
       instruction +=
@@ -230,6 +237,9 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       system: tutorSystemPrompt(),
       user: JSON.stringify(payload),
       photoBase64: tutorPhoto,
+      photoCaption: memory.showMaterial
+        ? 'Foto del cuaderno. Es material del tema, no la respuesta de un ejercicio.'
+        : undefined,
       usage: { userId, kind: 'task_tutor' },
     })
 

@@ -32,6 +32,12 @@ function readInlineImage(raw: string, fallbackMime = 'image/png') {
   return { mime: fallbackMime, data: raw.trim().replace(/\s/g, '') }
 }
 
+function minimalThinking(modelL: string): Record<string, unknown> {
+  if (modelL.includes('gemini-3')) return { thinkingConfig: { thinkingLevel: 'minimal' } }
+  if (modelL.includes('2.5')) return { thinkingConfig: { thinkingBudget: 0 } }
+  return {}
+}
+
 export async function callGemini(opts: {
   system: string
   user: string
@@ -39,6 +45,8 @@ export async function callGemini(opts: {
   boardImages?: Array<{ data: string; caption?: string; mimeType?: string }>
   photoBase64?: string | null
   photoCaption?: string
+  /** JSON corto, con pensamiento mínimo. La foto, si va, se manda igual. */
+  short?: boolean
   usage?: LlmUsageContext
 }): Promise<string> {
   const apiKey = env.gemini.apiKey.trim().replace(/^["']|["']$/g, '')
@@ -76,11 +84,14 @@ export async function callGemini(opts: {
   }
 
   const generationConfig: Record<string, unknown> = {
-    maxOutputTokens: 4096,
+    maxOutputTokens: opts.short ? 80 : 4096,
     responseMimeType: 'application/json',
   }
   const modelL = model.toLowerCase()
-  if (modelL.includes('gemini-3')) {
+  if (opts.short) {
+    generationConfig.temperature = 0
+    Object.assign(generationConfig, minimalThinking(modelL))
+  } else if (modelL.includes('gemini-3')) {
     generationConfig.thinkingConfig = { thinkingLevel: 'low' }
   } else if (modelL.includes('2.5')) {
     generationConfig.thinkingConfig = { thinkingBudget: 0 }
@@ -95,6 +106,16 @@ export async function callGemini(opts: {
     system: opts.system,
     parts,
     generationConfig,
+  }).catch(async (error: unknown) => {
+    if (!opts.short || !('thinkingConfig' in generationConfig)) throw error
+    const { thinkingConfig: _drop, ...plain } = generationConfig
+    return generateGeminiText({
+      apiKey,
+      model,
+      system: opts.system,
+      parts,
+      generationConfig: plain,
+    })
   })
   if (opts.usage) {
     void recordLlmUsage(opts.usage, model, generated.usage)
@@ -113,16 +134,11 @@ export async function classifyBoardIntent(opts: {
   const apiKey = env.gemini.apiKey.trim().replace(/^["']|["']$/g, '')
   if (!apiKey) return NONE_INTENT
   const model = env.gemini.model.trim().replace(/^["']|["']$/g, '') || 'gemini-2.0-flash'
-  const modelL = model.toLowerCase()
   const generationConfig: Record<string, unknown> = {
     maxOutputTokens: 80,
     temperature: 0,
     responseMimeType: 'application/json',
-  }
-  if (modelL.includes('gemini-3')) {
-    generationConfig.thinkingConfig = { thinkingLevel: 'minimal' }
-  } else if (modelL.includes('2.5')) {
-    generationConfig.thinkingConfig = { thinkingBudget: 0 }
+    ...minimalThinking(model.toLowerCase()),
   }
 
   const parts = [
@@ -239,17 +255,29 @@ export async function callGeminiTranscribe(opts: {
     },
   ]
 
-  const { text, finishReason, usage } = await generateGeminiText({
+  const generationConfig: Record<string, unknown> = {
+    maxOutputTokens: 8192,
+    temperature: 0.1,
+    ...minimalThinking(model.toLowerCase()),
+  }
+  const generated = await generateGeminiText({
     apiKey,
     model,
     system: TRANSCRIBE_SYSTEM,
     parts,
-    generationConfig: {
-      // Lecturas largas (~90s) necesitan margen amplio de salida
-      maxOutputTokens: 8192,
-      temperature: 0.1,
-    },
+    generationConfig,
+  }).catch(async (error: unknown) => {
+    if (!('thinkingConfig' in generationConfig)) throw error
+    const { thinkingConfig: _drop, ...plain } = generationConfig
+    return generateGeminiText({
+      apiKey,
+      model,
+      system: TRANSCRIBE_SYSTEM,
+      parts,
+      generationConfig: plain,
+    })
   })
+  const { text, finishReason, usage } = generated
   if (opts.usage) {
     void recordLlmUsage(opts.usage, model, usage)
   }

@@ -8,7 +8,7 @@ El tablero del Campamento no es este lienzo. `tasks.board_order` y `BoardPage` s
 
 ## Estudio y misión
 
-Si el niño manda una foto o pide ayuda, el desarrollo privado (`exercise_brief`) resuelve el procedimiento y el resultado, lo guarda y el chat lo usa sin dictarlo. Vive en `taskia_backend/src/modules/exercises/`.
+Si la clasificación dice que pide ayuda, una revisión o un ejercicio nuevo, el desarrollo privado (`exercise_brief`) resuelve el procedimiento y el resultado, lo guarda y el chat lo usa sin dictarlo. Una foto que no es eso la ve el tutor en ese turno y no queda guardada como desarrollo. Vive en `taskia_backend/src/modules/exercises/`.
 
 Si pide un ejercicio nuevo, una pasada corta (`needsGraphic`) mira el referente:
 

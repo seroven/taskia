@@ -16,14 +16,17 @@ Sin signos $, sin LaTeX. Si no hay un ejercicio claro, exercise="" y answer="".`
 export function planExerciseMemory(input: {
   help: boolean
   review: boolean
+  draw: boolean
   hasPhoto: boolean
   hasBrief: boolean
 }) {
+  const asked = input.help || input.review || input.draw
   const newProblem = input.help && input.hasPhoto && !input.review
-  const firstLook = !input.hasBrief && (input.help || input.hasPhoto)
+  const firstLook = !input.hasBrief && asked && (input.help || input.hasPhoto)
   const solve = newProblem || firstLook
   const sendPhoto = input.hasPhoto && input.review && input.hasBrief && !newProblem
-  return { solve, sendPhoto }
+  const showMaterial = input.hasPhoto && !asked
+  return { solve, sendPhoto, showMaterial }
 }
 
 export function formatExerciseBrief(raw: string): string | null {

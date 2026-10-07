@@ -75,6 +75,7 @@ export async function needsGraphic(opts: {
         hay_foto: Boolean(opts.photoBase64),
       }),
       photoBase64: opts.photoBase64,
+      short: true,
       usage: opts.usage,
     })
     return parseGraphicFlag(raw)

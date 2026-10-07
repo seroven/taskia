@@ -233,6 +233,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   const memory = planExerciseMemory({
     help: intent.helpExercise,
     review: intent.reviewDrawing,
+    draw: intent.drawExercise,
     hasPhoto: Boolean(photo),
     hasBrief: Boolean(context.exercise_brief),
   })
@@ -253,7 +254,12 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       await saveExerciseBrief(missionId, brief)
     }
   }
-  const tutorPhoto = memory.sendPhoto || (memory.solve && !context.exercise_brief) ? photoData : null
+  const tutorPhoto =
+    memory.sendPhoto || memory.showMaterial || (memory.solve && !context.exercise_brief) ? photoData : null
+  const openingRelato =
+    userTurns === 1 &&
+    context.notebook_context.trim().length > 0 &&
+    context.notebook_context === truncateChars(parsed.message, MAX_NOTEBOOK)
   const referencePhoto = await loadReferencePhoto(photoData, userReferencePhotos(context.messages))
   const referenceText = exerciseReference([
     mission.description ?? '',
@@ -271,6 +277,13 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   if (parsed.fromVoice) {
     instruction +=
       ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
+  }
+  if (openingRelato) {
+    instruction += ' El relato de este turno está en notebook_context.'
+  }
+  if (memory.showMaterial && tutorPhoto) {
+    instruction +=
+      ' La foto de este turno es material del niño, no un ejercicio. Léela y deja lo importante en context_summary.'
   }
   if (tutorPhoto && intent.reviewDrawing) {
     instruction +=
@@ -303,16 +316,18 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     hints_level: context.hints_level,
     photo_attached: Boolean(tutorPhoto),
     ...(context.exercise_brief ? { exercise_solution: context.exercise_brief } : {}),
-    child_message: truncateChars(
-      parsed.message,
-      userTurns === 1 ? MAX_NOTEBOOK : parsed.fromVoice ? 4000 : 800,
-    ),
+    child_message: openingRelato
+      ? ''
+      : truncateChars(parsed.message, parsed.fromVoice ? 4000 : 800),
   })
 
   const raw = await callGemini({
     system: missionTutorPrompt(),
     user: payload,
     photoBase64: tutorPhoto,
+    photoCaption: memory.showMaterial
+      ? 'Foto del cuaderno. Es material del tema, no la respuesta de un ejercicio.'
+      : undefined,
     usage: { userId, kind: 'mission_tutor' },
   })
 
