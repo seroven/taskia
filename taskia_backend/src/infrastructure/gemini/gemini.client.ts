@@ -220,7 +220,7 @@ export async function callGeminiTranscribe(opts: {
 
   if (!data) throw new AppError('No llegó audio para transcribir')
   if (data.length > MAX_AUDIO_BASE64_CHARS) {
-    throw new AppError('El audio es demasiado largo. Máximo 90 segundos.')
+    throw new AppError('El audio es demasiado largo.')
   }
 
   const allowed = new Set([

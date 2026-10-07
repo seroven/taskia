@@ -90,7 +90,7 @@ La sesión recorre tres fases, que el alumno ve en pantalla:
 2. **Practicando** — ejercicios y variaciones.
 3. **Repasando** — el alumno explica o aplica el concepto con números o casos nuevos.
 
-Puede escribir o hablar (voz a texto, hasta unos 90 segundos). El audio no se envía solo: el alumno revisa el texto, lo corrige y lo suma a la caja de abajo, para poder grabar varias veces. También puede mandar la foto de un ejercicio. Si pide uno nuevo que necesita un dibujo, Taskia no lo arma y le pide una foto parecida. Si basta con texto o números, lo escribe en el mensaje.
+Puede escribir o pulsar Hablar. El círculo escucha hasta que lo toca, guarda el texto en el chat y Taskia lee la respuesta. Abajo del círculo se ve el último globo y la mitad del anterior. También puede mandar la foto de un ejercicio. Si pide uno nuevo que necesita un dibujo, Taskia no lo arma y le pide una foto parecida. Si basta con texto o números, lo escribe en el mensaje.
 
 ### Cuándo Taskia da el visto
 

@@ -91,6 +91,10 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         const copy = xpToastCopy(result.xp_gained)
         if (copy) showToast({ tone: 'success', ...copy })
       }
+      const saved = [...result.context.messages]
+        .reverse()
+        .find((message) => message.role === 'assistant')
+      return saved?.content ?? ''
     } catch (err) {
       setChatError(errorMessage(err))
       throw err

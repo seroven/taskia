@@ -1,8 +1,6 @@
 import { z } from 'zod'
 import { AppError } from '../../../shared/errors/app-error.js'
 
-const MAX_VOICE_SECONDS = 90
-
 export function parseTranscribeBody(body: Record<string, unknown>) {
   const audioBase64 = String(body.audio_base64 ?? '').trim()
   const mimeType = String(body.mime_type ?? 'audio/webm').trim()
@@ -11,7 +9,7 @@ export function parseTranscribeBody(body: Record<string, unknown>) {
   const parsed = z
     .object({
       audioBase64: z.string().min(1, 'Falta el audio'),
-      durationSeconds: z.number().max(MAX_VOICE_SECONDS, 'El audio supera el máximo de 90 segundos').optional(),
+      durationSeconds: z.number().nonnegative().optional(),
     })
     .safeParse({ audioBase64, durationSeconds })
   if (!parsed.success) {

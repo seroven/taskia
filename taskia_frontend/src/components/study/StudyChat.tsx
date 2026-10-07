@@ -5,19 +5,17 @@ import {
   useState,
   type ClipboardEvent,
   type FormEvent,
-  type ReactNode,
 } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
-import { Camera, Microphone, SpeakerHigh, Stop, X } from '@phosphor-icons/react'
+import { Camera, Microphone, Stop, X } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { plainMathText } from '../../lib/plainMath'
 import { compressStudyPhoto } from '../../lib/studyPhoto'
-import { ModalShell } from '../ui/ModalShell'
 import { errorMessage } from '../../lib/errors'
 import type { StudyContext, StudyExercise, StudyMessage, TutorPhase } from '../../lib/studyProtocol'
 import { phaseLabel } from '../../lib/studyProtocol'
-import { MAX_VOICE_SECONDS, VoiceRecorder } from '../../lib/voiceRecorder'
+import { VoiceRecorder } from '../../lib/voiceRecorder'
 
 interface Props {
   context: StudyContext | null
@@ -32,8 +30,10 @@ interface Props {
       fromVoice?: boolean
       photoBase64?: string | null
     },
-  ) => Promise<void>
+  ) => Promise<string | void>
 }
+
+type VoiceStage = 'listening' | 'responding' | 'speaking' | 'ready'
 
 /** Clave estable: el optimista y el mensaje confirmado del usuario comparten índice/contenido. */
 function messageKey(message: StudyMessage, index: number) {
@@ -103,10 +103,141 @@ function TypewriterText({
 }
 
 function formatElapsed(seconds: number) {
-  const s = Math.max(0, Math.min(MAX_VOICE_SECONDS, Math.floor(seconds)))
-  const mm = String(Math.floor(s / 60)).padStart(1, '0')
+  const s = Math.max(0, Math.floor(seconds))
+  const mm = String(Math.floor(s / 60))
   const ss = String(s % 60).padStart(2, '0')
   return `${mm}:${ss}`
+}
+
+function VoiceStageView({
+  stage,
+  elapsed,
+  error,
+  locked,
+  turns,
+  floor,
+  liveKey,
+  thinking,
+  onClose,
+  onCircle,
+}: {
+  stage: VoiceStage
+  elapsed: number
+  error: string | null
+  locked: boolean
+  turns: StudyMessage[]
+  floor: number
+  liveKey: string | null
+  thinking: boolean
+  onClose: () => void
+  onCircle: () => void
+}) {
+  const reelRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [fades, setFades] = useState(false)
+  const showReel = turns.length > 0 || thinking
+
+  useEffect(() => {
+    const reel = reelRef.current
+    const track = trackRef.current
+    if (!showReel || !reel || !track) return
+    const measure = () => setFades(track.scrollHeight > reel.clientHeight + 4)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(track)
+    observer.observe(reel)
+    return () => observer.disconnect()
+  }, [showReel])
+
+  return (
+    <div className={`study-voice-stage is-${stage}`}>
+      <button type="button" className="ghost study-voice-close" onClick={onClose}>
+        <X size={18} weight="bold" />
+        Volver al chat
+      </button>
+      <div className="study-voice-main">
+        <button
+          type="button"
+          className="study-voice-orb"
+          disabled={locked}
+          aria-label={stage === 'listening' ? 'Terminar y escuchar a Taskia' : 'Hablar'}
+          onClick={onCircle}
+        >
+          <span className="study-voice-wave" aria-hidden />
+          <span className="study-voice-wave" aria-hidden />
+          <span className="study-voice-wave" aria-hidden />
+          <span className="study-voice-orb-core">
+            {stage === 'listening' ? <Stop size={36} weight="fill" /> : <Microphone size={36} weight="fill" />}
+          </span>
+        </button>
+        <p className="study-voice-stage-label" role="status">
+          {stage === 'listening'
+            ? `Te estoy escuchando… ${formatElapsed(elapsed)}`
+            : stage === 'responding'
+              ? 'Taskia está pensando…'
+              : stage === 'speaking'
+                ? 'Taskia te responde…'
+                : 'Toca el círculo para hablar'}
+        </p>
+        {error ? <p className="form-error">{error}</p> : null}
+      </div>
+      {showReel ? (
+        <div className={`study-voice-reel${fades ? ' is-faded' : ''}`} ref={reelRef}>
+          <div className="study-voice-reel-track" ref={trackRef}>
+            <AnimatePresence initial={false}>
+              {turns.map((message, index) => {
+                const key = messageKey(message, floor + index)
+                const writing = key === liveKey
+                return (
+                  <motion.div
+                    key={key}
+                    className={`study-bubble study-bubble-${message.role}`}
+                    initial={bubbleEnter}
+                    animate={bubbleShown}
+                    transition={bubbleTransition}
+                    layout="position"
+                  >
+                    <span className="study-bubble-role">
+                      {message.role === 'user' ? 'Tú' : 'Taskia'}
+                    </span>
+                    {writing ? (
+                      <TypewriterText text={plainMathText(message.content)} active />
+                    ) : (
+                      <p>
+                        {message.role === 'assistant'
+                          ? plainMathText(message.content)
+                          : message.content}
+                      </p>
+                    )}
+                  </motion.div>
+                )
+              })}
+              {thinking ? (
+                <motion.div
+                  key="voice-thinking"
+                  className="study-bubble study-bubble-assistant is-typing"
+                  initial={bubbleEnter}
+                  animate={bubbleShown}
+                  transition={bubbleTransition}
+                  layout="position"
+                >
+                  <span className="study-bubble-role">Taskia</span>
+                  <p>
+                    Pensando
+                    <span className="study-thinking-dots" aria-hidden>
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                  </p>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 export function StudyChat({
@@ -126,11 +257,15 @@ export function StudyChat({
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
-  const [voiceStatus, setVoiceStatus] = useState<'idle' | 'recording' | 'transcribing'>('idle')
   const [voiceElapsed, setVoiceElapsed] = useState(0)
   const [voiceError, setVoiceError] = useState<string | null>(null)
-  const [voicePrompt, setVoicePrompt] = useState<'intro' | 'review' | null>(null)
-  const [pendingVoiceText, setPendingVoiceText] = useState('')
+  const [voiceStage, setVoiceStage] = useState<VoiceStage | null>(null)
+  const [micReady, setMicReady] = useState(false)
+  const micReadyRef = useRef(false)
+  const openingMicRef = useRef(false)
+  const voiceFloorRef = useRef(0)
+  const stageRef = useRef<VoiceStage | null>(null)
+  const voiceTurnRef = useRef(0)
   const [pendingUser, setPendingUser] = useState<string | null>(null)
   const [expectingReply, setExpectingReply] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
@@ -191,7 +326,18 @@ export function StudyChat({
     return displayMessages.filter((_, index) => index !== liveAssistant.index)
   }, [displayMessages, liveAssistant])
 
-  const voiceBusy = voiceStatus !== 'idle' || voicePrompt !== null
+  const voiceBusy = voiceStage != null && voiceStage !== 'ready'
+  const circleLocked = voiceStage === 'responding' || voiceStage === 'speaking'
+
+  function setStage(next: VoiceStage | null) {
+    stageRef.current = next
+    setVoiceStage(next)
+  }
+
+  function setMic(ready: boolean) {
+    micReadyRef.current = ready
+    setMicReady(ready)
+  }
 
   useEffect(() => {
     const cache = audioCache.current
@@ -203,29 +349,64 @@ export function StudyChat({
     }
   }, [])
 
-  async function hearText(key: string, text: string) {
+  async function hearText(key: string, text: string, force = false) {
     const spoken = text.trim()
-    if (!spoken || hearingKey) return
+    if (!spoken || (hearingKey && !force)) return false
     setHearingKey(key)
     setVoiceError(null)
     try {
       let url = audioCache.current.get(key)
       if (!url) {
         const result = await api.speakText(spoken)
+        if (force && stageRef.current == null) {
+          setHearingKey((current) => (current === key ? null : current))
+          return false
+        }
         const binary = atob(result.audio_base64)
         const bytes = new Uint8Array(binary.length)
         for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
         url = URL.createObjectURL(new Blob([bytes], { type: result.mime_type || 'audio/wav' }))
         audioCache.current.set(key, url)
       }
+      if (force && stageRef.current == null) {
+        setHearingKey((current) => (current === key ? null : current))
+        return false
+      }
       audioRef.current?.pause()
       const audio = new Audio(url)
       audioRef.current = audio
-      audio.onended = () => setHearingKey((current) => (current === key ? null : current))
-      await audio.play()
+      await new Promise<void>((resolve, reject) => {
+        let settled = false
+        let started = false
+        const finish = () => {
+          if (settled) return
+          settled = true
+          setHearingKey((current) => (current === key ? null : current))
+          resolve()
+        }
+        audio.onplay = () => {
+          started = true
+        }
+        audio.onended = finish
+        audio.onpause = () => {
+          if (started) finish()
+        }
+        audio.onerror = () => {
+          if (settled) return
+          settled = true
+          reject(new Error('No se pudo reproducir la voz'))
+        }
+        void audio.play().catch((err: unknown) => {
+          if (settled) return
+          settled = true
+          reject(err instanceof Error ? err : new Error('No se pudo reproducir la voz'))
+        })
+      })
+      return true
     } catch (err) {
       setVoiceError(errorMessage(err))
       setHearingKey((current) => (current === key ? null : current))
+      return false
     }
   }
 
@@ -245,10 +426,8 @@ export function StudyChat({
       window.clearInterval(tickRef.current)
       tickRef.current = null
     }
-    setVoiceStatus('idle')
     setVoiceElapsed(0)
-    setVoicePrompt(null)
-    setPendingVoiceText('')
+    setStage(null)
     stoppingRef.current = false
   }, [voiceEnabled])
 
@@ -304,111 +483,125 @@ export function StudyChat({
     }
   }
 
-  async function finishRecording() {
-    if (stoppingRef.current) return
-    stoppingRef.current = true
+  function closeVoiceStage() {
+    voiceTurnRef.current += 1
     clearVoiceTick()
-    setVoiceStatus('transcribing')
-    setVoiceError(null)
-    try {
-      const recording = await recorderRef.current.stop()
-      const result = await api.transcribeAudio({
-        audio_base64: recording.audioBase64,
-        mime_type: recording.mimeType,
-        duration_seconds: recording.durationSeconds,
-      })
-      const text = result.text.trim()
-      if (!text || text === '(no se entendió)') {
-        setVoiceError('No te escuché bien. Acércate un poquito al micrófono e inténtalo otra vez.')
-        setFromVoiceDraft(false)
-        setPendingVoiceText('')
-      } else {
-        setPendingVoiceText(text)
-        setFromVoiceDraft(true)
-        setVoicePrompt('review')
-        if (result.truncated) {
-          setVoiceError(
-            'Se cortó un poquito al final. Léelo y, si falta algo, grábala otra vez.',
-          )
-        }
-      }
-    } catch (err) {
-      setVoiceError(errorMessage(err))
-    } finally {
-      setVoiceStatus('idle')
-      setVoiceElapsed(0)
-      stoppingRef.current = false
-    }
-  }
-
-  async function startRecording() {
-    if (sending || voiceStatus === 'recording' || voiceStatus === 'transcribing') return
+    recorderRef.current.cancel()
+    audioRef.current?.pause()
+    setVoiceElapsed(0)
     setVoiceError(null)
     stoppingRef.current = false
+    setMic(false)
+    setStage(null)
+  }
+
+  async function beginListening() {
+    const stageAtOpen = stageRef.current
+    if (circleLocked || stageAtOpen === 'listening' || openingMicRef.current) return
+    openingMicRef.current = true
+    if (stageAtOpen == null) voiceFloorRef.current = messages.length
+    setVoiceError(null)
+    stoppingRef.current = false
+    setMic(false)
+    setStage('listening')
     try {
-      setVoiceStatus('recording')
       setVoiceElapsed(0)
       const startedAt = Date.now()
       tickRef.current = window.setInterval(() => {
         setVoiceElapsed((Date.now() - startedAt) / 1000)
       }, 200)
-      await recorderRef.current.start(() => {
-        void finishRecording()
-      })
+      await recorderRef.current.start()
+      if (stageRef.current !== 'listening') {
+        recorderRef.current.cancel()
+        setMic(false)
+        return
+      }
+      setMic(true)
     } catch (err) {
       clearVoiceTick()
       recorderRef.current.cancel()
-      setVoiceStatus('idle')
       setVoiceElapsed(0)
+      setStage('ready')
       const msg = errorMessage(err)
       setVoiceError(
         /Permission|NotAllowed|permiso/i.test(msg)
           ? 'Necesitamos permiso del micrófono para que puedas hablar.'
           : msg,
       )
+    } finally {
+      openingMicRef.current = false
     }
   }
 
-  function askToRecord() {
-    if (sending || voiceBusy) return
+  function voiceTurnOpen(turn: number) {
+    return voiceTurnRef.current === turn && stageRef.current != null
+  }
+
+  async function finishCircleTurn() {
+    const stageAtTap = stageRef.current
+    if (stoppingRef.current || stageAtTap !== 'listening' || !micReadyRef.current) return
+    const turn = voiceTurnRef.current
+    stoppingRef.current = true
+    clearVoiceTick()
     setVoiceError(null)
-    if (draft.trim()) {
-      void startRecording()
+    setStage('responding')
+    try {
+      const recording = await recorderRef.current.stop()
+      if (!voiceTurnOpen(turn)) return
+      const result = await api.transcribeAudio({
+        audio_base64: recording.audioBase64,
+        mime_type: recording.mimeType,
+        duration_seconds: recording.durationSeconds,
+      })
+      if (!voiceTurnOpen(turn)) return
+      const text = result.text.trim()
+      if (!text || text === '(no se entendió)') {
+        setVoiceError('No te escuché bien. Acércate un poquito al micrófono e inténtalo otra vez.')
+        setStage('ready')
+        return
+      }
+      hearAfterVoice.current = false
+      setPendingUser(text)
+      setExpectingReply(true)
+      const spoken = await onSend(text, { fromVoice: true })
+      if (!voiceTurnOpen(turn)) return
+      const reply = String(spoken ?? '').trim()
+      if (!reply) {
+        setStage('ready')
+        return
+      }
+      setStage('speaking')
+      const heard = await hearText(
+        `circle-${reply.slice(0, 80)}`,
+        plainMathText(reply).slice(0, 1600),
+        true,
+      )
+      if (!voiceTurnOpen(turn)) return
+      if (!heard && stageRef.current === 'speaking') {
+        setVoiceError('No pude leer la respuesta. Puedes volver a hablar.')
+      }
+      setStage('ready')
+    } catch (err) {
+      if (!voiceTurnOpen(turn)) return
+      setPendingUser(null)
+      setExpectingReply(false)
+      setVoiceError(errorMessage(err))
+      setStage('ready')
+    } finally {
+      if (voiceTurnRef.current === turn) {
+        setVoiceElapsed(0)
+        stoppingRef.current = false
+      }
+    }
+  }
+
+  function onCircleClick() {
+    if (circleLocked) return
+    if (stageRef.current === 'listening') {
+      void finishCircleTurn()
       return
     }
-    setVoicePrompt('intro')
-  }
-
-  function addPendingVoiceToDraft() {
-    const text = pendingVoiceText.trim()
-    if (!text || sending) return
-    setDraft((prev) => {
-      const cur = prev.trim()
-      return cur ? `${cur}\n\n${text}` : text
-    })
-    setFromVoiceDraft(true)
-    setVoicePrompt(null)
-    setPendingVoiceText('')
-  }
-
-  function dismissVoiceReview() {
-    setVoicePrompt(null)
-    setPendingVoiceText('')
-  }
-
-  function redoVoice() {
-    setVoicePrompt(null)
-    setPendingVoiceText('')
-    setVoiceError(null)
-    void startRecording()
-  }
-
-  function cancelRecording() {
-    clearVoiceTick()
-    recorderRef.current.cancel()
-    setVoiceStatus('idle')
-    setVoiceElapsed(0)
-    stoppingRef.current = false
+    void beginListening()
   }
 
   async function onSubmit(event: FormEvent) {
@@ -468,7 +661,7 @@ export function StudyChat({
   }
 
   return (
-    <section className="study-chat">
+    <section className={`study-chat${voiceStage ? ' is-voice' : ''}`}>
       <div
         className="study-chat-stage"
         ref={(el) => {
@@ -529,17 +722,6 @@ export function StudyChat({
                   </button>
                 ) : null}
                 <p>{message.role === 'assistant' ? plainMathText(message.content) : message.content}</p>
-                {message.role === 'assistant' ? (
-                  <button
-                    type="button"
-                    className="ghost study-hear-btn"
-                    disabled={hearingKey !== null}
-                    onClick={() => void hearText(key, plainMathText(message.content).slice(0, 1600))}
-                  >
-                    <SpeakerHigh size={16} weight="fill" />
-                    {hearingKey === key ? 'Leyendo…' : 'Escuchar'}
-                  </button>
-                ) : null}
               </motion.div>
             )
           })}
@@ -593,75 +775,41 @@ export function StudyChat({
       </div>
       </div>
 
-      {(error || photoError || (voiceError && voicePrompt !== 'review')) && (
-        <p className="form-error">{error ?? photoError ?? voiceError}</p>
+      {voiceStage ? (
+        <VoiceStageView
+          stage={voiceStage}
+          elapsed={voiceElapsed}
+          error={voiceError}
+          locked={circleLocked || (voiceStage === 'listening' && !micReady)}
+          turns={displayMessages.slice(voiceFloorRef.current)}
+          floor={voiceFloorRef.current}
+          liveKey={
+            liveAssistant != null && liveAssistant.index >= voiceFloorRef.current
+              ? liveAssistant.key
+              : null
+          }
+          thinking={showThinking}
+          onClose={closeVoiceStage}
+          onCircle={onCircleClick}
+        />
+      ) : null}
+
+      {(error || photoError) && !voiceStage && (
+        <p className="form-error">{error ?? photoError}</p>
       )}
 
       <form className="study-chat-form" onSubmit={(e) => void onSubmit(e)} onPaste={onPastePhoto}>
         {voiceEnabled && (
           <div className="study-voice-bar">
-            <AnimatePresence mode="wait" initial={false}>
-              {voiceStatus === 'idle' && (
-                <motion.button
-                  key="idle"
-                  type="button"
-                  className="ghost study-voice-btn"
-                  disabled={sending || voicePrompt !== null}
-                  onClick={askToRecord}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <Microphone size={18} weight="fill" />
-                  Hablar
-                </motion.button>
-              )}
-              {voiceStatus === 'recording' && (
-                <motion.div
-                  key="recording"
-                  className="study-voice-live-row"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <span className="study-voice-live">
-                    <span className="study-voice-dot" aria-hidden />
-                    Te estoy escuchando… {formatElapsed(voiceElapsed)} / 1:30
-                  </span>
-                  <button
-                    type="button"
-                    className="primary study-voice-btn"
-                    onClick={() => void finishRecording()}
-                  >
-                    <Stop size={18} weight="fill" />
-                    Listo
-                  </button>
-                  <button type="button" className="ghost study-voice-btn" onClick={cancelRecording}>
-                    Cancelar
-                  </button>
-                </motion.div>
-              )}
-              {voiceStatus === 'transcribing' && (
-                <motion.span
-                  key="transcribing"
-                  className="study-voice-live study-voice-transcribing"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                  role="status"
-                >
-                  <span className="study-voice-transcribe-dots" aria-hidden>
-                    <span />
-                    <span />
-                    <span />
-                  </span>
-                  Pasando tu audio a palabras…
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <button
+              type="button"
+              className="ghost study-voice-btn"
+              disabled={sending}
+              onClick={() => void beginListening()}
+            >
+              <Microphone size={18} weight="fill" />
+              Hablar
+            </button>
           </div>
         )}
 
@@ -697,13 +845,13 @@ export function StudyChat({
             setDraft(e.target.value)
             if (fromVoiceDraft) setFromVoiceDraft(true)
           }}
-          placeholder="Escríbele a Taskia o háblale. Si grabas, revisa el texto y envíalo cuando esté listo."
+          placeholder="Escríbele a Taskia, o pulsa Hablar."
           rows={3}
           disabled={sending || voiceBusy}
         />
         {voiceEnabled && (
           <p className="muted study-voice-compose-hint">
-            Puedes escribir o hablar. Si grabas, revisa el texto y envíalo cuando esté listo.
+            Puedes escribir, o pulsar Hablar y tocar el círculo cuando termines.
           </p>
         )}
         <div className="study-chat-send-row">
@@ -768,116 +916,6 @@ export function StudyChat({
           )
         : null}
 
-      <KidAskDialog
-        open={voicePrompt === 'intro'}
-        titleId="study-voice-intro-title"
-        title="¿Quieres hablarle a Taskia?"
-        primaryLabel="Voy a hablar"
-        secondaryLabel="Mejor escribo"
-        onPrimary={() => {
-          setVoicePrompt(null)
-          void startRecording()
-        }}
-        onSecondary={() => setVoicePrompt(null)}
-      >
-        <p>
-          Puedes hablar un rato, revisar lo que se escribió y sumarlo abajo. Si no te alcanza, graba
-          otra vez. Cuando esté todo, envíaselo con el botón de abajo.
-        </p>
-      </KidAskDialog>
-
-      <KidAskDialog
-        open={voicePrompt === 'review'}
-        titleId="study-voice-review-title"
-        title="¿Así se escuchó?"
-        primaryLabel="Sumarlo abajo"
-        secondaryLabel="Grabar otra vez"
-        tertiaryLabel="Ahora no"
-        primaryDisabled={!pendingVoiceText.trim()}
-        onPrimary={addPendingVoiceToDraft}
-        onSecondary={redoVoice}
-        onTertiary={dismissVoiceReview}
-      >
-        <p>Revísalo y, si hace falta, corrígelo. Luego súmalo a la caja de abajo.</p>
-        <textarea
-          className="study-voice-transcript-input"
-          value={pendingVoiceText}
-          onChange={(e) => setPendingVoiceText(e.target.value)}
-          rows={6}
-          aria-label="Lo que se escuchó"
-        />
-        {voiceError && <p className="form-error">{voiceError}</p>}
-      </KidAskDialog>
     </section>
-  )
-}
-
-function KidAskDialog({
-  open,
-  titleId,
-  title,
-  children,
-  primaryLabel,
-  secondaryLabel,
-  tertiaryLabel,
-  onPrimary,
-  onSecondary,
-  onTertiary,
-  busy = false,
-  primaryDisabled = false,
-}: {
-  open: boolean
-  titleId: string
-  title: string
-  children: ReactNode
-  primaryLabel: string
-  secondaryLabel: string
-  tertiaryLabel?: string
-  onPrimary: () => void
-  onSecondary: () => void
-  onTertiary?: () => void
-  busy?: boolean
-  primaryDisabled?: boolean
-}) {
-  return (
-    <ModalShell
-      open={open}
-      titleId={titleId}
-      title={title}
-      size="sm"
-      panelClassName="study-kid-dialog"
-      backdropClassName="study-kid-dialog-backdrop"
-      closeOnBackdrop={false}
-    >
-      <div className="modal-panel-body study-kid-dialog-body">{children}</div>
-      <div className="modal-actions">
-        {tertiaryLabel && onTertiary ? (
-          <button
-            type="button"
-            className="ghost"
-            onClick={onTertiary}
-            disabled={busy}
-          >
-            {tertiaryLabel}
-          </button>
-        ) : null}
-        <button
-          type="button"
-          className="ghost"
-          onClick={onSecondary}
-          disabled={busy}
-        >
-          {secondaryLabel}
-        </button>
-        <button
-          type="button"
-          className="primary"
-          onClick={onPrimary}
-          disabled={busy || primaryDisabled}
-        >
-          {primaryLabel}
-        </button>
-      </div>
-    </ModalShell>
   )
 }

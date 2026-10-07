@@ -1,5 +1,3 @@
-const MAX_VOICE_SECONDS = 90
-
 export function pickRecorderMimeType(): string {
   if (typeof MediaRecorder === 'undefined') return ''
   const candidates = [
@@ -37,8 +35,6 @@ export class VoiceRecorder {
   private recorder: MediaRecorder | null = null
   private chunks: Blob[] = []
   private startedAt = 0
-  private limitTimer: number | null = null
-  private onLimitReached: (() => void) | null = null
 
   get supported() {
     return (
@@ -49,11 +45,10 @@ export class VoiceRecorder {
     )
   }
 
-  async start(onLimitReached?: () => void): Promise<void> {
+  async start(): Promise<void> {
     if (!this.supported) {
       throw new Error('Tu navegador no permite grabar audio')
     }
-    this.onLimitReached = onLimitReached ?? null
     this.chunks = []
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     const mimeType = pickRecorderMimeType()
@@ -63,17 +58,9 @@ export class VoiceRecorder {
     }
     this.startedAt = Date.now()
     this.recorder.start(250)
-    this.limitTimer = window.setTimeout(() => {
-      this.onLimitReached?.()
-    }, MAX_VOICE_SECONDS * 1000)
   }
 
   async stop(): Promise<VoiceRecordingResult> {
-    if (this.limitTimer != null) {
-      window.clearTimeout(this.limitTimer)
-      this.limitTimer = null
-    }
-
     const recorder = this.recorder
     if (!recorder) {
       this.cleanupStream()
@@ -81,10 +68,7 @@ export class VoiceRecorder {
     }
 
     const mimeType = recorder.mimeType || pickRecorderMimeType() || 'audio/webm'
-    const durationSeconds = Math.min(
-      MAX_VOICE_SECONDS,
-      Math.max(0.5, (Date.now() - this.startedAt) / 1000),
-    )
+    const durationSeconds = Math.max(0.5, (Date.now() - this.startedAt) / 1000)
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       recorder.onerror = () => reject(new Error('Error al grabar audio'))
@@ -111,10 +95,6 @@ export class VoiceRecorder {
   }
 
   cancel() {
-    if (this.limitTimer != null) {
-      window.clearTimeout(this.limitTimer)
-      this.limitTimer = null
-    }
     try {
       if (this.recorder && this.recorder.state !== 'inactive') {
         this.recorder.onstop = null
@@ -133,5 +113,3 @@ export class VoiceRecorder {
     this.stream = null
   }
 }
-
-export { MAX_VOICE_SECONDS }
