@@ -29,4 +29,4 @@ El botón Hablar, cuando la página alcanza, estira el círculo desde la izquier
 
 `study_eval.passed` solo si está en `reviewing`, el niño ya mandó al menos `6 + Errores` turnos, respondió de verdad y no se le dictó la solución. No se pregunta si quiere otro tipo. Si ya cumple, se le dice que puede mover la tarea a Listo.
 
-El texto visible es `speak_to_child`. Se le quitan los `$` de fórmula. No se le pega un título de ejercicio. En el chat y en los desafíos, `3/4` se dibuja como fracción y `2^4` como potencia. El texto guardado no cambia.
+El texto visible es `speak_to_child`. Se le quitan los `$` de fórmula. No se le pega un título de ejercicio. Solo al terminar un ejercicio, Taskia invita una vez a ver cómo lo resolvió, sin pedir la foto. En el chat y en los desafíos, `3/4` se dibuja como fracción y `2^4` como potencia. El texto guardado no cambia.

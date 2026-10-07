@@ -211,7 +211,8 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
         ' El niño adjuntó una foto del cuaderno. Léela y decide si el ejercicio está bien. No es la pizarra.'
     }
     if (intent.reviewDrawing && !tutorPhoto) {
-      instruction += ' Pidió que revises su trabajo, pero no hay foto. Pídele que mande una foto del cuaderno.'
+      instruction +=
+        ' Pidió revisar su trabajo y no adjuntó nada. Invítalo una sola vez: "Me gustaría ver cómo lo resolviste". No digas "foto" ni "mándame".'
     }
     if (intent.reviewDrawing && tutorPhoto) {
       instruction += ' Mira la foto y decide si está bien.'
