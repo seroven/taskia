@@ -51,6 +51,12 @@ const bubbleTransition = {
   damping: 30,
   mass: 0.75,
 }
+const voiceBubbleEnter = { opacity: 0, y: 56 }
+const voiceBubbleShown = { opacity: 1, y: 0 }
+const voiceBubbleTransition = {
+  duration: 0.55,
+  ease: [0.22, 1, 0.36, 1] as const,
+}
 
 function TypewriterText({
   text,
@@ -102,6 +108,17 @@ function TypewriterText({
   )
 }
 
+function imageFileFromClipboard(data: DataTransfer | null): File | undefined {
+  if (!data) return
+  const fromFiles = Array.from(data.files).find((file) => file.type.startsWith('image/'))
+  if (fromFiles) return fromFiles
+  return (
+    Array.from(data.items)
+      .find((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      ?.getAsFile() ?? undefined
+  )
+}
+
 function formatElapsed(seconds: number) {
   const s = Math.max(0, Math.floor(seconds))
   const mm = String(Math.floor(s / 60))
@@ -118,8 +135,12 @@ function VoiceStageView({
   floor,
   liveKey,
   thinking,
+  photo,
+  photoError,
   onClose,
   onCircle,
+  onAddPhoto,
+  onClearPhoto,
 }: {
   stage: VoiceStage
   elapsed: number
@@ -129,8 +150,12 @@ function VoiceStageView({
   floor: number
   liveKey: string | null
   thinking: boolean
+  photo: string | null
+  photoError: string | null
   onClose: () => void
   onCircle: () => void
+  onAddPhoto: () => void
+  onClearPhoto: () => void
 }) {
   const reelRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -155,6 +180,28 @@ function VoiceStageView({
         <X size={18} weight="bold" />
         Volver al chat
       </button>
+      <div className="study-voice-photo">
+        <button
+          type="button"
+          className="ghost study-voice-photo-btn"
+          title="Adjuntar una foto o pegarla con Ctrl+V"
+          onClick={onAddPhoto}
+        >
+          <Camera size={18} weight="fill" />
+          Foto
+        </button>
+        {photo ? (
+          <div className="study-voice-photo-chip">
+            <img src={photo} alt="Foto lista para cuando hables" />
+            <button type="button" className="ghost study-voice-photo-clear" onClick={onClearPhoto}>
+              <X size={14} weight="bold" />
+              Quitar
+            </button>
+            <p className="study-voice-photo-note">Se envía cuando hables</p>
+          </div>
+        ) : null}
+        {photoError ? <p className="form-error">{photoError}</p> : null}
+      </div>
       <div className="study-voice-main">
         <button
           type="button"
@@ -192,14 +239,16 @@ function VoiceStageView({
                   <motion.div
                     key={key}
                     className={`study-bubble study-bubble-${message.role}`}
-                    initial={bubbleEnter}
-                    animate={bubbleShown}
-                    transition={bubbleTransition}
-                    layout="position"
+                    initial={voiceBubbleEnter}
+                    animate={voiceBubbleShown}
+                    transition={voiceBubbleTransition}
                   >
                     <span className="study-bubble-role">
                       {message.role === 'user' ? 'Tú' : 'Taskia'}
                     </span>
+                    {message.image_url ? (
+                      <img className="study-bubble-photo" src={message.image_url} alt="Foto del ejercicio" />
+                    ) : null}
                     {writing ? (
                       <TypewriterText text={plainMathText(message.content)} active />
                     ) : (
@@ -216,10 +265,9 @@ function VoiceStageView({
                 <motion.div
                   key="voice-thinking"
                   className="study-bubble study-bubble-assistant is-typing"
-                  initial={bubbleEnter}
-                  animate={bubbleShown}
-                  transition={bubbleTransition}
-                  layout="position"
+                  initial={voiceBubbleEnter}
+                  animate={voiceBubbleShown}
+                  transition={voiceBubbleTransition}
                 >
                   <span className="study-bubble-role">Taskia</span>
                   <p>
@@ -253,6 +301,8 @@ export function StudyChat({
   const [draft, setDraft] = useState('')
   const [fromVoiceDraft, setFromVoiceDraft] = useState(false)
   const [photoData, setPhotoData] = useState<string | null>(null)
+  const photoRef = useRef<string | null>(null)
+  photoRef.current = photoData
   const [zoomSrc, setZoomSrc] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [pendingPhoto, setPendingPhoto] = useState<string | null>(null)
@@ -495,6 +545,13 @@ export function StudyChat({
     setStage(null)
   }
 
+  function openVoiceStage() {
+    if (sending || stageRef.current != null) return
+    voiceFloorRef.current = messages.length
+    setVoiceError(null)
+    setStage('ready')
+  }
+
   async function beginListening() {
     const stageAtOpen = stageRef.current
     if (circleLocked || stageAtOpen === 'listening' || openingMicRef.current) return
@@ -545,6 +602,7 @@ export function StudyChat({
     clearVoiceTick()
     setVoiceError(null)
     setStage('responding')
+    let sentPhoto: string | null = null
     try {
       const recording = await recorderRef.current.stop()
       if (!voiceTurnOpen(turn)) return
@@ -561,9 +619,14 @@ export function StudyChat({
         return
       }
       hearAfterVoice.current = false
+      sentPhoto = photoRef.current
+      setPhotoData(null)
+      photoRef.current = null
+      setPendingPhoto(sentPhoto)
       setPendingUser(text)
       setExpectingReply(true)
-      const spoken = await onSend(text, { fromVoice: true })
+      const spoken = await onSend(text, { fromVoice: true, photoBase64: sentPhoto })
+      setPendingPhoto(null)
       if (!voiceTurnOpen(turn)) return
       const reply = String(spoken ?? '').trim()
       if (!reply) {
@@ -584,7 +647,12 @@ export function StudyChat({
     } catch (err) {
       if (!voiceTurnOpen(turn)) return
       setPendingUser(null)
+      setPendingPhoto(null)
       setExpectingReply(false)
+      if (sentPhoto) {
+        photoRef.current = sentPhoto
+        setPhotoData(sentPhoto)
+      }
       setVoiceError(errorMessage(err))
       setStage('ready')
     } finally {
@@ -637,24 +705,33 @@ export function StudyChat({
 
   function onPastePhoto(event: ClipboardEvent<HTMLFormElement>) {
     if (sending || voiceBusy) return
-    const data = event.clipboardData
-    if (!data) return
-    const fromFiles = Array.from(data.files).find((file) => file.type.startsWith('image/'))
-    const fromItems = Array.from(data.items)
-      .find((item) => item.kind === 'file' && item.type.startsWith('image/'))
-      ?.getAsFile()
-    const file = fromFiles ?? fromItems
+    const file = imageFileFromClipboard(event.clipboardData)
     if (!file) return
     event.preventDefault()
     void onPickPhoto(file)
   }
 
+  useEffect(() => {
+    if (!voiceStage) return
+    const onPaste = (event: globalThis.ClipboardEvent) => {
+      const file = imageFileFromClipboard(event.clipboardData)
+      if (!file) return
+      event.preventDefault()
+      void onPickPhoto(file)
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [voiceStage])
+
   async function onPickPhoto(file: File | undefined) {
     setPhotoError(null)
     if (!file) return
     try {
-      setPhotoData(await compressStudyPhoto(file))
+      const next = await compressStudyPhoto(file)
+      photoRef.current = next
+      setPhotoData(next)
     } catch (err) {
+      photoRef.current = null
       setPhotoData(null)
       setPhotoError(err instanceof Error ? err.message : 'No pude usar esa foto.')
     }
@@ -789,8 +866,15 @@ export function StudyChat({
               : null
           }
           thinking={showThinking}
+          photo={photoData}
+          photoError={photoError}
           onClose={closeVoiceStage}
           onCircle={onCircleClick}
+          onAddPhoto={() => photoInputRef.current?.click()}
+          onClearPhoto={() => {
+            photoRef.current = null
+            setPhotoData(null)
+          }}
         />
       ) : null}
 
@@ -805,7 +889,7 @@ export function StudyChat({
               type="button"
               className="ghost study-voice-btn"
               disabled={sending}
-              onClick={() => void beginListening()}
+              onClick={openVoiceStage}
             >
               <Microphone size={18} weight="fill" />
               Hablar
@@ -851,7 +935,7 @@ export function StudyChat({
         />
         {voiceEnabled && (
           <p className="muted study-voice-compose-hint">
-            Puedes escribir, o pulsar Hablar y tocar el círculo cuando termines.
+            Pulsa Hablar, sube la foto si quieres y toca el círculo cuando empieces a hablar.
           </p>
         )}
         <div className="study-chat-send-row">
