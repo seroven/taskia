@@ -101,7 +101,6 @@ export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Pro
     if (moved >= SWIPE_THRESHOLD) onComplete(task)
   }
 
-  const actionLabel = task.status === 'studying' ? 'Seguir' : 'Estudiar'
   const reveal = Math.min(1, Math.abs(dx) / SWIPE_THRESHOLD)
 
   return (
