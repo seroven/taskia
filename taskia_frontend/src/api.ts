@@ -15,13 +15,18 @@ import type {
   ImportableMission,
   MissionChatResponse,
   MissionSession,
+  MissionVoiceTurnResult,
   StudyChallenge,
   StudyMission,
   StudyWorld,
   StudyWorldCourse,
 } from './lib/worldsTypes'
 import type { PlanetConfig } from './lib/planet/engine'
-import type { StudyChatResponse, StudySession } from './lib/studyProtocol'
+import type {
+  StudyChatResponse,
+  StudySession,
+  StudyVoiceTurnResult,
+} from './lib/studyProtocol'
 import type {
   AdminCourse,
   AdminCourseImportResult,
@@ -219,6 +224,23 @@ export const api = {
       }),
     })
   },
+  studyVoiceTurn(input: {
+    task_id: number
+    audio_base64: string
+    mime_type: string
+    duration_seconds: number
+    photo_base64?: string | null
+  }) {
+    return request<StudyVoiceTurnResult>(`/study/${input.task_id}/voice`, {
+      method: 'POST',
+      body: JSON.stringify({
+        audio_base64: input.audio_base64,
+        mime_type: input.mime_type,
+        duration_seconds: input.duration_seconds,
+        photo_base64: input.photo_base64 ?? null,
+      }),
+    })
+  },
   speakText(text: string) {
     return request<{ audio_base64: string; mime_type: string }>('/study/speak', {
       method: 'POST',
@@ -345,6 +367,23 @@ export const api = {
         }),
       },
     )
+  },
+  missionVoiceTurn(input: {
+    mission_id: number
+    audio_base64: string
+    mime_type: string
+    duration_seconds: number
+    photo_base64?: string | null
+  }) {
+    return request<MissionVoiceTurnResult>(`/worlds/missions/${input.mission_id}/voice`, {
+      method: 'POST',
+      body: JSON.stringify({
+        audio_base64: input.audio_base64,
+        mime_type: input.mime_type,
+        duration_seconds: input.duration_seconds,
+        photo_base64: input.photo_base64 ?? null,
+      }),
+    })
   },
   listChallengePresets() {
     return request<ChallengePreset[]>('/worlds/challenge-presets')

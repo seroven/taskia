@@ -54,6 +54,32 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
     })()
   }, [missionId])
 
+  function applyMissionResult(result: {
+    context: NonNullable<typeof context>
+    reply: { phase: string }
+    mission: StudyMission
+    xp_gained?: number
+    xp?: Parameters<typeof mergeXpIntoUser>[1]
+  }) {
+    const wasMastered = mission?.status === 'mastered'
+    setContext(result.context)
+    setPhase(result.reply.phase)
+    setMission(result.mission)
+    if (result.mission.status === 'mastered' && !wasMastered) {
+      showToast({
+        tone: 'success',
+        title: '¡Misión lista!',
+        subtitle: 'Taskia confirma que ya sabes el tema',
+      })
+    }
+    if (result.xp && result.xp_gained && result.xp_gained > 0) {
+      const next = mergeXpIntoUser(user, result.xp)
+      if (next) setUser(next)
+      const copy = xpToastCopy(result.xp_gained)
+      if (copy) showToast({ tone: 'success', ...copy })
+    }
+  }
+
   async function onSend(
     message: string,
     options: {
@@ -70,26 +96,52 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         Boolean(options.fromVoice),
         options.photoBase64 ?? null,
       )
-      setContext(result.context)
-      setPhase(result.reply.phase)
-      setMission(result.mission)
-      if (result.mission.status === 'mastered' && mission?.status !== 'mastered') {
-        showToast({
-          tone: 'success',
-          title: '¡Misión lista!',
-          subtitle: 'Taskia confirma que ya sabes el tema',
-        })
-      }
-      if (result.xp && result.xp_gained && result.xp_gained > 0) {
-        const next = mergeXpIntoUser(user, result.xp)
-        if (next) setUser(next)
-        const copy = xpToastCopy(result.xp_gained)
-        if (copy) showToast({ tone: 'success', ...copy })
-      }
+      applyMissionResult(result)
       const saved = [...result.context.messages]
         .reverse()
         .find((message) => message.role === 'assistant')
       return saved?.content ?? ''
+    } catch (err) {
+      setChatError(errorMessage(err))
+      throw err
+    } finally {
+      setSending(false)
+    }
+  }
+
+  async function onVoiceTurn(input: {
+    audioBase64: string
+    mimeType: string
+    durationSeconds: number
+    photoBase64: string | null
+  }) {
+    setSending(true)
+    setChatError(null)
+    try {
+      const result = await api.missionVoiceTurn({
+        mission_id: missionId,
+        audio_base64: input.audioBase64,
+        mime_type: input.mimeType,
+        duration_seconds: input.durationSeconds,
+        photo_base64: input.photoBase64,
+      })
+      if (!result.understood) {
+        return {
+          transcript: result.transcript,
+          understood: false as const,
+        }
+      }
+      applyMissionResult(result)
+      const saved = [...result.context.messages]
+        .reverse()
+        .find((message) => message.role === 'assistant')
+      return {
+        transcript: result.transcript,
+        understood: true as const,
+        replyText: saved?.content ?? result.reply.speak_to_child,
+        audioBase64: result.audio_base64,
+        mimeType: result.mime_type,
+      }
     } catch (err) {
       setChatError(errorMessage(err))
       throw err
@@ -245,6 +297,7 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
               sending={sending}
               error={chatError}
               onSend={onSend}
+              onVoiceTurn={onVoiceTurn}
             />
           </motion.div>
         )}

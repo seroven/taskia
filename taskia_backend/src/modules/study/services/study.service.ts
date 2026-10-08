@@ -14,7 +14,12 @@ import {
   xpForTaskStudy,
 } from '../../../services/xp.js'
 import { fetchTask } from '../../tasks/services/task.service.js'
-import { parseChatMessage, parseSpeakBody, parseTranscribeBody } from '../schemas/study.schema.js'
+import {
+  parseChatMessage,
+  parseSpeakBody,
+  parseTranscribeBody,
+  parseVoiceTurnBody,
+} from '../schemas/study.schema.js'
 import { tutorSystemPrompt } from '../../../prompts/study-tutor.js'
 import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../exercises/exerciseBrief.js'
 import {
@@ -26,7 +31,7 @@ import {
   userReferencePhotos,
   type ExerciseTurn,
 } from '../../exercises/reference.js'
-import { stripDrewPhrase } from '../../exercises/text.js'
+import { chatVisibleSpeak, stripDrewPhrase } from '../../exercises/text.js'
 
 export function canOpenStudy(task: { status: string; difficulty_code: string }) {
   return (
@@ -96,6 +101,51 @@ export async function transcribe(userId: number, body: Record<string, unknown>) 
     })
 
     return result
+}
+
+/** Un turno de Hablar: transcribe → chat → TTS en una sola petición HTTP. */
+export async function voiceTurn(userId: number, taskId: number, body: Record<string, unknown>) {
+  const input = parseVoiceTurnBody(body)
+  const transcribed = await callGeminiTranscribe({
+    audioBase64: input.audioBase64,
+    mimeType: input.mimeType,
+    durationSeconds: input.durationSeconds,
+    usage: { userId, kind: 'transcribe' },
+  })
+  const transcript = transcribed.text.trim()
+  if (!transcript || transcript === '(no se entendió)') {
+    return {
+      understood: false,
+      transcript: transcript || '(no se entendió)',
+      truncated: transcribed.truncated,
+    }
+  }
+  const chatResult = await chat(userId, taskId, {
+    user_message: transcript,
+    from_voice: true,
+    photo_base64: input.photoRaw || undefined,
+  })
+  const spoken = chatVisibleSpeak(String(chatResult.reply.speak_to_child ?? '')).slice(0, 1600)
+  if (!spoken) {
+    return {
+      understood: true,
+      transcript,
+      truncated: transcribed.truncated,
+      ...chatResult,
+    }
+  }
+  const audio = await callGeminiSpeak({
+    text: spoken,
+    usage: { userId, kind: 'speak' },
+  })
+  return {
+    understood: true,
+    transcript,
+    truncated: transcribed.truncated,
+    ...chatResult,
+    audio_base64: audio.audioBase64,
+    mime_type: audio.mimeType,
+  }
 }
 
 export async function openSession(userId: number, taskId: number) {

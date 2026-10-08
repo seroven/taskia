@@ -1,5 +1,10 @@
 import { decodeStudyPhoto, uploadStudyPhoto } from '../../../infrastructure/cloudinary/cloudinary.client.js'
-import { callGemini, classifyBoardIntent } from '../../../infrastructure/gemini/gemini.client.js'
+import {
+  callGemini,
+  callGeminiSpeak,
+  callGeminiTranscribe,
+  classifyBoardIntent,
+} from '../../../infrastructure/gemini/gemini.client.js'
 import { missionTutorPrompt } from '../../../prompts/mission-tutor.js'
 import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../exercises/exerciseBrief.js'
 import {
@@ -11,7 +16,8 @@ import {
   userReferencePhotos,
   type ExerciseTurn,
 } from '../../exercises/reference.js'
-import { stripDrewPhrase } from '../../exercises/text.js'
+import { chatVisibleSpeak, stripDrewPhrase } from '../../exercises/text.js'
+import { parseVoiceTurnBody } from '../../study/schemas/study.schema.js'
 import { awardXp, clampEffortScore, xpForMission } from '../../../services/xp.js'
 import {
   AppError,
@@ -419,6 +425,55 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     return { reply, context: hideExerciseBrief(context), mission, xp_gained: xpAward.xp_gained, xp: xpAward }
   }
   return { reply, context: hideExerciseBrief(context), mission }
+}
+
+/** Un turno de Hablar en misión: transcribe → chat → TTS en una sola petición HTTP. */
+export async function voiceTurnMission(
+  userId: number,
+  missionId: number,
+  body: Record<string, unknown>,
+) {
+  const input = parseVoiceTurnBody(body)
+  const transcribed = await callGeminiTranscribe({
+    audioBase64: input.audioBase64,
+    mimeType: input.mimeType,
+    durationSeconds: input.durationSeconds,
+    usage: { userId, kind: 'transcribe' },
+  })
+  const transcript = transcribed.text.trim()
+  if (!transcript || transcript === '(no se entendió)') {
+    return {
+      understood: false,
+      transcript: transcript || '(no se entendió)',
+      truncated: transcribed.truncated,
+    }
+  }
+  const chatResult = await chatMission(userId, missionId, {
+    user_message: transcript,
+    from_voice: true,
+    photo_base64: input.photoRaw || undefined,
+  })
+  const spoken = chatVisibleSpeak(String(chatResult.reply.speak_to_child ?? '')).slice(0, 1600)
+  if (!spoken) {
+    return {
+      understood: true,
+      transcript,
+      truncated: transcribed.truncated,
+      ...chatResult,
+    }
+  }
+  const audio = await callGeminiSpeak({
+    text: spoken,
+    usage: { userId, kind: 'speak' },
+  })
+  return {
+    understood: true,
+    transcript,
+    truncated: transcribed.truncated,
+    ...chatResult,
+    audio_base64: audio.audioBase64,
+    mime_type: audio.mimeType,
+  }
 }
 
 export async function listImportable(userId: number, worldId: number, courseId: number) {

@@ -18,6 +18,21 @@ import type { StudyContext, StudyMessage, TutorPhase } from '../../lib/studyProt
 import { phaseLabel } from '../../lib/studyProtocol'
 import { VoiceRecorder } from '../../lib/voiceRecorder'
 
+export type VoiceTurnInput = {
+  audioBase64: string
+  mimeType: string
+  durationSeconds: number
+  photoBase64: string | null
+}
+
+export type VoiceTurnOutcome = {
+  transcript: string
+  understood: boolean
+  replyText?: string
+  audioBase64?: string
+  mimeType?: string
+}
+
 interface Props {
   context: StudyContext | null
   phase: TutorPhase | string
@@ -31,6 +46,8 @@ interface Props {
       photoBase64?: string | null
     },
   ) => Promise<string | void>
+  /** Hablar: una sola petición (transcribe + chat + TTS). */
+  onVoiceTurn: (input: VoiceTurnInput) => Promise<VoiceTurnOutcome>
 }
 
 type VoiceStage = 'listening' | 'responding' | 'speaking' | 'ready'
@@ -339,6 +356,7 @@ export function StudyChat({
   error,
   onThreadEl,
   onSend,
+  onVoiceTurn,
 }: Props) {
   const voiceDock = useVoiceDock()
   const voiceEnabled = true
@@ -446,6 +464,51 @@ export function StudyChat({
     }
   }, [])
 
+  function cacheAudioUrl(key: string, audioBase64: string, mimeType: string) {
+    const binary = atob(audioBase64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+    const url = URL.createObjectURL(new Blob([bytes], { type: mimeType || 'audio/wav' }))
+    audioCache.current.set(key, url)
+    return url
+  }
+
+  async function playCachedAudio(key: string, url: string, onStart?: () => void) {
+    audioRef.current?.pause()
+    const audio = new Audio(url)
+    audioRef.current = audio
+    await new Promise<void>((resolve, reject) => {
+      let settled = false
+      let started = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        setHearingKey((current) => (current === key ? null : current))
+        resolve()
+      }
+      const begin = () => {
+        if (started) return
+        started = true
+        onStart?.()
+      }
+      audio.onplay = begin
+      audio.onended = finish
+      audio.onpause = () => {
+        if (started) finish()
+      }
+      audio.onerror = () => {
+        if (settled) return
+        settled = true
+        reject(new Error('No se pudo reproducir la voz'))
+      }
+      void audio.play().then(begin).catch((err: unknown) => {
+        if (settled) return
+        settled = true
+        reject(err instanceof Error ? err : new Error('No se pudo reproducir la voz'))
+      })
+    })
+  }
+
   async function hearText(key: string, text: string, force = false, onStart?: () => void) {
     const spoken = text.trim()
     if (!spoken || (hearingKey && !force)) return false
@@ -459,49 +522,38 @@ export function StudyChat({
           setHearingKey((current) => (current === key ? null : current))
           return false
         }
-        const binary = atob(result.audio_base64)
-        const bytes = new Uint8Array(binary.length)
-        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
-        url = URL.createObjectURL(new Blob([bytes], { type: result.mime_type || 'audio/wav' }))
-        audioCache.current.set(key, url)
+        url = cacheAudioUrl(key, result.audio_base64, result.mime_type || 'audio/wav')
       }
       if (force && stageRef.current == null) {
         setHearingKey((current) => (current === key ? null : current))
         return false
       }
-      audioRef.current?.pause()
-      const audio = new Audio(url)
-      audioRef.current = audio
-      await new Promise<void>((resolve, reject) => {
-        let settled = false
-        let started = false
-        const finish = () => {
-          if (settled) return
-          settled = true
-          setHearingKey((current) => (current === key ? null : current))
-          resolve()
-        }
-        const begin = () => {
-          if (started) return
-          started = true
-          onStart?.()
-        }
-        audio.onplay = begin
-        audio.onended = finish
-        audio.onpause = () => {
-          if (started) finish()
-        }
-        audio.onerror = () => {
-          if (settled) return
-          settled = true
-          reject(new Error('No se pudo reproducir la voz'))
-        }
-        void audio.play().then(begin).catch((err: unknown) => {
-          if (settled) return
-          settled = true
-          reject(err instanceof Error ? err : new Error('No se pudo reproducir la voz'))
-        })
-      })
+      await playCachedAudio(key, url, onStart)
+      return true
+    } catch (err) {
+      setVoiceError(errorMessage(err))
+      setHearingKey((current) => (current === key ? null : current))
+      return false
+    }
+  }
+
+  async function hearPreparedAudio(
+    key: string,
+    audioBase64: string,
+    mimeType: string,
+    onStart?: () => void,
+  ) {
+    if (!audioBase64.trim()) return false
+    setHearingKey(key)
+    setVoiceError(null)
+    try {
+      let url = audioCache.current.get(key)
+      if (!url) url = cacheAudioUrl(key, audioBase64, mimeType || 'audio/wav')
+      if (stageRef.current == null) {
+        setHearingKey((current) => (current === key ? null : current))
+        return false
+      }
+      await playCachedAudio(key, url, onStart)
       return true
     } catch (err) {
       setVoiceError(errorMessage(err))
@@ -658,45 +710,56 @@ export function StudyChat({
     try {
       const recording = await recorderRef.current.stop()
       if (!voiceTurnOpen(turn)) return
-      const result = await api.transcribeAudio({
-        audio_base64: recording.audioBase64,
-        mime_type: recording.mimeType,
-        duration_seconds: recording.durationSeconds,
-      })
-      if (!voiceTurnOpen(turn)) return
-      const text = result.text.trim()
-      if (!text || text === '(no se entendió)') {
-        setVoiceError('No te escuché bien. Acércate un poquito al micrófono e inténtalo otra vez.')
-        setStage('ready')
-        return
-      }
       hearAfterVoice.current = false
       sentPhoto = photoRef.current
       setPhotoData(null)
       photoRef.current = null
-      setPendingPhoto(sentPhoto)
-      setPendingUser(text)
       setExpectingReply(true)
       setHoldVoiceReply(true)
-      const spoken = await onSend(text, { fromVoice: true, photoBase64: sentPhoto })
-      setPendingPhoto(null)
+      const outcome = await onVoiceTurn({
+        audioBase64: recording.audioBase64,
+        mimeType: recording.mimeType,
+        durationSeconds: recording.durationSeconds,
+        photoBase64: sentPhoto,
+      })
       if (!voiceTurnOpen(turn)) {
         setHoldVoiceReply(false)
         return
       }
-      const reply = String(spoken ?? '').trim()
+      const text = outcome.transcript.trim()
+      if (!outcome.understood || !text || text === '(no se entendió)') {
+        setHoldVoiceReply(false)
+        setExpectingReply(false)
+        setPendingUser(null)
+        setPendingPhoto(null)
+        if (sentPhoto) {
+          photoRef.current = sentPhoto
+          setPhotoData(sentPhoto)
+        }
+        setVoiceError('No te escuché bien. Acércate un poquito al micrófono e inténtalo otra vez.')
+        setStage('ready')
+        return
+      }
+      setExpectingReply(false)
+      setPendingUser(null)
+      setPendingPhoto(null)
+      const reply = String(outcome.replyText ?? '').trim()
       if (!reply) {
         setHoldVoiceReply(false)
         setStage('ready')
         return
       }
       setStage('speaking')
-      const heard = await hearText(
-        `circle-${reply.slice(0, 80)}`,
-        chatVisibleText(reply).slice(0, 1600),
-        true,
-        () => setHoldVoiceReply(false),
-      )
+      const audioKey = `circle-${reply.slice(0, 80)}`
+      const releaseHold = () => setHoldVoiceReply(false)
+      const heard = outcome.audioBase64
+        ? await hearPreparedAudio(
+            audioKey,
+            outcome.audioBase64,
+            outcome.mimeType || 'audio/wav',
+            releaseHold,
+          )
+        : await hearText(audioKey, chatVisibleText(reply).slice(0, 1600), true, releaseHold)
       if (!heard) setHoldVoiceReply(false)
       if (!voiceTurnOpen(turn)) return
       if (!heard && stageRef.current === 'speaking') {

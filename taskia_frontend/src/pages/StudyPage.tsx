@@ -62,6 +62,34 @@ export function StudyPage({ taskId, onBack }: Props) {
     })()
   }, [taskId])
 
+  function applyStudyResult(result: {
+    context: NonNullable<typeof context>
+    reply: { phase: string }
+    study_passed: boolean
+    xp_gained?: number
+    xp?: Parameters<typeof mergeXpIntoUser>[1]
+  }) {
+    setContext(result.context)
+    setPhase(result.reply.phase)
+    if (result.study_passed) {
+      const justPassed = !task?.study_passed
+      setTask((prev) => (prev ? { ...prev, study_passed: true } : prev))
+      if (justPassed) {
+        showToast({
+          tone: 'success',
+          title: '¡Ya puedes marcarla lista!',
+          subtitle: 'Taskia confirma que ya sabes la tarea. Muévela a Listo.',
+        })
+      }
+    }
+    if (result.xp && result.xp_gained && result.xp_gained > 0) {
+      const next = mergeXpIntoUser(user, result.xp)
+      if (next) setUser(next)
+      const copy = xpToastCopy(result.xp_gained)
+      if (copy) showToast({ tone: 'success', ...copy })
+    }
+  }
+
   async function onSend(
     message: string,
     options: {
@@ -78,32 +106,52 @@ export function StudyPage({ taskId, onBack }: Props) {
         Boolean(options.fromVoice),
         options.photoBase64 ?? null,
       )
-      setContext(result.context)
-      setPhase(result.reply.phase)
-      if (result.study_passed) {
-        const justPassed = !task?.study_passed
-        setTask((prev) =>
-          prev ? { ...prev, study_passed: true } : prev,
-        )
-        if (justPassed) {
-          showToast({
-            tone: 'success',
-            title: '¡Ya puedes marcarla lista!',
-            subtitle:
-              'Taskia confirma que ya sabes la tarea. Muévela a Listo.',
-          })
-        }
-      }
-      if (result.xp && result.xp_gained && result.xp_gained > 0) {
-        const next = mergeXpIntoUser(user, result.xp)
-        if (next) setUser(next)
-        const copy = xpToastCopy(result.xp_gained)
-        if (copy) showToast({ tone: 'success', ...copy })
-      }
+      applyStudyResult(result)
       const saved = [...result.context.messages]
         .reverse()
         .find((message) => message.role === 'assistant')
       return saved?.content ?? ''
+    } catch (err) {
+      setChatError(errorMessage(err))
+      throw err
+    } finally {
+      setSending(false)
+    }
+  }
+
+  async function onVoiceTurn(input: {
+    audioBase64: string
+    mimeType: string
+    durationSeconds: number
+    photoBase64: string | null
+  }) {
+    setSending(true)
+    setChatError(null)
+    try {
+      const result = await api.studyVoiceTurn({
+        task_id: taskId,
+        audio_base64: input.audioBase64,
+        mime_type: input.mimeType,
+        duration_seconds: input.durationSeconds,
+        photo_base64: input.photoBase64,
+      })
+      if (!result.understood) {
+        return {
+          transcript: result.transcript,
+          understood: false as const,
+        }
+      }
+      applyStudyResult(result)
+      const saved = [...result.context.messages]
+        .reverse()
+        .find((message) => message.role === 'assistant')
+      return {
+        transcript: result.transcript,
+        understood: true as const,
+        replyText: saved?.content ?? result.reply.speak_to_child,
+        audioBase64: result.audio_base64,
+        mimeType: result.mime_type,
+      }
     } catch (err) {
       setChatError(errorMessage(err))
       throw err
@@ -212,6 +260,7 @@ export function StudyPage({ taskId, onBack }: Props) {
               sending={sending}
               error={chatError}
               onSend={onSend}
+              onVoiceTurn={onVoiceTurn}
             />
           </motion.div>
         )}

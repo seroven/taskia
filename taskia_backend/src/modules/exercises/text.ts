@@ -10,3 +10,11 @@ export function stripMathDelimiters(text: string): string {
     .replace(/\\\(([\s\S]+?)\\\)/g, '$1')
     .replace(/(^|[^$\\])\$(?!\$)([^$\n]+?)\$(?!\$)/g, '$1$2')
 }
+
+/** Texto que oye el niño: sin rótulo Ejercicio ni LaTeX. */
+export function chatVisibleSpeak(text: string): string {
+  return stripMathDelimiters(text)
+    .replace(/(?:^|\n)\s*Ejercicio:\s*[^\n]*/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}

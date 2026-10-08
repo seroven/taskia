@@ -22,6 +22,10 @@ export const chat = asyncHandler(async (req, res) => {
   res.json(await worldService.chatMission(req.user!.id, Number(req.params.missionId), req.body))
 })
 
+export const voiceTurn = asyncHandler(async (req, res) => {
+  res.json(await worldService.voiceTurnMission(req.user!.id, Number(req.params.missionId), req.body))
+})
+
 export const startChallenge = asyncHandler(async (req, res) => {
   res.json(await challengeService.startChallenge(req.user!.id, req.body))
 })

@@ -122,6 +122,22 @@ export interface MissionChatResponse {
   }
 }
 
+export interface MissionVoiceTurnResponse extends MissionChatResponse {
+  understood: true
+  transcript: string
+  truncated?: boolean
+  audio_base64?: string
+  mime_type?: string
+}
+
+export type MissionVoiceTurnResult =
+  | {
+      understood: false
+      transcript: string
+      truncated?: boolean
+    }
+  | MissionVoiceTurnResponse
+
 export interface StudyChallenge {
   id: number
   user_id: number

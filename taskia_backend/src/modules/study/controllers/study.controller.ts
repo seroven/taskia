@@ -16,3 +16,7 @@ export const openSession = asyncHandler(async (req, res) => {
 export const chat = asyncHandler(async (req, res) => {
   res.json(await studyService.chat(req.user!.id, Number(req.params.taskId), req.body))
 })
+
+export const voiceTurn = asyncHandler(async (req, res) => {
+  res.json(await studyService.voiceTurn(req.user!.id, Number(req.params.taskId), req.body))
+})

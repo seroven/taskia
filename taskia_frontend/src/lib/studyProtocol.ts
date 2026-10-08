@@ -67,6 +67,22 @@ export interface StudyChatResponse {
   }
 }
 
+export interface StudyVoiceTurnResponse extends StudyChatResponse {
+  understood: true
+  transcript: string
+  truncated?: boolean
+  audio_base64?: string
+  mime_type?: string
+}
+
+export type StudyVoiceTurnResult =
+  | {
+      understood: false
+      transcript: string
+      truncated?: boolean
+    }
+  | StudyVoiceTurnResponse
+
 export function phaseLabel(phase: string): string {
   switch (phase) {
     case 'practicing':

@@ -29,6 +29,12 @@ export function parseSpeakBody(body: Record<string, unknown>) {
   return { text: parsed.data }
 }
 
+export function parseVoiceTurnBody(body: Record<string, unknown>) {
+  const audio = parseTranscribeBody(body)
+  const photoRaw = String(body.photo_base64 ?? body.photoBase64 ?? '').trim()
+  return { ...audio, photoRaw }
+}
+
 const PHOTO_ONLY = 'Mira la foto de mi ejercicio.'
 
 export function parseChatMessage(body: Record<string, unknown>) {
