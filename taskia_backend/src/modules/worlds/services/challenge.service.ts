@@ -5,7 +5,6 @@ import { stripMathDelimiters } from '../../exercises/text.js'
 import {
   CHALLENGE_GRADE_SYSTEM,
   CHALLENGE_PHOTO_GRADE_SYSTEM,
-  CHALLENGE_PHOTO_QUESTION_SYSTEM,
   challengeGenerateSystem,
 } from '../../../prompts/challenge.js'
 import { awardXp, xpForChallenge } from '../../../services/xp.js'
@@ -35,7 +34,6 @@ import {
   listChallengeQuestionDetails,
   listChallengeQuestions,
   listCompletedChallenges,
-  listUserMissionPhotos,
   listCourseMissions,
   listWorldMissions,
   loadMissionStudyBits,
@@ -95,73 +93,6 @@ async function loadMissionStudyMaterial(missionId: number) {
   }
 }
 
-async function pickPhotoJobs(missions: MissionView[], count: number) {
-  const pool: Array<{ missionId: number; url: string }> = []
-  for (const mission of missions) {
-    if (!mission.uses_board) continue
-    for (const url of await listUserMissionPhotos(mission.id)) {
-      pool.push({ missionId: mission.id, url })
-    }
-  }
-  if (pool.length === 0) return []
-  const theory = Math.round(count / 11)
-  const room = Math.max(0, count - theory)
-  return shuffleArray(pool).slice(0, Math.min(pool.length, room))
-}
-
-async function buildPhotoQuestions(
-  jobs: Array<{ missionId: number; url: string }>,
-  userId: number,
-) {
-  const ready: Array<{ missionId: number; url: string; data: string }> = []
-  for (const job of jobs) {
-    const data = await loadReferencePhoto(null, [job.url])
-    if (data) ready.push({ ...job, data })
-  }
-  if (ready.length === 0) return []
-  const raw = await callGemini({
-    system: CHALLENGE_PHOTO_QUESTION_SYSTEM,
-    user: JSON.stringify({
-      fotos: ready.map((job, index) => ({ index, mission_id: job.missionId })),
-    }),
-    boardImages: ready.map((job, index) => ({
-      data: job.data,
-      caption: `Foto index=${index}. Es el ejercicio. Arma la pregunta de esta foto.`,
-    })),
-    usage: { userId, kind: 'challenge_generate' },
-  })
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(extractJson(raw))
-  } catch {
-    return []
-  }
-  const rows = Array.isArray(parsed)
-    ? parsed
-    : parsed && typeof parsed === 'object' && Array.isArray((parsed as { items?: unknown }).items)
-      ? (parsed as { items: unknown[] }).items
-      : []
-  const questions: Array<Record<string, unknown>> = []
-  for (const row of rows) {
-    if (!row || typeof row !== 'object') continue
-    const obj = row as Record<string, unknown>
-    const index = Number(obj.index)
-    const job = ready[index]
-    if (!job) continue
-    const options = normalizeOptionsList(obj.options)
-    if (!options || options.length < 2) continue
-    questions.push({
-      mission_id: job.missionId,
-      kind: 'multiple_choice',
-      prompt: stripMathDelimiters(typeof obj.prompt === 'string' ? obj.prompt : 'Mira la imagen y resuelve lo que pide.'),
-      options: options.slice(0, 4).map((option) => stripMathDelimiters(option)),
-      answer_key: typeof obj.answer_key === 'string' ? obj.answer_key : 'A',
-      reference_image_url: job.url,
-    })
-  }
-  return questions
-}
-
 async function generateQuestionsBatch(
   missions: MissionView[],
   count: number,
@@ -175,7 +106,6 @@ async function generateQuestionsBatch(
       id: mission.id,
       title: mission.title,
       description: mission.description,
-      uses_board: mission.uses_board,
       course: mission.course_name,
       topic_summary: study.topic_summary,
       context_summary: study.context_summary,
@@ -229,8 +159,7 @@ async function generateQuestionsUpTo(
   userId: number,
 ) {
   if (count <= 0 || missions.length === 0) return []
-  const photoJobs = await pickPhotoJobs(missions, count)
-  const textTarget = Math.max(0, count - photoJobs.length)
+  const textTarget = count
   const collected: Array<Record<string, unknown>> = []
   const seen = new Set<string>()
   let emptyStreak = 0
@@ -257,8 +186,7 @@ async function generateQuestionsUpTo(
     if (added === 0) emptyStreak += 1
     else emptyStreak = 0
   }
-  const photos = photoJobs.length > 0 ? await buildPhotoQuestions(photoJobs, userId) : []
-  return [...collected, ...photos].slice(0, count)
+  return collected.slice(0, count)
 }
 
 export async function getChallengeDetail(challengeId: number, userId: number) {

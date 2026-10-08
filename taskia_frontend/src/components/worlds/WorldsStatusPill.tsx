@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { PencilLine } from '@phosphor-icons/react'
 import { courseProgressIcon, missionStatusIcon } from './worldsIcons'
 import {
   COURSE_PROGRESS_LABEL,
@@ -29,15 +28,6 @@ export function WorldsStatusPill({
     <span className={`worlds-status worlds-status-${value}`}>
       <Icon size={14} weight="fill" />
       {label}
-    </span>
-  )
-}
-
-export function WorldsBoardPill() {
-  return (
-    <span className="worlds-pill">
-      <PencilLine size={14} weight="fill" />
-      Práctico
     </span>
   )
 }

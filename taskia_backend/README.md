@@ -11,7 +11,7 @@ El producto es una app de estudio para **Exploradores** (`role: user`) con un **
 - Login y perfil (`/auth`). La sesión es un JWT en cookie httpOnly (`taskia_token` por defecto), no un Bearer en localStorage.
 - Cursos activos y catálogo de dificultades.
 - Tareas: listar, crear, editar, mover de columna y reordenar. El paso a *Terminado* en dificultad alta (o desde *En estudio*) exige `study_passed` del tutor.
-- Estudio de una tarea: sesión, chat con Gemini (fases comprensión / práctica / repaso), pizarra (escena JSON) y transcripción de audio.
+- Estudio de una tarea: sesión, chat con Gemini (fases comprensión / práctica / repaso) y transcripción de audio.
 - Mundos, cursos del mundo, misiones (crear, editar, importar), estudio de misión y desafíos generados/calificados por Gemini (`mission` | `course` | `world`).
 
 
@@ -23,7 +23,7 @@ El producto es una app de estudio para **Exploradores** (`role: user`) con un **
 - Materias por alumno (crear, renombrar, archivar, importar de otro alumno).
 - Ficha: overview, tareas, sesiones de estudio, árbol de mundos y detalle de un desafío.
 
-Gemini vive en `src/services/gemini.ts` (tutor, transcripciones, generación y corrección de desafíos). El uso se registra en `llm_usage`. La pizarra cuadriculada se renderiza en el front; aquí se guarda la escena JSON y, si aplica, operaciones de dibujo (`draw_ops`).
+Gemini vive en `src/infrastructure/gemini/` (tutor, transcripciones, generación y corrección de desafíos). El uso se registra en `llm_usage`. No hay pizarra ni escena de dibujo.
 
 ## Cómo correrlo
 

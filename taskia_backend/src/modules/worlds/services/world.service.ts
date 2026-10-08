@@ -147,14 +147,13 @@ export async function createMission(
 ) {
   await requireWorld(worldId, userId)
   await assertCourseLinked(worldId, courseId)
-  const { title, description, usesBoard } = parseMissionBody(body)
+  const { title, description } = parseMissionBody(body)
   const maxOrder = await maxMissionSort(worldId, courseId)
   const missionId = await insertMission({
     worldId,
     courseId,
     title,
     description,
-    usesBoard,
     sortOrder: maxOrder + 1,
   })
   return requireMission(missionId, userId)
@@ -162,8 +161,8 @@ export async function createMission(
 
 export async function patchMission(userId: number, missionId: number, body: Record<string, unknown>) {
   const current = await requireMission(missionId, userId)
-  const { title, description, usesBoard } = parseMissionBody(body)
-  await updateMissionFields(current.id, title, description, usesBoard)
+  const { title, description } = parseMissionBody(body)
+  await updateMissionFields(current.id, title, description)
   return requireMission(missionId, userId)
 }
 
@@ -307,7 +306,6 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       title: truncateChars(mission.title, 120),
       description: truncateChars(mission.description ?? '', 220),
       course: mission.course_name,
-      practical: mission.uses_board,
     },
     phase: context.tutor_phase,
     topic_summary: truncateChars(context.topic_summary, 120),
@@ -451,7 +449,6 @@ export async function importMissions(
       courseId,
       title: source.title,
       description: source.description,
-      usesBoard: source.uses_board,
       sourceMissionId: source.id,
       sortOrder: maxOrder,
     })

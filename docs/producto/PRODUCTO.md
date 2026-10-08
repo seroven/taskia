@@ -149,7 +149,7 @@ Se puede lanzar a tres alcances:
 
 Y tres intensidades: **Calentamiento**, **Aventura** y **Jefe final**. Cuanto más amplio el alcance y más dura la intensidad, más preguntas (de unas 5 en un calentamiento de tema hasta muchas más en un jefe de mundo). Si todavía hay poco material estudiado, Taskia recorta la cantidad para no inventar de la nada.
 
-Tipos de pregunta: opción múltiple, texto corto o completar. En un tema práctico, la mayoría sale de fotos que el niño ya subió: ve la foto, marca una opción y sube cómo lo resolvió. Cuenta bien solo si coinciden las dos. Si no hay fotos, esas preguntas quedan en texto. La proporción sigue cerca de una teórica por cada diez prácticas.
+Tipos de pregunta: opción múltiple, texto corto o completar. Las preguntas nuevas salen del texto estudiado. Si un desafío ya guardado trae una foto, se sigue viendo y, si hay resolución en foto, cuenta bien solo si la opción y la foto coinciden.
 
 ### Cómo se juega
 

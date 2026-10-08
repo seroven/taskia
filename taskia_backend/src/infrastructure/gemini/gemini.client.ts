@@ -17,7 +17,6 @@ export type LlmUsageKind =
   | 'daily_summary'
   | 'board_intent'
   | 'board_facts'
-  | 'board_image'
   | 'speak'
 
 export interface LlmUsageContext {

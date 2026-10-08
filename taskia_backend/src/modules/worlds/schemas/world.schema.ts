@@ -19,7 +19,6 @@ export function parseMissionBody(body: Record<string, unknown>) {
   return {
     title: parsed.data,
     description: optionalText(body.description),
-    usesBoard: Boolean(body.uses_board),
   }
 }
 
@@ -34,10 +33,7 @@ export function parseMissionChat(body: Record<string, unknown>) {
   return {
     message: parsed.data,
     photoRaw,
-    allowAiDraw: Boolean(body.allow_ai_draw),
     fromVoice: Boolean(body.from_voice),
-    boardDescription: typeof body.board_description === 'string' ? body.board_description : null,
-    boardImageRaw: String(body.board_image_base64 ?? body.boardImageBase64 ?? '').trim(),
   }
 }
 

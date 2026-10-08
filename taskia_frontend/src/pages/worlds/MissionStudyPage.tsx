@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowLeft,
   FloppyDisk,
-  PencilLine,
 } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
@@ -34,7 +33,6 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
   const [chatError, setChatError] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
-  const [editPractical, setEditPractical] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
 
   useEffect(() => {
@@ -48,7 +46,6 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         setPhase(session.context.tutor_phase)
         setEditTitle(session.mission.title)
         setEditDescription(session.mission.description ?? '')
-        setEditPractical(session.mission.uses_board)
       } catch (err) {
         setError(errorMessage(err))
       } finally {
@@ -70,8 +67,6 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
       const result = await api.missionChat(
         missionId,
         message,
-        undefined,
-        false,
         Boolean(options.fromVoice),
         options.photoBase64 ?? null,
       )
@@ -111,7 +106,6 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
         mission_id: mission.id,
         title: editTitle.trim(),
         description: editDescription.trim() || undefined,
-        uses_board: editPractical,
       })
       setMission(updated)
       setMode('study')
@@ -221,20 +215,6 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
               onChange={(e) => setEditDescription(e.target.value)}
               rows={4}
             />
-            <label className="worlds-switch-row">
-              <input
-                type="checkbox"
-                checked={editPractical}
-                onChange={(e) => setEditPractical(e.target.checked)}
-              />
-              <span>
-                <strong className="worlds-switch-label">
-                  <PencilLine size={18} weight="fill" />
-                  Tema práctico
-                </strong>
-                <span className="muted">Figuras, tablas o un procedimiento que se resuelve mirando una foto.</span>
-              </span>
-            </label>
             <div className="modal-actions">
               <button type="button" className="ghost" onClick={() => setMode('study')}>
                 Cancelar

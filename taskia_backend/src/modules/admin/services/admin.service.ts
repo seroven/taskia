@@ -472,10 +472,7 @@ export async function dashboard(input: {
       if (kind === 'transcribe') {
         addNum(voiceByDay, day, count)
         bumpUser(id, { voice: count, prompt, output })
-      } else if (kind === 'board_image') {
-        addNum(imageByDay, day, count)
-        bumpUser(id, { images: count, prompt, output })
-      } else if (kind === 'challenge_generate' || kind === 'challenge_grade') {
+      } else if (kind === 'challenge_generate' || kind === 'challenge_grade' || kind === 'challenge_photo_grade') {
         addNum(challengeByDay, day, count)
         bumpUser(id, { challenges: count, prompt, output })
       } else {
@@ -889,7 +886,6 @@ export async function studentWorldsTree(
     id: number
     title: string
     status: string
-    uses_board: boolean
     updated_at: string
     study: { phase: string; summary: string; updated_at: string } | null
     challenges: TreeChallenge[]
@@ -944,7 +940,6 @@ export async function studentWorldsTree(
       id: Number(row.id),
       title: String(row.title),
       status: missionStatus,
-      uses_board: flagOn(row.uses_board),
       updated_at: toInstantISO(row.updated_at as Date | string) ?? '',
       study,
       challenges: [],
@@ -1040,7 +1035,6 @@ export async function studentWorlds(studentId: number) {
       id: Number(mission.id),
       title: String(mission.title),
       status: String(mission.status),
-      uses_board: flagOn(mission.uses_board),
       course_name: String(mission.course_name),
       updated_at: toInstantISO(mission.updated_at as Date | string) ?? '',
     })),

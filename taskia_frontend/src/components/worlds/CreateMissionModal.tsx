@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { PencilLine, Plus, Rocket } from '@phosphor-icons/react'
+import { Plus, Rocket } from '@phosphor-icons/react'
 import { TextAreaField, TextField } from '../ui/Field'
 import { ModalShell } from '../ui/ModalShell'
 import { errorMessage } from '../../lib/errors'
@@ -10,14 +10,12 @@ interface Props {
   onCreate: (input: {
     title: string
     description?: string
-    uses_board: boolean
   }) => Promise<void>
 }
 
 export function CreateMissionModal({ open, onClose, onCreate }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [usesBoard, setUsesBoard] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -25,7 +23,6 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
     if (!open) return
     setTitle('')
     setDescription('')
-    setUsesBoard(false)
     setError(null)
   }, [open])
 
@@ -41,7 +38,6 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
       await onCreate({
         title: title.trim(),
         description: description.trim() || undefined,
-        uses_board: usesBoard,
       })
       onClose()
     } catch (err) {
@@ -74,23 +70,6 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
-              <label className="worlds-switch-row">
-                <input
-                  type="checkbox"
-                  checked={usesBoard}
-                  onChange={(e) => setUsesBoard(e.target.checked)}
-                />
-                <span>
-                  <strong className="worlds-switch-label">
-                    <PencilLine size={18} weight="fill" />
-                    Tema práctico
-                  </strong>
-                  <span className="muted">
-                    {' '}
-                    Figuras, tablas o un procedimiento. El desafío usa fotos que ya subiste.
-                  </span>
-                </span>
-              </label>
               {error && <p className="form-error">{error}</p>}
               <div className="modal-actions">
                 <button type="button" className="ghost" onClick={onClose} disabled={submitting}>

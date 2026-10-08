@@ -54,7 +54,6 @@ export interface StudyMission {
   title: string
   description: string | null
   status: MissionStatus | string
-  uses_board: boolean
   source_mission_id: number | null
   sort_order: number
   created_at: string
@@ -65,7 +64,6 @@ export interface ImportableMission {
   id: number
   title: string
   description: string | null
-  uses_board: boolean
   world_id: number
   world_title: string
   status: string
@@ -98,11 +96,8 @@ export interface MissionTutorReply {
   ask_questions: string[]
   topic_summary: string
   context_summary: string
-  draw_ops: unknown[]
-  board_items?: import('./studyProtocol').GridItem[]
   scene?: unknown
   highlight?: string[]
-  board_fallback?: string | null
   verdict?: {
     verdict: 'correct' | 'incorrect' | 'unverifiable'
     expected: number | null

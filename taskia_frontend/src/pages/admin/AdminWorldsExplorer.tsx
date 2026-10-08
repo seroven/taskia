@@ -525,7 +525,6 @@ function MissionDetail({
         <h2>{mission.title}</h2>
         <p className="muted">
           {MISSION_STATUS_LABEL[mission.status] ?? mission.status}
-          {mission.uses_board ? ' · tema práctico' : ''}
           {' · actualizado '}
           {formatWhen(mission.updated_at)}
         </p>

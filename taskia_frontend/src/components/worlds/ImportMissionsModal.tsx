@@ -3,7 +3,6 @@ import { DownloadSimple } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { AppLoader } from '../AppLoader'
 import { EmptyState } from '../EmptyState'
-import { WorldsBoardPill } from './WorldsStatusPill'
 import { ModalShell } from '../ui/ModalShell'
 import { errorMessage } from '../../lib/errors'
 import type { ImportableMission } from '../../lib/worldsTypes'
@@ -100,7 +99,6 @@ export function ImportMissionsModal({
                       <span>
                         <strong>{item.title}</strong>
                         <span className="muted"> · {item.world_title}</span>
-                        {item.uses_board ? <WorldsBoardPill /> : null}
                       </span>
                     </label>
                   </li>

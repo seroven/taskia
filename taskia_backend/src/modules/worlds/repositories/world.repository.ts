@@ -32,7 +32,6 @@ export type MissionView = {
   title: string
   description: string | null
   status: string
-  uses_board: boolean
   source_mission_id: number | null
   sort_order: number
   created_at: string
@@ -65,7 +64,6 @@ type MissionRaw = {
   title: string
   description: string | null
   status: string
-  uses_board: unknown
   source_mission_id: number | null
   sort_order: number
   created_at: Date | string
@@ -92,7 +90,6 @@ function toMission(row: MissionRaw): MissionView {
     title: String(row.title),
     description: row.description ?? null,
     status: String(row.status),
-    uses_board: Number(row.uses_board) !== 0,
     source_mission_id: row.source_mission_id == null ? null : Number(row.source_mission_id),
     sort_order: Number(row.sort_order),
     created_at: toInstantISO(row.created_at) ?? '',
@@ -152,7 +149,6 @@ function missionQuery() {
     .addSelect('m.title', 'title')
     .addSelect('m.description', 'description')
     .addSelect('m.status', 'status')
-    .addSelect('m.uses_board', 'uses_board')
     .addSelect('m.source_mission_id', 'source_mission_id')
     .addSelect('m.sort_order', 'sort_order')
     .addSelect('m.created_at', 'created_at')
@@ -351,7 +347,6 @@ export async function listImportableMissions(userId: number, courseId: number, w
     .select('m.id', 'id')
     .addSelect('m.title', 'title')
     .addSelect('m.description', 'description')
-    .addSelect('m.uses_board', 'uses_board')
     .addSelect('m.world_id', 'world_id')
     .addSelect('w.title', 'world_title')
     .addSelect('m.status', 'status')
@@ -366,7 +361,6 @@ export async function listImportableMissions(userId: number, courseId: number, w
       id: number
       title: string
       description: string | null
-      uses_board: unknown
       world_id: number
       world_title: string
       status: string
@@ -375,7 +369,6 @@ export async function listImportableMissions(userId: number, courseId: number, w
     id: Number(row.id),
     title: String(row.title),
     description: row.description ?? null,
-    uses_board: Number(row.uses_board) !== 0,
     world_id: Number(row.world_id),
     world_title: String(row.world_title),
     status: String(row.status),
@@ -386,11 +379,10 @@ export async function updateMissionFields(
   missionId: number,
   title: string,
   description: string | null,
-  usesBoard: boolean,
 ) {
   await AppDataSource.getRepository(StudyMission).update(
     { id: missionId },
-    { title, description, usesBoard },
+    { title, description },
   )
 }
 
@@ -416,7 +408,6 @@ export async function insertMission(input: {
   courseId: number
   title: string
   description: string | null
-  usesBoard: boolean
   sourceMissionId?: number | null
   sortOrder: number
 }) {
@@ -428,7 +419,6 @@ export async function insertMission(input: {
       title: input.title,
       description: input.description,
       status: 'pending',
-      usesBoard: input.usesBoard,
       sourceMissionId: input.sourceMissionId ?? null,
       sortOrder: input.sortOrder,
     }),
@@ -522,23 +512,6 @@ export async function saveSessionMeta(
   },
 ) {
   await AppDataSource.getRepository(StudyMissionSession).update({ missionId }, input)
-}
-
-export async function listUserMissionPhotos(missionId: number): Promise<string[]> {
-  const rows = await AppDataSource.getRepository(StudyMissionMessage).find({
-    where: { missionId, role: 'user' },
-    order: { createdAt: 'ASC', id: 'ASC' },
-  })
-  const seen = new Set<string>()
-  const urls: string[] = []
-  for (const row of rows) {
-    const url = row.imageUrl
-    if (typeof url === 'string' && url.startsWith('https://') && !seen.has(url)) {
-      seen.add(url)
-      urls.push(url)
-    }
-  }
-  return urls
 }
 
 export async function insertMissionMessage(

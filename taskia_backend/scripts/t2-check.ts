@@ -30,7 +30,6 @@ async function main() {
     description: null,
     taskKind: 'daily',
     boardOrder: order,
-    usesBoard: false,
     dueDate: '2026-10-03',
   })
   try {

@@ -18,7 +18,6 @@ import { WorldsHero } from '../../components/worlds/WorldsHero'
 import { WorldsNav } from '../../components/worlds/WorldsNav'
 import { ExplorerXpBar } from '../../components/ExplorerXpBar'
 import {
-  WorldsBoardPill,
   WorldsStatusPill,
   WorldsTags,
 } from '../../components/worlds/WorldsStatusPill'
@@ -146,7 +145,6 @@ export function CourseDetail({
                     tags={
                       <WorldsTags>
                         <WorldsStatusPill kind="mission" value={mission.status} />
-                        {mission.uses_board ? <WorldsBoardPill /> : null}
                       </WorldsTags>
                     }
                     overlayAction={

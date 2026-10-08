@@ -207,8 +207,6 @@ export const api = {
   studyChat(
     task_id: number,
     user_message: string,
-    board?: { description?: string; image_base64?: string | null; board_json?: unknown },
-    allowAiDraw = false,
     fromVoice = false,
     photoBase64: string | null = null,
   ) {
@@ -216,10 +214,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({
         user_message,
-        board_description: board?.description ?? null,
-        board_image_base64: board?.image_base64 ?? null,
-        board_json: board?.board_json ?? null,
-        allow_ai_draw: allowAiDraw,
         from_voice: fromVoice,
         photo_base64: photoBase64,
       }),
@@ -287,7 +281,6 @@ export const api = {
     course_id: number
     title: string
     description?: string
-    uses_board: boolean
   }) {
     return request<StudyMission>(
       `/worlds/${input.world_id}/courses/${input.course_id}/missions`,
@@ -296,7 +289,6 @@ export const api = {
         body: JSON.stringify({
           title: input.title,
           description: input.description ?? null,
-          uses_board: input.uses_board,
         }),
       },
     )
@@ -305,14 +297,12 @@ export const api = {
     mission_id: number
     title: string
     description?: string
-    uses_board: boolean
   }) {
     return request<StudyMission>(`/worlds/missions/${input.mission_id}`, {
       method: 'PATCH',
       body: JSON.stringify({
         title: input.title,
         description: input.description ?? null,
-        uses_board: input.uses_board,
       }),
     })
   },
@@ -341,8 +331,6 @@ export const api = {
   missionChat(
     mission_id: number,
     user_message: string,
-    board?: { description?: string; image_base64?: string | null; board_json?: unknown },
-    allowAiDraw = false,
     fromVoice = false,
     photoBase64: string | null = null,
   ) {
@@ -352,10 +340,6 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({
           user_message,
-          board_description: board?.description ?? null,
-          board_image_base64: board?.image_base64 ?? null,
-          board_json: board?.board_json ?? null,
-          allow_ai_draw: allowAiDraw,
           from_voice: fromVoice,
           photo_base64: photoBase64,
         }),

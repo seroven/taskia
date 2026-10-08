@@ -148,7 +148,6 @@ export interface AdminWorldTreeMission {
   id: number
   title: string
   status: string
-  uses_board: boolean
   updated_at: string
   study: AdminWorldTreeStudy | null
   challenges: AdminChallengeRow[]
@@ -184,7 +183,6 @@ export interface AdminWorldDetail {
     id: number
     title: string
     status: string
-    uses_board: boolean
     course_name: string
     updated_at: string
   }[]

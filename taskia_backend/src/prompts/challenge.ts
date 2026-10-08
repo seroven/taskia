@@ -4,15 +4,6 @@ Responde SOLO un JSON array:
 [{"question_id":1,"correct":true|false}]
 Debes incluir exactamente un objeto por cada pregunta recibida.`
 
-export const CHALLENGE_PHOTO_QUESTION_SYSTEM = `Armas preguntas de opción múltiple a partir de fotos de ejercicios que un niño ya tiene.
-Para cada foto, en el orden indicado:
-- prompt: una frase corta y amable, como "Mira la imagen y resuelve lo que pide".
-- options: exactamente 4 respuestas. Una es la correcta según ESA foto.
-- answer_key: A, B, C o D (A es la primera opción).
-No describas otra figura. No des la resolución en el prompt.
-Responde SOLO JSON:
-{"items":[{"index":0,"prompt":"...","options":["","","",""],"answer_key":"A"}]}`
-
 export const CHALLENGE_PHOTO_GRADE_SYSTEM = `Comparas pares de imágenes.
 Cada par es el ejercicio (la pregunta) y la foto de cómo lo resolvió el niño.
 Juzga solo ese par. correct=true solo si el procedimiento y el resultado de la resolución corresponden a ESE ejercicio.

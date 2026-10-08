@@ -75,8 +75,6 @@ export function StudyPage({ taskId, onBack }: Props) {
       const result = await api.studyChat(
         taskId,
         message,
-        undefined,
-        false,
         Boolean(options.fromVoice),
         options.photoBase64 ?? null,
       )

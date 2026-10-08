@@ -22,9 +22,6 @@ export class StudyMission {
   @Column({ type: 'text', default: 'pending' })
   status!: string
 
-  @Column({ type: 'boolean', default: false })
-  usesBoard!: boolean
-
   @Column({ type: 'boolean', default: true })
   isActive!: boolean
 

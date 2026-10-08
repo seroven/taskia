@@ -62,7 +62,6 @@ function useChartColors() {
       done: '#16a34a',
       studying: '#0d9488',
       voice: '#d97706',
-      images: '#7c3aed',
       pending: read('--muted', '#5a6d8c'),
       progress: read('--accent', '#2563eb'),
     }
@@ -192,7 +191,7 @@ export function AdminDashboardCharts({
   )
   const hasUsageCalls = usageDays.some(
     (point) =>
-      point.tutor > 0 || point.challenges > 0 || point.voice > 0 || point.images > 0,
+      point.tutor > 0 || point.challenges > 0 || point.voice > 0,
   )
   const hasChildActions = usageDays.some((point) => point.child_messages > 0)
   const costRows = useMemo(
@@ -204,8 +203,7 @@ export function AdminDashboardCharts({
           const usdTutor = row.usd_tutor ?? 0
           const usdChallenges = row.usd_challenges ?? 0
           const usdVoice = row.usd_voice ?? 0
-          const usdImages = row.usd_images ?? 0
-          const split = usdTutor + usdChallenges + usdVoice + usdImages
+          const split = usdTutor + usdChallenges + usdVoice
           return {
             ...row,
             name: shortName(row.username),
@@ -213,7 +211,6 @@ export function AdminDashboardCharts({
             usd_tutor: split > 0 ? usdTutor : row.estimated_usd ?? 0,
             usd_challenges: split > 0 ? usdChallenges : 0,
             usd_voice: split > 0 ? usdVoice : 0,
-            usd_images: split > 0 ? usdImages : 0,
           }
         }),
     [usage],
@@ -224,7 +221,6 @@ export function AdminDashboardCharts({
       { kind: 'tutor', label: 'Mensajes' },
       { kind: 'challenges', label: 'Desafíos' },
       { kind: 'voice', label: 'Transcripciones' },
-      { kind: 'images', label: 'Imágenes' },
     ].map((item) => {
       const row = rows.find((entry) => rowMatchesKind(entry.kind, item.kind))
       return {
@@ -240,7 +236,6 @@ export function AdminDashboardCharts({
   const hasKindCalls = kindRows.some((row) => row.calls > 0)
   const kindFill = (kind: string) => {
     if (kind === 'voice') return colors.voice
-    if (kind === 'images') return colors.images
     if (kind === 'challenges') return colors.danger
     return colors.studying
   }
@@ -360,7 +355,7 @@ export function AdminDashboardCharts({
             {usage
               ? ` ${usage.totals.calls} llamadas · ${formatUsd(usage.totals.estimated_usd)}.`
               : ''}{' '}
-            Desafíos suma generar y corrección. Imágenes son llamadas viejas.
+            Desafíos suma generar y corrección.
           </p>
         </div>
         {hasUsageCalls ? (
@@ -408,15 +403,6 @@ export function AdminDashboardCharts({
                   name="Transcripciones"
                   stroke={colors.voice}
                   fill={colors.voice}
-                  fillOpacity={0.12}
-                  strokeWidth={2.4}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="images"
-                  name="Imágenes"
-                  stroke={colors.images}
-                  fill={colors.images}
                   fillOpacity={0.12}
                   strokeWidth={2.4}
                 />
@@ -594,13 +580,6 @@ export function AdminDashboardCharts({
                   name="Transcripciones"
                   stackId="cost"
                   fill={colors.voice}
-                  radius={[0, 0, 0, 0]}
-                />
-                <Bar
-                  dataKey="usd_images"
-                  name="Imágenes"
-                  stackId="cost"
-                  fill={colors.images}
                   radius={[0, 6, 6, 0]}
                 />
               </BarChart>
