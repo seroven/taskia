@@ -2,7 +2,6 @@ import { AppDataSource } from '../../../infrastructure/database/data-source.js'
 import {
   StudyMessage,
   StudySession,
-  Task,
   UserStudyMemory,
 } from '../../../infrastructure/database/entities/index.js'
 import { toInstantISO } from '../../../utils/helpers.js'
@@ -117,9 +116,3 @@ export async function saveSessionMeta(ctx: {
   )
 }
 
-export async function markStudyPassed(taskId: number, userId: number) {
-  await AppDataSource.getRepository(Task).update(
-    { id: taskId, userId },
-    { studyPassed: true },
-  )
-}

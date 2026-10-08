@@ -1,9 +1,8 @@
 /** Etiquetas técnicas del panel admin (no las del tablero del niño). */
 const ADMIN_STATUS_LABEL: Record<string, string> = {
-  pending: 'Pendiente',
-  in_progress: 'En progreso',
-  studying: 'En estudio',
-  done: 'Terminado',
+  pending: 'Por hacer',
+  studying: 'Con Taskia',
+  done: 'Listo',
 }
 
 export function taskStatusLabel(status: string) {

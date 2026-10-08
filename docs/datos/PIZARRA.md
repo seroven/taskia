@@ -4,7 +4,7 @@ Estudio, misión y desafío son solo chat. No hay cuadrícula, no se generan im�
 
 No queda marca de tema práctico. Entrar a estudiar abre el chat.
 
-El tablero del Campamento no es este lienzo. `tasks.board_order` y `BoardPage` siguen ordenando las tarjetas.
+El Campamento no es este lienzo: es la lista del día en `BoardPage` (tres estados, sin kanban).
 
 ## Estudio y misión
 

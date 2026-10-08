@@ -537,7 +537,6 @@ export async function taskHeadcounts(
     .innerJoin(User, 'u', 'u.id = t.user_id')
     .innerJoin(Role, 'r', "r.id = u.role_id AND r.code = 'user'")
     .select(`SUM(CASE WHEN t.status = 'pending' THEN 1 ELSE 0 END)`, 'pending')
-    .addSelect(`SUM(CASE WHEN t.status = 'in_progress' THEN 1 ELSE 0 END)`, 'in_progress')
     .addSelect(`SUM(CASE WHEN t.status = 'studying' THEN 1 ELSE 0 END)`, 'studying')
     .addSelect(`SUM(CASE WHEN t.status = 'done' THEN 1 ELSE 0 END)`, 'done')
     .addSelect(
@@ -550,7 +549,6 @@ export async function taskHeadcounts(
   if (studentId != null) qb.andWhere('t.user_id = :studentId', { studentId })
   const row = await qb.getRawOne<{
     pending: string
-    in_progress: string
     studying: string
     done: string
     overdue: string
@@ -558,7 +556,6 @@ export async function taskHeadcounts(
   }>()
   return {
     pending: Number(row?.pending ?? 0),
-    in_progress: Number(row?.in_progress ?? 0),
     studying: Number(row?.studying ?? 0),
     done: Number(row?.done ?? 0),
     overdue: Number(row?.overdue ?? 0),
@@ -878,7 +875,6 @@ export async function studentTaskHeadcounts(studentId: number, today: string) {
   const row = await AppDataSource.getRepository(Task)
     .createQueryBuilder('t')
     .select(`SUM(CASE WHEN t.status = 'pending' THEN 1 ELSE 0 END)`, 'pending')
-    .addSelect(`SUM(CASE WHEN t.status = 'in_progress' THEN 1 ELSE 0 END)`, 'in_progress')
     .addSelect(`SUM(CASE WHEN t.status = 'studying' THEN 1 ELSE 0 END)`, 'studying')
     .addSelect(`SUM(CASE WHEN t.status = 'done' THEN 1 ELSE 0 END)`, 'done')
     .addSelect(
@@ -890,7 +886,6 @@ export async function studentTaskHeadcounts(studentId: number, today: string) {
     .setParameter('today', today)
     .getRawOne<{
       pending: string
-      in_progress: string
       studying: string
       done: string
       overdue: string
@@ -898,7 +893,6 @@ export async function studentTaskHeadcounts(studentId: number, today: string) {
     }>()
   return {
     pending: Number(row?.pending ?? 0),
-    in_progress: Number(row?.in_progress ?? 0),
     studying: Number(row?.studying ?? 0),
     done: Number(row?.done ?? 0),
     overdue: Number(row?.overdue ?? 0),
@@ -914,7 +908,7 @@ export async function recentStudentTasks(studentId: number) {
     .addSelect('t.title', 'title')
     .addSelect('t.status', 'status')
     .addSelect('t.due_date', 'due_date')
-    .addSelect('t.study_passed', 'study_passed')
+    .addSelect('t.needs_help', 'needs_help')
     .addSelect('t.course_id', 'course_id')
     .addSelect('t.created_at', 'created_at')
     .addSelect('t.updated_at', 'updated_at')
@@ -1050,7 +1044,7 @@ export async function listStudentTasks(
     .addSelect('t.title', 'title')
     .addSelect('t.status', 'status')
     .addSelect('t.due_date', 'due_date')
-    .addSelect('t.study_passed', 'study_passed')
+    .addSelect('t.needs_help', 'needs_help')
     .addSelect('t.course_id', 'course_id')
     .addSelect('t.created_at', 'created_at')
     .addSelect('t.updated_at', 'updated_at')

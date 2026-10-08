@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { AppError } from '../../../shared/errors/app-error.js'
 
-const statusSchema = z.enum(['pending', 'in_progress', 'studying', 'done'], {
+const statusSchema = z.enum(['pending', 'studying', 'done'], {
   message: 'Estado no válido',
 })
 
@@ -45,4 +45,8 @@ export function resolveDueDate(kind: string, dueDate: unknown, today: string) {
     throw new AppError('Fecha inválida en due_date. Usa YYYY-MM-DD')
   }
   return dueDate as string
+}
+
+export function parseNeedsHelp(body: Record<string, unknown>) {
+  return Boolean(body.needs_help ?? body.needsHelp)
 }

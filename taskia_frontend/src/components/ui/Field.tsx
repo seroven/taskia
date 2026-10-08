@@ -7,16 +7,21 @@ import {
 
 export function Field({
   label,
+  hint,
   children,
   className = '',
 }: {
   label: string
+  hint?: string
   children: ReactNode
   className?: string
 }) {
   return (
     <label className={`field ${className}`.trim()}>
-      <span className="field-label">{label}</span>
+      <span className="field-label">
+        {label}
+        {hint ? <span className="field-hint">{hint}</span> : null}
+      </span>
       {children}
     </label>
   )
@@ -114,14 +119,16 @@ export function PasswordField({
 
 export function TextAreaField({
   label,
+  hint,
   className = '',
   ...props
 }: {
   label: string
+  hint?: string
   className?: string
 } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <Field label={label} className={className}>
+    <Field label={label} hint={hint} className={className}>
       <textarea className="field-control field-control--area" {...props} />
     </Field>
   )

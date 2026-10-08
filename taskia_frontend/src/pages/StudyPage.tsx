@@ -13,12 +13,7 @@ import {
 import { mergeXpIntoUser, xpToastCopy } from '../lib/xp'
 import { useAuth } from '../auth'
 import { useToast } from '../toast'
-import {
-  canOpenStudyMode,
-  type Course,
-  type Difficulty,
-  type Task,
-} from '../types'
+import { canOpenStudyMode, type Course, type Task } from '../types'
 
 interface Props {
   taskId: number
@@ -32,7 +27,6 @@ export function StudyPage({ taskId, onBack }: Props) {
   const [task, setTask] = useState<Task | null>(null)
   const [context, setContext] = useState<StudyContext | null>(null)
   const [courses, setCourses] = useState<Course[]>([])
-  const [difficulties, setDifficulties] = useState<Difficulty[]>([])
   const [phase, setPhase] = useState<TutorPhase | string>('understanding')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -44,16 +38,14 @@ export function StudyPage({ taskId, onBack }: Props) {
       setLoading(true)
       setError(null)
       try {
-        const [session, nextCourses, nextDifficulties] = await Promise.all([
+        const [session, nextCourses] = await Promise.all([
           api.studyLoadSession(taskId),
           api.listCourses(),
-          api.listDifficulties(),
         ])
         setTask(session.task)
         setContext(session.context)
         setPhase(session.context.tutor_phase)
         setCourses(nextCourses)
-        setDifficulties(nextDifficulties)
       } catch (err) {
         setError(errorMessage(err))
       } finally {
@@ -65,22 +57,20 @@ export function StudyPage({ taskId, onBack }: Props) {
   function applyStudyResult(result: {
     context: NonNullable<typeof context>
     reply: { phase: string }
+    task?: Task
     study_passed: boolean
     xp_gained?: number
     xp?: Parameters<typeof mergeXpIntoUser>[1]
   }) {
     setContext(result.context)
     setPhase(result.reply.phase)
-    if (result.study_passed) {
-      const justPassed = !task?.study_passed
-      setTask((prev) => (prev ? { ...prev, study_passed: true } : prev))
-      if (justPassed) {
-        showToast({
-          tone: 'success',
-          title: '¡Ya puedes marcarla lista!',
-          subtitle: 'Taskia confirma que ya sabes la tarea. Muévela a Listo.',
-        })
-      }
+    if (result.task) setTask(result.task)
+    if (result.study_passed && task?.status !== 'done') {
+      showToast({
+        tone: 'success',
+        title: '¡Tarea lista!',
+        subtitle: 'Taskia confirma que ya la entiendes.',
+      })
     }
     if (result.xp && result.xp_gained && result.xp_gained > 0) {
       const next = mergeXpIntoUser(user, result.xp)
@@ -192,12 +182,8 @@ export function StudyPage({ taskId, onBack }: Props) {
           <h1>{task.title}</h1>
           <div className="study-header-tags">
             <span className="course-tag">{task.course_name}</span>
-            <span className={`difficulty-tag difficulty-${task.difficulty_code}`}>
-              {task.difficulty_name}
-            </span>
-            {task.study_passed && (
-              <span className="study-passed-tag">Listo</span>
-            )}
+            {task.needs_help ? <span className="study-passed-tag">Con Taskia</span> : null}
+            {task.status === 'done' ? <span className="study-passed-tag">Listo</span> : null}
           </div>
         </div>
         <div className="study-header-actions">
@@ -234,7 +220,6 @@ export function StudyPage({ taskId, onBack }: Props) {
             <TaskEditPanel
               task={task}
               courses={courses}
-              difficulties={difficulties}
               onSave={async (input) => {
                 const updated = await api.updateTask(input)
                 setTask(updated)

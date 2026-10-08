@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -310,8 +310,8 @@ function ResumenTab({
           <div className="admin-section-head">
             <h2>Tareas recientes</h2>
             <p className="muted">
-              Pendiente {tasks.pending} · En proceso {tasks.in_progress} · En
-              estudio {tasks.studying} · Terminado {tasks.done}
+              Por hacer {tasks.pending} · Con Taskia {tasks.studying} · Listo{' '}
+              {tasks.done}
             </p>
           </div>
           {tasks.items.length === 0 ? (
@@ -333,8 +333,8 @@ function ResumenTab({
                   cell: (item) => (
                     <>
                       <strong>{item.title}</strong>
-                      {item.study_passed ? (
-                        <span className="data-table-sub">Visto de Taskia</span>
+                      {item.needs_help ? (
+                        <span className="data-table-sub">Con Taskia</span>
                       ) : null}
                     </>
                   ),
@@ -527,8 +527,8 @@ function TasksTab({
             { key: 'status', header: 'Estado', cell: (item) => taskStatusLabel(item.status) },
             {
               key: 'tutor',
-              header: 'Taskia',
-              cell: (item) => (item.study_passed ? 'Listo' : 'Pendiente'),
+              header: 'Ayuda',
+              cell: (item) => (item.needs_help ? 'Sí' : 'No'),
             },
             { key: 'created', header: 'Creada', cell: (item) => formatWhen(item.created_at) },
             { key: 'due', header: 'Entrega', cell: (item) => formatDay(item.due_date) },

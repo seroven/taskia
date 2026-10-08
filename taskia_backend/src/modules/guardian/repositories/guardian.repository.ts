@@ -63,7 +63,6 @@ export async function taskCounts(studentId: number, today: string) {
   const row = await AppDataSource.getRepository(Task)
     .createQueryBuilder('t')
     .select(`SUM(CASE WHEN t.status = 'pending' THEN 1 ELSE 0 END)`, 'pending')
-    .addSelect(`SUM(CASE WHEN t.status = 'in_progress' THEN 1 ELSE 0 END)`, 'in_progress')
     .addSelect(`SUM(CASE WHEN t.status = 'studying' THEN 1 ELSE 0 END)`, 'studying')
     .addSelect(`SUM(CASE WHEN t.status = 'done' THEN 1 ELSE 0 END)`, 'done')
     .addSelect(
@@ -75,7 +74,6 @@ export async function taskCounts(studentId: number, today: string) {
     .getRawOne()
   return {
     pending: num(row?.pending),
-    in_progress: num(row?.in_progress),
     studying: num(row?.studying),
     done: num(row?.done),
     overdue: num(row?.overdue),

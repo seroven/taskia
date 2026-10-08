@@ -12,9 +12,6 @@ export class Task {
   @Column({ type: 'bigint', transformer: bigintTransformer })
   courseId!: number
 
-  @Column({ type: 'bigint', transformer: bigintTransformer })
-  difficultyId!: number
-
   @Column({ type: 'varchar', length: 255 })
   title!: string
 
@@ -27,11 +24,8 @@ export class Task {
   @Column({ type: 'text', default: 'pending' })
   status!: string
 
-  @Column({ type: 'int', default: 0 })
-  boardOrder!: number
-
   @Column({ type: 'boolean', default: false })
-  studyPassed!: boolean
+  needsHelp!: boolean
 
   @Column({ type: 'date', transformer: civilDateTransformer })
   dueDate!: string

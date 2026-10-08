@@ -17,7 +17,7 @@ Taskia propone un tercer camino:
 
 1. El explorador organiza lo que tiene que hacer.
 2. **Taskia** (la guía dentro de la app) le ayuda a entender, practicando con preguntas y pistas, **sin regalar la solución de golpe**.
-3. Solo cuando hay evidencia de que entendió, Taskia da un **visto**.
+3. Solo cuando hay evidencia de que entendió, Taskia **cierra** la tarea (pasa a Listo).
 4. En temas más largos, después puede **ponerse a prueba** con un desafío.
 5. El guardián **mira cómo va** (nivel, XP, tripulación y totales) y puede preguntar por el día, sin meterse en el Campamento ni contestar por el niño.
 
@@ -58,14 +58,14 @@ Al entrar, el explorador ve un **hub** con tres puertas:
 | --- | --- | --- | --- |
 | Para qué | Lo de hoy o de esta semana: deberes, ejercicios concretos | Aprender un **tema** de punta a punta y demostrarlo | Equipo de hasta 10 compañeros, roles y ranking |
 | Unidad | **Tarea** | **Misión** | **Tripulación** (Capitán, Copiloto, exploradores) |
-| Cómo se cierra | Mueve la tarjeta a **Listo** (a veces hace falta el visto de Taskia) | Taskia marca la misión **Lista** cuando domina el tema | Se gana **XP** estudiando; el ranking semanal suma el XP del equipo |
+| Cómo se cierra | Sin ayuda: el niño marca **Listo**. Con ayuda: Taskia cierra sola. | Taskia marca la misión **Lista** cuando domina el tema | Se gana **XP** estudiando; el ranking semanal suma el XP del equipo |
 | Extra | Tope de **20 tareas creadas / día** | Después puede haber **desafíos** | Una sola tripulación a la vez; invitaciones por nombre |
 
 Un explorador puede usar Campamento y Mundos el mismo día. La puerta **Tripulación** se ve en el hub, pero no abre: dice que ese lugar se está armando.
 
 ### Nivel y XP
 
-Cada explorador tiene **nivel** y **experiencia (XP)**. Cada **1000 XP** sube un nivel. La barra superior muestra el progreso. Gana XP al marcar Listo (poco si no estudió; más si Taskia dio el visto), al dominar una misión y al completar un desafío. Abandonar un desafío no da XP.
+Cada explorador tiene **nivel** y **experiencia (XP)**. Cada **1000 XP** sube un nivel. La barra superior muestra el progreso. Gana XP al marcar Listo sin ayuda (10), al cerrar con Taskia (40–200), al dominar una misión y al completar un desafío. Abandonar un desafío no da XP.
 
 ### Guardián vs Administrador
 
@@ -103,7 +103,7 @@ A partir de ahí:
 
 ## 4. Un día típico (para hacerse una película mental)
 
-**Por la tarde, el explorador** abre Taskia, elige **Campamento**, arrastra “fracciones mixtas” a **Estudiando**. El chat se abre directo. Taskia plantea ejercicios, el niño responde, corrige errores y, cuando Taskia confirma que ya entiende, el niño **mueve** la tarjeta a **Listo** (y ve un toast de XP).
+**Por la tarde, el explorador** abre Taskia, elige **Campamento**, marca que Taskia le ayude con “fracciones mixtas” y toca **Estudiar**. El chat se abre directo. Taskia plantea ejercicios, el niño responde, corrige errores y, cuando Taskia celebra el cierre, la tarea pasa sola a **Listo** (y ve un toast de XP).
 
 Después vuelve al hub, abre **Mundos**, entra a un tema de Ciencias que todavía no termina, estudia un rato con Taskia y, si el tema ya quedó dominado, lanza un **calentamiento** (desafío corto) del curso. La puerta de **Tripulación** sigue a la vista, cerrada.
 
@@ -240,7 +240,7 @@ El explorador necesita:
 5. Formar o unirse a una **tripulación** y ver rankings.
 6. Ajustar su cuenta y cómo se ve la app.
 
-El tono de botones y columnas está pensado para él: claro y cercano (Por hacer, Haciendo, Estudiando, Listo), no jerga de oficina.
+El tono de botones y estados está pensado para él: claro y cercano (Por hacer, Con Taskia, Listo), no jerga de oficina.
 
 ## B.2 Entrada, cuenta y apariencia
 
@@ -270,81 +270,53 @@ La apariencia no cambia las reglas de estudio: solo colores y modo claro/oscuro.
 
 ### Qué es
 
-Antes se llamaba “tablero”. Es la “casa” del día. Cada tarjeta es una **tarea**: algo concreto que hay que hacer (un ejercicio, una lectura con práctica, un proyecto con fecha).
+Antes se llamaba “tablero” o kanban. Es **una lista** del día elegido, en una columna. Dos pestañas filtran con `task_kind`: **Hoy** (del día) y **Proyectos**. El día se cambia con flechas discretas (`Hoy · lun 5 oct`). El progreso es **Hoy: X de N** (o Proyectos: X de N), no tres bloques.
 
-### Las cuatro columnas
+### Los tres estados
 
-| Columna | Significado para el niño |
-| --- | --- |
-| **Por hacer** | Todavía no la empezó, o la devolvió atrás |
-| **Haciendo** | Ya la tocó, pero aún no estudió con Taskia |
-| **Estudiando** | Entró (o está) en el modo estudio con Taskia |
-| **Listo** | La dio por terminada |
+| Estado (código) | Copy | Significado |
+| --- | --- | --- |
+| `pending` | **Por hacer** | Todavía no la cerró |
+| `studying` | **Con Taskia** | Pidió ayuda y abrió el estudio |
+| `done` | **Listo** | Terminada |
 
-Puede **arrastrar** tarjetas de una columna a otra y reordenar dentro de la misma. Al arrastrar, se ve dónde caería.
-
-### Filtros
-
-Sirven para no ver todo el historial de golpe, por ejemplo:
-
-- En qué día se creó o se hizo
-- Para qué día es (entrega)
-- Por **curso** (materia)
-- Quitar filtros para volver a la vista amplia
+En la lista, pendientes y con Taskia van primero; las listas van al final, atenuadas. El estado es un chip en la tarjeta. No hay columnas ni arrastrar.
 
 ### Crear una tarea
 
-Botón **Nueva tarea** (si no tiene materias asignadas, no podrá crear: verá un mensaje pidiendo que un adulto le asigne cursos).
+En escritorio, **Nueva tarea** arriba. En el móvil, la fila **Agregar tarea** al final y un botón flotante. Si no tiene materias, no podrá crear.
 
 Al crear elige:
 
 - **Tarea del día** o **Proyecto** (el proyecto pide fecha límite; el del día suele ir anclado a hoy)
 - Título y, si quiere, descripción
 - Materia (curso)
-- Nivel: **Bajo**, **Medio** o **Alto**
+- **¿Quieres que Taskia te ayude con esta?** (`needs_help`)
 
 La tarea nueva aparece en **Por hacer**.
 
-### Qué se ve en la tarjeta
+### Qué se ve en cada fila
 
-- Materia y nivel
-- Si es del día o proyecto, y fechas
-- Título y descripción corta
-- Un chip de **Listo** (visto de Taskia) cuando la guía ya confirmó que entendió — eso **no** mueve sola la columna; solo indica que ya puede marcarla terminada cuando las reglas lo pedían
+- Franja del acento de la app (misma materia, misma intensidad), título, materia · tipo, chip de estado
+- Toda la tarjeta abre el estudio si pidió ayuda; si no, abre la edición
+- Solo la primera que no está lista lleva el botón destacado (Estudiar, Seguir o ¡Listo!)
+- El círculo de la izquierda marca Listo si no pidió ayuda. También se puede soltar la fila a la izquierda o a la derecha. Si pidió ayuda, el círculo queda bloqueado y no se desliza: la cierra Taskia
 
-### Abrir una tarea
+### Sin ayuda vs con ayuda
 
-- Si está en **Estudiando**, o si ya está **Listo** y el nivel es **Alto**, al abrir suele ir al **estudio** (o primero alige cómo estudiar, la primera vez).
-- En otros casos abre el detalle **Tu tarea** para editar: mismos campos, más “¿Dónde está?” (columna).
-
-### El candado de Listo (importante)
-
-No toda tarea se puede soltar en **Listo** sin más. La idea es evitar “terminé” cuando en realidad no practicó lo difícil.
-
-Hace falta el **visto de Taskia** si:
-
-- el nivel es **Alto**, o
-- la tarea **pasó por Estudiando** (aunque el nivel no sea Alto).
-
-**Bajo** o **Medio** que nunca entraron a estudiar con Taskia **sí** se pueden marcar Listo a mano (por ejemplo, un recordatorio simple o algo que no necesitaba guía).
-
-Si intenta poner Listo sin el visto cuando sí hace falta, la app lo avisa (mensaje del tipo “aún no puedes marcarla lista”) y la tarjeta no se queda en Listo.
-
-Cuando Taskia da el visto:
-
-- Aparece confirmación / chip en la tarjeta.
-- **La columna no salta sola a Listo:** el explorador arrastra la tarjeta o cambia “¿Dónde está?” al editar. Así el cierre lo decide él, con el permiso de Taskia cuando corresponde.
+- **Sin ayuda:** el niño marca Listo con el círculo o el botón de la primera tarjeta. Gana **10 XP**.
+- **Con ayuda:** Por hacer → Con Taskia (al abrir estudio) → Listo **en el mismo turno** en que Taskia celebra el cierre (`study_eval.passed`). El niño **no** tiene botón Listo. El servidor pide un `effort` corto (1–100) y otorga XP entre **40 y 200**.
 
 ---
 
 ## B.4 Estudiar una tarea con Taskia
 
-Entrar a estudiar abre el chat. No hay modo de dibujo.
+Solo las tareas con **ayuda de Taskia** (`needs_help`) abren el estudio. Entrar abre el chat y pasa la tarea a **Con Taskia**. No hay modo de dibujo.
 
 ### Pantalla de estudio
 
 - Volver al **Campamento**
-- Título de la tarea, materia, nivel y chip de visto si aplica
+- Título de la tarea, materia y chips Con Taskia / Listo si aplica
 - Modo **Estudiar** o **Editar** (editar cambia los datos de la tarea sin salir del todo)
 - Pastilla de **fase** del recorrido con Taskia
 
@@ -380,13 +352,11 @@ Así puede dictar el relato del cuaderno o explicar un razonamiento con más com
 
 Si pide un ejercicio que necesita un dibujo, una tabla o una figura, Taskia no lo arma. Dice que no puede y pide la foto de uno parecido. Si basta con texto o números, lo escribe en el chat. Si manda la foto de un ejercicio, Taskia guarda el desarrollo en privado y guía sin dictar la respuesta.
 
-### Cuándo Taskia da el visto en una tarea
+### Cuándo Taskia cierra la tarea
 
 - Hace falta un recorrido real de mensajes del niño (varios turnos; si se equivoca, el listón sube y Taskia refuerza ese punto débil).
-- Cuando ya cumple lo necesario y está en fase de repaso, celebra y le dice que **ya puede mover la tarea a Listo**.
-- No debería celebrar ese cierre si todavía no se ganó el visto de verdad.
-
-Ese visto queda en la tarjeta para el candado del Campamento y para que un adulto (p. ej. en el panel admin) pueda ver que Taskia ya confirmó.
+- Cuando ya cumple lo necesario y está en fase de repaso, celebra el cierre: el servidor marca la tarea **Listo** en ese mismo turno y calcula XP con un `effort` corto (40–200).
+- No debería celebrar ese cierre si todavía no hay evidencia de verdad.
 
 ---
 
@@ -394,7 +364,7 @@ Ese visto queda en la tarjeta para el candado del Campamento y para que un adult
 
 ### Qué son
 
-Un **mundo** es un contenedor con sentido propio: “Este trimestre”, “Ciencias del colegio”, “Preparación de examen”, etc. Adentro no viven tareas sueltas del kanban, sino:
+Un **mundo** es un contenedor con sentido propio: “Este trimestre”, “Ciencias del colegio”, “Preparación de examen”, etc. Adentro no viven tareas sueltas del Campamento, sino:
 
 1. **Cursos** (materias que el explorador ya tiene asignadas).
 2. Dentro de cada curso, **misiones** = temas a dominar.
@@ -436,7 +406,7 @@ La sensación es parecida al estudio de una tarea (chat, fases y voz), pero el o
 
 ### Diferencia clave al cerrar
 
-- **Tarea:** Taskia da el visto; el niño **mueve** a Listo.
+- **Tarea con ayuda:** Taskia celebra y la tarea pasa a Listo sola.
 - **Misión:** cuando Taskia confirma el dominio, la misión pasa a **Lista** sola. Eso suma al progreso del curso y deja mejor base para desafíos.
 
 También puede **editar** título, descripción y si el tema es práctico desde el estudio.
@@ -538,7 +508,7 @@ El intento sigue a medias: se guardan el índice, las respuestas y el tiempo. Al
 - Asignarse materias a sí mismo
 - Entrar al panel del guardián o del administrador
 - Configurar avisos WhatsApp (eso es del guardián)
-- Hacer que una tarea difícil pase a Listo sin el visto de Taskia cuando las reglas lo exigen
+- Marcar Listo a mano una tarea que pidió ayuda de Taskia
 - Estar en más de una tripulación a la vez ni saltarse el cupo de 10
 
 ---
@@ -559,7 +529,7 @@ Administrador
         └── Explorador → hub
               ├── Tripulación → equipo, invitaciones, rankings
               ├── Campamento
-              │     tarea → (opcional) estudio con Taskia → visto → Listo → XP
+              │     tarea → (si needs_help) estudio con Taskia → Listo → XP
               └── Mundos
                     curso → misión → estudio → Lista → desafío → XP
 ```
@@ -591,7 +561,7 @@ Las **materias** son el puente: sin ellas no hay tareas ni cursos dentro de mund
 | Resumen automático del día para ese chat | Aún no se genera solo; el asistente lo dice si falta |
 | Preferencias WhatsApp | Se guardan |
 | Envío real de WhatsApp | Aún no |
-| Candado Listo / visto de Taskia | Activo en el Campamento |
+| Lista del día / cierre con Taskia | Activo en el Campamento (`needs_help`, auto-Listo) |
 | Hub Tripulación | Visible y cerrada (aviso de que se está armando) |
 | Hub Mundos / Campamento | Activo |
 | Nivel, XP y tripulación | Activos (ranking semanal, Guardián solo lectura) |

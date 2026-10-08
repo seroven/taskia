@@ -4,7 +4,7 @@ Guía funcional de lo que ven **Guardián** y **Explorador** hoy: [FUNCIONES.md]
 
 Taskia es a la vez la app y **quien ayuda a estudiar**: para el niño, Taskia es el nombre de su guía en el chat. El administrador configura cuentas y materias; el **guardián** acompaña desde su panel; el **explorador** entra a un hub (Tripulación | Mundos | Campamento), gana XP y puede unirse a una tripulación.
 
-No es un chat suelto con una IA ni un kanban genérico. La idea es un ciclo cerrado: **materias → tareas o temas → estudiar con Taskia → demostrar que se entendió → (en mundos) ponerse a prueba con un desafío**. Taskia no regala la respuesta: guía, pregunta y solo da el visto cuando hay evidencia real.
+No es un chat suelto con una IA ni un kanban genérico. La idea es un ciclo cerrado: **materias → tareas o temas → (si pide ayuda) estudiar con Taskia → demostrar que se entendió → (en mundos) ponerse a prueba con un desafío**. Taskia no regala la respuesta: guía, pregunta y solo cierra cuando hay evidencia real.
 
 El tono de la app está pensado para un niño de alrededor de 10 años: español latinoamericano, cercano y breve. El adulto ve números, tablas y el detalle de lo que pasó.
 
@@ -44,35 +44,20 @@ El adulto puede copiar materias de un alumno a otro (por ejemplo, hermanos en el
 
 ## El Campamento (tareas del día)
 
-Es la casa del alumno para lo de hoy (antes “tablero”). Se entra desde el hub. Cuatro columnas:
+Es la casa del alumno para lo de hoy (antes “tablero” / kanban). Se entra desde el hub. Es una **lista del día** con tres bloques:
 
-| Columna | Qué significa |
-| --- | --- |
-| **Por hacer** | Todavía no la tocó (o la devolvió atrás). |
-| **Haciendo** | Ya la empezó, sin estudiar con Taskia. |
-| **Estudiando** | Está (o estuvo) con Taskia. |
-| **Listo** | Terminada. En algunos casos hace falta el visto de Taskia. |
+| Estado | Copy | Qué significa |
+| --- | --- | --- |
+| `pending` | **Por hacer** | Todavía no la cerró. |
+| `studying` | **Con Taskia** | Pidió ayuda y abrió el estudio. |
+| `done` | **Listo** | Terminada. |
 
-Puede arrastrar tarjetas entre columnas, filtrar por fecha de creación, vencimiento, materia y estado, y abrir el detalle de una tarea.
+Al crear o editar elige materia, tipo (diaria o proyecto), título/descripción y **¿Quieres que Taskia te ayude con esta?** (`needs_help`). Ya no hay dificultad Baja/Media/Alta en tareas.
 
-Al crear o editar una tarea elige:
+### Cierre y XP
 
-- **Materia**
-- **Dificultad:** Bajo, Medio o Alto
-- **Tipo:** diaria o proyecto (el proyecto lleva fecha de entrega)
-- Título y, si quiere, descripción
-
-### Candado para terminar
-
-No cualquier tarea se puede marcar Listo a mano:
-
-- Si el nivel es **Alto**, hace falta que Taskia haya dicho que el alumno ya está listo (`study_passed`).
-- Si la tarea **pasó por Estudiando**, también hace falta ese visto, aunque el nivel no sea Alto.
-- Bajo o Medio que nunca entraron a estudiar con Taskia se pueden marcar Listo sin estudiar.
-
-El mensaje que ve el alumno es directo: *estudia con Taskia hasta que diga que estás listo*. El adulto, en la ficha, ve si Taskia ya dio ese visto.
-
-El modo estudio se abre cuando la tarea está **Estudiando**, o cuando ya está **Listo** y es de nivel Alto (para volver a hablar).
+- **Sin ayuda:** el niño marca Listo (botón o swipe) y gana **10 XP**.
+- **Con ayuda:** al abrir estudio pasa a Con Taskia; cuando Taskia celebra el cierre, la tarea pasa a Listo sola y el XP sale de un `effort` corto (**40–200**). El niño no marca Listo a mano.
 
 ---
 
@@ -92,11 +77,9 @@ La sesión recorre tres fases, que el alumno ve en pantalla:
 
 Puede escribir o pulsar Hablar. Si hay sitio, el círculo se estira desde la izquierda, corre el chat a la derecha y los dos quedan centrados. El chat sigue visible. Si no cabe, el chat se oculta. El círculo espera; al tocarlo escucha y al tocarlo otra vez guarda el texto y Taskia lee la respuesta. En la vista estrecha los globos de abajo se desvanecen antes de tapar el círculo. Si adjunta una foto, sale cuando habla. También puede mandar la foto de un ejercicio. Si pide uno nuevo que necesita un dibujo, Taskia no lo arma y le pide una foto parecida. Si basta con texto o números, lo escribe en el mensaje.
 
-### Cuándo Taskia da el visto
+### Cuándo Taskia cierra la tarea
 
-Hace falta un **piso de mensajes del alumno**: al menos **seis**. Cada equivocación sube ese piso y Taskia sigue con preguntas que refuerzan ese punto débil. No hace falta preguntar si quiere más: cuando el piso ya se cumple y está repasando, celebra y le dice que puede mover la tarea a Listo.
-
-Ese visto queda en la tarjeta y en el panel del adulto.
+Hace falta un **piso de mensajes del alumno**: al menos **seis**. Cada equivocación sube ese piso y Taskia sigue con preguntas que refuerzan ese punto débil. Cuando el piso ya se cumple y está repasando, celebra: la tarea pasa a **Listo** en ese turno y el XP sale de un `effort` corto (40–200).
 
 ---
 
@@ -195,7 +178,7 @@ Adulto crea alumno y materias
         │
         ├── Tripulación ──► universo de planetas, equipo, campana, ranking, avatar/planeta
         │
-        ├── Campamento ──► tarea ──► (opcional) Taskia ──► visto ──► Listo ──► XP
+        ├── Campamento ──► tarea ──► (si needs_help) Taskia ──► Listo ──► XP
         │
         └── Mundos ──► curso ──► misión ──► Taskia ──► Lista ──► desafío ──► XP
 ```
@@ -210,9 +193,9 @@ Los **desafíos** no sustituyen a Taskia: llegan después, para medir. El adulto
 
 ## Un día típico
 
-**Por la mañana, el adulto** abre el panel, filtra la semana y ve si alguien tiene tareas atrasadas o lleva días sin estudiar. Entra a la ficha, mira si Taskia ya dio el visto en la tarea difícil, o abre un desafío de ayer para ver en qué se equivocó.
+**Por la mañana, el adulto** abre el panel, filtra la semana y ve si alguien tiene tareas atrasadas o lleva días sin estudiar. Entra a la ficha, mira cuántas están con Taskia o listas, o abre un desafío de ayer para ver en qué se equivocó.
 
-**El alumno** entra al hub, abre el Campamento, arrastra “fracciones mixtas” a Estudiando, practica con Taskia en el chat y, cuando celebra, mueve la tarjeta a Listo. Después abre Mundos, entra a un tema de Ciencias que todavía no sabe del todo, estudia un rato y, si ya lo tiene, lanza un calentamiento del curso.
+**El alumno** entra al hub, abre el Campamento, pide ayuda con “fracciones mixtas”, practica con Taskia en el chat y, cuando celebra, la tarea pasa a Listo. Después abre Mundos, entra a un tema de Ciencias que todavía no sabe del todo, estudia un rato y, si ya lo tiene, lanza un calentamiento del curso.
 
 Nada de eso exige que el adulto esté sentado al lado en el chat. El adulto configura y revisa; el alumno estudia y se pone a prueba.
 

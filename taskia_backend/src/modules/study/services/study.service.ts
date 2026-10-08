@@ -8,12 +8,13 @@ import {
   stripPrematureReadyCelebration,
   truncateChars,
 } from '../../../utils/helpers.js'
+import { awardXp, clampEffortScore, xpForTaskStudy } from '../../../services/xp.js'
 import {
-  awardXp,
-  clampEffortScore,
-  xpForTaskStudy,
-} from '../../../services/xp.js'
-import { fetchTask } from '../../tasks/services/task.service.js'
+  fetchTask,
+  markDoneByStudy,
+  markStudying,
+} from '../../tasks/services/task.service.js'
+import { TASK_EFFORT_SYSTEM } from '../../../prompts/task-effort.js'
 import {
   parseChatMessage,
   parseSpeakBody,
@@ -33,22 +34,48 @@ import {
 } from '../../exercises/reference.js'
 import { chatVisibleSpeak, stripDrewPhrase } from '../../exercises/text.js'
 
-export function canOpenStudy(task: { status: string; difficulty_code: string }) {
-  return (
-    task.status === 'studying' ||
-    (task.status === 'done' && task.difficulty_code === 'high')
-  )
+export function canOpenStudy(task: { status: string; needs_help: boolean }) {
+  return task.needs_help && (task.status === 'pending' || task.status === 'studying')
 }
 
 import {
   insertMessage,
   loadContext,
   loadUserMemory,
-  markStudyPassed,
   saveExerciseBrief,
   saveSessionMeta,
   saveUserMemory,
 } from '../repositories/study.repository.js'
+
+async function scoreTaskEffort(opts: {
+  userId: number
+  evidence: string
+  userTurns: number
+  topicSummary: string
+}) {
+  try {
+    const raw = await callGemini({
+      system: TASK_EFFORT_SYSTEM,
+      user: JSON.stringify({
+        evidence: truncateChars(opts.evidence, 240),
+        user_turns: opts.userTurns,
+        topic_summary: truncateChars(opts.topicSummary, 120),
+      }),
+      short: true,
+      usage: { userId: opts.userId, kind: 'task_tutor' },
+    })
+    const parsed = JSON.parse(extractJson(raw)) as { effort?: unknown }
+    return clampEffortScore(parsed.effort, {
+      passed: true,
+      hasEvidence: Boolean(opts.evidence.trim()),
+    })
+  } catch {
+    return clampEffortScore(null, {
+      passed: true,
+      hasEvidence: Boolean(opts.evidence.trim()),
+    })
+  }
+}
 
 const MAX_CONTEXT = 400
 const MAX_MEMORY = 600
@@ -149,12 +176,11 @@ export async function voiceTurn(userId: number, taskId: number, body: Record<str
 }
 
 export async function openSession(userId: number, taskId: number) {
-    const task = await fetchTask(taskId, userId)
+    let task = await fetchTask(taskId, userId)
     if (!canOpenStudy(task)) {
-      throw new AppError(
-        'Solo puedes estudiar tareas en Estudiando, o Listo si son de nivel Alto',
-      )
+      throw new AppError('Solo puedes estudiar tareas que pidan ayuda de Taskia y no estén listas')
     }
+    task = await markStudying(userId, taskId)
     const context = await loadContext(taskId)
     const userMemory = await loadUserMemory(userId)
 
@@ -176,11 +202,15 @@ export async function openSession(userId: number, taskId: number) {
 }
 
 export async function chat(userId: number, taskId: number, body: Record<string, unknown>) {
-    const task = await fetchTask(taskId, userId)
-    if (!canOpenStudy(task)) {
-      throw new AppError(
-        'Solo puedes chatear en estudio en tareas Estudiando, o Listo si son de nivel Alto',
-      )
+    let task = await fetchTask(taskId, userId)
+    if (!task.needs_help || task.status === 'done') {
+      throw new AppError('Solo puedes chatear en tareas con Taskia que estén en marcha')
+    }
+    if (task.status === 'pending') {
+      task = await markStudying(userId, taskId)
+    }
+    if (task.status !== 'studying') {
+      throw new AppError('Solo puedes chatear en tareas con Taskia que estén en marcha')
     }
 
     const parsedTurn = parseChatMessage(body)
@@ -273,14 +303,13 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       instruction,
       update_user_memory: updateUserMemory,
       user_turns: userTurns,
-      study_passed_already: task.study_passed,
+      study_passed_already: false,
       message_source: fromVoice ? 'voice' : 'text',
       task: {
         title: truncateChars(task.title, 120),
         description: truncateChars(task.description ?? '', 220),
         course: task.course_name,
-        difficulty: task.difficulty_name,
-        difficulty_code: task.difficulty_code,
+        needs_help: task.needs_help,
       },
       phase: context.tutor_phase,
       topic_summary: truncateChars(context.topic_summary, 120),
@@ -343,13 +372,9 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     let passed = Boolean(
       (value.study_eval as { passed?: boolean } | undefined)?.passed,
     )
-    if (task.study_passed) {
-      passed = true
-    }     else {
-      if (userTurns < requiredChatTurns(6, contextSummaryDraft)) passed = false
-      if (phase !== 'reviewing') passed = false
-      if (!evidence) passed = false
-    }
+    if (userTurns < requiredChatTurns(6, contextSummaryDraft)) passed = false
+    if (phase !== 'reviewing') passed = false
+    if (!evidence) passed = false
 
     let speakSafe = speakForTurn(exerciseTurn, stripDrewPhrase(speakToChild))
     if (!passed && looksLikeCelebratingTaskReady(speakSafe)) {
@@ -357,7 +382,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       speakSafe = truncateChars(
         stripped.length >= 20
           ? stripped
-          : '¡Vas muy bien! Sigamos un poquito más para afianzar y luego sí la movemos a Listo.',
+          : '¡Vas muy bien! Sigamos un poquito más para afianzar y luego sí quedará lista.',
         MAX_SPEAK,
       )
     }
@@ -381,7 +406,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       hints_level: Number(value.hints_level ?? 0),
       study_eval: {
         passed,
-        evidence: task.study_passed && !evidence ? 'ya aprobado' : evidence,
+        evidence,
       },
     }
 
@@ -392,7 +417,6 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     context.context_summary = reply.context_summary
     context.hints_level = reply.hints_level
 
-    // ask_questions y exercise quedan internos; el niño solo ve speak_to_child.
     const visible = reply.speak_to_child
     context.messages.push(
       await insertMessage(
@@ -405,29 +429,34 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     if (updateUserMemory) await saveUserMemory(userId, reply.user_memory_summary)
 
     let xpAward = null as Awaited<ReturnType<typeof awardXp>> | null
-    const justPassed = reply.study_eval.passed && !task.study_passed
+    let taskDone = false
     if (reply.study_eval.passed) {
-      await markStudyPassed(taskId, userId)
-      if (justPassed) {
-        const effort = clampEffortScore(
-          (value.study_eval as { effort_score?: unknown } | undefined)?.effort_score,
-          { passed: true, hasEvidence: Boolean(evidence) },
-        )
+      const { previousStatus } = await markDoneByStudy(userId, taskId)
+      taskDone = true
+      if (previousStatus !== 'done') {
+        const effort = await scoreTaskEffort({
+          userId,
+          evidence,
+          userTurns,
+          topicSummary: reply.topic_summary || context.topic_summary,
+        })
         xpAward = await awardXp({
           userId,
           sourceType: 'task_study',
           sourceId: taskId,
-          amount: xpForTaskStudy(task.difficulty_code, effort),
+          amount: xpForTaskStudy(effort),
           effortScore: effort,
-          reason: evidence || 'Visto de estudio',
+          reason: evidence || 'Tarea lista con Taskia',
         })
       }
+      task = await fetchTask(taskId, userId)
     }
 
     return {
       reply,
       context: hideExerciseBrief(context),
-      study_passed: task.study_passed || reply.study_eval.passed,
+      task,
+      study_passed: taskDone,
       xp_gained: xpAward?.xp_gained ?? 0,
       xp: xpAward,
     }

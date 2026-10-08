@@ -8,6 +8,9 @@ export const PRODUCT_TZ = 'America/Lima'
 
 export const XP_PER_LEVEL = 1000
 export const XP_TASK_DONE_SIMPLE = 10
+/** XP de estudio con Taskia: effort 1–100 → este rango. */
+export const XP_TASK_STUDY_MIN = 40
+export const XP_TASK_STUDY_MAX = 200
 export const MAX_TASKS_CREATED_PER_DAY = 20
 
 export type XpSourceType =
@@ -26,12 +29,6 @@ export interface XpProgress {
 export interface XpAwardResult extends XpProgress {
   awarded: boolean
   xp_gained: number
-}
-
-const TASK_STUDY_BASE: Record<string, number> = {
-  low: 100,
-  medium: 180,
-  high: 320,
 }
 
 const MISSION_BASE = 400
@@ -87,12 +84,13 @@ export function clampEffortScore(
   return n
 }
 
-export function xpForTaskStudy(
-  difficultyCode: string,
-  effortScore: number,
-): number {
-  const base = TASK_STUDY_BASE[difficultyCode] ?? TASK_STUDY_BASE.medium!
-  return Math.max(1, Math.round((base * effortScore) / 100))
+export function xpForTaskStudy(effortScore: number): number {
+  const effort = Math.min(100, Math.max(1, Math.round(effortScore)))
+  const span = XP_TASK_STUDY_MAX - XP_TASK_STUDY_MIN
+  return Math.max(
+    XP_TASK_STUDY_MIN,
+    Math.min(XP_TASK_STUDY_MAX, Math.round(XP_TASK_STUDY_MIN + (span * effort) / 100)),
+  )
 }
 
 export function xpForMission(effortScore: number): number {
@@ -226,21 +224,21 @@ export async function awardXp(opts: {
   })
 }
 
-/** Al pasar a Listo: 10 XP si no hubo estudio; si hubo visto, no paga de nuevo aquí. */
+/** Al pasar a Listo sin ayuda de Taskia: 10 XP. */
 export async function maybeAwardTaskDoneXp(opts: {
   userId: number
   taskId: number
   previousStatus: string
   nextStatus: string
-  studyPassed: boolean
+  needsHelp: boolean
 }): Promise<XpAwardResult | null> {
   if (opts.nextStatus !== 'done' || opts.previousStatus === 'done') return null
-  if (opts.studyPassed) return null
+  if (opts.needsHelp) return null
   return awardXp({
     userId: opts.userId,
     sourceType: 'task_done_simple',
     sourceId: opts.taskId,
     amount: XP_TASK_DONE_SIMPLE,
-    reason: 'Listo sin estudio',
+    reason: 'Listo sin Taskia',
   })
 }

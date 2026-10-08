@@ -1,12 +1,10 @@
 import {
   localDayBoundsISO,
   type Course,
-  type Difficulty,
   type PublicUser,
   type Task,
   type TaskFilters,
   type TaskKind,
-  type TaskStatus,
 } from './types'
 import type {
   ChallengeAnswerPayload,
@@ -157,9 +155,6 @@ export const api = {
   listCourses() {
     return request<Course[]>('/courses')
   },
-  listDifficulties() {
-    return request<Difficulty[]>('/difficulties')
-  },
   listTasks(filters: TaskFilters) {
     return request<Task[]>(`/tasks${cleanFilters(filters)}`)
   },
@@ -167,7 +162,7 @@ export const api = {
     title: string
     description?: string
     course_id: number
-    difficulty_id: number
+    needs_help: boolean
     task_kind: TaskKind
     due_date?: string
   }) {
@@ -181,10 +176,9 @@ export const api = {
     title: string
     description?: string
     course_id: number
-    difficulty_id: number
+    needs_help: boolean
     task_kind: TaskKind
     due_date?: string
-    status: TaskStatus
   }) {
     const { task_id, ...body } = input
     return request<Task>(`/tasks/${task_id}`, {
@@ -192,19 +186,11 @@ export const api = {
       body: JSON.stringify(body),
     })
   },
-  moveTask(task_id: number, status: TaskStatus, board_order: number) {
-    return request<Task>('/tasks/move', {
-      method: 'POST',
-      body: JSON.stringify({ task_id, status, board_order }),
-    })
-  },
-  reorderTasks(
-    items: { task_id: number; status: TaskStatus; board_order: number }[],
-  ) {
-    return request<{ ok: boolean }>('/tasks/reorder', {
-      method: 'POST',
-      body: JSON.stringify({ items }),
-    }).then(() => undefined)
+  completeTask(task_id: number) {
+    return request<Task & { xp_gained?: number; xp?: import('./lib/xp').XpSnapshot }>(
+      `/tasks/${task_id}/complete`,
+      { method: 'POST', body: '{}' },
+    )
   },
   studyLoadSession(task_id: number) {
     return request<StudySession>(`/study/${task_id}`)

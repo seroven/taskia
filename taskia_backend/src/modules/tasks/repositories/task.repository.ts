@@ -7,7 +7,7 @@ import {
   type FindOptionsWhere,
 } from 'typeorm'
 import { AppDataSource } from '../../../infrastructure/database/data-source.js'
-import { Course, Difficulty, Task } from '../../../infrastructure/database/entities/index.js'
+import { Course, Task } from '../../../infrastructure/database/entities/index.js'
 import { AppError } from '../../../shared/errors/app-error.js'
 import { formatCivilDate, toInstantISO } from '../../../utils/helpers.js'
 
@@ -16,15 +16,11 @@ export type TaskRecord = {
   user_id: number
   course_id: number
   course_name: string
-  difficulty_id: number
-  difficulty_code: string
-  difficulty_name: string
   title: string
   description: string | null
   task_kind: string
   status: string
-  board_order: number
-  study_passed: boolean
+  needs_help: boolean
   due_date: string
   created_at: string
   updated_at: string
@@ -34,21 +30,17 @@ function tasksOf(manager?: EntityManager) {
   return (manager ?? AppDataSource.manager).getRepository(Task)
 }
 
-function mapTask(task: Task, course: Course, difficulty: Difficulty): TaskRecord {
+function mapTask(task: Task, course: Course): TaskRecord {
   return {
     id: task.id,
     user_id: task.userId,
     course_id: task.courseId,
     course_name: course.name,
-    difficulty_id: task.difficultyId,
-    difficulty_code: difficulty.code,
-    difficulty_name: difficulty.name,
     title: task.title,
     description: task.description,
     task_kind: task.taskKind,
     status: task.status,
-    board_order: task.boardOrder,
-    study_passed: task.studyPassed,
+    needs_help: Boolean(task.needsHelp),
     due_date: formatCivilDate(task.dueDate),
     created_at: toInstantISO(task.createdAt) ?? '',
     updated_at: toInstantISO(task.updatedAt) ?? '',
@@ -59,20 +51,12 @@ async function hydrate(rows: Task[], manager?: EntityManager): Promise<TaskRecor
   if (rows.length === 0) return []
   const db = manager ?? AppDataSource.manager
   const courseIds = [...new Set(rows.map((row) => row.courseId))]
-  const difficultyIds = [...new Set(rows.map((row) => row.difficultyId))]
-  const [courses, difficulties] = await Promise.all([
-    db.getRepository(Course).find({ where: { id: In(courseIds) } }),
-    db.getRepository(Difficulty).find({ where: { id: In(difficultyIds) } }),
-  ])
+  const courses = await db.getRepository(Course).find({ where: { id: In(courseIds) } })
   const courseById = new Map(courses.map((course) => [course.id, course]))
-  const difficultyById = new Map(difficulties.map((difficulty) => [difficulty.id, difficulty]))
   return rows.map((row) => {
     const course = courseById.get(row.courseId)
-    const difficulty = difficultyById.get(row.difficultyId)
-    if (!course || !difficulty) {
-      throw new AppError('Tarea no encontrada', 404)
-    }
-    return mapTask(row, course, difficulty)
+    if (!course) throw new AppError('Tarea no encontrada', 404)
+    return mapTask(row, course)
   })
 }
 
@@ -103,7 +87,7 @@ export async function listTasks(
 
   const rows = await tasksOf().find({
     where,
-    order: { status: 'ASC', boardOrder: 'ASC', id: 'ASC' },
+    order: { status: 'ASC', id: 'ASC' },
   })
   return hydrate(rows)
 }
@@ -117,30 +101,13 @@ export async function findOwnedCourse(courseId: number, userId: number, mustBeAc
   })
 }
 
-export async function findDifficulty(difficultyId: number) {
-  return AppDataSource.getRepository(Difficulty).findOne({
-    where: { id: difficultyId },
-    select: { id: true, code: true },
-  })
-}
-
-export async function nextBoardOrder(userId: number, status: string) {
-  const row = await tasksOf()
-    .createQueryBuilder('t')
-    .select('MAX(t.board_order)', 'm')
-    .where('t.user_id = :userId AND t.status = :status', { userId, status })
-    .getRawOne<{ m: string | number | null }>()
-  return row?.m == null ? 0 : Number(row.m) + 1
-}
-
 export async function insertTask(input: {
   userId: number
   courseId: number
-  difficultyId: number
   title: string
   description: string | null
   taskKind: string
-  boardOrder: number
+  needsHelp: boolean
   dueDate: string
 }) {
   const repo = tasksOf()
@@ -148,12 +115,11 @@ export async function insertTask(input: {
     repo.create({
       userId: input.userId,
       courseId: input.courseId,
-      difficultyId: input.difficultyId,
       title: input.title,
       description: input.description,
       taskKind: input.taskKind,
       status: 'pending',
-      boardOrder: input.boardOrder,
+      needsHelp: input.needsHelp,
       dueDate: input.dueDate,
     }),
   )
@@ -166,11 +132,9 @@ export async function updateTask(input: {
   title: string
   description: string | null
   courseId: number
-  difficultyId: number
   taskKind: string
+  needsHelp: boolean
   dueDate: string
-  status: string
-  boardOrder: number
 }) {
   const result = await tasksOf().update(
     { id: input.taskId, userId: input.userId },
@@ -178,48 +142,15 @@ export async function updateTask(input: {
       title: input.title,
       description: input.description,
       courseId: input.courseId,
-      difficultyId: input.difficultyId,
       taskKind: input.taskKind,
+      needsHelp: input.needsHelp,
       dueDate: input.dueDate,
-      status: input.status,
-      boardOrder: input.boardOrder,
     },
   )
   return result.affected ?? 0
 }
 
-export async function moveTask(status: string, boardOrder: number, taskId: number, userId: number) {
-  const result = await tasksOf().update({ id: taskId, userId }, { status, boardOrder })
+export async function setTaskStatus(taskId: number, userId: number, status: string) {
+  const result = await tasksOf().update({ id: taskId, userId }, { status })
   return result.affected ?? 0
-}
-
-export async function reorderInTransaction(
-  userId: number,
-  items: Array<{ taskId: number; status: string; boardOrder: number }>,
-  assertCanChange: (current: TaskRecord, nextStatus: string) => void,
-) {
-  return AppDataSource.transaction(async (manager) => {
-    const doneAwards: Array<{
-      taskId: number
-      previousStatus: string
-      nextStatus: string
-      studyPassed: boolean
-    }> = []
-    for (const item of items) {
-      const current = await findTask(item.taskId, userId, manager)
-      if (!current) throw new AppError(`Tarea ${item.taskId} no encontrada`, 404)
-      assertCanChange(current, item.status)
-      await tasksOf(manager).update(
-        { id: item.taskId, userId },
-        { status: item.status, boardOrder: item.boardOrder },
-      )
-      doneAwards.push({
-        taskId: item.taskId,
-        previousStatus: current.status,
-        nextStatus: item.status,
-        studyPassed: current.study_passed,
-      })
-    }
-    return doneAwards
-  })
 }

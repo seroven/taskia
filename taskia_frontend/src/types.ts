@@ -1,6 +1,6 @@
 export type UserRole = 'user' | 'admin' | 'parent'
 
-export type TaskStatus = 'pending' | 'in_progress' | 'studying' | 'done'
+export type TaskStatus = 'pending' | 'studying' | 'done'
 
 export type TaskKind = 'daily' | 'project'
 
@@ -24,28 +24,16 @@ export interface Course {
   name: string
 }
 
-export interface Difficulty {
-  id: number
-  code: string
-  name: string
-  sort_order: number
-}
-
 export interface Task {
   id: number
   user_id: number
   course_id: number
   course_name: string
-  difficulty_id: number
-  difficulty_code: string
-  difficulty_name: string
   title: string
   description: string | null
   task_kind: TaskKind
   status: TaskStatus
-  board_order: number
-  /** True si la IA confirmó que el niño dominó la tarea (candado Alta). */
-  study_passed: boolean
+  needs_help: boolean
   due_date: string
   created_at: string
   updated_at: string
@@ -58,18 +46,11 @@ export interface TaskFilters {
   status?: TaskStatus | null
 }
 
-/** Etiquetas del tablero del explorador (claras, sin jerga de oficina). */
-export const STATUS_COLUMNS: { id: TaskStatus; label: string }[] = [
+export const STATUS_SECTIONS: { id: TaskStatus; label: string }[] = [
   { id: 'pending', label: 'Por hacer' },
-  { id: 'in_progress', label: 'Haciendo' },
-  { id: 'studying', label: 'Estudiando' },
+  { id: 'studying', label: 'Con Taskia' },
   { id: 'done', label: 'Listo' },
 ]
-
-/** Candado de dificultad Alta → Listo. */
-export const STUDY_PASSED_REQUIRED_TITLE = 'Aún no puedes marcarla lista'
-export const STUDY_PASSED_REQUIRED_MSG =
-  'Estudia con Taskia hasta que diga que estás listo.'
 
 export function todayISO(): string {
   const now = new Date()
@@ -77,6 +58,15 @@ export function todayISO(): string {
   const m = String(now.getMonth() + 1).padStart(2, '0')
   const d = String(now.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
+}
+
+export function shiftCivilDay(dateStr: string, delta: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const next = new Date(y, m - 1, d + delta)
+  const yy = next.getFullYear()
+  const mm = String(next.getMonth() + 1).padStart(2, '0')
+  const dd = String(next.getDate()).padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
 }
 
 /** Inicio incl. y fin excl. del día civil local, en ISO UTC. */
@@ -87,35 +77,19 @@ export function localDayBoundsISO(dateStr: string): { start: string; end: string
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
-/** Vista de estudio: Estudiando, o Listo si es nivel Alta. */
-export function canOpenStudyMode(task: Pick<Task, 'status' | 'difficulty_code'>): boolean {
-  if (task.status === 'studying') return true
-  return task.status === 'done' && task.difficulty_code === 'high'
+/** Solo tareas con ayuda de Taskia, aún no listas. */
+export function canOpenStudyMode(task: Pick<Task, 'status' | 'needs_help'>): boolean {
+  return task.needs_help && (task.status === 'pending' || task.status === 'studying')
 }
 
-/** Alta siempre, o cualquier tarea que esté en estudio, necesita el visto de Taskia. */
-export function needsStudyPassedGate(
-  task: Pick<Task, 'status' | 'difficulty_code' | 'study_passed'>,
-  nextStatus: TaskStatus,
-  nextDifficultyCode: string = task.difficulty_code,
-): boolean {
-  if (nextStatus !== 'done' || task.status === 'done' || task.study_passed) {
-    return false
-  }
-  return nextDifficultyCode === 'high' || task.status === 'studying'
-}
-
-export function taskStudyPatch(task: Task, overrides: Partial<{
-  status: TaskStatus
-}>) {
+export function taskStudyPatch(task: Task) {
   return {
     task_id: task.id,
     title: task.title,
     description: task.description ?? undefined,
     course_id: task.course_id,
-    difficulty_id: task.difficulty_id,
+    needs_help: task.needs_help,
     task_kind: task.task_kind,
     due_date: task.task_kind === 'project' ? task.due_date : undefined,
-    status: overrides.status ?? task.status,
   }
 }

@@ -1,5 +1,4 @@
 import { Course } from './course.entity.js'
-import { Difficulty } from './difficulty.entity.js'
 import { LlmUsage } from './llm-usage.entity.js'
 import { ParentChatMessage } from './parent-chat-message.entity.js'
 import { ParentNotifyPrefs } from './parent-notify-prefs.entity.js'
@@ -30,7 +29,6 @@ export const entities = [
   Role,
   User,
   Course,
-  Difficulty,
   Task,
   StudySession,
   StudyMessage,
@@ -57,7 +55,6 @@ export const entities = [
 
 export {
   Course,
-  Difficulty,
   LlmUsage,
   ParentChatMessage,
   ParentNotifyPrefs,

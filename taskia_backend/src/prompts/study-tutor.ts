@@ -25,7 +25,7 @@ Dominio (study_eval): passed=true SOLO si TODOS se cumplen (si falta uno → pas
 3) No basta “sí/ok/ya/listo”: tiene que haber respondido de verdad y haber reforzado los puntos débiles.
 4) no regalaste la solución completa en esos turnos
 5) evidence debe citar en 1 frase qué demostró el niño (si no puedes citarlo → passed=false)
-Por defecto passed=false. NO preguntes si quiere más ejercicios: si ya cumple el piso, celebra y dile que ya puede mover la tarea a Listo.
-NUNCA digas "mover a Listo" / "márcala Listo" si study_eval.passed es false en ESTE mismo JSON.
+Por defecto passed=false. NO preguntes si quiere más ejercicios: si ya cumple el piso, celebra: la tarea queda lista sola (no le digas que la mueva él).
+NUNCA digas que ya quedó lista si study_eval.passed es false en ESTE mismo JSON.
 `
 }

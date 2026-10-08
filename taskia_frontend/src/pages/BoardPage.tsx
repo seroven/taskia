@@ -1,28 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  closestCorners,
-  defaultDropAnimationSideEffects,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import type {
-  DragEndEvent,
-  DragOverEvent,
-  DragStartEvent,
-  DropAnimation,
-} from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
-import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft } from '@phosphor-icons/react'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { ArrowLeft, CaretLeft, CaretRight, Flag, Plus } from '@phosphor-icons/react'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { BoardFilters } from '../components/BoardFilters'
 import { BoardLoader } from '../components/BoardLoader'
-import { KanbanColumn } from '../components/KanbanColumn'
-import { TaskCardView } from '../components/TaskCard'
+import { CampTaskRow } from '../components/CampTaskRow'
+import { EmptyState } from '../components/EmptyState'
 import { TaskDetailModal } from '../components/TaskDetailModal'
 import { TaskFormModal } from '../components/TaskFormModal'
 import { AppearanceTools } from '../components/AppearanceTools'
@@ -30,36 +13,51 @@ import { ExpandIconButton } from '../components/ExpandIconButton'
 import { ExplorerXpBar } from '../components/ExplorerXpBar'
 import { SessionActions } from '../components/SessionActions'
 import {
-  STATUS_COLUMNS,
-  STUDY_PASSED_REQUIRED_MSG,
-  STUDY_PASSED_REQUIRED_TITLE,
   canOpenStudyMode,
-  needsStudyPassedGate,
+  shiftCivilDay,
   todayISO,
   type Course,
-  type Difficulty,
   type Task,
-  type TaskFilters,
-  type TaskStatus,
+  type TaskKind,
 } from '../types'
 import { errorMessage } from '../lib/errors'
-import { xpToastCopy } from '../lib/xp'
+import { mergeXpIntoUser, xpToastCopy } from '../lib/xp'
 import { useToast } from '../toast'
+import { formatDayCompact } from '../lib/datetime'
 
-function isStatus(value: string | number): value is TaskStatus {
-  return STATUS_COLUMNS.some((column) => column.id === value)
-}
+const SWAP_EASE = [0.22, 1, 0.36, 1] as const
 
-const dropAnimation: DropAnimation = {
-  duration: 220,
-  easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-  sideEffects: defaultDropAnimationSideEffects({
-    styles: {
-      active: {
-        opacity: '0.35',
-      },
+function swapVariants(
+  reduce: boolean,
+  dir: { current: number },
+  axis: { current: 'x' | 'y' },
+) {
+  if (reduce) {
+    return {
+      initial: { opacity: 1, x: 0, y: 0 },
+      animate: { opacity: 1, x: 0, y: 0 },
+      exit: { opacity: 1, x: 0, y: 0 },
+    }
+  }
+  return {
+    initial: () => ({
+      opacity: 0,
+      x: axis.current === 'x' ? dir.current * 28 : 0,
+      y: axis.current === 'y' ? 10 : 0,
+    }),
+    animate: {
+      opacity: 1,
+      x: 0,
+      y: 0,
+      transition: { duration: 0.28, ease: SWAP_EASE },
     },
-  }),
+    exit: () => ({
+      opacity: 0,
+      x: axis.current === 'x' ? dir.current * -22 : 0,
+      y: axis.current === 'y' ? -8 : 0,
+      transition: { duration: 0.18, ease: SWAP_EASE },
+    }),
+  }
 }
 
 export function BoardPage({
@@ -71,59 +69,49 @@ export function BoardPage({
 }) {
   const { user, setUser } = useAuth()
   const { showToast } = useToast()
+  const reduceMotion = useReducedMotion()
+  const dirRef = useRef(1)
+  const axisRef = useRef<'x' | 'y'>('x')
+  const variants = useMemo(
+    () => swapVariants(Boolean(reduceMotion), dirRef, axisRef),
+    [reduceMotion],
+  )
   const [courses, setCourses] = useState<Course[]>([])
-  const [difficulties, setDifficulties] = useState<Difficulty[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
-  const [activeTask, setActiveTask] = useState<Task | null>(null)
-  const [overStatus, setOverStatus] = useState<TaskStatus | null>(null)
-  const [filters, setFilters] = useState<TaskFilters>({
-    created_on: todayISO(),
-    due_on: null,
-    course_id: null,
-    status: null,
-  })
+  const [day, setDay] = useState(todayISO())
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
-  const [boardVersion, setBoardVersion] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [scope, setScope] = useState<TaskKind>('daily')
+  const [shownDay, setShownDay] = useState(day)
   const requestId = useRef(0)
+  const isToday = day === todayISO()
+  const panelKey = `${scope}-${shownDay}`
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-  )
-
-  const loadTasks = useCallback(async (nextFilters: TaskFilters) => {
+  const loadTasks = useCallback(async (dueOn: string) => {
     const currentRequest = ++requestId.current
     setLoading(true)
     setError(null)
-
     try {
-      const rows = await api.listTasks(nextFilters)
+      const next = await api.listTasks({ due_on: dueOn })
       if (currentRequest !== requestId.current) return
-      setTasks(rows)
-      setBoardVersion((value) => value + 1)
+      setTasks(next)
+      setShownDay(dueOn)
       setHasLoadedOnce(true)
     } catch (err) {
       if (currentRequest !== requestId.current) return
       setError(errorMessage(err))
     } finally {
-      if (currentRequest === requestId.current) {
-        setLoading(false)
-      }
+      if (currentRequest === requestId.current) setLoading(false)
     }
   }, [])
 
   useEffect(() => {
     void (async () => {
       try {
-        const [nextCourses, nextDifficulties] = await Promise.all([
-          api.listCourses(),
-          api.listDifficulties(),
-        ])
-        setCourses(nextCourses)
-        setDifficulties(nextDifficulties)
+        setCourses(await api.listCourses())
       } catch (err) {
         setError(errorMessage(err))
       }
@@ -131,211 +119,78 @@ export function BoardPage({
   }, [])
 
   useEffect(() => {
-    // Espera a que cierre el popover antes de filtrar, evita pelea con el layout/scroll
-    const timer = window.setTimeout(() => {
-      void loadTasks(filters)
-    }, 120)
-    return () => window.clearTimeout(timer)
-  }, [filters, loadTasks])
+    void loadTasks(day)
+  }, [day, loadTasks])
 
-  const grouped = useMemo(() => {
-    const map: Record<TaskStatus, Task[]> = {
-      pending: [],
-      in_progress: [],
-      studying: [],
-      done: [],
+  const visible = useMemo(() => {
+    const rows = tasks.filter((task) => task.task_kind === scope)
+    const open = rows.filter((task) => task.status !== 'done')
+    const done = rows.filter((task) => task.status === 'done')
+    return [...open, ...done]
+  }, [tasks, scope])
+
+  const doneCount = visible.filter((task) => task.status === 'done').length
+  const progressLabel = scope === 'daily' ? 'Hoy' : 'Proyectos'
+  const progress = visible.length === 0 ? 0 : Math.round((doneCount / visible.length) * 100)
+  const featuredId = visible.find((task) => task.status !== 'done')?.id ?? null
+  const dateLabel = isToday ? `Hoy · ${formatDayCompact(day)}` : formatDayCompact(day)
+  const waitingDay = hasLoadedOnce && loading && shownDay !== day
+
+  function goDay(delta: number) {
+    axisRef.current = 'x'
+    dirRef.current = delta
+    setDay((current) => shiftCivilDay(current, delta))
+  }
+
+  function selectScope(next: TaskKind) {
+    if (next === scope) return
+    axisRef.current = 'y'
+    dirRef.current = next === 'project' ? 1 : -1
+    setScope(next)
+  }
+
+  function applyXp(result: { xp_gained?: number; xp?: Parameters<typeof mergeXpIntoUser>[1] }) {
+    if (result.xp && result.xp_gained && result.xp_gained > 0) {
+      const next = mergeXpIntoUser(user, result.xp)
+      if (next) setUser(next)
+      const copy = xpToastCopy(result.xp_gained)
+      if (copy) showToast({ tone: 'success', ...copy })
     }
-    for (const task of tasks) {
-      map[task.status].push(task)
-    }
-    for (const status of Object.keys(map) as TaskStatus[]) {
-      map[status].sort((a, b) => a.board_order - b.board_order || a.id - b.id)
-    }
-    return map
-  }, [tasks])
+  }
 
-  async function persistBoard(nextTasks: Task[]) {
-    setTasks(nextTasks)
-    const items = nextTasks.map((task) => {
-      const sameColumn = nextTasks.filter((item) => item.status === task.status)
-      const board_order = sameColumn.findIndex((item) => item.id === task.id)
-      return {
-        task_id: task.id,
-        status: task.status,
-        board_order,
-      }
-    })
-
-    const unique = new Map<number, (typeof items)[number]>()
-    for (const item of items) unique.set(item.task_id, item)
-
+  async function onComplete(task: Task) {
     try {
-      await api.reorderTasks([...unique.values()])
-      const movedToDone = [...unique.values()].some((item) => item.status === 'done')
-      if (movedToDone) {
-        const refreshed = await api.currentUser()
-        if (refreshed) {
-          const gained = Math.max(0, refreshed.xp_total - (user?.xp_total ?? 0))
-          setUser(refreshed)
-          const copy = xpToastCopy(gained)
-          if (copy) showToast({ tone: 'success', ...copy })
-        }
-      }
-    } catch (err) {
-      const message = errorMessage(err)
-      setError(message)
-      if (message.includes('dificultad Alta')) {
-        showToast({
-          title: STUDY_PASSED_REQUIRED_TITLE,
-          subtitle: STUDY_PASSED_REQUIRED_MSG,
-          tone: 'warning',
-        })
-      }
-      await loadTasks(filters)
-    }
-  }
-
-  function findContainer(id: string | number): TaskStatus | null {
-    if (isStatus(id)) return id
-    const task = tasks.find((item) => item.id === id)
-    return task?.status ?? null
-  }
-
-  function onDragStart(event: DragStartEvent) {
-    if (loading) return
-    const task = tasks.find((item) => item.id === event.active.id) ?? null
-    setActiveTask(task)
-    setOverStatus(task?.status ?? null)
-  }
-
-  function onDragOver(event: DragOverEvent) {
-    if (loading) return
-    const { active, over } = event
-    if (!over) {
-      setOverStatus(null)
-      return
-    }
-
-    const activeId = active.id
-    const overId = over.id
-    const activeContainer = findContainer(activeId)
-    const overContainer = findContainer(overId)
-    setOverStatus(overContainer)
-
-    if (!activeContainer || !overContainer || activeContainer === overContainer) {
-      return
-    }
-
-    setTasks((prev) => {
-      const activeTaskItem = prev.find((task) => task.id === activeId)
-      if (!activeTaskItem) return prev
-
-      const without = prev.filter((task) => task.id !== activeId)
-      const overIndex = without.findIndex((task) => task.id === overId)
-
-      const moved: Task = { ...activeTaskItem, status: overContainer }
-      if (overIndex === -1) {
-        return [...without, moved]
-      }
-      const next = [...without]
-      next.splice(overIndex, 0, moved)
-      return next
-    })
-  }
-
-  async function onDragEnd(event: DragEndEvent) {
-    setActiveTask(null)
-    setOverStatus(null)
-    if (loading) return
-    const { active, over } = event
-    if (!over) return
-
-    const activeId = Number(active.id)
-    const overId = over.id
-    const activeContainer = findContainer(activeId)
-    const overContainer = findContainer(overId)
-    if (!activeContainer || !overContainer) return
-
-    let next = [...tasks]
-    const oldIndex = next.findIndex((task) => task.id === activeId)
-    if (oldIndex < 0) return
-
-    if (activeContainer === overContainer) {
-      const columnTasks = next.filter((task) => task.status === activeContainer)
-      const from = columnTasks.findIndex((task) => task.id === activeId)
-      const to = isStatus(overId)
-        ? columnTasks.length - 1
-        : columnTasks.findIndex((task) => task.id === overId)
-
-      if (from < 0 || to < 0 || from === to) {
-        await persistBoard(next)
-        return
-      }
-
-      const reordered = arrayMove(columnTasks, from, to)
-      const others = next.filter((task) => task.status !== activeContainer)
-      next = [
-        ...others,
-        ...reordered.map((task, board_order) => ({ ...task, board_order })),
-      ]
-    } else {
-      next = next.map((task) =>
-        task.id === activeId ? { ...task, status: overContainer } : task,
-      )
-      const columnTasks = next
-        .filter((task) => task.status === overContainer)
-        .sort((a, b) => {
-          if (a.id === activeId) return -1
-          if (b.id === activeId) return 1
-          return a.board_order - b.board_order
-        })
-
-      if (!isStatus(overId)) {
-        const overIndex = columnTasks.findIndex((task) => task.id === overId)
-        const activeIndex = columnTasks.findIndex((task) => task.id === activeId)
-        if (overIndex >= 0 && activeIndex >= 0) {
-          const reordered = arrayMove(columnTasks, activeIndex, overIndex)
-          const others = next.filter((task) => task.status !== overContainer)
-          next = [
-            ...others,
-            ...reordered.map((task, board_order) => ({ ...task, board_order })),
-          ]
-        }
-      }
-    }
-
-    const moved = next.find((task) => task.id === activeId)
-    if (
-      moved &&
-      overContainer === 'done' &&
-      activeContainer !== 'done' &&
-      needsStudyPassedGate(
-        { ...moved, status: activeContainer },
-        'done',
-      )
-    ) {
+      const result = await api.completeTask(task.id)
+      setTasks((prev) => prev.map((row) => (row.id === result.id ? result : row)))
+      applyXp(result)
       showToast({
-        title: STUDY_PASSED_REQUIRED_TITLE,
-        subtitle: STUDY_PASSED_REQUIRED_MSG,
-        tone: 'warning',
+        tone: 'success',
+        title: '¡Listo!',
+        subtitle: task.title,
       })
-      setError(STUDY_PASSED_REQUIRED_MSG)
-      await loadTasks(filters)
+    } catch (err) {
+      showToast({
+        tone: 'error',
+        title: 'No se pudo marcar',
+        subtitle: errorMessage(err),
+      })
+    }
+  }
+
+  function onStudy(task: Task) {
+    if (!canOpenStudyMode(task)) {
+      showToast({
+        tone: 'warning',
+        title: 'Esta no usa Taskia',
+        subtitle: 'Márcala lista cuando la termines.',
+      })
       return
     }
-
-    await persistBoard(next)
+    onOpenStudy(task)
   }
-
-  function onDragCancel() {
-    setActiveTask(null)
-    setOverStatus(null)
-  }
-
-  const loaderLabel = hasLoadedOnce ? 'Buscando tareas…' : 'Cargando campamento…'
 
   return (
-    <div className="board-shell">
+    <div className="board-shell camp-shell">
       <header className="topbar">
         <div className="topbar-title-row">
           <ExpandIconButton
@@ -343,7 +198,6 @@ export function BoardPage({
             label="Inicio"
             weight="bold"
             onClick={onBack}
-            disabled={loading}
           />
           <div>
             <p className="brand">Campamento</p>
@@ -357,85 +211,234 @@ export function BoardPage({
         </div>
       </header>
 
-      <BoardFilters
-        filters={filters}
-        courses={courses}
-        onChange={setFilters}
-        onCreateTask={() => setModalOpen(true)}
-        createDisabled={loading || courses.length === 0}
-      />
+      {error ? <p className="form-error banner">{error}</p> : null}
 
-      {error && <p className="form-error banner">{error}</p>}
-      {!loading && courses.length === 0 && (
-        <p className="admin-student-empty-banner">
-          Todavía no te asignaron cursos. Pídele a un adulto que los agregue para
-          poder crear tareas.
-        </p>
-      )}
+      <div className="camp-stage">
+        <div className="camp-column">
+          <div className="camp-tabs" role="tablist" aria-label="Tipo de tarea">
+            <button
+              type="button"
+              role="tab"
+              id="camp-tab-daily"
+              aria-selected={scope === 'daily'}
+              aria-controls="camp-panel"
+              className={`camp-tab${scope === 'daily' ? ' is-active' : ''}`}
+              onClick={() => selectScope('daily')}
+            >
+              {!reduceMotion && scope === 'daily' ? (
+                <motion.span layoutId="camp-tab-pill" className="camp-tab-pill" />
+              ) : null}
+              <span className="camp-tab-label">Hoy</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="camp-tab-project"
+              aria-selected={scope === 'project'}
+              aria-controls="camp-panel"
+              className={`camp-tab${scope === 'project' ? ' is-active' : ''}`}
+              onClick={() => selectScope('project')}
+            >
+              {!reduceMotion && scope === 'project' ? (
+                <motion.span layoutId="camp-tab-pill" className="camp-tab-pill" />
+              ) : null}
+              <span className="camp-tab-label">Proyectos</span>
+            </button>
+          </div>
 
-      <div className={`kanban-stage${loading ? ' is-loading' : ''}`}>
-        <AnimatePresence>{loading && <BoardLoader label={loaderLabel} />}</AnimatePresence>
+          <div className="camp-daybar">
+            <div className="camp-day-nav">
+              <button
+                type="button"
+                className="ghost camp-day-btn"
+                aria-label="Día anterior"
+                onClick={() => goDay(-1)}
+              >
+                <CaretLeft size={16} weight="bold" />
+              </button>
+              <span className="camp-day-title-slot">
+                <AnimatePresence initial={false}>
+                  <motion.p
+                    key={day}
+                    className="camp-day-title"
+                    variants={variants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                  >
+                    {dateLabel}
+                  </motion.p>
+                </AnimatePresence>
+              </span>
+              <button
+                type="button"
+                className="ghost camp-day-btn"
+                aria-label="Día siguiente"
+                onClick={() => goDay(1)}
+              >
+                <CaretRight size={16} weight="bold" />
+              </button>
+              <AnimatePresence initial={false}>
+                {!isToday ? (
+                  <motion.button
+                    key="back-today"
+                    type="button"
+                    className="ghost camp-today-chip"
+                    initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={reduceMotion ? undefined : { opacity: 0, scale: 0.92 }}
+                    transition={{ duration: 0.18, ease: SWAP_EASE }}
+                    onClick={() => {
+                      axisRef.current = 'x'
+                      dirRef.current = todayISO() > day ? 1 : -1
+                      setDay(todayISO())
+                    }}
+                  >
+                    Ir a hoy
+                  </motion.button>
+                ) : null}
+              </AnimatePresence>
+            </div>
+            <div className="camp-swap-host camp-progress-host">
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={panelKey}
+                className={`camp-progress${waitingDay ? ' is-pending' : ''}`}
+                role="meter"
+                aria-valuemin={0}
+                aria-valuemax={visible.length}
+                aria-valuenow={doneCount}
+                aria-label={`${progressLabel}: ${doneCount} de ${visible.length}`}
+                variants={variants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <span className="camp-progress-label">
+                  {progressLabel}: {doneCount} de {visible.length}
+                </span>
+                <span className="camp-progress-track">
+                  <span className="camp-progress-fill" style={{ width: `${progress}%` }} />
+                </span>
+              </motion.div>
+            </AnimatePresence>
+            </div>
+            <button
+              type="button"
+              className="primary camp-add-desktop"
+              onClick={() => setModalOpen(true)}
+            >
+              <Plus size={18} weight="bold" />
+              Nueva tarea
+            </button>
+          </div>
 
-        <motion.div
-          key={boardVersion}
-          className="kanban"
-          initial={hasLoadedOnce ? { opacity: 0, y: 12 } : { opacity: 0, y: 10 }}
-          animate={{ opacity: loading ? 0.35 : 1, y: 0 }}
-          transition={{ duration: 0.28 }}
-        >
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDragEnd={(event) => void onDragEnd(event)}
-            onDragCancel={onDragCancel}
-          >
-            {STATUS_COLUMNS.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                status={column.id}
-                label={column.label}
-                tasks={loading ? [] : grouped[column.id]}
-                highlighted={!!activeTask && overStatus === column.id}
-                onOpenTask={(task) => {
-                  if (!canOpenStudyMode(task)) {
-                    setSelectedTask(task)
-                    return
+          {!hasLoadedOnce && loading ? (
+            <BoardLoader />
+          ) : (
+            <div
+              className="camp-swap-host"
+              id="camp-panel"
+              role="tabpanel"
+              aria-labelledby={scope === 'daily' ? 'camp-tab-daily' : 'camp-tab-project'}
+            >
+            <AnimatePresence initial={false}>
+            <motion.div
+              key={panelKey}
+              className={`camp-list${waitingDay ? ' is-pending' : ''}`}
+              variants={variants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              {visible.length === 0 ? (
+                <EmptyState
+                  compact
+                  icon={Flag}
+                  title={scope === 'project' ? 'Sin proyectos' : 'Nada para este día'}
+                  description={
+                    scope === 'project'
+                      ? 'Los proyectos de este día aparecen aquí.'
+                      : 'Agrega la primera tarea del día.'
                   }
-                  onOpenStudy(task)
-                }}
-              />
-            ))}
-            <DragOverlay dropAnimation={dropAnimation} zIndex={1000}>
-              {activeTask ? <TaskCardView task={activeTask} overlay /> : null}
-            </DragOverlay>
-          </DndContext>
-        </motion.div>
+                  action={
+                    <button type="button" className="primary" onClick={() => setModalOpen(true)}>
+                      <Plus size={18} weight="bold" />
+                      Agregar tarea
+                    </button>
+                  }
+                />
+              ) : (
+                <ul className="camp-section-list">
+                  {visible.map((task) => (
+                    <li key={task.id}>
+                      <CampTaskRow
+                        task={task}
+                        featured={task.id === featuredId}
+                        onOpen={setSelectedTask}
+                        onStudy={onStudy}
+                        onComplete={(row) => void onComplete(row)}
+                      />
+                    </li>
+                  ))}
+                  <li>
+                    <button
+                      type="button"
+                      className="camp-add-row"
+                      onClick={() => setModalOpen(true)}
+                    >
+                      <Plus size={18} weight="bold" />
+                      Agregar tarea
+                    </button>
+                  </li>
+                </ul>
+              )}
+            </motion.div>
+            </AnimatePresence>
+            </div>
+          )}
+        </div>
       </div>
+
+      <button
+        type="button"
+        className="primary camp-fab"
+        aria-label="Agregar tarea"
+        onClick={() => setModalOpen(true)}
+      >
+        <Plus size={22} weight="bold" />
+      </button>
 
       <TaskFormModal
         open={modalOpen}
         courses={courses}
-        difficulties={difficulties}
         onClose={() => setModalOpen(false)}
         onCreate={async (input) => {
-          await api.createTask(input)
-          await loadTasks(filters)
+          const created = await api.createTask(input)
+          if (created.due_date === day) {
+            setTasks((prev) => [created, ...prev])
+          }
+          showToast({
+            tone: 'success',
+            title: 'Tarea creada',
+            subtitle: created.title,
+          })
         }}
       />
 
       <TaskDetailModal
         task={selectedTask}
         courses={courses}
-        difficulties={difficulties}
         onClose={() => setSelectedTask(null)}
-        onSave={async (input) => {
-          await api.updateTask(input)
-          await loadTasks(filters)
+        onStudy={(task) => {
+          setSelectedTask(null)
+          onStudy(task)
+        }}
+        onSaved={(task) => {
+          setTasks((prev) => prev.map((row) => (row.id === task.id ? task : row)))
+          setSelectedTask(task)
         }}
       />
-
     </div>
   )
 }

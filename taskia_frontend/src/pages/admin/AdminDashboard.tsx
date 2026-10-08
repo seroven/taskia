@@ -141,7 +141,7 @@ export function AdminDashboard({ onOpenStudent, onOpenAccounts }: Props) {
               icon={CheckCircle}
               label="Tareas"
               value={String(data.tasks.total)}
-              hint={`${data.tasks.done} terminadas · ${data.tasks.studying} en estudio`}
+              hint={`${data.tasks.done} listas · ${data.tasks.studying} con Taskia`}
             />
             <AdminStatCard
               icon={WarningCircle}

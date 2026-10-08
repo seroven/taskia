@@ -66,6 +66,16 @@ export function formatDay(value: string | null | undefined): string {
   })
 }
 
+/** Día civil compacto: «lun 5 oct». */
+export function formatDayCompact(value: string | null | undefined): string {
+  if (!value) return '—'
+  const date = civilDayAsDate(value)
+  if (!date) return value.slice(0, 10)
+  return date
+    .toLocaleDateString(LOCALE, { weekday: 'short', day: 'numeric', month: 'short' })
+    .replace(/\./g, '')
+}
+
 /** Eje de gráficas / chips: día + mes corto, sin año. */
 export function formatDayShort(value: string | null | undefined): string {
   if (!value) return '—'

@@ -98,7 +98,7 @@ function mapTaskRow(row: Raw) {
     title: String(row.title),
     status: String(row.status),
     due_date: formatCivilDate(row.due_date as Date | string),
-    study_passed: flagOn(row.study_passed),
+    needs_help: flagOn(row.needs_help),
     course_id: Number(row.course_id),
     course_name: String(row.course_name),
     created_at: toInstantISO(row.created_at as Date | string) ?? '',
@@ -810,7 +810,7 @@ export async function studentTasks(
     createdTo: parseIsoDate(input.query.created_to),
     dueFrom: parseIsoDate(input.query.due_from),
     dueTo: parseIsoDate(input.query.due_to),
-    status: ['pending', 'in_progress', 'studying', 'done'].includes(status) ? status : null,
+    status: ['pending', 'studying', 'done'].includes(status) ? status : null,
     courseId: Number.isFinite(courseId) && courseId > 0 ? courseId : null,
   })
   return rows.map((row) => mapTaskRow(row as Raw))

@@ -42,7 +42,6 @@ users ─┬─ courses ────────────────┬─ t
        ├─ troop_members ─── troops ─── troop_invites
        └─ llm_usage
 
-difficulties ─── tasks            (catálogo, no cuelga de users)
 study_challenge_presets           (catálogo suelto, sin claves foráneas)
 ```
 
@@ -110,56 +109,40 @@ Archivar en lugar de borrar es a propósito: la materia deja de ofrecerse para c
 
 No tiene `updated_at`.
 
-### `difficulties`
-
-Catálogo de tres filas que se siembra con el esquema: `low` → Bajo, `medium` → Medio, `high` → Alto, en ese orden (`sort_order` 1, 2, 3).
-
-| Columna | Tipo | Nota |
-| --- | --- | --- |
-| `id` | bigint | PK |
-| `code` | varchar(20) | único; lo usa el código |
-| `name` | varchar(50) | único; lo ve el usuario |
-| `sort_order` | int | orden de presentación |
-| `created_at` | timestamptz | |
-
-El código de la app decide por `code`, no por `id` ni por `name`. El candado para terminar una tarea mira `code = 'high'`.
+La dificultad Baja/Media/Alta de tareas ya no existe: se eliminó la tabla `difficulties` en la migración `002_campamento_list.ts`. Los desafíos siguen usando `warm|quest|boss` en su propio campo.
 
 ---
 
-## 2. El tablero de tareas
+## 2. El Campamento (lista del día)
 
 ### `tasks`
 
-Una fila por tarjeta del tablero. Es la tabla con más columnas y la que más índices tiene.
+Una fila por tarea del día. Tres estados, sin kanban.
 
 | Columna | Tipo | Nota |
 | --- | --- | --- |
 | `id` | bigint | PK |
 | `user_id` | bigint | → `users`, cascada; además, junto con `course_id`, debe ser el dueño de esa materia |
 | `course_id` | bigint | → `courses`, restringido |
-| `difficulty_id` | bigint | → `difficulties`, restringido |
 | `title` | varchar(255) | |
 | `description` | text | opcional |
 | `task_kind` | text | `daily` o `project` |
-| `status` | text | `pending`, `in_progress`, `studying`, `done` |
-| `board_order` | int | orden dentro de la columna |
-| `study_passed` | boolean | el visto del tutor |
+| `status` | text | `pending` (Por hacer), `studying` (Con Taskia), `done` (Listo) |
+| `needs_help` | boolean | si Taskia debe ayudar; sin ayuda el niño marca Listo |
 | `due_date` | date | día de entrega |
 | `created_at` / `updated_at` | timestamptz | |
 
-`status` son las cuatro columnas del tablero y `board_order` es la posición dentro de una de ellas; juntas con `user_id` forman el índice `idx_tasks_user_status_order`, que es el que sostiene el arrastrar y soltar.
-
-`study_passed` es el candado del que habla el producto: lo pone el tutor cuando hay evidencia, y sin él una tarea de dificultad alta (o que pasó por `studying`) no se puede marcar `done`.
+Sin ayuda: `pending` → `done` vía `POST /tasks/:id/complete` (10 XP). Con ayuda: al abrir estudio pasa a `studying`; al `study_eval.passed` el servidor marca `done` y otorga XP 40–200 según un `effort` corto.
 
 `due_date` es obligatoria. En una tarea `daily` se resuelve sola: es el día de hoy **según el calendario de quien la crea**, no del servidor. En una `project` la elige el alumno.
 
-Hay índices sueltos por `user_id`, `course_id`, `difficulty_id`, `status`, `task_kind`, `due_date` y `created_at`, que son los filtros del tablero y del panel del adulto.
+Índice útil: `idx_tasks_user_status_due` sobre `(user_id, status, due_date)`.
 
 La clave `fk_tasks_course_owner` ata `(course_id, user_id)` a `courses (id, user_id)`. Una tarea no puede quedar con la materia de otro alumno.
 
 ---
 
-## 3. El tutor del tablero
+## 3. El tutor del Campamento
 
 Tres tablas que guardan la conversación de una tarea. La sesión y los mensajes cuelgan de `tasks` y se borran con ella.
 
@@ -505,7 +488,7 @@ Todos los campos con opciones fijas, en un solo lugar. Cambiarlos es tocar el `C
 | --- | --- | --- |
 | `users` | `role` | `user`, `admin` |
 | `tasks` | `task_kind` | `daily`, `project` |
-| `tasks` | `status` | `pending`, `in_progress`, `studying`, `done` |
+| `tasks` | `status` | `pending`, `studying`, `done` |
 | `study_sessions` | `tutor_phase` | `understanding`, `practicing`, `reviewing` |
 | `study_mission_sessions` | `tutor_phase` | `understanding`, `practicing`, `reviewing` |
 | `study_messages` | `role` | `user`, `assistant` |
@@ -559,7 +542,7 @@ Hay variantes por entorno (`db:migrate:qa`, `db:migrate:pd`), que solo cambian e
 
 **Cambios futuros:** un archivo nuevo `NNN_motivo.ts` que altera la base existente, y otra vez `db:migrate`. No se edita `001_baseline.ts` ni una migración ya aplicada.
 
-Sobre una base vacía, `001_baseline.ts` arma el esquema actual (tablas, índices, triggers, roles, dificultades, presets) y las semillas: admin `Sebastian` / `123456`, explorador `Seroven` / `123456` con materias de primaria, guardián `Claudia` / `123456` vinculada, y ~6 tripulaciones con exploradores de distinto nivel/XP (password común `123456`). Si la base ya tenía ese esquema por las migraciones anteriores, el runner marca `001_baseline.ts` como aplicada y no recrea las tablas.
+Sobre una base vacía, `001_baseline.ts` arma la foto inicial (tablas, índices, triggers, roles, difficulties, presets) y las semillas: admin `Sebastian` / `123456`, explorador `Seroven` / `123456` con materias de primaria, guardián `Claudia` / `123456` vinculada, y ~6 tripulaciones con exploradores de distinto nivel/XP (password común `123456`). `002_campamento_list.ts` pasa el Campamento a lista del día (`needs_help`, tres estados, sin `difficulties` ni `board_order`/`study_passed`). Si la base ya tenía el baseline, el runner lo marca aplicado y solo suma los archivos nuevos.
 
 `npm run db:reset` (en pd/qa, con `--yes`) hace `DROP SCHEMA taskia CASCADE` y vuelve a correr las migraciones. Sirve para vaciar una base desechable, no para aplicar un cambio de columna.
 

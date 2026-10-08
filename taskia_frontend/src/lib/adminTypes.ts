@@ -65,7 +65,6 @@ export interface ParentExplorerOverview {
   } | null
   tasks: {
     pending: number
-    in_progress: number
     studying: number
     done: number
     overdue: number
@@ -104,7 +103,7 @@ export interface AdminTaskRow {
   title: string
   status: string
   due_date: string
-  study_passed: boolean
+  needs_help: boolean
   course_id: number
   course_name: string
   created_at: string
@@ -231,7 +230,6 @@ export interface AdminDashboard {
   tasks: {
     total: number
     pending: number
-    in_progress: number
     studying: number
     done: number
     overdue: number
@@ -311,7 +309,6 @@ export interface AdminOverview {
   tasks: {
     total: number
     pending: number
-    in_progress: number
     studying: number
     done: number
     overdue: number

@@ -10,7 +10,6 @@ router.use(requireStudent)
 router.get('/', taskController.list)
 router.post('/', taskController.create)
 router.patch('/:id', taskController.update)
-router.post('/move', taskController.move)
-router.post('/reorder', taskController.reorder)
+router.post('/:id/complete', taskController.complete)
 
 export default router

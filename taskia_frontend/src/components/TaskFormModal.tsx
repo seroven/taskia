@@ -1,7 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { NotePencil, Plus } from '@phosphor-icons/react'
 import { errorMessage } from '../lib/errors'
-import type { Course, Difficulty, TaskKind } from '../types'
+import type { Course, TaskKind } from '../types'
 import { todayISO } from '../types'
 import { DateField } from './ui/DateField'
 import { TextAreaField, TextField } from './ui/Field'
@@ -11,61 +11,36 @@ import { SelectField } from './ui/SelectField'
 interface Props {
   open: boolean
   courses: Course[]
-  difficulties: Difficulty[]
   onClose: () => void
   onCreate: (input: {
     title: string
     description?: string
     course_id: number
-    difficulty_id: number
+    needs_help: boolean
     task_kind: TaskKind
     due_date?: string
   }) => Promise<void>
 }
 
-export function TaskFormModal({
-  open,
-  courses,
-  difficulties,
-  onClose,
-  onCreate,
-}: Props) {
+export function TaskFormModal({ open, courses, onClose, onCreate }: Props) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [courseId, setCourseId] = useState('')
-  const [difficultyId, setDifficultyId] = useState('')
+  const [needsHelp, setNeedsHelp] = useState(false)
   const [taskKind, setTaskKind] = useState<TaskKind>('daily')
   const [dueDate, setDueDate] = useState(todayISO())
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-
-  useEffect(() => {
-    if (!open) return
-    if (!difficultyId && difficulties.length > 0) {
-      const medium =
-        difficulties.find((item) => item.code === 'medium') ?? difficulties[0]
-      setDifficultyId(String(medium.id))
-    }
-  }, [open, difficulties, difficultyId])
 
   const courseOptions = courses.map((course) => ({
     value: String(course.id),
     label: course.name,
   }))
 
-  const difficultyOptions = difficulties.map((item) => ({
-    value: String(item.id),
-    label: item.name,
-  }))
-
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     if (!courseId) {
       setError('Selecciona un curso')
-      return
-    }
-    if (!difficultyId) {
-      setError('Elige un nivel')
       return
     }
     if (taskKind === 'project' && !dueDate) {
@@ -79,14 +54,14 @@ export function TaskFormModal({
         title,
         description: description.trim() || undefined,
         course_id: Number(courseId),
-        difficulty_id: Number(difficultyId),
+        needs_help: needsHelp,
         task_kind: taskKind,
         due_date: taskKind === 'project' ? dueDate : undefined,
       })
       setTitle('')
       setDescription('')
       setCourseId('')
-      setDifficultyId('')
+      setNeedsHelp(false)
       setTaskKind('daily')
       setDueDate(todayISO())
       onClose()
@@ -135,7 +110,8 @@ export function TaskFormModal({
         />
 
         <TextAreaField
-          label="Descripción"
+          label="Detalle"
+          hint="si quieres"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
@@ -150,14 +126,17 @@ export function TaskFormModal({
           onChange={setCourseId}
         />
 
-        <SelectField
-          label="Nivel"
-          value={difficultyId}
-          options={difficultyOptions}
-          placeholder="Selecciona…"
-          required
-          onChange={setDifficultyId}
-        />
+        <label className="worlds-switch-row camp-help-switch">
+          <input
+            type="checkbox"
+            checked={needsHelp}
+            onChange={(e) => setNeedsHelp(e.target.checked)}
+          />
+          <span>
+            <strong className="worlds-switch-label">¿Quieres que Taskia te ayude con esta?</strong>
+            <span className="muted"> Si marcas sí, estudiarás con Taskia hasta que quede lista.</span>
+          </span>
+        </label>
 
         {taskKind === 'daily' ? (
           <p className="kind-hint">

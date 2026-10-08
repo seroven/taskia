@@ -21,10 +21,6 @@ export const update = asyncHandler(async (req, res) => {
   )
 })
 
-export const move = asyncHandler(async (req, res) => {
-  res.json(await taskService.moveTask(req.user!.id, req.body))
-})
-
-export const reorder = asyncHandler(async (req, res) => {
-  res.json(await taskService.reorderTasks(req.user!.id, req.body))
+export const complete = asyncHandler(async (req, res) => {
+  res.json(await taskService.completeTask(req.user!.id, Number(req.params.id)))
 })
