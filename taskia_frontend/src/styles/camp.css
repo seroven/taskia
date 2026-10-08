@@ -284,7 +284,7 @@
 }
 
 
-/* Lista del día (Campamento) */
+/* Lista del dÃ­a (Campamento) */
 .camp-shell > .topbar {
   flex-shrink: 0;
 }
@@ -503,7 +503,7 @@
   align-items: center;
   gap: 6px;
   padding: 0 18px;
-  background: #16a34a;
+  background: var(--accent);
   color: #fff;
   font-weight: 800;
   pointer-events: none;
@@ -540,8 +540,8 @@
 }
 
 .camp-check.is-done {
-  border-color: #16a34a;
-  background: #16a34a;
+  border-color: var(--accent);
+  background: var(--accent);
   color: #fff;
   cursor: default;
 }
@@ -609,8 +609,8 @@
 }
 
 .camp-chip-done {
-  background: color-mix(in srgb, #16a34a 16%, transparent);
-  color: #15803d;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .camp-row-cta {
@@ -696,6 +696,3 @@
   }
 }
 
-html[data-theme='dark'] .camp-chip-done {
-  color: #86efac;
-}
