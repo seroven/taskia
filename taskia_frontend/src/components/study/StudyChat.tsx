@@ -38,6 +38,8 @@ interface Props {
   phase: TutorPhase | string
   sending: boolean
   error: string | null
+  /** Tarea ya lista: se ve el hilo, sin enviar ni Hablar. */
+  readOnly?: boolean
   onThreadEl?: (el: HTMLDivElement | null) => void
   onSend: (
     message: string,
@@ -354,12 +356,13 @@ export function StudyChat({
   phase,
   sending,
   error,
+  readOnly = false,
   onThreadEl,
   onSend,
   onVoiceTurn,
 }: Props) {
   const voiceDock = useVoiceDock()
-  const voiceEnabled = true
+  const voiceEnabled = !readOnly
   const [draft, setDraft] = useState('')
   const [fromVoiceDraft, setFromVoiceDraft] = useState(false)
   const [photoData, setPhotoData] = useState<string | null>(null)
@@ -1053,6 +1056,9 @@ export function StudyChat({
         <p className="form-error">{error ?? photoError}</p>
       )}
 
+      {readOnly ? (
+        <p className="muted study-chat-readonly">Esta ya está lista. Puedes leer el chat, pero no enviar más mensajes.</p>
+      ) : (
       <form className="study-chat-form" onSubmit={(e) => void onSubmit(e)} onPaste={onPastePhoto}>
         {voiceEnabled && (
           <div className="study-voice-bar">
@@ -1159,6 +1165,7 @@ export function StudyChat({
         </button>
         </div>
       </form>
+      )}
       </div>
 
       {zoomSrc

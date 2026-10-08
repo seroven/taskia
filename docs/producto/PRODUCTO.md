@@ -57,7 +57,8 @@ Al crear o editar elige materia, tipo (diaria o proyecto), título/descripción 
 ### Cierre y XP
 
 - **Sin ayuda:** el niño marca Listo (botón o swipe) y gana **10 XP**.
-- **Con ayuda:** al abrir estudio pasa a Con Taskia; cuando Taskia celebra el cierre, la tarea pasa a Listo sola y el XP sale de un `effort` corto (**40–200**). El niño no marca Listo a mano.
+- **Diaria con ayuda:** al abrir estudio pasa a Con Taskia; cuando Taskia celebra el cierre, pasa a Listo sola (XP **40–200**). El niño no marca Listo a mano.
+- **Proyecto con ayuda:** briefing primero; Taskia guía y no cierra sola. El niño confirma el fin (chat o Listo). XP **80–350**.
 
 ---
 
@@ -104,7 +105,7 @@ Se pueden **traer misiones** de otro mundo que use el mismo curso. Se copia el t
 
 Es la misma Taskia (chat y voz), también si el tema es práctico, pero el objetivo es otro: cubrir el **tema entero**, no una consigna suelta.
 
-El primer mensaje del alumno es el relato de su cuaderno. Ese relato queda fijo: Taskia lo ve en cada turno y no debe preguntar cosas que no estén ahí. El resumen corto de la conversación sigue actualizándose aparte.
+Antes de enseñar hay un **briefing**: el alumno cuenta lo del cuaderno; Taskia pregunta si falta algo; cuando el niño dice que ya pueden empezar, ese relato queda fijo en `notebook_context`. Taskia lo ve en cada turno y no debe preguntar cosas que no estén ahí. El resumen corto de la conversación sigue actualizándose aparte.
 
 El recorrido que Taskia debe respetar:
 

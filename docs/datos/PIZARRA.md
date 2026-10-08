@@ -15,7 +15,7 @@ Si pide un ejercicio nuevo, una pasada corta (`needsGraphic`) mira el referente:
 - Si hace falta figura, tabla o dibujo, no se genera nada. El chat dice: «Ese ejercicio lleva un dibujo y yo no puedo armarlo. Si me mandas la foto de uno parecido, te ayudo con gusto.»
 - Si basta con texto o números, el tutor lo escribe en el mensaje.
 
-El dominio del estudio es el del chat: piso de turnos y «Errores: N». El de la misión es el del cuaderno: diez turnos y «Errores: N».
+El dominio de la **diaria** es el del chat: piso `6 + Errores`. El **proyecto** y la **misión** usan briefing + piso `10 + Errores` y pregunta de cierre en hitos; el proyecto lo cierra el niño.
 
 ## Desafío
 

@@ -16,6 +16,14 @@ export class StudySession {
   @Column({ type: 'text' })
   contextSummary!: string
 
+  /** Relato del proyecto (briefing). Fijo cuando briefing_ready. */
+  @Column({ type: 'text', default: '' })
+  notebookContext!: string
+
+  /** false = aún reunindo el brief; true = ya pueden estudiar/guiar. */
+  @Column({ type: 'boolean', default: false })
+  briefingReady!: boolean
+
   @Column({ type: 'int', default: 0 })
   hintsLevel!: number
 

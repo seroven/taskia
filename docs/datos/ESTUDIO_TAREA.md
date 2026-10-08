@@ -4,18 +4,38 @@ Un turno de chat cuando el niño estudia una tarea. El estudio es solo conversac
 
 El modelo es `GEMINI_MODEL`. La misma API key. No hay modelo de imagen.
 
+## Diaria vs proyecto
+
+| | Diaria (`daily`) | Proyecto (`project`) |
+| --- | --- | --- |
+| Briefing | No | Sí: acumula `notebook_context` hasta `briefing_ready` |
+| Quién cierra | Taskia (`passed`) | El niño (chat en hito o Listo) |
+| Piso de dominio | `6 + Errores` | `10 + Errores` + `Cierre: preguntado` |
+| XP con ayuda | 40–200 | 80–350 |
+
 ## Qué entra en el turno
 
 `POST /study/:taskId/chat` manda el mensaje, si vino por voz, y la foto de este turno si la hay.
 
 No se manda una escena ni un dibujo. La foto del cuaderno se sube a Cloudinary y su URL queda en el mensaje.
 
-## Llamadas, en orden
+## Briefing (proyecto)
+
+Mientras `briefing_ready` es false:
+
+1. Se acumula el mensaje del niño en `notebook_context`.
+2. Taskia resume y pregunta si falta algo o ya pueden empezar.
+3. Sin ejercicios ni `passed`.
+4. Cuando el niño confirma el inicio → `briefing_ready = true` y el relato queda fijo.
+
+La misión hace lo mismo en `study_mission_sessions`.
+
+## Llamadas, en orden (tras el briefing / en diarias)
 
 1. Intención (`board_intent`). Sirve para notar «dame un ejercicio» aunque no haya foto.
 2. Desarrollo privado (`board_facts`), solo si la intención dijo ayuda, revisión o ejercicio nuevo, y todavía no hay `exercise_brief` (o la foto es un ejercicio distinto). Resuelve el procedimiento y el resultado. No se le muestra al navegador. Los turnos siguientes no reenvían esa foto: usan el texto guardado. Si las tres marcas salieron en falso, la foto la ve el tutor en ese turno y no se guarda como desarrollo.
 3. ¿Hace falta gráfica? (`board_facts`), solo si pidió un ejercicio nuevo. Es un sí o un no, con pensamiento mínimo. Mira el referente escrito o la foto que subió el niño.
-4. El tutor (`task_tutor` en una tarea, `mission_tutor` en una misión). Una sola llamada de texto. El niño puede escuchar ese texto con `POST /study/speak` (`speak`, modelo `GEMINI_TTS_MODEL`). No se lee el desarrollo privado.
+4. El tutor (`task_tutor` en una diaria, prompt de proyecto si es proyecto, `mission_tutor` en una misión). Una sola llamada de texto. El niño puede escuchar ese texto con `POST /study/speak` (`speak`, modelo `GEMINI_TTS_MODEL`). No se lee el desarrollo privado.
 
 El botón Hablar, cuando la página alcanza, estira el círculo desde la izquierda y corre el chat a la derecha; el conjunto queda centrado. El chat sigue a la vista. Si no cabe, el chat se oculta y el micrófono parte al tocar el círculo, sin tope de tiempo. Usa las tres llamadas que ya existen: `POST /study/transcribe`, el chat de la tarea o la misión (el texto queda en el historial) y `POST /study/speak` sobre la respuesta guardada. En la vista estrecha los globos flotan abajo y se desvanecen antes de tapar el círculo. Una foto elegida ahí, o pegada con Ctrl+V, no se envía sola: va con el siguiente turno hablado. Al volver al hilo, esos turnos ya están escritos.
 
@@ -27,6 +47,8 @@ El botón Hablar, cuando la página alcanza, estira el círculo desde la izquier
 
 ## Dominio
 
-`study_eval.passed` solo si está en `reviewing`, el niño ya mandó al menos `6 + Errores` turnos, respondió de verdad y no se le dictó la solución. No se pregunta si quiere otro tipo. Si ya cumple, Taskia celebra el cierre y el servidor marca la tarea Listo en ese turno.
+**Diaria:** `study_eval.passed` solo si está en `reviewing`, el niño ya mandó al menos `6 + Errores` turnos, respondió de verdad y no se le dictó la solución. Si ya cumple, Taskia celebra el cierre y el servidor marca la tarea Listo en ese turno.
+
+**Proyecto:** Taskia no cierra sola. Tras piso `10 + Errores` y un hito, pregunta si dan por terminado (`Cierre: preguntado`, `passed=false`). `passed=true` solo si el niño confirma. También puede marcar Listo en la UI (`POST /tasks/:id/complete`).
 
 El texto visible es `speak_to_child`. Se le quitan los `$` de fórmula. No se le pega un título de ejercicio. Solo al terminar un ejercicio, Taskia invita una vez a ver cómo lo resolvió, sin pedir la foto. En el chat y en los desafíos, `3/4` se dibuja como fracción y `2^4` como potencia. El texto guardado no cambia.

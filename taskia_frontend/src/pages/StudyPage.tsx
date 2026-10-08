@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft } from '@phosphor-icons/react'
+import { ArrowLeft, Check } from '@phosphor-icons/react'
 import { api } from '../api'
 import { AppLoader } from '../components/AppLoader'
 import { StudyChat } from '../components/study/StudyChat'
@@ -13,7 +13,7 @@ import {
 import { mergeXpIntoUser, xpToastCopy } from '../lib/xp'
 import { useAuth } from '../auth'
 import { useToast } from '../toast'
-import { canOpenStudyMode, type Course, type Task } from '../types'
+import { canOpenStudyMode, canViewStudySession, type Course, type Task } from '../types'
 
 interface Props {
   taskId: number
@@ -32,6 +32,8 @@ export function StudyPage({ taskId, onBack }: Props) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [chatError, setChatError] = useState<string | null>(null)
+  const [completing, setCompleting] = useState(false)
+  const readOnly = task?.status === 'done'
 
   useEffect(() => {
     void (async () => {
@@ -66,10 +68,13 @@ export function StudyPage({ taskId, onBack }: Props) {
     setPhase(result.reply.phase)
     if (result.task) setTask(result.task)
     if (result.study_passed && task?.status !== 'done') {
+      const isProject = (result.task ?? task)?.task_kind === 'project'
       showToast({
         tone: 'success',
-        title: '¡Tarea lista!',
-        subtitle: 'Taskia confirma que ya la entiendes.',
+        title: isProject ? '¡Proyecto listo!' : '¡Tarea lista!',
+        subtitle: isProject
+          ? 'Confirmaste con Taskia que el proyecto quedó terminado.'
+          : 'Taskia confirma que ya la entiendes.',
       })
     }
     if (result.xp && result.xp_gained && result.xp_gained > 0) {
@@ -87,6 +92,10 @@ export function StudyPage({ taskId, onBack }: Props) {
       photoBase64?: string | null
     },
   ) {
+    if (task?.status === 'done') {
+      setChatError('Esta tarea ya está lista. Solo puedes leer el chat.')
+      return
+    }
     setSending(true)
     setChatError(null)
     try {
@@ -115,6 +124,10 @@ export function StudyPage({ taskId, onBack }: Props) {
     durationSeconds: number
     photoBase64: string | null
   }) {
+    if (task?.status === 'done') {
+      setChatError('Esta tarea ya está lista. Solo puedes leer el chat.')
+      throw new Error('Esta tarea ya está lista. Solo puedes leer el chat.')
+    }
     setSending(true)
     setChatError(null)
     try {
@@ -187,28 +200,66 @@ export function StudyPage({ taskId, onBack }: Props) {
           </div>
         </div>
         <div className="study-header-actions">
-          <div className="study-mode-toggle" role="group" aria-label="Modo">
+          {task.task_kind === 'project' && task.status !== 'done' ? (
             <button
               type="button"
-              className={mode === 'study' ? 'active' : ''}
-              onClick={() => setMode('study')}
+              className="primary"
+              disabled={completing}
+              onClick={() => {
+                void (async () => {
+                  setCompleting(true)
+                  setError(null)
+                  try {
+                    const result = await api.completeTask(task.id)
+                    setTask(result)
+                    if (result.xp && result.xp_gained && result.xp_gained > 0) {
+                      const next = mergeXpIntoUser(user, result.xp)
+                      if (next) setUser(next)
+                      const copy = xpToastCopy(result.xp_gained)
+                      if (copy) showToast({ tone: 'success', ...copy })
+                    }
+                    showToast({
+                      tone: 'success',
+                      title: '¡Proyecto listo!',
+                      subtitle: 'Lo marcaste como terminado.',
+                    })
+                    onBack()
+                  } catch (err) {
+                    setError(errorMessage(err))
+                  } finally {
+                    setCompleting(false)
+                  }
+                })()
+              }}
             >
-              Estudiar
+              <Check size={16} weight="bold" />
+              {completing ? 'Guardando…' : '¡Listo!'}
             </button>
-            <button
-              type="button"
-              className={mode === 'edit' ? 'active' : ''}
-              onClick={() => setMode('edit')}
-            >
-              Editar
-            </button>
-          </div>
+          ) : null}
+          {!readOnly ? (
+            <div className="study-mode-toggle" role="group" aria-label="Modo">
+              <button
+                type="button"
+                className={mode === 'study' ? 'active' : ''}
+                onClick={() => setMode('study')}
+              >
+                Estudiar
+              </button>
+              <button
+                type="button"
+                className={mode === 'edit' ? 'active' : ''}
+                onClick={() => setMode('edit')}
+              >
+                Editar
+              </button>
+            </div>
+          ) : null}
         </div>
       </header>
 
       <div className="study-body">
       <AnimatePresence mode="wait">
-        {mode === 'edit' ? (
+        {mode === 'edit' && !readOnly ? (
           <motion.div
             key="edit"
             className="study-edit-layout"
@@ -223,7 +274,7 @@ export function StudyPage({ taskId, onBack }: Props) {
               onSave={async (input) => {
                 const updated = await api.updateTask(input)
                 setTask(updated)
-                if (!canOpenStudyMode(updated)) {
+                if (!canViewStudySession(updated) && !canOpenStudyMode(updated)) {
                   onBack()
                 }
                 return updated
@@ -244,6 +295,7 @@ export function StudyPage({ taskId, onBack }: Props) {
               phase={phase}
               sending={sending}
               error={chatError}
+              readOnly={readOnly}
               onSend={onSend}
               onVoiceTurn={onVoiceTurn}
             />

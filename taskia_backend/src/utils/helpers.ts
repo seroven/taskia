@@ -168,3 +168,50 @@ export function looksLikeAskingMoreTopicContent(text: string): boolean {
     )
   return mentionsMore && looksQuestion
 }
+
+/** Proyecto: el tutor pregunta si dan por terminado el proyecto. */
+export function looksLikeAskingProjectFinished(text: string): boolean {
+  const t = text.toLowerCase()
+  const mentionsFinish =
+    /das por terminado|da por terminado|dar por terminado|proyecto terminado|terminar el proyecto|listo el proyecto|ya terminaste el proyecto|con esto alcanza|hay algo m[aá]s|queda algo (m[aá]s )?por|falta algo (m[aá]s )?del proyecto/.test(
+      t,
+    )
+  const looksQuestion =
+    /[¿?]/.test(t) ||
+    /te gustaría|quieres|dime si|cuéntame si|cuentame si|confirmas/.test(t)
+  return mentionsFinish && looksQuestion
+}
+
+/**
+ * El niño confirma que ya pueden empezar tras el briefing
+ * (sin mínimo de turnos: basta esta señal).
+ */
+export function looksLikeReadyToStartBriefing(text: string): boolean {
+  const t = text.toLowerCase().trim()
+  if (!t) return false
+  if (
+    /(?:ya\s+)?(?:podemos|pueden|podemos ya)\s+(?:empezar|comenzar|iniciar)/.test(t) ||
+    /(?:ya\s+)?(?:empecemos|empecemos|comencemos|empecemos ya|listo para (?:empezar|comenzar|estudiar))/.test(
+      t,
+    ) ||
+    /(?:eso\s+es\s+todo|no\s+falta\s+nada|no\s+hay\s+m[aá]s|ya\s+est[aá]|nada\s+m[aá]s)\b/.test(t) ||
+    /^(?:empecemos|comencemos|adelante|dale|ok(?:ay)?,\s*empecemos)\b/.test(t)
+  ) {
+    return true
+  }
+  return false
+}
+
+/** El niño declina más trabajo / confirma cierre (proyecto o tema). */
+export function looksLikeDecliningMoreWork(text: string): boolean {
+  const t = text.toLowerCase().trim()
+  if (!t) return false
+  return (
+    /^(?:no|nop|nope)\b/.test(t) ||
+    /no\s+(?:hay|queda|falta)\s+(?:m[aá]s|nada)/.test(t) ||
+    /(?:ya\s+)?(?:est[aá]|termin[eé]|acab[eé]|listo)\b/.test(t) ||
+    /eso\s+es\s+todo|nada\s+m[aá]s|con\s+eso\s+(?:basta|alcanza)|dalo\s+por\s+terminado|d[eé]jalo\s+(?:listo|terminado)/.test(
+      t,
+    )
+  )
+}

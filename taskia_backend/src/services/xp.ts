@@ -8,9 +8,12 @@ export const PRODUCT_TZ = 'America/Lima'
 
 export const XP_PER_LEVEL = 1000
 export const XP_TASK_DONE_SIMPLE = 10
-/** XP de estudio con Taskia: effort 1–100 → este rango. */
+/** XP de estudio con Taskia (tarea diaria): effort 1–100 → este rango. */
 export const XP_TASK_STUDY_MIN = 40
 export const XP_TASK_STUDY_MAX = 200
+/** XP de proyecto con Taskia: effort 1–100 → este rango (más alto: más complejo). */
+export const XP_PROJECT_STUDY_MIN = 80
+export const XP_PROJECT_STUDY_MAX = 350
 export const MAX_TASKS_CREATED_PER_DAY = 20
 
 export type XpSourceType =
@@ -90,6 +93,15 @@ export function xpForTaskStudy(effortScore: number): number {
   return Math.max(
     XP_TASK_STUDY_MIN,
     Math.min(XP_TASK_STUDY_MAX, Math.round(XP_TASK_STUDY_MIN + (span * effort) / 100)),
+  )
+}
+
+export function xpForProjectStudy(effortScore: number): number {
+  const effort = Math.min(100, Math.max(1, Math.round(effortScore)))
+  const span = XP_PROJECT_STUDY_MAX - XP_PROJECT_STUDY_MIN
+  return Math.max(
+    XP_PROJECT_STUDY_MIN,
+    Math.min(XP_PROJECT_STUDY_MAX, Math.round(XP_PROJECT_STUDY_MIN + (span * effort) / 100)),
   )
 }
 

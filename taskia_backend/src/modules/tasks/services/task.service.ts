@@ -1,5 +1,11 @@
 import { AppError } from '../../../shared/errors/app-error.js'
-import { assertCanCreateTask, maybeAwardTaskDoneXp } from '../../../services/xp.js'
+import { scoreTaskEffort } from '../../../services/score-task-effort.js'
+import {
+  assertCanCreateTask,
+  awardXp,
+  maybeAwardTaskDoneXp,
+  xpForProjectStudy,
+} from '../../../services/xp.js'
 import {
   parseDueOn,
   parseInstant,
@@ -9,6 +15,7 @@ import {
   resolveDueDate,
 } from '../schemas/task.schema.js'
 import * as tasks from '../repositories/task.repository.js'
+import { loadContext } from '../../study/repositories/study.repository.js'
 
 async function requireTask(taskId: number, userId: number) {
   const task = await tasks.findTask(taskId, userId)
@@ -117,18 +124,62 @@ export async function updateTask(
   return requireTask(taskId, userId)
 }
 
-/** Marca Listo una tarea sin ayuda de Taskia. */
+/**
+ * Marca Listo.
+ * - Diaria sin ayuda / proyecto sin ayuda: 10 XP.
+ * - Diaria con ayuda: bloqueada (la cierra Taskia).
+ * - Proyecto con ayuda: permitido desde pending o studying; XP 80–350.
+ */
 export async function completeTask(userId: number, taskId: number) {
   const current = await requireTask(taskId, userId)
   if (current.status === 'done') return current
-  if (current.needs_help) {
+
+  const isProject = current.task_kind === 'project'
+  if (current.needs_help && !isProject) {
     throw new AppError('Esta tarea la termina Taskia cuando ya la entiendas')
   }
-  if (current.status !== 'pending') {
+  if (!isProject && current.status !== 'pending') {
     throw new AppError('Solo puedes marcar como lista una tarea por hacer')
   }
+  if (isProject && current.status !== 'pending' && current.status !== 'studying') {
+    throw new AppError('Solo puedes marcar como listo un proyecto en marcha')
+  }
+
   const affected = await tasks.setTaskStatus(taskId, userId, 'done')
   if (affected === 0) throw new AppError('Tarea no encontrada', 404)
+
+  if (isProject && current.needs_help) {
+    let evidence = 'Proyecto marcado Listo por el explorador'
+    let userTurns = 0
+    let topicSummary = current.title
+    try {
+      const session = await loadContext(taskId)
+      userTurns = session.messages.filter((m) => m.role === 'user').length
+      topicSummary = session.topic_summary || current.title
+      if (session.context_summary.trim()) {
+        evidence = session.context_summary.slice(0, 240)
+      }
+    } catch {
+      /* sin sesión: effort conservador */
+    }
+    const effort = await scoreTaskEffort({
+      userId,
+      evidence,
+      userTurns,
+      topicSummary,
+    })
+    const xp = await awardXp({
+      userId,
+      sourceType: 'task_study',
+      sourceId: taskId,
+      amount: xpForProjectStudy(effort),
+      effortScore: effort,
+      reason: evidence || 'Proyecto listo',
+    })
+    const task = await requireTask(taskId, userId)
+    return { ...task, xp_gained: xp.xp_gained, xp }
+  }
+
   const xp = await maybeAwardTaskDoneXp({
     userId,
     taskId,

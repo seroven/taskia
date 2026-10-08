@@ -1,6 +1,6 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { ArrowRight, BookOpenText, Check, LockSimple } from '@phosphor-icons/react'
-import { canOpenStudyMode, type Task } from '../types'
+import { canOpenStudyMode, canViewStudySession, type Task } from '../types'
 
 const SWIPE_LIMIT = 140
 const SWIPE_THRESHOLD = 88
@@ -35,9 +35,13 @@ function courseAccent(courseId: number) {
 
 export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Props) {
   const done = task.status === 'done'
-  const locked = task.needs_help && !done
-  const canSwipe = !task.needs_help && !done
+  const isProject = task.task_kind === 'project'
+  /** Solo las diarias con ayuda quedan bloqueadas; el proyecto puede marcar Listo. */
+  const locked = task.needs_help && !isProject && !done
+  const canSwipe = !done && (!task.needs_help || isProject)
   const canStudy = canOpenStudyMode(task)
+  const canViewStudy = canViewStudySession(task)
+  const canMarkReady = !done && !locked
   const kindLabel = task.task_kind === 'project' ? 'Proyecto' : 'Del día'
   const color = courseAccent(task.course_id)
   const [dx, setDx] = useState(0)
@@ -47,13 +51,14 @@ export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Pro
   const active = useRef(false)
   const horizontal = useRef(false)
   const ignoreClick = useRef(false)
+  const actionLabel = canStudy ? (task.status === 'studying' ? 'Seguir' : 'Estudiar') : 'Ver chat'
 
   function onCard() {
     if (ignoreClick.current) {
       ignoreClick.current = false
       return
     }
-    if (canStudy) onStudy(task)
+    if (canViewStudy) onStudy(task)
     else onOpen(task)
   }
 
@@ -129,9 +134,9 @@ export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Pro
               ? 'Taskia la marca cuando terminen'
               : 'Marcar lista'
         }
-        aria-disabled={done || locked}
+        aria-disabled={!canMarkReady}
         onClick={() => {
-          if (done || locked) return
+          if (!canMarkReady) return
           onComplete(task)
         }}
       >
@@ -165,11 +170,11 @@ export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Pro
           ¡Listo!
         </button>
       ) : null}
-      {!featured && !done ? (
+      {!featured && (!done || canViewStudy) ? (
         <button
           type="button"
           className="camp-row-hint"
-          aria-label={canStudy ? actionLabel : 'Abrir tarea'}
+          aria-label={canViewStudy ? (canStudy ? actionLabel : 'Ver chat') : 'Abrir tarea'}
           onClick={onCard}
         >
           <ArrowRight size={18} weight="bold" />

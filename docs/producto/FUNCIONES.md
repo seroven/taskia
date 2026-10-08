@@ -304,8 +304,9 @@ La tarea nueva aparece en **Por hacer**.
 
 ### Sin ayuda vs con ayuda
 
-- **Sin ayuda:** el niño marca Listo con el círculo o el botón de la primera tarjeta. Gana **10 XP**.
-- **Con ayuda:** Por hacer → Con Taskia (al abrir estudio) → Listo **en el mismo turno** en que Taskia celebra el cierre (`study_eval.passed`). El niño **no** tiene botón Listo. El servidor pide un `effort` corto (1–100) y otorga XP entre **40 y 200**.
+- **Sin ayuda** (del día o proyecto): el niño marca Listo con el círculo o el botón. Gana **10 XP**.
+- **Tarea del día con ayuda:** Por hacer → Con Taskia → Listo **en el mismo turno** en que Taskia celebra el cierre. El círculo queda bloqueado. XP **40–200**.
+- **Proyecto con ayuda:** Taskia guía (primero un briefing: qué quiere hacer; solo arranca cuando el niño dice que ya pueden empezar). **No** cierra sola. En hitos pregunta si dan por terminado; el niño confirma en el chat o marca Listo (círculo, swipe o botón en el estudio). XP **80–350**.
 
 ---
 
@@ -399,7 +400,8 @@ Sirve cuando el objetivo no es “terminar la hoja de hoy”, sino “dejar bien
 
 La sensación es parecida al estudio de una tarea (chat, fases y voz), pero el objetivo es otro: **cubrir el tema completo**, no solo un ejercicio suelto. También si el tema es práctico.
 
-- Suele empezar con el relato del **cuaderno** (lo que el niño sabe o trae anotado). Ese relato es la base: Taskia no debería preguntar datos que no estén ahí o en el título/descripción.
+- **Briefing:** el niño cuenta lo del cuaderno; Taskia pregunta si falta algo. Solo cuando dice que ya pueden empezar se congela ese relato y arranca el estudio. Sin mínimo de turnos en esta etapa.
+- Ese relato fijo es la base: Taskia no debería preguntar datos que no estén ahí o en el título/descripción.
 - El recorrido buscado: lo **básico** → que lo **explique** → **observación** (detalles, causas, “¿qué pasaría si…?”, un ejemplo propio).
 - El listón es más alto que en una tarea típica (más práctica conversada; los errores alargan el camino).
 - Antes de marcar dominio, Taskia pregunta si queda **más contenido** de ese tema por estudiar; solo cierra si el niño dice que no.
@@ -561,7 +563,7 @@ Las **materias** son el puente: sin ellas no hay tareas ni cursos dentro de mund
 | Resumen automático del día para ese chat | Aún no se genera solo; el asistente lo dice si falta |
 | Preferencias WhatsApp | Se guardan |
 | Envío real de WhatsApp | Aún no |
-| Lista del día / cierre con Taskia | Activo en el Campamento (`needs_help`, auto-Listo) |
+| Lista del día / cierre con Taskia | Activo: diaria auto-Listo; proyecto cierra el niño (chat o Listo) |
 | Hub Tripulación | Visible y cerrada (aviso de que se está armando) |
 | Hub Mundos / Campamento | Activo |
 | Nivel, XP y tripulación | Activos (ranking semanal, Guardián solo lectura) |

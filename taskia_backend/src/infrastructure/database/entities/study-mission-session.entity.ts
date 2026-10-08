@@ -19,6 +19,10 @@ export class StudyMissionSession {
   @Column({ type: 'text', default: '' })
   notebookContext!: string
 
+  /** false = aún reunindo el brief; true = ya pueden estudiar el tema. */
+  @Column({ type: 'boolean', default: false })
+  briefingReady!: boolean
+
   @Column({ type: 'int', default: 0 })
   hintsLevel!: number
 

@@ -3,7 +3,14 @@ import { BookOpenText, NotePencil } from '@phosphor-icons/react'
 import { api } from '../api'
 import { formatDay } from '../lib/datetime'
 import { errorMessage } from '../lib/errors'
-import { todayISO, canOpenStudyMode, type Course, type Task, type TaskKind } from '../types'
+import {
+  todayISO,
+  canOpenStudyMode,
+  canViewStudySession,
+  type Course,
+  type Task,
+  type TaskKind,
+} from '../types'
 import { DateField } from './ui/DateField'
 import { TextAreaField, TextField } from './ui/Field'
 import { ModalShell } from './ui/ModalShell'
@@ -166,7 +173,7 @@ export function TaskDetailModal({ task, courses, onClose, onStudy, onSaved }: Pr
           <button type="button" className="ghost" onClick={onClose}>
             Cerrar
           </button>
-          {task && canOpenStudyMode(task) ? (
+          {task && canViewStudySession(task) ? (
             <button
               type="button"
               className="ghost"
@@ -175,7 +182,7 @@ export function TaskDetailModal({ task, courses, onClose, onStudy, onSaved }: Pr
               }}
             >
               <BookOpenText size={18} weight="fill" />
-              Estudiar
+              {canOpenStudyMode(task) ? 'Estudiar' : 'Ver chat'}
             </button>
           ) : null}
           <button

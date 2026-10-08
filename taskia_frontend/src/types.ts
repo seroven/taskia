@@ -77,9 +77,17 @@ export function localDayBoundsISO(dateStr: string): { start: string; end: string
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
-/** Solo tareas con ayuda de Taskia, aún no listas. */
+/** Estudio activo: con ayuda y aún no lista. */
 export function canOpenStudyMode(task: Pick<Task, 'status' | 'needs_help'>): boolean {
   return task.needs_help && (task.status === 'pending' || task.status === 'studying')
+}
+
+/** Ver el chat de Taskia: incluye tareas ya listas (solo lectura). */
+export function canViewStudySession(task: Pick<Task, 'status' | 'needs_help'>): boolean {
+  return (
+    task.needs_help &&
+    (task.status === 'pending' || task.status === 'studying' || task.status === 'done')
+  )
 }
 
 export function taskStudyPatch(task: Task) {

@@ -17,6 +17,8 @@ export async function ensureSession(taskId: number) {
       tutorPhase: 'understanding',
       topicSummary: '',
       contextSummary: '',
+      notebookContext: '',
+      briefingReady: false,
       hintsLevel: 0,
     })
     .orIgnore()
@@ -36,6 +38,8 @@ export async function loadContext(taskId: number) {
     tutor_phase: session.tutorPhase,
     topic_summary: session.topicSummary,
     context_summary: session.contextSummary,
+    notebook_context: String(session.notebookContext ?? ''),
+    briefing_ready: Boolean(session.briefingReady),
     hints_level: session.hintsLevel,
     exercise_brief: session.exerciseBrief ?? '',
     messages: messages.map((message) => ({
@@ -104,6 +108,8 @@ export async function saveSessionMeta(ctx: {
   topic_summary: string
   context_summary: string
   hints_level: number
+  notebook_context?: string
+  briefing_ready?: boolean
 }) {
   await AppDataSource.getRepository(StudySession).update(
     { taskId: ctx.task_id },
@@ -112,7 +118,17 @@ export async function saveSessionMeta(ctx: {
       topicSummary: ctx.topic_summary,
       contextSummary: ctx.context_summary,
       hintsLevel: ctx.hints_level,
+      ...(ctx.notebook_context !== undefined ? { notebookContext: ctx.notebook_context } : {}),
+      ...(ctx.briefing_ready !== undefined ? { briefingReady: ctx.briefing_ready } : {}),
     },
   )
+}
+
+export async function setNotebook(taskId: number, notebook: string) {
+  await AppDataSource.getRepository(StudySession).update({ taskId }, { notebookContext: notebook })
+}
+
+export async function setBriefingReady(taskId: number, ready: boolean) {
+  await AppDataSource.getRepository(StudySession).update({ taskId }, { briefingReady: ready })
 }
 

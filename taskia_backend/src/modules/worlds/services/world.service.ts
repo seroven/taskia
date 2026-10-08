@@ -5,6 +5,7 @@ import {
   callGeminiTranscribe,
   classifyBoardIntent,
 } from '../../../infrastructure/gemini/gemini.client.js'
+import { appendNotebook } from '../../../prompts/briefing.js'
 import { missionTutorPrompt } from '../../../prompts/mission-tutor.js'
 import { hideExerciseBrief, planExerciseMemory, solveExerciseBrief } from '../../exercises/exerciseBrief.js'
 import {
@@ -24,6 +25,8 @@ import {
   extractJson,
   looksLikeAskingMoreTopicContent,
   looksLikeCelebratingMissionMastered,
+  looksLikeDecliningMoreWork,
+  looksLikeReadyToStartBriefing,
   requiredChatTurns,
   stripPrematureReadyCelebration,
   truncateChars,
@@ -49,9 +52,9 @@ import {
   saveExerciseBrief,
   saveSessionGreeting,
   saveSessionMeta,
+  setBriefingReady,
   setMissionStatus,
   setNotebook,
-  setNotebookIfEmpty,
   unlinkWorldCourse,
   updateMissionFields,
   updateWorld,
@@ -76,17 +79,6 @@ async function requireMission(missionId: number, userId: number) {
   const mission = await findActiveMission(missionId, userId)
   if (!mission) throw new AppError('Misión no encontrada', 404)
   return mission
-}
-
-async function ensureNotebookContext(
-  missionId: number,
-  context: { notebook_context: string; messages: Array<{ role: string; content: string }> },
-) {
-  if (context.notebook_context.trim()) return
-  const firstUser = context.messages.find((message) => message.role === 'user')
-  if (!firstUser?.content.trim()) return
-  context.notebook_context = firstUser.content
-  await setNotebookIfEmpty(missionId, firstUser.content)
 }
 
 export async function listWorlds(userId: number) {
@@ -185,11 +177,10 @@ export async function openMissionSession(userId: number, missionId: number) {
     mission.status = 'studying'
   }
   const context = await loadMissionSession(missionId)
-  await ensureNotebookContext(missionId, context)
   if (context.messages.length === 0) {
-    const speak = `¡Hola! Antes de las preguntas, quiero conocer tu tema "${mission.title}". Cuéntame lo que dice tu cuaderno: puedes escribirlo o usar Hablar varias veces, revisar las palabras y sumarlas abajo. Cuando esté listo, envíamelo.`
+    const speak = `¡Hola! Antes de estudiar "${mission.title}", cuéntame lo que dice tu cuaderno (puedes escribir o usar Hablar). Yo te escucho y te pregunto si falta algo; cuando digas que ya podemos empezar, arrancamos.`
     context.topic_summary = mission.title
-    context.context_summary = `Inicio local. Misión: "${mission.title}".`
+    context.context_summary = `Inicio local. Misión: "${mission.title}". Briefing.`
     try {
       const msg = await insertMissionMessage(missionId, 'assistant', speak)
       context.messages.push(msg)
@@ -220,93 +211,104 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   )
   context.messages.push(userMsg)
   const userTurns = context.messages.filter((message) => message.role === 'user').length
-  if (!context.notebook_context.trim() && userTurns === 1) {
-    context.notebook_context = truncateChars(parsed.message, MAX_NOTEBOOK)
+  const inBriefing = !context.briefing_ready
+
+  if (inBriefing) {
+    context.notebook_context = appendNotebook(context.notebook_context, parsed.message, MAX_NOTEBOOK)
     await setNotebook(missionId, context.notebook_context)
-  } else {
-    await ensureNotebookContext(missionId, context)
   }
 
   const lastTutorMsg = [...context.messages].reverse().find((message) => message.role === 'assistant')
   const lastTutor = lastTutorMsg ? truncateChars(lastTutorMsg.content, 320) : ''
   const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
-  const intent = await classifyBoardIntent({
-    message: parsed.message,
-    previous: truncateChars(lastTutor, 180),
-    usage: { userId, kind: 'board_intent' },
-  })
-  const memory = planExerciseMemory({
-    help: intent.helpExercise,
-    review: intent.reviewDrawing,
-    draw: intent.drawExercise,
-    hasPhoto: Boolean(photo),
-    hasBrief: Boolean(context.exercise_brief),
-  })
-  if (memory.solve) {
-    const image =
-      photoData ??
-      (await loadReferencePhoto(
-        null,
-        context.messages.map((item) => item.image_url),
-      ))
-    const brief = await solveExerciseBrief({
-      text: parsed.message,
-      photoBase64: image,
+
+  let intent = { helpExercise: false, reviewDrawing: false, drawExercise: false }
+  let memory = { solve: false, sendPhoto: false, showMaterial: Boolean(photo) && inBriefing }
+  let exerciseTurn: ExerciseTurn = { mode: 'none' }
+  let tutorPhoto: string | null = null
+
+  if (!inBriefing) {
+    intent = await classifyBoardIntent({
+      message: parsed.message,
+      previous: truncateChars(lastTutor, 180),
+      usage: { userId, kind: 'board_intent' },
+    })
+    memory = planExerciseMemory({
+      help: intent.helpExercise,
+      review: intent.reviewDrawing,
+      draw: intent.drawExercise,
+      hasPhoto: Boolean(photo),
+      hasBrief: Boolean(context.exercise_brief),
+    })
+    if (memory.solve) {
+      const image =
+        photoData ??
+        (await loadReferencePhoto(
+          null,
+          context.messages.map((item) => item.image_url),
+        ))
+      const brief = await solveExerciseBrief({
+        text: parsed.message,
+        photoBase64: image,
+        usage: { userId, kind: 'board_facts' },
+      })
+      if (brief) {
+        context.exercise_brief = brief
+        await saveExerciseBrief(missionId, brief)
+      }
+    }
+    tutorPhoto =
+      memory.sendPhoto || memory.showMaterial || (memory.solve && !context.exercise_brief)
+        ? photoData
+        : null
+    const referencePhoto = await loadReferencePhoto(photoData, userReferencePhotos(context.messages))
+    const referenceText = exerciseReference([
+      mission.description ?? '',
+      context.notebook_context,
+      ...context.messages.filter((item) => item.role === 'user').map((item) => item.content),
+    ])
+    exerciseTurn = await planExerciseTurn({
+      draw: intent.drawExercise,
+      referenceText,
+      photoBase64: intent.drawExercise ? referencePhoto : null,
       usage: { userId, kind: 'board_facts' },
     })
-    if (brief) {
-      context.exercise_brief = brief
-      await saveExerciseBrief(missionId, brief)
-    }
+  } else if (photo) {
+    tutorPhoto = photoData
+    memory = { solve: false, sendPhoto: false, showMaterial: true }
   }
-  const tutorPhoto =
-    memory.sendPhoto || memory.showMaterial || (memory.solve && !context.exercise_brief) ? photoData : null
-  const openingRelato =
-    userTurns === 1 &&
-    context.notebook_context.trim().length > 0 &&
-    context.notebook_context === truncateChars(parsed.message, MAX_NOTEBOOK)
-  const referencePhoto = await loadReferencePhoto(photoData, userReferencePhotos(context.messages))
-  const referenceText = exerciseReference([
-    mission.description ?? '',
-    ...context.messages.filter((item) => item.role === 'user').map((item) => item.content),
-  ])
-  const exerciseTurn: ExerciseTurn = await planExerciseTurn({
-    draw: intent.drawExercise,
-    referenceText,
-    photoBase64: intent.drawExercise ? referencePhoto : null,
-    usage: { userId, kind: 'board_facts' },
-  })
 
-  let instruction =
-    'Responde breve. Enseña el tema completo (básico + observación) SOLO con notebook_context + título/descripción. Conserva ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 10+N. Pregunta todo lo posible de ese relato. Al cumplir el piso pregunta si queda más contenido (passed=false); passed=true solo si declina.'
+  let instruction = inBriefing
+    ? 'Briefing de la misión. Escucha, acumula en notebook_context, pregunta si falta algo o ya pueden empezar. Sin ejercicios ni dominio.'
+    : 'Responde breve. Enseña el tema completo (básico + observación) SOLO con notebook_context + título/descripción. Conserva ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 10+N. Pregunta todo lo posible de ese relato. Al cumplir el piso pregunta si queda más contenido (passed=false); passed=true solo si declina.'
   if (parsed.fromVoice) {
     instruction +=
       ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
   }
-  if (openingRelato) {
-    instruction += ' El relato de este turno está en notebook_context.'
+  if (!inBriefing) {
+    if (memory.showMaterial && tutorPhoto) {
+      instruction +=
+        ' La foto de este turno es material del niño, no un ejercicio. Léela y deja lo importante en context_summary.'
+    }
+    if (tutorPhoto && intent.reviewDrawing) {
+      instruction +=
+        ' El niño adjuntó una foto del cuaderno. Léela y decide si el ejercicio está bien. No es la pizarra.'
+    }
+    if (intent.reviewDrawing && !tutorPhoto) {
+      instruction +=
+        ' Pidió revisar su trabajo y no adjuntó nada. Invítalo una sola vez: "Me gustaría ver cómo lo resolviste". No digas "foto" ni "mándame".'
+    }
+    if (intent.reviewDrawing && tutorPhoto) {
+      instruction += ' Mira la foto y decide si está bien.'
+    }
+    instruction += exerciseTurnInstruction(exerciseTurn)
   }
-  if (memory.showMaterial && tutorPhoto) {
-    instruction +=
-      ' La foto de este turno es material del niño, no un ejercicio. Léela y deja lo importante en context_summary.'
-  }
-  if (tutorPhoto && intent.reviewDrawing) {
-    instruction +=
-      ' El niño adjuntó una foto del cuaderno. Léela y decide si el ejercicio está bien. No es la pizarra.'
-  }
-  if (intent.reviewDrawing && !tutorPhoto) {
-    instruction +=
-      ' Pidió revisar su trabajo y no adjuntó nada. Invítalo una sola vez: "Me gustaría ver cómo lo resolviste". No digas "foto" ni "mándame".'
-  }
-  if (intent.reviewDrawing && tutorPhoto) {
-    instruction += ' Mira la foto y decide si está bien.'
-  }
-  instruction += exerciseTurnInstruction(exerciseTurn)
 
   const payload = JSON.stringify({
     instruction,
     user_turns: userTurns,
     mastered_already: mission.status === 'mastered',
+    briefing_ready: context.briefing_ready,
     message_source: parsed.fromVoice ? 'voice' : 'text',
     mission: {
       title: truncateChars(mission.title, 120),
@@ -320,14 +322,12 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     last_tutor_message: lastTutor,
     hints_level: context.hints_level,
     photo_attached: Boolean(tutorPhoto),
-    ...(context.exercise_brief ? { exercise_solution: context.exercise_brief } : {}),
-    child_message: openingRelato
-      ? ''
-      : truncateChars(parsed.message, parsed.fromVoice ? 4000 : 800),
+    ...(!inBriefing && context.exercise_brief ? { exercise_solution: context.exercise_brief } : {}),
+    child_message: truncateChars(parsed.message, parsed.fromVoice ? 4000 : 800),
   })
 
   const raw = await callGemini({
-    system: missionTutorPrompt(),
+    system: missionTutorPrompt({ briefingReady: context.briefing_ready }),
     user: payload,
     photoBase64: tutorPhoto,
     photoCaption: memory.showMaterial
@@ -347,8 +347,16 @@ export async function chatMission(userId: number, missionId: number, body: Recor
   const askQuestions = Array.isArray(value.ask_questions)
     ? value.ask_questions.filter((item): item is string => typeof item === 'string')
     : []
+  let contextSummary = truncateChars(
+    typeof value.context_summary === 'string' ? value.context_summary : context.context_summary,
+    400,
+  )
   const reply = {
-    phase: typeof value.phase === 'string' ? value.phase : 'understanding',
+    phase: inBriefing
+      ? 'understanding'
+      : typeof value.phase === 'string'
+        ? value.phase
+        : 'understanding',
     speak_to_child: truncateChars(
       speakForTurn(
         exerciseTurn,
@@ -358,10 +366,7 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     ),
     ask_questions: askQuestions,
     topic_summary: typeof value.topic_summary === 'string' ? value.topic_summary : '',
-    context_summary: truncateChars(
-      typeof value.context_summary === 'string' ? value.context_summary : context.context_summary,
-      400,
-    ),
+    context_summary: contextSummary,
     hints_level: typeof value.hints_level === 'number' ? value.hints_level : 0,
     study_eval: {
       passed: Boolean(studyEvalRaw.passed),
@@ -369,21 +374,63 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     },
   }
 
-  if (userTurns < requiredChatTurns(10, reply.context_summary)) reply.study_eval.passed = false
-  const askingMoreContent =
-    looksLikeAskingMoreTopicContent(reply.speak_to_child) ||
-    reply.ask_questions.some((question) => looksLikeAskingMoreTopicContent(question))
-  if (askingMoreContent) reply.study_eval.passed = false
-  if (
-    reply.study_eval.passed &&
-    !looksLikeAskingMoreTopicContent(lastTutorMsg?.content ?? '') &&
-    !/cierre:\s*preguntado/i.test(context.context_summary)
-  ) {
+  if (inBriefing) {
     reply.study_eval.passed = false
+    const readyFromChild = looksLikeReadyToStartBriefing(parsed.message)
+    const readyFromSummary = /briefing:\s*listo/i.test(reply.context_summary)
+    if (readyFromChild || readyFromSummary) {
+      context.briefing_ready = true
+      await setBriefingReady(missionId, true)
+      if (!/briefing:\s*listo/i.test(reply.context_summary)) {
+        reply.context_summary = truncateChars(
+          `${reply.context_summary.replace(/\s*Briefing:\s*listo/gi, '').trim()}\nBriefing: listo`.trim(),
+          400,
+        )
+      }
+    }
+  } else {
+    if (userTurns < requiredChatTurns(10, reply.context_summary)) reply.study_eval.passed = false
+    const askingMoreContent =
+      looksLikeAskingMoreTopicContent(reply.speak_to_child) ||
+      reply.ask_questions.some((question) => looksLikeAskingMoreTopicContent(question))
+    if (askingMoreContent) {
+      reply.study_eval.passed = false
+      if (!/cierre:\s*preguntado/i.test(reply.context_summary)) {
+        reply.context_summary = truncateChars(
+          `${reply.context_summary.replace(/\s*Cierre:\s*preguntado/gi, '').trim()}\nCierre: preguntado`.trim(),
+          400,
+        )
+      }
+    }
+    const cierreAsked =
+      looksLikeAskingMoreTopicContent(lastTutorMsg?.content ?? '') ||
+      /cierre:\s*preguntado/i.test(context.context_summary)
+    if (reply.study_eval.passed && !cierreAsked) {
+      reply.study_eval.passed = false
+    }
+    if (
+      reply.study_eval.passed &&
+      cierreAsked &&
+      !looksLikeDecliningMoreWork(parsed.message)
+    ) {
+      reply.study_eval.passed = false
+    }
+    if (
+      !reply.study_eval.passed &&
+      cierreAsked &&
+      !askingMoreContent &&
+      /quiero seguir|hay m[aá]s|falta|sigue|continúa|continua|m[aá]s contenido/i.test(parsed.message)
+    ) {
+      reply.context_summary = truncateChars(
+        reply.context_summary.replace(/\s*Cierre:\s*preguntado/gi, '').trim(),
+        400,
+      )
+    }
+    if (reply.phase !== 'reviewing') reply.study_eval.passed = false
+    if (!reply.study_eval.evidence.trim()) reply.study_eval.passed = false
+    if (mission.status === 'mastered') reply.study_eval.passed = true
   }
-  if (reply.phase !== 'reviewing') reply.study_eval.passed = false
-  if (!reply.study_eval.evidence.trim()) reply.study_eval.passed = false
-  if (mission.status === 'mastered') reply.study_eval.passed = true
+
   if (!reply.study_eval.passed && looksLikeCelebratingMissionMastered(reply.speak_to_child)) {
     const stripped = stripPrematureReadyCelebration(reply.speak_to_child)
     reply.speak_to_child = truncateChars(
@@ -393,9 +440,8 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       450,
     )
   }
-  let visible = reply.speak_to_child
 
-  const saved = await insertMissionMessage(missionId, 'assistant', visible)
+  const saved = await insertMissionMessage(missionId, 'assistant', reply.speak_to_child)
   context.messages.push(saved)
   context.tutor_phase = reply.phase
   if (reply.topic_summary.trim()) context.topic_summary = truncateChars(reply.topic_summary, 120)
@@ -406,6 +452,8 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     topicSummary: context.topic_summary,
     contextSummary: context.context_summary,
     hintsLevel: context.hints_level,
+    briefingReady: context.briefing_ready,
+    notebookContext: context.notebook_context,
   })
   if (reply.study_eval.passed && mission.status !== 'mastered') {
     await setMissionStatus(missionId, 'mastered')

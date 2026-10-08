@@ -437,6 +437,7 @@ export async function ensureMissionSession(missionId: number) {
       topicSummary: '',
       contextSummary: '',
       notebookContext: '',
+      briefingReady: false,
       hintsLevel: 0,
     })
     .orIgnore()
@@ -458,6 +459,7 @@ export async function loadMissionSession(missionId: number) {
     topic_summary: session.topicSummary,
     context_summary: session.contextSummary,
     notebook_context: String(session.notebookContext ?? ''),
+    briefing_ready: Boolean(session.briefingReady),
     hints_level: Number(session.hintsLevel),
     exercise_brief: session.exerciseBrief ?? '',
     messages: messages.map((message) => ({
@@ -509,9 +511,18 @@ export async function saveSessionMeta(
     topicSummary: string
     contextSummary: string
     hintsLevel: number
+    briefingReady?: boolean
+    notebookContext?: string
   },
 ) {
   await AppDataSource.getRepository(StudyMissionSession).update({ missionId }, input)
+}
+
+export async function setBriefingReady(missionId: number, ready: boolean) {
+  await AppDataSource.getRepository(StudyMissionSession).update(
+    { missionId },
+    { briefingReady: ready },
+  )
 }
 
 export async function insertMissionMessage(

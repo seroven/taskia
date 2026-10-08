@@ -132,7 +132,7 @@ Una fila por tarea del día. Tres estados, sin kanban.
 | `due_date` | date | día de entrega |
 | `created_at` / `updated_at` | timestamptz | |
 
-Sin ayuda: `pending` → `done` vía `POST /tasks/:id/complete` (10 XP). Con ayuda: al abrir estudio pasa a `studying`; al `study_eval.passed` el servidor marca `done` y otorga XP 40–200 según un `effort` corto.
+Sin ayuda: `pending` → `done` vía `POST /tasks/:id/complete` (10 XP). Diaria con ayuda: al abrir estudio pasa a `studying`; al `study_eval.passed` el servidor marca `done` (XP 40–200). Proyecto con ayuda: Taskia no cierra sola; el niño confirma en chat o con `POST /tasks/:id/complete` desde `pending`/`studying` (XP 80–350).
 
 `due_date` es obligatoria. En una tarea `daily` se resuelve sola: es el día de hoy **según el calendario de quien la crea**, no del servidor. En una `project` la elige el alumno.
 
@@ -156,11 +156,13 @@ El estado de la sesión: una fila por tarea, no una por conversación. La PK **e
 | `tutor_phase` | text | `understanding`, `practicing`, `reviewing` |
 | `topic_summary` | text | de qué se trata la tarea |
 | `context_summary` | text | resumen vivo de la charla |
+| `notebook_context` | text | relato del briefing (sobre todo proyectos); fijo cuando `briefing_ready` |
+| `briefing_ready` | boolean | `false` = aún reuniendo el brief; `true` = ya pueden guiar/estudiar |
 | `hints_level` | int | pistas dadas |
 | `exercise_brief` | text | desarrollo privado del ejercicio, con la respuesta. No se envía al navegador |
 | `created_at` / `updated_at` | timestamptz | |
 
-`context_summary` es lo que hace que el tutor no repita preguntas: en cada turno se le manda este resumen, no el chat crudo. `tutor_phase` son las tres fases que el alumno ve en pantalla.
+`context_summary` es lo que hace que el tutor no repita preguntas: en cada turno se le manda este resumen, no el chat crudo. `tutor_phase` son las tres fases que el alumno ve en pantalla. En **proyectos** el estudio no arranca hasta `briefing_ready`; en **diarias** el briefing no aplica.
 
 ### `study_messages`
 
@@ -254,12 +256,13 @@ Mismo patrón que el tutor del tablero, pero colgando de `study_missions`. Son t
 | `tutor_phase` | text | `understanding`, `practicing`, `reviewing` |
 | `topic_summary` | text | |
 | `context_summary` | text | resumen vivo de la charla |
-| `notebook_context` | text | el relato del cuaderno, fijo |
+| `notebook_context` | text | relato del cuaderno; se acumula en el briefing y queda fijo al empezar |
+| `briefing_ready` | boolean | `false` hasta que el niño diga que ya pueden empezar |
 | `hints_level` | int | |
 | `exercise_brief` | text | igual que en la sesión de una tarea |
 | `updated_at` | timestamptz | |
 
-La diferencia con `study_sessions` son dos columnas: acá está `notebook_context` y no está `created_at`. `notebook_context` guarda el primer relato del alumno sobre su cuaderno y **no se vuelve a tocar**: el tutor lo recibe completo en cada turno para no preguntar cosas que no estén ahí, mientras `context_summary` sí se va actualizando.
+La diferencia con `study_sessions` de una diaria: acá siempre hay briefing + `notebook_context`, y no hay `created_at`. Mientras `briefing_ready` es false se acumula el relato; al confirmar el inicio queda fijo. El tutor lo recibe completo en cada turno; `context_summary` sí se va actualizando.
 
 ### `study_mission_messages`
 

@@ -14,6 +14,9 @@ export interface StudyContext {
   topic_summary: string
   /** Resumen vivo enviado a Gemini (no el chat completo). */
   context_summary: string
+  /** Relato del briefing (proyecto); fijo cuando briefing_ready. */
+  notebook_context?: string
+  briefing_ready?: boolean
   hints_level?: number
   messages: StudyMessage[]
 }

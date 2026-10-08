@@ -13,7 +13,7 @@ import { ExpandIconButton } from '../components/ExpandIconButton'
 import { ExplorerXpBar } from '../components/ExplorerXpBar'
 import { SessionActions } from '../components/SessionActions'
 import {
-  canOpenStudyMode,
+  canViewStudySession,
   shiftCivilDay,
   todayISO,
   type Course,
@@ -178,7 +178,7 @@ export function BoardPage({
   }
 
   function onStudy(task: Task) {
-    if (!canOpenStudyMode(task)) {
+    if (!canViewStudySession(task)) {
       showToast({
         tone: 'warning',
         title: 'Esta no usa Taskia',
