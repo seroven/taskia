@@ -90,6 +90,7 @@ async function loadMissionStudyMaterial(missionId: number) {
     context_summary: truncateChars(String(bits.context_summary ?? ''), 500),
     user_explanations: userExplanations,
     studied_text: truncateChars(notebook || userExplanations.join('\n---\n'), MAX_NOTEBOOK),
+    study_mode: bits.study_mode === 'practical' ? 'practical' : 'theoretical',
   }
 }
 
@@ -110,6 +111,7 @@ async function generateQuestionsBatch(
       topic_summary: study.topic_summary,
       context_summary: study.context_summary,
       studied_text: study.studied_text,
+      study_mode: study.study_mode,
       has_user_content: study.user_explanations.length > 0,
     })
   }
@@ -119,17 +121,37 @@ async function generateQuestionsBatch(
       : options.scope === 'world'
         ? `- Alcance MUNDO: estas misiones son de UNA sola materia. Mezcla los temas DENTRO de esta materia.`
         : `- Alcance TEMA: todas las preguntas son de esta misión.`
-  const boardMixRules = `Reglas de tipo:
+  const practicalIds = catalog.filter((item) => item.study_mode === 'practical').map((item) => item.id)
+  const theoreticalIds = catalog.filter((item) => item.study_mode !== 'practical').map((item) => item.id)
+  const boardMixRules =
+    theoreticalIds.length === 0
+      ? `Reglas de tipo:
 - Solo multiple_choice, short_text o fill_blank.
-- La mayoría deben ser EJERCICIOS en texto (aplicar, elegir un caso concreto). Teóricas (definir, “qué es…”, nombrar SIN resolver) como máximo 1 o 2 en el lote, salvo que el material sea solo conceptual.
+- La mayoría deben ser EJERCICIOS en texto (aplicar, elegir un caso concreto). Teóricas (definir, “qué es…”, nombrar SIN resolver) como máximo 1 o 2 en el lote.
 - No pidas dibujar ni armes una figura.`
+      : practicalIds.length === 0
+        ? `Reglas de tipo:
+- Solo multiple_choice, short_text o fill_blank.
+- Todas las misiones son teóricas (study_mode=theoretical). SOLO preguntas conceptuales sobre el material: definir, causas, hechos, nombres, ejemplos del relato.
+- Prohibido pedir que resuelvan un procedimiento, una cuenta o una foto de cómo lo hicieron.
+- No pidas dibujar ni armes una figura.`
+        : `Reglas de tipo, POR MISIÓN (mira study_mode de cada una):
+- study_mode=practical (ids ${practicalIds.join(', ')}): mayoría ejercicios en texto.
+- study_mode=theoretical (ids ${theoreticalIds.join(', ')}): SOLO preguntas conceptuales. Prohibido ejercicios de procedimiento y fotos de resolución.
+- Solo multiple_choice, short_text o fill_blank. No pidas dibujar ni armes una figura.`
+  const lotInstruction =
+    theoreticalIds.length === 0
+      ? `Genera ${count} preguntas nuevas, distintas entre sí y distintas de already_asked. Casi todas EJERCICIOS en texto; teóricas como máximo 1 o 2. Sin figuras. ÚNICAMENTE con base en studied_text / topic_summary / context_summary / description.`
+      : practicalIds.length === 0
+        ? `Genera ${count} preguntas nuevas, distintas y conceptuales (no ejercicios de procedimiento). Sin figuras. ÚNICAMENTE con base en studied_text / topic_summary / context_summary / description.`
+        : `Genera ${count} preguntas nuevas. En misiones theoretical solo conceptuales; en practical puedes usar ejercicios en texto. Sin figuras. ÚNICAMENTE con base en el material de cada misión.`
   const system = challengeGenerateSystem({ count, mixRule, boardMixRules })
   const user = JSON.stringify({
     target_count: count,
     batch_offset: batchOffset,
     already_asked: options.avoidPrompts ?? [],
     missions: catalog,
-    instruction: `Genera ${count} preguntas nuevas, distintas entre sí y distintas de already_asked. Casi todas EJERCICIOS en texto; teóricas como máximo 1 o 2 (salvo material solo conceptual). Sin figuras. ÚNICAMENTE con base en studied_text / topic_summary / context_summary / description.`,
+    instruction: lotInstruction,
   })
   const raw = await callGemini({
     system,
@@ -402,6 +424,11 @@ export async function startChallenge(userId: number, body: Record<string, unknow
     throw err
   }
   const missionIds = new Set(missions.map((mission) => mission.id))
+  const modeByMission = new Map<number, string>()
+  for (const mission of missions) {
+    const bits = await loadMissionStudyBits(mission.id)
+    modeByMission.set(mission.id, bits.study_mode === 'practical' ? 'practical' : 'theoretical')
+  }
   let sortOrder = 0
   for (const item of generated.slice(0, total)) {
     let mid = typeof item.mission_id === 'number' ? item.mission_id : Number(item.mission_id)
@@ -412,7 +439,9 @@ export async function startChallenge(userId: number, body: Record<string, unknow
       kind = 'multiple_choice'
     }
     const referenceImageUrl =
-      typeof item.reference_image_url === 'string' && item.reference_image_url.startsWith('https://')
+      modeByMission.get(mid) === 'practical' &&
+      typeof item.reference_image_url === 'string' &&
+      item.reference_image_url.startsWith('https://')
         ? item.reference_image_url
         : null
     const prompt = stripMathDelimiters(typeof item.prompt === 'string' ? item.prompt : '¿Listo?')

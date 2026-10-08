@@ -23,6 +23,10 @@ export class StudyMissionSession {
   @Column({ type: 'boolean', default: false })
   briefingReady!: boolean
 
+  /** '' hasta clasificar; luego theoretical | practical, fijo. */
+  @Column({ type: 'text', default: '' })
+  studyMode!: string
+
   @Column({ type: 'int', default: 0 })
   hintsLevel!: number
 

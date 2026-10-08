@@ -19,6 +19,7 @@ export async function ensureSession(taskId: number) {
       contextSummary: '',
       notebookContext: '',
       briefingReady: false,
+      studyMode: '',
       hintsLevel: 0,
     })
     .orIgnore()
@@ -40,6 +41,7 @@ export async function loadContext(taskId: number) {
     context_summary: session.contextSummary,
     notebook_context: String(session.notebookContext ?? ''),
     briefing_ready: Boolean(session.briefingReady),
+    study_mode: String(session.studyMode ?? ''),
     hints_level: session.hintsLevel,
     exercise_brief: session.exerciseBrief ?? '',
     messages: messages.map((message) => ({
@@ -110,6 +112,7 @@ export async function saveSessionMeta(ctx: {
   hints_level: number
   notebook_context?: string
   briefing_ready?: boolean
+  study_mode?: string
 }) {
   await AppDataSource.getRepository(StudySession).update(
     { taskId: ctx.task_id },
@@ -120,6 +123,7 @@ export async function saveSessionMeta(ctx: {
       hintsLevel: ctx.hints_level,
       ...(ctx.notebook_context !== undefined ? { notebookContext: ctx.notebook_context } : {}),
       ...(ctx.briefing_ready !== undefined ? { briefingReady: ctx.briefing_ready } : {}),
+      ...(ctx.study_mode !== undefined ? { studyMode: ctx.study_mode } : {}),
     },
   )
 }
@@ -130,5 +134,9 @@ export async function setNotebook(taskId: number, notebook: string) {
 
 export async function setBriefingReady(taskId: number, ready: boolean) {
   await AppDataSource.getRepository(StudySession).update({ taskId }, { briefingReady: ready })
+}
+
+export async function setStudyMode(taskId: number, mode: 'theoretical' | 'practical') {
+  await AppDataSource.getRepository(StudySession).update({ taskId }, { studyMode: mode })
 }
 

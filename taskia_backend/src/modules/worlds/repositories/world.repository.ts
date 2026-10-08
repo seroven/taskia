@@ -438,6 +438,7 @@ export async function ensureMissionSession(missionId: number) {
       contextSummary: '',
       notebookContext: '',
       briefingReady: false,
+      studyMode: '',
       hintsLevel: 0,
     })
     .orIgnore()
@@ -460,6 +461,7 @@ export async function loadMissionSession(missionId: number) {
     context_summary: session.contextSummary,
     notebook_context: String(session.notebookContext ?? ''),
     briefing_ready: Boolean(session.briefingReady),
+    study_mode: String(session.studyMode ?? ''),
     hints_level: Number(session.hintsLevel),
     exercise_brief: session.exerciseBrief ?? '',
     messages: messages.map((message) => ({
@@ -513,6 +515,7 @@ export async function saveSessionMeta(
     hintsLevel: number
     briefingReady?: boolean
     notebookContext?: string
+    studyMode?: string
   },
 ) {
   await AppDataSource.getRepository(StudyMissionSession).update({ missionId }, input)
@@ -523,6 +526,10 @@ export async function setBriefingReady(missionId: number, ready: boolean) {
     { missionId },
     { briefingReady: ready },
   )
+}
+
+export async function setStudyMode(missionId: number, mode: 'theoretical' | 'practical') {
+  await AppDataSource.getRepository(StudyMissionSession).update({ missionId }, { studyMode: mode })
 }
 
 export async function insertMissionMessage(
@@ -570,6 +577,7 @@ export async function loadMissionStudyBits(missionId: number) {
     topic_summary: session?.topicSummary ?? '',
     context_summary: session?.contextSummary ?? '',
     notebook_context: session?.notebookContext ?? '',
+    study_mode: session?.studyMode ?? '',
     user_contents: messages.map((message) => message.content),
   }
 }

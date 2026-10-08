@@ -9,10 +9,12 @@ import {
   looksLikeReadyToStartBriefing,
   requiredChatTurns,
   stripPrematureReadyCelebration,
+  stripSolveInvite,
   truncateChars,
 } from '../../../utils/helpers.js'
 import { awardXp, xpForProjectStudy, xpForTaskStudy } from '../../../services/xp.js'
 import { scoreTaskEffort } from '../../../services/score-task-effort.js'
+import { classifyStudyMode } from '../../../services/classify-study-mode.js'
 import {
   fetchTask,
   markDoneByStudy,
@@ -56,6 +58,7 @@ import {
   saveUserMemory,
   setBriefingReady,
   setNotebook,
+  setStudyMode,
 } from '../repositories/study.repository.js'
 
 const MAX_CONTEXT = 400
@@ -178,6 +181,19 @@ export async function openSession(userId: number, taskId: number) {
   const userMemory = await loadUserMemory(userId)
   const isProject = task.task_kind === 'project'
 
+  if (!readOnly && !isProject && !context.study_mode) {
+    const mode = await classifyStudyMode({
+      userId,
+      kind: 'task_tutor',
+      title: task.title,
+      description: task.description ?? '',
+    })
+    if (mode) {
+      context.study_mode = mode
+      await setStudyMode(taskId, mode)
+    }
+  }
+
   if (!readOnly && context.messages.length === 0) {
     const desc = task.description?.trim()
     const memoryHint = userMemory.trim()
@@ -233,12 +249,27 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     await setNotebook(taskId, context.notebook_context)
   }
 
+  if (!context.study_mode && (!isProject || context.briefing_ready)) {
+    const mode = await classifyStudyMode({
+      userId,
+      kind: 'task_tutor',
+      title: task.title,
+      description: task.description ?? '',
+      notebook: isProject ? context.notebook_context : '',
+    })
+    if (mode) {
+      context.study_mode = mode
+      await setStudyMode(taskId, mode)
+    }
+  }
+
   const lastTutorMsg = [...context.messages].reverse().find((m) => m.role === 'assistant')
   const lastTutor = lastTutorMsg?.content ?? ''
   const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
 
   const inBriefing = isProject && !context.briefing_ready
-  const skipExercises = inBriefing
+  const practical = context.study_mode === 'practical'
+  const skipExercises = inBriefing || !practical
 
   let intent = {
     helpExercise: false,
@@ -305,11 +336,13 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     instruction =
       'Briefing del proyecto. Escucha, acumula en notebook_context, pregunta si falta algo o ya pueden empezar. Sin ejercicios ni passed.'
   } else if (isProject) {
-    instruction =
-      'Guía el proyecto con notebook_context fijo. Anota "Errores: N". Piso user_turns ≥ 10+N. En un hito pregunta si dan por terminado (passed=false, Cierre: preguntado); passed=true solo si el niño confirma el fin.'
+    instruction = practical
+      ? 'Guía el proyecto con notebook_context fijo. Anota "Errores: N". Piso user_turns ≥ 10+N. En un hito pregunta si dan por terminado (passed=false, Cierre: preguntado); passed=true solo si el niño confirma el fin.'
+      : 'Proyecto teórico. Guía con notebook_context fijo, sin ejercicios y sin pedir cómo lo resolvió. Anota "Errores: N". Piso user_turns ≥ 10+N. En un hito pregunta si dan por terminado (passed=false, Cierre: preguntado); passed=true solo si el niño confirma el fin.'
   } else {
-    instruction =
-      'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
+    instruction = practical
+      ? 'Responde breve. Usa context + last_tutor_message + mensaje. Conserva el ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 6+N. Refuerza puntos débiles. Si ya cumple el piso, puedes passed=true y celebrar Listo (no preguntes si quiere más).'
+      : 'Tarea teórica. Guía para que entienda y explique. Sin ejercicios y sin pedir cómo lo resolvió. Anota "Errores: N". Piso user_turns ≥ 6+N. Si ya cumple el piso, puedes passed=true y celebrar Listo.'
   }
   if (fromVoice) {
     instruction +=
@@ -332,11 +365,17 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
       instruction += ' Mira la foto y decide si está bien.'
     }
     instruction += exerciseTurnInstruction(exerciseTurn)
+  } else if (!inBriefing && tutorPhoto) {
+    instruction +=
+      ' La foto de este turno son apuntes. Léela y deja lo importante en context_summary. No pidas una resolución.'
   }
 
   const systemPrompt = isProject
-    ? projectTutorPrompt({ briefingReady: context.briefing_ready })
-    : tutorSystemPrompt()
+    ? projectTutorPrompt({
+        briefingReady: context.briefing_ready,
+        theoretical: !practical,
+      })
+    : tutorSystemPrompt({ theoretical: !practical })
 
   const payload = {
     instruction,
@@ -422,6 +461,19 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     if (readyFromChild || readyFromSummary) {
       context.briefing_ready = true
       await setBriefingReady(taskId, true)
+      if (!context.study_mode) {
+        const mode = await classifyStudyMode({
+          userId,
+          kind: 'task_tutor',
+          title: task.title,
+          description: task.description ?? '',
+          notebook: context.notebook_context,
+        })
+        if (mode) {
+          context.study_mode = mode
+          await setStudyMode(taskId, mode)
+        }
+      }
       if (!/briefing:\s*listo/i.test(contextSummaryDraft)) {
         contextSummaryDraft = truncateChars(
           `${contextSummaryDraft.replace(/\s*Briefing:\s*listo/gi, '').trim()}\nBriefing: listo`.trim(),
@@ -462,6 +514,10 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
   }
 
   let speakSafe = speakForTurn(exerciseTurn, stripDrewPhrase(speakToChild))
+  if (!practical) {
+    const strippedInvite = stripSolveInvite(speakSafe)
+    if (strippedInvite.length >= 12) speakSafe = strippedInvite
+  }
   if (!passed && looksLikeCelebratingTaskReady(speakSafe)) {
     const stripped = stripPrematureReadyCelebration(speakSafe)
     speakSafe = truncateChars(
@@ -513,6 +569,7 @@ export async function chat(userId: number, taskId: number, body: Record<string, 
     ...context,
     notebook_context: context.notebook_context,
     briefing_ready: context.briefing_ready,
+    study_mode: context.study_mode || undefined,
   })
   if (updateUserMemory) await saveUserMemory(userId, reply.user_memory_summary)
 

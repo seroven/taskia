@@ -154,6 +154,16 @@ export function requiredChatTurns(base: number, summary: string): number {
   return base + trackedErrorCount(summary)
 }
 
+export function stripSolveInvite(text: string): string {
+  let out = text
+  out = out.replace(
+    /[^.!?\n]*me gustar[ií]a ver c[oó]mo lo resolviste[^.!?\n]*[.!?]?/gi,
+    ' ',
+  )
+  out = out.replace(/[^.!?\n]*c[oó]mo lo resolviste[^.!?\n]*[.!?]?/gi, ' ')
+  return out.replace(/\s{2,}/g, ' ').trim()
+}
+
 /** Misión teórica: el tutor pregunta si queda más contenido del tema. */
 export function looksLikeAskingMoreTopicContent(text: string): boolean {
   const t = text.toLowerCase()

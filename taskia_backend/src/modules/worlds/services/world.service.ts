@@ -20,6 +20,7 @@ import {
 import { chatVisibleSpeak, stripDrewPhrase } from '../../exercises/text.js'
 import { parseVoiceTurnBody } from '../../study/schemas/study.schema.js'
 import { awardXp, clampEffortScore, xpForMission } from '../../../services/xp.js'
+import { classifyStudyMode } from '../../../services/classify-study-mode.js'
 import {
   AppError,
   extractJson,
@@ -29,6 +30,7 @@ import {
   looksLikeReadyToStartBriefing,
   requiredChatTurns,
   stripPrematureReadyCelebration,
+  stripSolveInvite,
   truncateChars,
 } from '../../../utils/helpers.js'
 import {
@@ -55,6 +57,7 @@ import {
   setBriefingReady,
   setMissionStatus,
   setNotebook,
+  setStudyMode,
   unlinkWorldCourse,
   updateMissionFields,
   updateWorld,
@@ -218,16 +221,32 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     await setNotebook(missionId, context.notebook_context)
   }
 
+  if (!inBriefing && !context.study_mode) {
+    const mode = await classifyStudyMode({
+      userId,
+      kind: 'mission_tutor',
+      title: mission.title,
+      description: mission.description ?? '',
+      notebook: context.notebook_context,
+    })
+    if (mode) {
+      context.study_mode = mode
+      await setStudyMode(missionId, mode)
+    }
+  }
+
   const lastTutorMsg = [...context.messages].reverse().find((message) => message.role === 'assistant')
   const lastTutor = lastTutorMsg ? truncateChars(lastTutorMsg.content, 320) : ''
   const photoData = photo ? `data:${photo.mime};base64,${photo.base64}` : null
 
+  const practical = context.study_mode === 'practical'
+  const useExercises = !inBriefing && practical
   let intent = { helpExercise: false, reviewDrawing: false, drawExercise: false }
-  let memory = { solve: false, sendPhoto: false, showMaterial: Boolean(photo) && inBriefing }
+  let memory = { solve: false, sendPhoto: false, showMaterial: Boolean(photo) && !useExercises }
   let exerciseTurn: ExerciseTurn = { mode: 'none' }
   let tutorPhoto: string | null = null
 
-  if (!inBriefing) {
+  if (useExercises) {
     intent = await classifyBoardIntent({
       message: parsed.message,
       previous: truncateChars(lastTutor, 180),
@@ -280,12 +299,14 @@ export async function chatMission(userId: number, missionId: number, body: Recor
 
   let instruction = inBriefing
     ? 'Briefing de la misión. Escucha, acumula en notebook_context, pregunta si falta algo o ya pueden empezar. Sin ejercicios ni dominio.'
-    : 'Responde breve. Enseña el tema completo (básico + observación) SOLO con notebook_context + título/descripción. Conserva ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 10+N. Pregunta todo lo posible de ese relato. Al cumplir el piso pregunta si queda más contenido (passed=false); passed=true solo si declina.'
+    : practical
+      ? 'Responde breve. Enseña el tema completo (básico + observación) SOLO con notebook_context + título/descripción. Conserva ejercicio activo. Anota "Errores: N". Piso user_turns ≥ 10+N. Pregunta todo lo posible de ese relato. Al cumplir el piso pregunta si queda más contenido (passed=false); passed=true solo si declina.'
+      : 'Tema teórico. Enseña solo con notebook_context + título/descripción. Sin ejercicios y sin pedir cómo lo resolvió. Anota "Errores: N". Piso user_turns ≥ 10+N. Al cumplir el piso pregunta si queda más contenido (passed=false); passed=true solo si declina.'
   if (parsed.fromVoice) {
     instruction +=
       ' El mensaje viene de voz (transcrito): prioriza afinar topic_summary y context_summary con lo que explicó el niño.'
   }
-  if (!inBriefing) {
+  if (useExercises) {
     if (memory.showMaterial && tutorPhoto) {
       instruction +=
         ' La foto de este turno es material del niño, no un ejercicio. Léela y deja lo importante en context_summary.'
@@ -302,6 +323,9 @@ export async function chatMission(userId: number, missionId: number, body: Recor
       instruction += ' Mira la foto y decide si está bien.'
     }
     instruction += exerciseTurnInstruction(exerciseTurn)
+  } else if (!inBriefing && tutorPhoto) {
+    instruction +=
+      ' La foto de este turno son apuntes. Léela y deja lo importante en context_summary. No pidas una resolución.'
   }
 
   const payload = JSON.stringify({
@@ -322,12 +346,15 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     last_tutor_message: lastTutor,
     hints_level: context.hints_level,
     photo_attached: Boolean(tutorPhoto),
-    ...(!inBriefing && context.exercise_brief ? { exercise_solution: context.exercise_brief } : {}),
+    ...(!useExercises ? {} : context.exercise_brief ? { exercise_solution: context.exercise_brief } : {}),
     child_message: truncateChars(parsed.message, parsed.fromVoice ? 4000 : 800),
   })
 
   const raw = await callGemini({
-    system: missionTutorPrompt({ briefingReady: context.briefing_ready }),
+    system: missionTutorPrompt({
+      briefingReady: context.briefing_ready,
+      theoretical: !practical,
+    }),
     user: payload,
     photoBase64: tutorPhoto,
     photoCaption: memory.showMaterial
@@ -381,6 +408,19 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     if (readyFromChild || readyFromSummary) {
       context.briefing_ready = true
       await setBriefingReady(missionId, true)
+      if (!context.study_mode) {
+        const mode = await classifyStudyMode({
+          userId,
+          kind: 'mission_tutor',
+          title: mission.title,
+          description: mission.description ?? '',
+          notebook: context.notebook_context,
+        })
+        if (mode) {
+          context.study_mode = mode
+          await setStudyMode(missionId, mode)
+        }
+      }
       if (!/briefing:\s*listo/i.test(reply.context_summary)) {
         reply.context_summary = truncateChars(
           `${reply.context_summary.replace(/\s*Briefing:\s*listo/gi, '').trim()}\nBriefing: listo`.trim(),
@@ -431,6 +471,10 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     if (mission.status === 'mastered') reply.study_eval.passed = true
   }
 
+  if (!practical) {
+    const strippedInvite = stripSolveInvite(reply.speak_to_child)
+    if (strippedInvite.length >= 12) reply.speak_to_child = truncateChars(strippedInvite, 450)
+  }
   if (!reply.study_eval.passed && looksLikeCelebratingMissionMastered(reply.speak_to_child)) {
     const stripped = stripPrematureReadyCelebration(reply.speak_to_child)
     reply.speak_to_child = truncateChars(
@@ -454,6 +498,9 @@ export async function chatMission(userId: number, missionId: number, body: Recor
     hintsLevel: context.hints_level,
     briefingReady: context.briefing_ready,
     notebookContext: context.notebook_context,
+    ...(context.study_mode === 'theoretical' || context.study_mode === 'practical'
+      ? { studyMode: context.study_mode }
+      : {}),
   })
   if (reply.study_eval.passed && mission.status !== 'mastered') {
     await setMissionStatus(missionId, 'mastered')

@@ -4,6 +4,16 @@ Un turno de chat cuando el niño estudia una tarea. El estudio es solo conversac
 
 El modelo es `GEMINI_MODEL`. La misma API key. No hay modelo de imagen.
 
+## Modo teórico o práctico
+
+Se clasifica **una sola vez** y no se vuelve a evaluar.
+
+- Diaria: al abrir, con título y descripción.
+- Proyecto y misión: al congelar el briefing, con título, descripción y `notebook_context`.
+- Solo queda `practical` si el modelo lo dice explícito (ejercicios, cuentas, un procedimiento con resultado). Si no, `theoretical`.
+- En teórico no corre intención de ejercicio, brief ni “¿hace falta un dibujo?”. Una foto son apuntes. No se pide “cómo lo resolviste”.
+- El desafío lee `study_mode` de cada misión: teórico → preguntas conceptuales; práctico → la mezcla de ejercicios en texto.
+
 ## Diaria vs proyecto
 
 | | Diaria (`daily`) | Proyecto (`project`) |

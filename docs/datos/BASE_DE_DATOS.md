@@ -158,6 +158,7 @@ El estado de la sesión: una fila por tarea, no una por conversación. La PK **e
 | `context_summary` | text | resumen vivo de la charla |
 | `notebook_context` | text | relato del briefing (sobre todo proyectos); fijo cuando `briefing_ready` |
 | `briefing_ready` | boolean | `false` = aún reuniendo el brief; `true` = ya pueden guiar/estudiar |
+| `study_mode` | text | `''` hasta clasificar; luego `theoretical` o `practical`, y no cambia |
 | `hints_level` | int | pistas dadas |
 | `exercise_brief` | text | desarrollo privado del ejercicio, con la respuesta. No se envía al navegador |
 | `created_at` / `updated_at` | timestamptz | |
@@ -258,6 +259,7 @@ Mismo patrón que el tutor del tablero, pero colgando de `study_missions`. Son t
 | `context_summary` | text | resumen vivo de la charla |
 | `notebook_context` | text | relato del cuaderno; se acumula en el briefing y queda fijo al empezar |
 | `briefing_ready` | boolean | `false` hasta que el niño diga que ya pueden empezar |
+| `study_mode` | text | `''` hasta clasificar al cerrar el briefing; luego `theoretical` o `practical`, fijo |
 | `hints_level` | int | |
 | `exercise_brief` | text | igual que en la sesión de una tarea |
 | `updated_at` | timestamptz | |

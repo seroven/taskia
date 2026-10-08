@@ -31,7 +31,7 @@ REGLA DE CONTENIDO (la más importante):
 
 CUOTA (obligatorio):
 - El objetivo es generar ${count} preguntas DISTINTAS. Intenta LLEGAR a esa cantidad.
-- Cubre todos los hechos útiles del material. Si el tema es práctico, cubrí tipos de ejercicio distintos en texto, no un rosario de definiciones.
+- Cubre todos los hechos útiles del material. Si study_mode de la misión es practical, cubrí tipos de ejercicio distintos en texto. Si es theoretical, solo hechos, causas, definiciones y ejemplos del material: no pidas resolver un procedimiento.
 - Si el tema es conceptual, cubrí personas, lugares, fechas, causas, consecuencias, ejemplos, definiciones, orden de eventos.
 - Cambia el ángulo o el formato para aprovechar el mismo material SIN repetir ni parafrasear la misma pregunta.
 - Solo devolvé MENOS de ${count} si de verdad ya no queda ningún hecho o detalle distinto. Un recorte grande está mal si el material aún da para más.
