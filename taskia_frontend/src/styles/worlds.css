@@ -114,7 +114,7 @@ button.ghost.worlds-back {
   max-width: 28rem;
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-muted);
   line-height: 1.4;
 }
 
@@ -148,7 +148,7 @@ button.ghost.worlds-back {
 
 .worlds-block--soft {
   padding-top: 8px;
-  border-top: 1px dashed color-mix(in srgb, var(--line) 80%, transparent);
+  border-top: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .worlds-block-label {
@@ -157,7 +157,7 @@ button.ghost.worlds-back {
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .worlds-two-col {
@@ -175,8 +175,8 @@ button.ghost.worlds-back {
   min-width: 0;
   padding: 18px 18px 20px;
   border-radius: calc(var(--radius) + 8px);
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
-  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .worlds-panel .worlds-block-label,
@@ -264,10 +264,10 @@ button.ghost.worlds-back {
   overflow: hidden;
   border-radius: calc(var(--radius) + 10px);
   border: 2px solid transparent;
-  background: var(--panel);
+  background: var(--surface);
   color: inherit;
   cursor: pointer;
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--ink) 7%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--text) 7%, transparent);
   transition:
     border-color 0.2s ease,
     transform 0.22s ease,
@@ -299,7 +299,7 @@ button.ghost.worlds-back {
   background:
     radial-gradient(circle at 18% 28%, var(--accent-soft), transparent 52%),
     radial-gradient(circle at 88% 78%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 48%),
-    color-mix(in srgb, var(--accent) 12%, var(--panel));
+    color-mix(in srgb, var(--accent) 12%, var(--surface));
 }
 
 .worlds-cover-art::before,
@@ -336,34 +336,34 @@ button.ghost.worlds-back {
 
 .worlds-cover--empty .worlds-cover-art {
   background:
-    radial-gradient(circle at 24% 30%, color-mix(in srgb, var(--muted) 16%, transparent), transparent 55%),
-    color-mix(in srgb, var(--muted) 10%, var(--panel));
+    radial-gradient(circle at 24% 30%, color-mix(in srgb, var(--text-muted) 16%, transparent), transparent 55%),
+    color-mix(in srgb, var(--text-muted) 10%, var(--surface));
 }
 
 .worlds-cover--empty .worlds-cover-art::before {
-  border-color: color-mix(in srgb, var(--muted) 28%, transparent);
+  border-color: color-mix(in srgb, var(--text-muted) 28%, transparent);
 }
 
 .worlds-cover--empty .worlds-cover-art::after {
-  background: color-mix(in srgb, var(--muted) 12%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
 }
 
 .worlds-cover--empty .worlds-icon-badge {
-  background: color-mix(in srgb, var(--muted) 16%, transparent);
-  color: var(--muted);
+  background: color-mix(in srgb, var(--text-muted) 16%, transparent);
+  color: var(--text-muted);
   box-shadow: none;
 }
 
 .worlds-cover--pending .worlds-cover-art {
   background:
     radial-gradient(circle at 20% 30%, var(--accent-soft), transparent 55%),
-    color-mix(in srgb, var(--accent) 8%, var(--panel));
+    color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 
 .worlds-cover--studying .worlds-cover-art {
   background:
     radial-gradient(circle at 80% 20%, var(--accent-soft), transparent 52%),
-    color-mix(in srgb, var(--accent) 22%, var(--panel));
+    color-mix(in srgb, var(--accent) 22%, var(--surface));
 }
 
 .worlds-cover--mastered .worlds-cover-art {
@@ -383,7 +383,7 @@ button.ghost.worlds-back {
 .worlds-cover--mastered .worlds-icon-badge {
   background: #ffffff;
   color: var(--accent);
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--ink) 18%, transparent);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--text) 18%, transparent);
 }
 
 .worlds-cover-art .worlds-icon-badge {
@@ -468,9 +468,9 @@ button.ghost.worlds-back {
   height: 76px;
 }
 
-.worlds-icon-badge--muted {
-  background: color-mix(in srgb, var(--muted) 16%, transparent);
-  color: var(--muted);
+.worlds-icon-badge--text-muted {
+  background: color-mix(in srgb, var(--text-muted) 16%, transparent);
+  color: var(--text-muted);
 }
 
 .worlds-icon-badge--success {
@@ -501,8 +501,8 @@ button.ghost.worlds-back {
   min-height: 128px;
   gap: 8px;
   border-radius: 20px;
-  border: 1px dashed color-mix(in srgb, var(--line) 90%, transparent);
-  background: color-mix(in srgb, var(--muted) 5%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--border) 90%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 5%, transparent);
 }
 
 .empty-state-title {
@@ -510,7 +510,7 @@ button.ghost.worlds-back {
   font-family: var(--font-display);
   font-size: 1.45rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .empty-state.is-compact .empty-state-title {
@@ -554,17 +554,18 @@ button.ghost.worlds-back {
 
 .worlds-cta-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   color: var(--accent);
   box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .worlds-cta-btn.primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-  color: white;
+  background: var(--accent);
+  color: var(--on-accent);
   border-color: transparent;
-  box-shadow: 0 12px 26px var(--accent-glow);
+  box-shadow: 0 4px 0 var(--accent-edge);
+  transform: none;
 }
 
 .worlds-cta-btn:active:not(:disabled) {
@@ -585,13 +586,13 @@ button.ghost.worlds-back {
 }
 
 .worlds-status-pending {
-  background: color-mix(in srgb, var(--muted) 18%, transparent);
-  color: var(--ink);
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+  color: var(--text);
 }
 
 .worlds-status-empty {
-  background: color-mix(in srgb, var(--muted) 14%, transparent);
-  color: var(--muted);
+  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+  color: var(--text-muted);
 }
 
 .worlds-status-studying {
@@ -606,7 +607,7 @@ button.ghost.worlds-back {
 
 .worlds-cover--course .worlds-status-mastered {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 
 .worlds-empty {
@@ -659,7 +660,7 @@ button.ghost.worlds-back {
   padding: 12px 14px;
   border: 1px solid transparent;
   border-radius: calc(var(--radius) + 4px);
-  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
   color: inherit;
   cursor: pointer;
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
@@ -732,7 +733,7 @@ button.ghost.worlds-back {
 
 .worlds-history-meta {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .worlds-switch-row {
@@ -745,7 +746,7 @@ button.ghost.worlds-back {
 }
 
 .worlds-switch-row:hover input[type='checkbox']:not(:disabled):not(:checked) {
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
 }
 
 .worlds-switch-label {
@@ -817,8 +818,8 @@ button.ghost.worlds-back {
   gap: 6px;
   padding: 16px 10px;
   border-radius: calc(var(--radius) + 2px);
-  border: 2px solid var(--line);
-  background: var(--panel);
+  border: 2px solid var(--border);
+  background: var(--surface);
   color: inherit;
   cursor: pointer;
   text-align: center;
@@ -827,7 +828,7 @@ button.ghost.worlds-back {
 
 .worlds-diff-btn:hover {
   transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
 }
 
 .worlds-diff-btn.is-active {
@@ -838,7 +839,7 @@ button.ghost.worlds-back {
 
 .worlds-diff-btn span {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .worlds-diff-btn.is-active span {
@@ -850,7 +851,7 @@ button.ghost.worlds-back {
   width: 100%;
   height: 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 16%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 16%, transparent);
   overflow: hidden;
 }
 
@@ -878,7 +879,7 @@ button.ghost.worlds-back {
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 28%, transparent);
+  background: color-mix(in srgb, var(--text-muted) 28%, transparent);
   cursor: pointer;
   transition: background 0.2s ease, transform 0.2s ease;
 }
@@ -946,7 +947,7 @@ button.ghost.worlds-back {
 
 .worlds-choice-btn.is-selected .worlds-choice-letter {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .worlds-feedback {
@@ -956,17 +957,17 @@ button.ghost.worlds-back {
   flex-wrap: wrap;
   padding: 12px 14px;
   border-radius: var(--radius);
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 .worlds-feedback--ok {
-  border-color: color-mix(in srgb, #16a34a 40%, var(--line));
-  background: color-mix(in srgb, #16a34a 8%, var(--panel));
+  border-color: color-mix(in srgb, #16a34a 40%, var(--border));
+  background: color-mix(in srgb, #16a34a 8%, var(--surface));
 }
 
 .worlds-feedback--bad {
-  border-color: color-mix(in srgb, var(--muted) 35%, var(--line));
+  border-color: color-mix(in srgb, var(--text-muted) 35%, var(--border));
 }
 
 .modal-panel-wide {
@@ -999,7 +1000,7 @@ button.ghost.worlds-back {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .modal-link-list {
@@ -1019,8 +1020,8 @@ button.ghost.worlds-back {
   gap: 8px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid var(--line);
-  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
 }
 
 .modal-link-row .session-icon-btn {
@@ -1050,7 +1051,7 @@ button.ghost.worlds-back {
 
 .modal-link-row-text span {
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1142,8 +1143,8 @@ button.ghost.worlds-back {
   text-align: left;
   padding: 12px 14px;
   border-radius: var(--radius);
-  border: 2px solid var(--line);
-  background: var(--panel);
+  border: 2px solid var(--border);
+  background: var(--surface);
   color: inherit;
   cursor: pointer;
   transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
@@ -1176,7 +1177,7 @@ button.ghost.worlds-back {
 
 .challenge-bad {
   font-weight: 800;
-  color: var(--muted);
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -1228,8 +1229,8 @@ button.ghost.worlds-back {
   max-width: 520px;
   padding: 12px 16px;
   border-radius: calc(var(--radius) + 12px);
-  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
-  border: 2px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  border: 2px solid color-mix(in srgb, var(--accent) 24%, var(--border));
 }
 
 .challenge-review-ring {
@@ -1240,7 +1241,7 @@ button.ghost.worlds-back {
   border-radius: 999px;
   background: conic-gradient(
     #16a34a var(--pct),
-    color-mix(in srgb, var(--line) 80%, transparent) 0
+    color-mix(in srgb, var(--border) 80%, transparent) 0
   );
   display: grid;
   place-items: center;
@@ -1250,7 +1251,7 @@ button.ghost.worlds-back {
   width: 74px;
   height: 74px;
   border-radius: 999px;
-  background: var(--panel);
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1262,13 +1263,13 @@ button.ghost.worlds-back {
   font-family: var(--font-display);
   font-size: 1.85rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .challenge-review-ring-inner span {
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .challenge-review-score-text {
@@ -1293,7 +1294,7 @@ button.ghost.worlds-back {
   font-family: var(--font-display);
   font-size: 1.2rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .challenge-review-meta {
@@ -1304,7 +1305,7 @@ button.ghost.worlds-back {
   gap: 8px;
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .challenge-review-diff-pill {
@@ -1313,11 +1314,11 @@ button.ghost.worlds-back {
   gap: 4px;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--surface);
+  border: 1px solid var(--border);
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .challenge-review-dots {
@@ -1334,7 +1335,7 @@ button.ghost.worlds-back {
   border: 0;
   border-radius: 999px;
   cursor: pointer;
-  background: var(--line);
+  background: var(--border);
 }
 
 .challenge-review-dot.is-ok {
@@ -1372,20 +1373,20 @@ button.ghost.worlds-back {
 .worlds-review-item {
   padding: 10px 12px;
   border-radius: calc(var(--radius) + 8px);
-  border: 2px solid var(--line);
-  background: var(--panel);
+  border: 2px solid var(--border);
+  background: var(--surface);
 }
 
 .worlds-review-item.is-ok {
   padding-bottom: 12px;
-  border-color: color-mix(in srgb, #16a34a 32%, var(--line));
-  background: color-mix(in srgb, #16a34a 6%, var(--panel));
+  border-color: color-mix(in srgb, #16a34a 32%, var(--border));
+  background: color-mix(in srgb, #16a34a 6%, var(--surface));
 }
 
 .worlds-review-item.is-bad {
   padding-bottom: 12px;
-  border-color: color-mix(in srgb, #ea580c 32%, var(--line));
-  background: color-mix(in srgb, #ea580c 6%, var(--panel));
+  border-color: color-mix(in srgb, #ea580c 32%, var(--border));
+  background: color-mix(in srgb, #ea580c 6%, var(--surface));
 }
 
 .worlds-review-course-row {
@@ -1429,7 +1430,7 @@ button.ghost.worlds-back {
   width: 1.4rem;
   font-size: 0.82rem;
   font-weight: 800;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .worlds-review-prompt {
@@ -1439,7 +1440,7 @@ button.ghost.worlds-back {
   font-size: 0.98rem;
   line-height: 1.3;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .worlds-review-miss {
@@ -1454,19 +1455,19 @@ button.ghost.worlds-back {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.35;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .worlds-review-yours strong,
 .worlds-review-right strong {
-  color: var(--ink);
+  color: var(--text);
   font-weight: 800;
 }
 
 .worlds-review-right {
   padding: 6px 10px;
   border-radius: var(--radius);
-  background: color-mix(in srgb, #ea580c 10%, var(--panel));
+  background: color-mix(in srgb, #ea580c 10%, var(--surface));
   color: #c2410c;
 }
 
@@ -1475,7 +1476,7 @@ button.ghost.worlds-back {
 }
 
 .worlds-review-right.is-ok {
-  background: color-mix(in srgb, #16a34a 12%, var(--panel));
+  background: color-mix(in srgb, #16a34a 12%, var(--surface));
   color: #15803d;
 }
 
@@ -1498,21 +1499,21 @@ button.ghost.worlds-back {
   gap: 8px;
   padding: 6px 10px;
   border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--panel);
+  border: 1px solid var(--border);
+  background: var(--surface);
   font-size: 0.9rem;
   font-weight: 700;
 }
 
 .worlds-review-option.is-correct {
-  border-color: color-mix(in srgb, #16a34a 45%, var(--line));
-  background: color-mix(in srgb, #16a34a 12%, var(--panel));
+  border-color: color-mix(in srgb, #16a34a 45%, var(--border));
+  background: color-mix(in srgb, #16a34a 12%, var(--surface));
   color: #166534;
 }
 
 .worlds-review-option.is-picked:not(.is-correct) {
-  border-color: color-mix(in srgb, #ea580c 40%, var(--line));
-  background: color-mix(in srgb, #ea580c 10%, var(--panel));
+  border-color: color-mix(in srgb, #ea580c 40%, var(--border));
+  background: color-mix(in srgb, #ea580c 10%, var(--surface));
 }
 
 @media (max-width: 700px) {
@@ -1539,7 +1540,7 @@ button.ghost.worlds-back {
   font-family: var(--font-display);
   font-size: clamp(3.5rem, 12vw, 5.5rem);
   margin: 0;
-  color: var(--accent);
+  color: var(--accent-ink);
   line-height: 1;
 }
 
@@ -1641,7 +1642,7 @@ button.ghost.worlds-back {
 }
 
 .accent-swatch.is-active {
-  border-color: var(--ink);
-  box-shadow: 0 0 0 2px var(--panel-strong);
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--surface-raised);
 }
 

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { AccentProvider } from './accent'
 import { AuthProvider, useAuth } from './auth'
 import { AppLoader } from './components/AppLoader'
+import { SpaceSky, useSpace, type SpaceLevel } from './components/SpaceSky'
 import { ThemeProvider } from './theme'
 import { ToastProvider } from './toast'
 import { AdminPage } from './pages/AdminPage'
@@ -87,6 +88,14 @@ function ExplorerApp({ userId }: { userId: number }) {
     view === 'challenge' && challengeId != null
       ? challengeTransition
       : viewTransition
+
+  const space: SpaceLevel =
+    view === 'hub'
+      ? 'high'
+      : view === 'troops' || view === 'worlds' || view === 'world' || view === 'course'
+        ? 'none'
+        : 'medium'
+  useSpace(space)
 
   return (
     <div className="app-view-root">
@@ -213,6 +222,7 @@ export default function App() {
       <AccentProvider>
         <ToastProvider>
           <AuthProvider>
+            <SpaceSky />
             <AppRouter />
           </AuthProvider>
         </ToastProvider>

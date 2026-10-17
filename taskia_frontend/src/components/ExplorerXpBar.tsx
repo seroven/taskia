@@ -1,3 +1,4 @@
+import { Star } from '@phosphor-icons/react'
 import { progressPct } from '../lib/xp'
 import { useAuth } from '../auth'
 
@@ -16,6 +17,7 @@ export function ExplorerXpBar() {
       title={`Nivel ${level} · ${into}/1000 XP`}
       aria-label={`Nivel ${level}, ${into} de 1000 experiencia`}
     >
+      <Star className="xp-bar-star" size={16} weight="fill" aria-hidden />
       <span className="xp-bar-level">Nv. {level}</span>
       <div className="xp-bar-track">
         <div className="xp-bar-fill" style={{ width: `${pct}%` }} />

@@ -19,14 +19,21 @@ export type AccentId =
   | 'pink'
   | 'violet'
 
-export const ACCENTS: { id: AccentId; label: string; swatch: string }[] = [
-  { id: 'blue', label: 'Azul', swatch: '#2563eb' },
-  { id: 'teal', label: 'Turquesa', swatch: '#0d9488' },
-  { id: 'green', label: 'Verde', swatch: '#16a34a' },
-  { id: 'amber', label: 'Ámbar', swatch: '#d97706' },
-  { id: 'rose', label: 'Fresa', swatch: '#e11d48' },
-  { id: 'pink', label: 'Rosa', swatch: '#db2777' },
-  { id: 'violet', label: 'Violeta', swatch: '#7c3aed' },
+export const ACCENTS: {
+  id: AccentId
+  label: string
+  swatch: string
+  swatchDark: string
+  mark: string
+  markDark: string
+}[] = [
+  { id: 'blue', label: 'Azul', swatch: '#2563eb', swatchDark: '#60a5fa', mark: '#ffffff', markDark: '#1b1640' },
+  { id: 'teal', label: 'Turquesa', swatch: '#0d9488', swatchDark: '#2dd4bf', mark: '#1b1640', markDark: '#1b1640' },
+  { id: 'green', label: 'Verde', swatch: '#16a34a', swatchDark: '#4ade80', mark: '#1b1640', markDark: '#1b1640' },
+  { id: 'amber', label: 'Ámbar', swatch: '#d97706', swatchDark: '#fbbf24', mark: '#1b1640', markDark: '#1b1640' },
+  { id: 'rose', label: 'Fresa', swatch: '#e11d48', swatchDark: '#fb7185', mark: '#ffffff', markDark: '#1b1640' },
+  { id: 'pink', label: 'Rosa', swatch: '#db2777', swatchDark: '#f472b6', mark: '#ffffff', markDark: '#1b1640' },
+  { id: 'violet', label: 'Violeta', swatch: '#7c3aed', swatchDark: '#a78bfa', mark: '#ffffff', markDark: '#1b1640' },
 ]
 
 const STORAGE_KEY = 'taskia-accent'

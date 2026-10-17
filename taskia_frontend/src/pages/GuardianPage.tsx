@@ -6,6 +6,7 @@ import { AppearanceTools } from '../components/AppearanceTools'
 import { AppLoader } from '../components/AppLoader'
 import { EmptyState } from '../components/EmptyState'
 import { SessionActions } from '../components/SessionActions'
+import { useSpace } from '../components/SpaceSky'
 import { TextField } from '../components/ui/Field'
 import { SwitchToggle } from '../components/ui/SwitchToggle'
 import { errorMessage } from '../lib/errors'
@@ -22,6 +23,7 @@ import { useToast } from '../toast'
 export function GuardianPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
+  useSpace('low')
   const [explorers, setExplorers] = useState<ParentExplorer[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(() =>
     user ? readGuardianExplorerId(user.id) : null,

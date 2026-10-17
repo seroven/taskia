@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '../auth'
 import { AppearanceTools } from '../components/AppearanceTools'
 import { SessionActions } from '../components/SessionActions'
+import { useSpace } from '../components/SpaceSky'
 import { readAdminPlace, writeAdminPlace } from '../lib/sessionPlace'
 import { AdminAccountsPage } from './admin/AdminAccountsPage'
 import { AdminDashboard } from './admin/AdminDashboard'
@@ -12,6 +13,7 @@ type AdminView = 'dashboard' | 'accounts'
 
 export function AdminPage() {
   const { user } = useAuth()
+  useSpace('low')
   const [saved] = useState(() => readAdminPlace(user?.id ?? 0))
   const [selectedId, setSelectedId] = useState<number | null>(saved.selectedId)
   const [view, setView] = useState<AdminView>(saved.view)

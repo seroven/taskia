@@ -6,42 +6,42 @@
   min-width: 140px;
   max-width: 220px;
   padding: 6px 10px;
-  border: 2px solid var(--line);
+  border: 2px solid var(--border);
   border-radius: 999px;
-  background: var(--panel);
+  background: var(--surface);
+}
+
+.xp-bar-star {
+  color: var(--star);
+  flex-shrink: 0;
 }
 
 .xp-bar-level {
   font-weight: 800;
   font-size: 0.78rem;
   letter-spacing: 0.02em;
-  color: var(--accent);
+  color: var(--accent-ink);
   white-space: nowrap;
 }
 
 .xp-bar-track {
   flex: 1;
-  height: 10px;
+  height: 12px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  background: var(--surface-raised);
   overflow: hidden;
 }
 
 .xp-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    var(--accent),
-    color-mix(in srgb, var(--accent) 70%, #fff)
-  );
-  transition: width 0.35s ease;
+  background: var(--star);
 }
 
 .xp-bar-frac {
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--text);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -91,10 +91,10 @@
   align-items: flex-start;
   gap: 8px;
   padding: 22px 20px;
-  border: 2px solid var(--line);
+  border: 2px solid var(--border);
   border-radius: 22px;
-  background: var(--panel);
-  color: var(--ink);
+  background: var(--surface);
+  color: var(--text);
   text-align: left;
   cursor: pointer;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
@@ -109,13 +109,13 @@
 .hub-door--soon:disabled {
   cursor: default;
   opacity: 1;
-  color: var(--ink);
+  color: var(--text);
   border-style: dashed;
 }
 
 .hub-door--accent {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-  background: color-mix(in srgb, var(--accent-soft) 80%, var(--panel));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 80%, var(--surface));
 }
 
 .hub-door-icon {
@@ -146,7 +146,9 @@
     min-width: 0;
     max-width: 160px;
   }
+}
 
+@media (max-width: 420px) {
   .xp-bar-frac {
     display: none;
   }

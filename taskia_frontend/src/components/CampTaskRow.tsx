@@ -1,5 +1,5 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { ArrowRight, BookOpenText, Check, LockSimple } from '@phosphor-icons/react'
+import { ArrowRight, BookOpenText, Check, Circle, LockSimple, Sparkle } from '@phosphor-icons/react'
 import { canOpenStudyMode, canViewStudySession, type Task } from '../types'
 
 const SWIPE_LIMIT = 140
@@ -18,6 +18,12 @@ const STATUS_CHIP: Record<Task['status'], string> = {
   studying: 'Con Taskia',
   done: 'Lista',
 }
+
+const STATUS_ICON = {
+  pending: Circle,
+  studying: Sparkle,
+  done: Check,
+} as const
 
 function displayTitle(title: string) {
   const text = title.trim()
@@ -52,6 +58,7 @@ export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Pro
   const horizontal = useRef(false)
   const ignoreClick = useRef(false)
   const actionLabel = canStudy ? (task.status === 'studying' ? 'Seguir' : 'Estudiar') : 'Ver chat'
+  const StatusIcon = STATUS_ICON[task.status]
 
   function onCard() {
     if (ignoreClick.current) {
@@ -154,7 +161,10 @@ export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Pro
             {task.course_name} · {kindLabel}
           </span>
         </span>
-        <span className={`camp-chip camp-chip-${task.status}`}>{STATUS_CHIP[task.status]}</span>
+        <span className={`camp-chip camp-chip-${task.status}`}>
+          <StatusIcon size={14} weight="bold" aria-hidden />
+          {STATUS_CHIP[task.status]}
+        </span>
       </button>
 
       {featured && !done && canStudy ? (

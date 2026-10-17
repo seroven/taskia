@@ -54,15 +54,15 @@ function useChartColors() {
     }
     return {
       accent: read('--accent', '#2563eb'),
-      ink: read('--ink', '#1a2a4a'),
-      muted: read('--muted', '#5a6d8c'),
+      ink: read('--text', '#1a2a4a'),
+      muted: read('--text-muted', '#5a6d8c'),
       danger: read('--danger', '#e11d48'),
-      panel: read('--panel-strong', '#ffffff'),
-      line: read('--line', 'rgba(37, 99, 235, 0.14)'),
-      done: '#16a34a',
-      studying: '#0d9488',
-      voice: '#d97706',
-      pending: read('--muted', '#5a6d8c'),
+      panel: read('--surface-raised', '#ffffff'),
+      line: read('--border', 'rgba(37, 99, 235, 0.14)'),
+      done: read('--chart-1', '#16a34a'),
+      studying: read('--chart-2', '#0d9488'),
+      voice: read('--chart-3', '#d97706'),
+      pending: read('--text-muted', '#5a6d8c'),
       progress: read('--accent', '#2563eb'),
     }
   }, [theme, accent])

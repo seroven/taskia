@@ -57,8 +57,8 @@
   gap: 14px;
   padding: 22px 28px;
   border-radius: 24px;
-  background: var(--panel);
-  border: 2px solid var(--line);
+  background: var(--surface);
+  border: 2px solid var(--border);
   box-shadow: var(--shadow-sm);
 }
 
@@ -71,7 +71,7 @@
 .app-loader-card p {
   margin: 0;
   font-weight: 800;
-  color: var(--ink);
+  color: var(--text);
   text-align: center;
 }
 
@@ -115,7 +115,7 @@
 .admin-page-head p,
 .admin-identity p {
   margin: 6px 0 0;
-  color: var(--muted);
+  color: var(--text-muted);
   font-weight: 700;
 }
 
@@ -202,7 +202,7 @@
 .admin-open-student:hover {
   transform: translateY(-1px);
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
 }
 
 .admin-filters {
@@ -227,7 +227,7 @@
 .admin-filter-note {
   margin: 0;
   flex: 1 1 220px;
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 0.86rem;
   font-weight: 700;
   line-height: 1.35;
@@ -259,8 +259,8 @@
   gap: 14px;
   padding: 14px 16px;
   border-radius: calc(var(--radius) + 4px);
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--surface);
+  border: 1px solid var(--border);
   min-width: 0;
 }
 
@@ -273,7 +273,7 @@
   font-family: var(--font-display);
   font-size: 1.45rem;
   font-weight: 650;
-  color: var(--ink);
+  color: var(--text);
   line-height: 1.1;
 }
 
@@ -288,7 +288,7 @@
   margin: 2px 0 0;
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-muted);
   line-height: 1.3;
 }
 
@@ -374,8 +374,8 @@
   gap: 12px;
   width: 100%;
   text-align: left;
-  background: color-mix(in srgb, var(--panel-strong) 70%, transparent);
-  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 10px 12px;
   cursor: pointer;
@@ -386,7 +386,7 @@
 
 .admin-followup-row:hover {
   background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
 }
 
 .admin-followup-name {
@@ -407,8 +407,8 @@
 }
 
 .admin-panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 4px);
   padding: 16px 18px 18px;
   min-width: 0;
@@ -459,14 +459,14 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .admin-tab {
   appearance: none;
   border: 0;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-muted);
   font: inherit;
   font-weight: 800;
   padding: 10px 14px;
@@ -477,7 +477,7 @@
 }
 
 .admin-tab:hover {
-  color: var(--ink);
+  color: var(--text);
   background: var(--accent-soft);
 }
 
@@ -489,9 +489,9 @@
 .data-table-wrap,
 .admin-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--panel-strong);
+  background: var(--surface-raised);
 }
 
 .data-table-wrap--flush,
@@ -543,7 +543,7 @@
 .admin-table td {
   text-align: left;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
   vertical-align: top;
   font-size: 0.92rem;
   white-space: nowrap;
@@ -561,8 +561,8 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--muted);
-  background: color-mix(in srgb, var(--accent) 6%, var(--panel-strong));
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-raised));
   white-space: nowrap;
 }
 
@@ -595,7 +595,7 @@
 .admin-table-summary {
   display: block;
   margin-top: 2px;
-  color: var(--muted);
+  color: var(--text-muted);
   font-weight: 700;
   font-size: 0.82rem;
 }
@@ -609,7 +609,7 @@
 
 .admin-table-empty {
   text-align: center;
-  color: var(--muted);
+  color: var(--text-muted);
   font-weight: 700;
   padding: 28px 16px !important;
 }
@@ -636,8 +636,8 @@
 }
 
 .admin-pill.is-muted {
-  background: color-mix(in srgb, var(--muted) 16%, transparent);
-  color: var(--muted);
+  background: color-mix(in srgb, var(--text-muted) 16%, transparent);
+  color: var(--text-muted);
 }
 
 .admin-worlds-explorer-wrap {
@@ -682,7 +682,7 @@
   appearance: none;
   border: 0;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-muted);
   width: 28px;
   flex-shrink: 0;
   cursor: pointer;
@@ -742,7 +742,7 @@
 .admin-tree-copy span {
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .admin-tree-btn.is-active .admin-tree-copy span {
@@ -765,7 +765,7 @@
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .admin-tree-summary {
@@ -781,8 +781,8 @@
   appearance: none;
   width: 100%;
   text-align: left;
-  border: 1px solid var(--line);
-  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
   border-radius: 14px;
   padding: 10px 12px;
   cursor: pointer;
@@ -800,14 +800,14 @@
 .admin-tree-summary span {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .admin-study-card {
   padding: 12px 14px;
   border-radius: 16px;
-  background: var(--panel-strong);
-  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -830,9 +830,9 @@
 }
 
 .admin-world-card {
-  border: 1px solid var(--line);
+  border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 4px);
-  background: var(--panel);
+  background: var(--surface);
   overflow: hidden;
 }
 
@@ -842,7 +842,7 @@
   gap: 16px;
   flex-wrap: wrap;
   padding: 14px 18px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 
 .admin-world-card h3 {
@@ -910,18 +910,18 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 16px;
-  background: var(--panel-strong);
-  border: 1px solid var(--line);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
 }
 
 .admin-course-row span {
-  color: var(--ink);
+  color: var(--text);
   font-weight: 700;
   font-size: 0.9rem;
 }
 
 .admin-course-row.is-archived span {
-  color: var(--muted);
+  color: var(--text-muted);
 }
 
 .admin-import {
@@ -929,13 +929,13 @@
   flex-direction: column;
   gap: 10px;
   padding-top: 6px;
-  border-top: 1px dashed color-mix(in srgb, var(--line) 80%, transparent);
+  border-top: 1px dashed color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .admin-import-label {
   margin: 0;
   font-weight: 800;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .admin-import-actions {
@@ -955,14 +955,14 @@
 
 .admin-import-chip {
   appearance: none;
-  border: 2px solid var(--line);
-  background: var(--panel-strong);
+  border: 2px solid var(--border);
+  background: var(--surface-raised);
   border-radius: var(--radius-pill);
   padding: 8px 12px;
   font: inherit;
   font-weight: 800;
   cursor: pointer;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .admin-import-chip.is-on {

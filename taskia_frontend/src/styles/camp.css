@@ -10,28 +10,25 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  border: 2px solid var(--line);
+  border: 2px solid var(--border);
   border-radius: 999px;
-  background: var(--panel);
-  color: var(--ink);
+  background: var(--surface);
+  color: var(--text);
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease,
-    color 0.18s ease;
 }
 
 .session-icon-btn:hover {
-  transform: translateY(-1px);
   background: var(--accent-soft);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .session-icon-btn:focus-visible {
-  outline: 3px solid var(--accent-glow);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -99,9 +96,9 @@
 }
 
 .expand-btn--ghost {
-  border: 2px solid var(--line);
-  background: var(--panel);
-  color: var(--ink);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
 }
 
 .expand-btn--ghost:hover,
@@ -114,13 +111,13 @@
 .expand-btn--primary {
   border: 0;
   background: var(--accent);
-  color: #ffffff;
-  box-shadow: 0 10px 24px var(--accent-glow);
+  color: var(--on-accent);
+  box-shadow: 0 4px 0 var(--accent-edge);
 }
 
 .expand-btn--primary:hover,
 .expand-btn--primary:focus-visible {
-  background: var(--accent-hover);
+  background: var(--accent);
 }
 
 .expand-btn--accent {
@@ -132,7 +129,7 @@
 .expand-btn--accent:hover,
 .expand-btn--accent:focus-visible {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 
 .expand-btn:disabled:hover,
@@ -176,16 +173,15 @@
   gap: 14px;
   padding: 22px 28px;
   border-radius: 24px;
-  background: var(--panel);
-  border: 2px solid var(--line);
+  background: var(--surface);
+  border: 2px solid var(--border);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(10px);
 }
 
 .board-loader-card p {
   margin: 0;
   font-weight: 800;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .board-spinner {
@@ -231,12 +227,12 @@
   border-radius: var(--radius-pill);
   padding: 11px 12px;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--text-muted);
   font-weight: 800;
 }
 
 .kind-toggle button.active {
-  background: var(--panel-strong);
+  background: var(--surface-raised);
   color: var(--accent);
   box-shadow: var(--shadow-sm);
 }
@@ -246,7 +242,7 @@
   padding: 12px 14px;
   border-radius: 16px;
   background: var(--accent-soft);
-  color: var(--muted);
+  color: var(--text-muted);
   font-weight: 700;
 }
 
@@ -258,8 +254,6 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.12);
-  -webkit-backdrop-filter: blur(12px) saturate(1.05);
-  backdrop-filter: blur(12px) saturate(1.05);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,7 +273,7 @@
 
 .admin-main p {
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-muted);
   line-height: 1.5;
 }
 
@@ -319,7 +313,7 @@
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
-  color: var(--muted);
+  color: var(--text-muted);
   font-weight: 800;
   cursor: pointer;
 }
@@ -333,7 +327,7 @@
   position: absolute;
   inset: 0;
   border-radius: var(--radius-pill);
-  background: var(--panel-strong);
+  background: var(--surface-raised);
   box-shadow: var(--shadow-sm);
 }
 
@@ -378,7 +372,7 @@
   margin: 0;
   font-size: 0.92rem;
   font-weight: 800;
-  color: var(--muted);
+  color: var(--text-muted);
   white-space: nowrap;
   text-align: center;
 }
@@ -440,7 +434,7 @@
   min-width: 72px;
   height: 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
   overflow: hidden;
 }
 
@@ -482,9 +476,9 @@
   align-items: center;
   min-height: 44px;
   padding: 8px 10px 8px 8px;
-  border: 2px solid var(--line);
+  border: 2px solid var(--border);
   border-radius: 18px;
-  background: var(--panel-strong);
+  background: var(--surface-raised);
   box-shadow: var(--shadow-sm);
   touch-action: pan-y;
   transition: transform 0.18s ease;
@@ -504,7 +498,7 @@
   gap: 6px;
   padding: 0 18px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 800;
   pointer-events: none;
 }
@@ -522,7 +516,7 @@
 }
 
 .camp-row.is-featured {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
 }
 
 .camp-check {
@@ -530,9 +524,9 @@
   height: 44px;
   padding: 0;
   border-radius: 999px;
-  border: 2px solid var(--line);
-  background: var(--panel);
-  color: var(--ink);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   display: inline-grid;
   place-items: center;
   cursor: pointer;
@@ -542,12 +536,12 @@
 .camp-check.is-done {
   border-color: var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   cursor: default;
 }
 
 .camp-check.is-locked {
-  color: var(--muted);
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
@@ -590,7 +584,7 @@
 }
 
 .camp-row-meta {
-  color: var(--muted);
+  color: var(--text-muted);
   font-size: 0.8rem;
   font-weight: 700;
   overflow: hidden;
@@ -599,18 +593,26 @@
 }
 
 .camp-chip {
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--r-chip);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--text);
   white-space: nowrap;
+}
+
+.camp-chip svg {
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 .camp-chip-done {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--text);
 }
 
 .camp-row-cta {
@@ -625,7 +627,7 @@
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-muted);
   cursor: pointer;
   display: inline-grid;
   place-items: center;
@@ -634,10 +636,10 @@
 .camp-add-row {
   width: 100%;
   min-height: 44px;
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--border);
   border-radius: 18px;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-muted);
   font-weight: 800;
   cursor: pointer;
 }
@@ -687,7 +689,7 @@
   }
 
   .camp-tab.is-active {
-    background: var(--panel-strong);
+    background: var(--surface-raised);
     box-shadow: var(--shadow-sm);
   }
 

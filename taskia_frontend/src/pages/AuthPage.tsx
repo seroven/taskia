@@ -4,11 +4,13 @@ import { useAuth } from '../auth'
 import { AppearanceTools } from '../components/AppearanceTools'
 import { TextField, PasswordField } from '../components/ui/Field'
 import { errorMessage } from '../lib/errors'
+import { useSpace } from '../components/SpaceSky'
 import { useToast } from '../toast'
 
 export function AuthPage() {
   const { login } = useAuth()
   const { showToast } = useToast()
+  useSpace('high')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)

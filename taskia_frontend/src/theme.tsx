@@ -15,6 +15,7 @@ type Theme = 'light' | 'dark'
 interface ThemeContextValue {
   theme: Theme
   toggleTheme: () => void
+  setTheme: (next: Theme) => void
 }
 
 const STORAGE_KEY = 'taskia-theme'
@@ -47,9 +48,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme((current) => (current === 'light' ? 'dark' : 'light'))
   }, [])
 
+  const setThemeMode = useCallback((next: Theme) => {
+    setTheme(next)
+  }, [])
+
   const value = useMemo(
-    () => ({ theme, toggleTheme }),
-    [theme, toggleTheme],
+    () => ({ theme, toggleTheme, setTheme: setThemeMode }),
+    [theme, toggleTheme, setThemeMode],
   )
 
   return (

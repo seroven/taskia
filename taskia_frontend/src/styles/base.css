@@ -17,16 +17,12 @@ body,
 }
 
 html {
-  background:
-    radial-gradient(circle at 10% 6%, var(--bg-spot), transparent 20%),
-    radial-gradient(circle at 94% 2%, var(--bg-spot-2), transparent 16%),
-    linear-gradient(165deg, var(--bg-a) 0%, var(--bg-b) 58%, var(--bg-c) 100%);
-  background-attachment: fixed;
+  background: var(--bg);
 }
 
 body {
   font-family: var(--font-ui);
-  color: var(--ink);
+  color: var(--text);
   overflow: hidden;
   background: transparent;
 }
@@ -50,7 +46,7 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--accent) 55%, var(--panel-strong))
+  scrollbar-color: color-mix(in srgb, var(--accent) 55%, var(--surface-raised))
     color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
@@ -66,7 +62,7 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--accent) 55%, var(--panel-strong));
+  background: color-mix(in srgb, var(--accent) 55%, var(--surface-raised));
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -74,7 +70,7 @@ body {
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--accent) 78%, var(--panel-strong));
+  background: color-mix(in srgb, var(--accent) 78%, var(--surface-raised));
   border: 2px solid transparent;
   background-clip: padding-box;
 }
