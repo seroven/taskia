@@ -33,6 +33,23 @@
   position: absolute;
   top: 20px;
   right: 20px;
+  z-index: 3;
+}
+
+.auth-planet {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.auth-planet--a {
+  top: -80px;
+  left: -90px;
+}
+
+.auth-planet--b {
+  right: -70px;
+  bottom: -100px;
 }
 
 .appearance-tools {
@@ -129,11 +146,13 @@
 }
 
 .auth-panel {
+  position: relative;
+  z-index: 1;
   width: min(460px, 100%);
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 32px;
-  box-shadow: var(--shadow);
+  border: 2px solid var(--border);
+  border-radius: var(--r-panel);
+  box-shadow: none;
   padding: 28px;
 }
 

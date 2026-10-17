@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../auth'
 import { AppearanceTools } from '../components/AppearanceTools'
+import { Planet } from '../components/Planet'
 import { TextField, PasswordField } from '../components/ui/Field'
 import { errorMessage } from '../lib/errors'
 import { useSpace } from '../components/SpaceSky'
@@ -34,6 +35,12 @@ export function AuthPage() {
 
   return (
     <div className="auth-shell">
+      <div className="auth-planet auth-planet--a">
+        <Planet size={220} variant="sand" />
+      </div>
+      <div className="auth-planet auth-planet--b">
+        <Planet size={180} variant="ice" />
+      </div>
       <div className="auth-theme-slot">
         <AppearanceTools />
       </div>
