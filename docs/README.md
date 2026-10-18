@@ -22,6 +22,10 @@ Qué hace la app y cómo se usa.
 - [PLAN_ESTRUCTURA.md](planes/PLAN_ESTRUCTURA.md) — reestructura de carpetas. El backend ya está; sigue el frontend desde F1.
 - [ROADMAP_V2.md](planes/ROADMAP_V2.md) — workers de una pasada en GitHub Actions; WhatsApp y Flutter en pausa. Los YAML están en `.github/workflows/`.
 
+## Agentes
+
+- [AGENTES.md](AGENTES.md) — Cursor y Claude Code en el mismo repo (fuente compartida, shell, graphify).
+
 ## Junto al código
 
 No están aquí a propósito: el README de cada app y el script de conversión viven al lado de lo que documentan.

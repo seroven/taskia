@@ -1,0 +1,12 @@
+---
+description: Convivencia Cursor + Claude Code; fuente compartida de contexto
+alwaysApply: true
+---
+
+# Cursor y Claude Code
+
+Este repo se trabaja también con Claude Code. No dupliques políticas largas en `.claude/`; la verdad compartida es `STATE.md` y `docs/` ([AGENTES.md](../../docs/AGENTES.md)).
+
+- Cursor: implementación diaria; reglas en `.cursor/rules/`.
+- Claude Code: graphify y sesiones largas; skill en `.claude/skills/graphify/`, entrada en `CLAUDE.md`.
+- No restablezcas hooks `PreToolUse` de `graphify hook-guard` en `.claude/settings.json` salvo que el usuario lo pida: en Windows disparaban `.sh` temporales. Ahí solo debe quedar `defaultShell: powershell` (u otra preferencia explícita del usuario).

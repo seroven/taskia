@@ -1,3 +1,9 @@
+# Taskia — Claude Code
+
+Este repo también se usa con **Cursor**. Fuente compartida: `STATE.md` y `docs/` ([AGENTES.md](docs/AGENTES.md)). Lee `STATE.md` al empezar una tarea. Si la doc y el código se contradicen, manda el código y corrige `STATE.md`.
+
+Convenciones de commits, migraciones y forma de `STATE.md`: `.cursor/rules/` (mismas normas aunque Cursor no las inyecte aquí). Rama de trabajo: `staging`. En Windows, PowerShell: encadenar con `;`, no `&&`.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

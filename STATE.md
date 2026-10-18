@@ -33,6 +33,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - Chat del Guardián es uno por explorador y día civil del visor (`parent_chat_messages.chat_date`). El día anterior queda guardado y no se muestra ni se manda a Gemini. El resumen es el de ese día. Sin fila, texto fijo y sin llamada. Lo escribe `scripts/daily-summary.ts` (ayer en `America/Lima`). GitHub Actions lo dispara con `.github/workflows/daily-summary.yml`. Sin actividad no llama a Gemini. Los avisos y la inactividad tienen workflow, y el envío espera al proveedor de WhatsApp.
 - Tripulación, XP y hub ya están en el producto. [ROADMAP_V2.md](docs/planes/ROADMAP_V2.md) sigue en pausa.
 - La documentación larga vive en `docs/` ([índice](docs/README.md)): producto, datos y planes. `STATE.md` se queda en la raíz.
+- Cursor y Claude Code conviven en el mismo repo: verdad compartida en `STATE.md` y `docs/AGENTES.md`; Cursor en `.cursor/rules/`, Claude Code en `.claude/` + `CLAUDE.md`. Sin hooks `PreToolUse` de graphify (evitan `.sh` en Windows); `defaultShell` es PowerShell.
 - El trabajo del día se commitea y se sube a `staging`.
 - La pantalla interna (explorador, admin o guardián) se guarda en `sessionStorage` de la pestaña. Recargar vuelve al mismo lugar; cerrar la pestaña lo olvida. Cada cuenta lee solo lo suyo.
 
