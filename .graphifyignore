@@ -1,0 +1,10 @@
+node_modules/
+docs/
+kenney_planets/
+*.md
+logs.txt
+*.png
+*.svg
+*.pdf
+*.yml
+*.html
