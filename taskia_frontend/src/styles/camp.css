@@ -199,42 +199,9 @@
   }
 }
 
-.study-passed-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: #047857;
-  background: rgba(16, 185, 129, 0.16);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-}
-
 .kind-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-}
-
-.kind-toggle button {
-  border: 0;
-  background: transparent;
-  border-radius: var(--radius-pill);
-  padding: 11px 12px;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-weight: 800;
-}
-
-.kind-toggle button.active {
-  background: var(--surface-raised);
-  color: var(--accent);
-  box-shadow: var(--shadow-sm);
 }
 
 .kind-hint {

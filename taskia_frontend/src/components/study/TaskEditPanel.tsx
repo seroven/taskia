@@ -78,7 +78,7 @@ export function TaskEditPanel({ task, courses, onSave }: Props) {
 
   return (
     <form className="study-edit-panel" onSubmit={(e) => void onSubmit(e)}>
-      <div className="kind-toggle" role="group" aria-label="Tipo de tarea">
+      <div className="kind-toggle segmented" role="group" aria-label="Tipo de tarea">
         <button
           type="button"
           className={taskKind === 'daily' ? 'active' : ''}

@@ -1117,6 +1117,7 @@ export function StudyChat({
             </button>
           ) : null}
           <textarea
+            className="field-control"
             value={draft}
             onChange={(e) => {
               setDraft(e.target.value)
@@ -1128,7 +1129,7 @@ export function StudyChat({
           />
           <button
             type="button"
-            className="study-photo-btn"
+            className="session-icon-btn study-photo-btn"
             aria-label="Foto"
             title="Adjuntar una foto o pegarla con Ctrl+V"
             disabled={sending || voiceBusy}

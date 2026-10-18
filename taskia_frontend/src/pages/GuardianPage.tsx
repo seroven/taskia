@@ -8,6 +8,7 @@ import { EmptyState } from '../components/EmptyState'
 import { SessionActions } from '../components/SessionActions'
 import { StudyBubble } from '../components/study/StudyBubble'
 import { useSpace } from '../components/SpaceSky'
+import { ChipButton } from '../components/ui/Chip'
 import { TextField } from '../components/ui/Field'
 import { SwitchToggle } from '../components/ui/SwitchToggle'
 import { errorMessage } from '../lib/errors'
@@ -88,16 +89,15 @@ export function GuardianPage() {
               {explorers.map((explorer) => {
                 const active = explorer.id === selectedId
                 return (
-                  <button
+                  <ChipButton
                     key={explorer.id}
-                    type="button"
                     role="tab"
                     aria-selected={active}
-                    className={`guardian-explorer-chip${active ? ' is-active' : ''}`}
+                    active={active}
                     onClick={() => setSelectedId(explorer.id)}
                   >
                     {explorer.username}
-                  </button>
+                  </ChipButton>
                 )
               })}
             </div>
@@ -230,6 +230,7 @@ function GuardianChat({
       {error && <p className="form-error">{error}</p>}
       <form className="study-chat-form" onSubmit={(e) => void onSend(e)}>
         <textarea
+          className="field-control"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="¿Cómo le fue hoy?"

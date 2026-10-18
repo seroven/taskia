@@ -7,6 +7,8 @@ import {
 import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
 import { StudyChat } from '../../components/study/StudyChat'
+import { Button } from '../../components/ui/Button'
+import { Chip } from '../../components/ui/Chip'
 import { TextAreaField, TextField } from '../../components/ui/Field'
 import { WorldsStatusPill } from '../../components/worlds/WorldsStatusPill'
 import { errorMessage } from '../../lib/errors'
@@ -214,19 +216,19 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
   return (
     <div className="study-page">
       <header className="study-header">
-        <button type="button" className="ghost" onClick={onBack}>
+        <Button variant="ghost" onClick={onBack}>
           <ArrowLeft size={18} weight="bold" />
           Curso
-        </button>
+        </Button>
         <div className="study-header-main">
           <h1>{mission.title}</h1>
           <div className="study-header-tags">
-            <span className="course-tag">{mission.course_name}</span>
+            <Chip>{mission.course_name}</Chip>
             <WorldsStatusPill kind="mission" value={mission.status} />
           </div>
         </div>
         <div className="study-header-actions">
-          <div className="study-mode-toggle" role="group" aria-label="Modo">
+          <div className="study-mode-toggle segmented" role="group" aria-label="Modo">
             <button
               type="button"
               className={mode === 'study' ? 'active' : ''}

@@ -4,6 +4,8 @@ import { ArrowLeft, Check } from '@phosphor-icons/react'
 import { api } from '../api'
 import { AppLoader } from '../components/AppLoader'
 import { StudyChat } from '../components/study/StudyChat'
+import { Button } from '../components/ui/Button'
+import { Chip } from '../components/ui/Chip'
 import { TaskEditPanel } from '../components/study/TaskEditPanel'
 import { errorMessage } from '../lib/errors'
 import {
@@ -187,23 +189,21 @@ export function StudyPage({ taskId, onBack }: Props) {
   return (
     <div className="study-page">
       <header className="study-header">
-        <button type="button" className="ghost" onClick={onBack}>
+        <Button variant="ghost" onClick={onBack}>
           <ArrowLeft size={18} weight="bold" />
           Campamento
-        </button>
+        </Button>
         <div className="study-header-main">
           <h1>{task.title}</h1>
           <div className="study-header-tags">
-            <span className="course-tag">{task.course_name}</span>
-            {task.needs_help ? <span className="study-passed-tag">Con Taskia</span> : null}
-            {task.status === 'done' ? <span className="study-passed-tag">Listo</span> : null}
+            <Chip>{task.course_name}</Chip>
+            {task.needs_help ? <Chip tone="accent">Con Taskia</Chip> : null}
+            {task.status === 'done' ? <Chip tone="success">Listo</Chip> : null}
           </div>
         </div>
         <div className="study-header-actions">
           {task.task_kind === 'project' && task.status !== 'done' ? (
-            <button
-              type="button"
-              className="primary"
+            <Button
               disabled={completing}
               onClick={() => {
                 void (async () => {
@@ -234,10 +234,10 @@ export function StudyPage({ taskId, onBack }: Props) {
             >
               <Check size={16} weight="bold" />
               {completing ? 'Guardando…' : '¡Listo!'}
-            </button>
+            </Button>
           ) : null}
           {!readOnly ? (
-            <div className="study-mode-toggle" role="group" aria-label="Modo">
+            <div className="study-mode-toggle segmented" role="group" aria-label="Modo">
               <button
                 type="button"
                 className={mode === 'study' ? 'active' : ''}

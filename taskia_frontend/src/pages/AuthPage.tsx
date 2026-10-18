@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../auth'
 import { AppearanceTools } from '../components/AppearanceTools'
 import { Planet } from '../components/Planet'
+import { Button } from '../components/ui/Button'
 import { TextField, PasswordField } from '../components/ui/Field'
 import { errorMessage } from '../lib/errors'
 import { useSpace } from '../components/SpaceSky'
@@ -73,9 +74,9 @@ export function AuthPage() {
             required
             minLength={6}
           />
-          <button type="submit" className="primary" disabled={submitting}>
+          <Button type="submit" disabled={submitting}>
             {submitting ? 'Un momento…' : '¡Entrar!'}
-          </button>
+          </Button>
         </form>
       </motion.div>
     </div>

@@ -572,44 +572,6 @@ button.ghost.worlds-back {
   transform: translateY(0);
 }
 
-.worlds-pill,
-.worlds-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 0.75rem;
-  font-weight: 800;
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.worlds-status-pending {
-  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
-  color: var(--text);
-}
-
-.worlds-status-empty {
-  background: color-mix(in srgb, var(--text-muted) 14%, transparent);
-  color: var(--text-muted);
-}
-
-.worlds-status-studying {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.worlds-status-mastered {
-  background: color-mix(in srgb, var(--success) 18%, transparent);
-  color: var(--success);
-}
-
-.worlds-cover--course .worlds-status-mastered {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-
 .worlds-empty {
   display: flex;
   flex-direction: column;
@@ -1619,30 +1581,4 @@ button.ghost.worlds-back {
   }
 }
 
-.accent-picker {
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  gap: 6px;
-  min-height: 48px;
-  height: 48px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-}
-
-.accent-swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  background: var(--swatch);
-  cursor: pointer;
-  padding: 0;
-}
-
-.accent-swatch.is-active {
-  border-color: var(--text);
-  box-shadow: 0 0 0 2px var(--surface-raised);
-}
 

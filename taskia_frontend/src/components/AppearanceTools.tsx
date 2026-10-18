@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Check, Palette } from '@phosphor-icons/react'
 import { ACCENTS, useAccent } from '../accent'
 import { useTheme } from '../theme'
+import { IconButton } from './ui/IconButton'
 
 export function AppearanceTools() {
   const [open, setOpen] = useState(false)
@@ -29,16 +30,13 @@ export function AppearanceTools() {
 
   return (
     <div className="appearance" ref={rootRef}>
-      <button
-        type="button"
-        className="session-icon-btn"
-        aria-label="Apariencia"
+      <IconButton
+        icon={Palette}
+        label="Apariencia"
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setOpen((current) => !current)}
-      >
-        <Palette size={22} weight="bold" />
-      </button>
+      />
       {open ? (
         <div className="appearance-popover" role="dialog" aria-label="Apariencia">
           <div
@@ -81,7 +79,7 @@ export function AppearanceTools() {
             <span id={modeLabelId} className="appearance-label">
               Modo
             </span>
-            <div className="appearance-mode-row">
+            <div className="appearance-mode-row segmented">
               <button
                 type="button"
                 role="radio"

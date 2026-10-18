@@ -99,7 +99,7 @@ export function TaskDetailModal({ task, courses, onClose, onStudy, onSaved }: Pr
       panelClassName="task-detail-panel"
     >
       <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>
-        <div className="kind-toggle" role="group" aria-label="Tipo de tarea">
+        <div className="kind-toggle segmented" role="group" aria-label="Tipo de tarea">
           <button
             type="button"
             className={taskKind === 'daily' ? 'active' : ''}
