@@ -15,7 +15,8 @@ import { chatVisibleText } from '../../lib/plainMath'
 import { compressStudyPhoto } from '../../lib/studyPhoto'
 import { errorMessage } from '../../lib/errors'
 import type { StudyContext, StudyMessage, TutorPhase } from '../../lib/studyProtocol'
-import { phaseLabel } from '../../lib/studyProtocol'
+import { StudyBubble } from './StudyBubble'
+import { StudyPhaseSteps } from './StudyPhaseSteps'
 import { VoiceRecorder } from '../../lib/voiceRecorder'
 
 export type VoiceTurnInput = {
@@ -269,11 +270,26 @@ function VoiceStageView({
           aria-label={stage === 'listening' ? 'Terminar y escuchar a Taskia' : 'Hablar'}
           onClick={onCircle}
         >
-          <span className="study-voice-wave" aria-hidden />
-          <span className="study-voice-wave" aria-hidden />
-          <span className="study-voice-wave" aria-hidden />
+          {stage === 'speaking' ? (
+            <span className="study-voice-bars" aria-hidden>
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </span>
+          ) : (
+            <>
+              <span className="study-voice-wave" aria-hidden />
+              <span className="study-voice-wave" aria-hidden />
+            </>
+          )}
           <span className="study-voice-orb-core">
-            {stage === 'listening' ? <Stop size={36} weight="fill" /> : <Microphone size={36} weight="fill" />}
+            {stage === 'speaking' ? null : stage === 'listening' ? (
+              <Stop size={36} weight="fill" />
+            ) : (
+              <Microphone size={36} weight="fill" />
+            )}
           </span>
         </button>
         <p className="study-voice-stage-label" role="status">
@@ -295,16 +311,14 @@ function VoiceStageView({
                 const key = messageKey(message, floor + index)
                 const writing = key === liveKey
                 return (
-                  <motion.div
+                  <StudyBubble
                     key={key}
-                    className={`study-bubble study-bubble-${message.role}`}
+                    from={message.role}
+                    variant="explorador"
                     initial={voiceBubbleEnter}
                     animate={voiceBubbleShown}
                     transition={voiceBubbleTransition}
                   >
-                    <span className="study-bubble-role">
-                      {message.role === 'user' ? 'Tú' : 'Taskia'}
-                    </span>
                     {message.image_url ? (
                       <img className="study-bubble-photo" src={message.image_url} alt="Foto del ejercicio" />
                     ) : null}
@@ -321,18 +335,19 @@ function VoiceStageView({
                         />
                       </p>
                     )}
-                  </motion.div>
+                  </StudyBubble>
                 )
               })}
               {thinking ? (
-                <motion.div
+                <StudyBubble
                   key="voice-thinking"
-                  className="study-bubble study-bubble-assistant is-typing"
+                  from="assistant"
+                  variant="explorador"
+                  typing
                   initial={voiceBubbleEnter}
                   animate={voiceBubbleShown}
                   transition={voiceBubbleTransition}
                 >
-                  <span className="study-bubble-role">Taskia</span>
                   <p>
                     Pensando
                     <span className="study-thinking-dots" aria-hidden>
@@ -341,7 +356,7 @@ function VoiceStageView({
                       <span />
                     </span>
                   </p>
-                </motion.div>
+                </StudyBubble>
               ) : null}
             </AnimatePresence>
           </div>
@@ -870,7 +885,7 @@ export function StudyChat({
 
   return (
     <section
-      className={`study-chat${voiceCover ? ' is-voice' : ''}${dockLayout ? ' is-voice-dock' : ''}`}
+      className={`study-chat is-explorer${voiceCover ? ' is-voice' : ''}${dockLayout ? ' is-voice-dock' : ''}`}
     >
       <AnimatePresence onExitComplete={() => setHoldDock(false)}>
         {voiceDocked && voiceStage ? (
@@ -914,7 +929,7 @@ export function StudyChat({
         }}
       >
       <div className="study-chat-meta">
-        <span className="study-phase-pill">{phaseLabel(phase)}</span>
+        <StudyPhaseSteps phase={phase} />
         {context?.topic_summary ? (
           <p className="study-topic-summary">{context.topic_summary}</p>
         ) : (
@@ -934,17 +949,15 @@ export function StudyChat({
             const skipEnter = instantKeys.has(key)
 
             return (
-              <motion.div
+              <StudyBubble
                 key={key}
-                className={`study-bubble study-bubble-${message.role}`}
+                from={message.role}
+                variant="explorador"
                 initial={skipEnter ? false : bubbleEnter}
                 animate={bubbleShown}
                 transition={bubbleTransition}
                 layout="position"
               >
-                <span className="study-bubble-role">
-                  {message.role === 'user' ? 'Tú' : 'Taskia'}
-                </span>
                 {message.image_url ? (
                   <button
                     type="button"
@@ -968,14 +981,16 @@ export function StudyChat({
                     }
                   />
                 </p>
-              </motion.div>
+              </StudyBubble>
             )
           })}
         </AnimatePresence>
         {showLiveTaskia ? (
-          <motion.div
+          <StudyBubble
             key="taskia-live"
-            className={`study-bubble study-bubble-assistant${showThinking ? ' is-typing' : ''}`}
+            from="assistant"
+            variant="explorador"
+            typing={showThinking}
             initial={bubbleEnter}
             animate={bubbleShown}
             transition={{
@@ -984,7 +999,6 @@ export function StudyChat({
             }}
             layout="position"
           >
-            <span className="study-bubble-role">Taskia</span>
             {showThinking || !shownLive ? (
               <p>
                 Pensando
@@ -1016,7 +1030,7 @@ export function StudyChat({
                 }}
               />
             )}
-          </motion.div>
+          </StudyBubble>
         ) : null}
       </div>
       </div>
@@ -1060,24 +1074,6 @@ export function StudyChat({
         <p className="muted study-chat-readonly">Esta ya está lista. Puedes leer el chat, pero no enviar más mensajes.</p>
       ) : (
       <form className="study-chat-form" onSubmit={(e) => void onSubmit(e)} onPaste={onPastePhoto}>
-        {voiceEnabled && (
-          <div className="study-voice-bar">
-            <button
-              type="button"
-              className="ghost study-voice-btn"
-              disabled={sending}
-              aria-pressed={voiceStage != null}
-              onClick={() => {
-                if (stageRef.current != null) closeVoiceStage()
-                else openVoiceStage()
-              }}
-            >
-              <Microphone size={18} weight="fill" />
-              Hablar
-            </button>
-          </div>
-        )}
-
         <input
           ref={photoInputRef}
           className="study-photo-input"
@@ -1104,31 +1100,41 @@ export function StudyChat({
           </div>
         ) : null}
 
-        <textarea
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value)
-            if (fromVoiceDraft) setFromVoiceDraft(true)
-          }}
-          placeholder="Escríbele a Taskia, o pulsa Hablar."
-          rows={3}
-          disabled={sending || voiceBusy}
-        />
-        {voiceEnabled && (
-          <p className="muted study-voice-compose-hint">
-            Pulsa Hablar, sube la foto si quieres y toca el círculo cuando empieces a hablar.
-          </p>
-        )}
-        <div className="study-chat-send-row">
+        <div className="study-compose-row">
+          {voiceEnabled ? (
+            <button
+              type="button"
+              className="study-compose-mic"
+              disabled={sending}
+              aria-label="Hablar"
+              aria-pressed={voiceStage != null}
+              onClick={() => {
+                if (stageRef.current != null) closeVoiceStage()
+                else openVoiceStage()
+              }}
+            >
+              <Microphone size={26} weight="fill" />
+            </button>
+          ) : null}
+          <textarea
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value)
+              if (fromVoiceDraft) setFromVoiceDraft(true)
+            }}
+            placeholder="Escríbele a Taskia, o pulsa Hablar."
+            rows={1}
+            disabled={sending || voiceBusy}
+          />
           <button
             type="button"
-            className="ghost study-photo-btn"
+            className="study-photo-btn"
+            aria-label="Foto"
             title="Adjuntar una foto o pegarla con Ctrl+V"
             disabled={sending || voiceBusy}
             onClick={() => photoInputRef.current?.click()}
           >
-            <Camera size={18} weight="fill" />
-            Foto
+            <Camera size={20} weight="fill" />
           </button>
           <button
             type="submit"
@@ -1164,6 +1170,11 @@ export function StudyChat({
           </AnimatePresence>
         </button>
         </div>
+        {voiceEnabled && (
+          <p className="muted study-voice-compose-hint">
+            Pulsa Hablar, sube la foto si quieres y toca el círculo cuando empieces a hablar.
+          </p>
+        )}
       </form>
       )}
       </div>

@@ -3,7 +3,8 @@ import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 import { WorldsIconBadge } from './worlds/WorldsIconBadge'
 
 export interface EmptyStateProps {
-  icon: PhosphorIcon
+  icon?: PhosphorIcon
+  illustration?: ReactNode
   title: string
   description?: string
   action?: ReactNode
@@ -12,7 +13,8 @@ export interface EmptyStateProps {
 }
 
 export function EmptyState({
-  icon,
+  icon: Icon,
+  illustration,
   title,
   description,
   action,
@@ -24,11 +26,14 @@ export function EmptyState({
       className={`empty-state${compact ? ' is-compact' : ''}${className ? ` ${className}` : ''}`}
       role="status"
     >
-      <WorldsIconBadge
-        icon={icon}
-        size={compact ? 'lg' : 'xl'}
-        tone={action ? 'accent' : 'muted'}
-      />
+      {illustration ??
+        (Icon ? (
+          <WorldsIconBadge
+            icon={Icon}
+            size={compact ? 'lg' : 'xl'}
+            tone={action ? 'accent' : 'muted'}
+          />
+        ) : null)}
       {compact ? (
         <p className="empty-state-title">{title}</p>
       ) : (

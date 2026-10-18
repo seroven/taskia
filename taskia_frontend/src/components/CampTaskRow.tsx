@@ -1,5 +1,5 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { ArrowRight, BookOpenText, Check, Circle, LockSimple, Sparkle } from '@phosphor-icons/react'
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { ArrowRight, BookOpenText, Check, Circle, LockSimple, Sparkle, Star } from '@phosphor-icons/react'
 import { canOpenStudyMode, canViewStudySession, type Task } from '../types'
 
 const SWIPE_LIMIT = 140
@@ -59,6 +59,14 @@ export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Pro
   const ignoreClick = useRef(false)
   const actionLabel = canStudy ? (task.status === 'studying' ? 'Seguir' : 'Estudiar') : 'Ver chat'
   const StatusIcon = STATUS_ICON[task.status]
+  const [pop, setPop] = useState(false)
+  const wasDone = useRef(done)
+
+  useEffect(() => {
+    if (done && !wasDone.current) setPop(true)
+    else if (!done) setPop(false)
+    wasDone.current = done
+  }, [done])
 
   function onCard() {
     if (ignoreClick.current) {
@@ -132,7 +140,7 @@ export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Pro
     >
       <button
         type="button"
-        className={`camp-check${done ? ' is-done' : ''}${locked ? ' is-locked' : ''}`}
+        className={`camp-check${done ? ' is-done' : ''}${locked ? ' is-locked' : ''}${pop ? ' is-pop' : ''}`}
         aria-label={
           done
             ? 'Lista'
@@ -147,10 +155,12 @@ export function CampTaskRow({ task, featured, onOpen, onStudy, onComplete }: Pro
         }}
       >
         {done ? (
-          <Check size={16} weight="bold" />
+          <Star size={22} weight="fill" />
         ) : locked ? (
           <LockSimple size={14} weight="bold" />
-        ) : null}
+        ) : (
+          <Star size={22} weight="bold" />
+        )}
       </button>
 
       <button type="button" className="camp-row-main" onClick={onCard}>

@@ -22,6 +22,8 @@ El cielo de la página es CSS (estrellas y nebulosa). `high` en login y hub, `me
 
 Radios de control: `--r-chip` 999px, `--r-control` 14px, `--r-card` 20px, `--r-panel` 28px. `--radius` sigue en 22px para las tarjetas que aún no se rediseñan.
 
+En Campamento el listo es una estrella (vacía, o llena en `--star` con un rebote de 220ms solo al completar). La diaria con ayuda conserva el candado. El estudio muestra Entendiendo, Practicando y Repasando como chips y resalta solo la fase actual, porque el modelo puede retroceder. El globo del niño lleva avatar y texto a 18px; el del guardián sigue con el globo anterior.
+
 El login es una tarjeta sólida (`--surface`, borde 2px, `--r-panel`) con dos planetas decorativos fuera de las esquinas, sin capturar el clic. El hub son tres destinos en `HubDestinations`: Mundos (racimo de planetas) abre mundos, Campamento (planeta con tienda) abre el campamento, Tripulación (estación en trazo discontinuo, chip «Pronto») no navega ni toma foco. En escritorio van escalonados; en móvil, apilados y alternados. El dibujo flota ±6px en 6s y se queda quieto con `prefers-reduced-motion`. Hover y foco escalan 1.04.
 
 ## Principios

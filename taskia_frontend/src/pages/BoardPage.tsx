@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ArrowLeft, CaretLeft, CaretRight, Flag, Plus } from '@phosphor-icons/react'
+import { ArrowLeft, CaretLeft, CaretRight, Plus } from '@phosphor-icons/react'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { BoardLoader } from '../components/BoardLoader'
 import { CampTaskRow } from '../components/CampTaskRow'
 import { EmptyState } from '../components/EmptyState'
+import { Planet } from '../components/Planet'
 import { TaskDetailModal } from '../components/TaskDetailModal'
 import { TaskFormModal } from '../components/TaskFormModal'
 import { AppearanceTools } from '../components/AppearanceTools'
@@ -354,7 +355,11 @@ export function BoardPage({
               {visible.length === 0 ? (
                 <EmptyState
                   compact
-                  icon={Flag}
+                  illustration={
+                    <span className="camp-empty-mark">
+                      <Planet size={120} variant="sand" />
+                    </span>
+                  }
                   title={scope === 'project' ? 'Sin proyectos' : 'Nada para este día'}
                   description={
                     scope === 'project'
