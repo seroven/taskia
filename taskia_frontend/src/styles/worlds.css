@@ -267,7 +267,7 @@ button.ghost.worlds-back {
   background: var(--surface);
   color: inherit;
   cursor: pointer;
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--text) 7%, transparent);
+  box-shadow: none;
   transition:
     border-color 0.2s ease,
     transform 0.22s ease,
@@ -281,7 +281,7 @@ button.ghost.worlds-back {
 .worlds-cover:hover {
   border-color: var(--accent);
   transform: translateY(-5px);
-  box-shadow: 0 18px 32px color-mix(in srgb, var(--accent-glow) 60%, transparent);
+  box-shadow: none;
 }
 
 .worlds-cover:active {
@@ -383,13 +383,13 @@ button.ghost.worlds-back {
 .worlds-cover--mastered .worlds-icon-badge {
   background: #ffffff;
   color: var(--accent);
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--text) 18%, transparent);
+  box-shadow: none;
 }
 
 .worlds-cover-art .worlds-icon-badge {
   position: relative;
   z-index: 1;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--accent-glow) 40%, transparent);
+  box-shadow: none;
 }
 
 .worlds-cover-body {
@@ -474,13 +474,13 @@ button.ghost.worlds-back {
 }
 
 .worlds-icon-badge--success {
-  background: color-mix(in srgb, #16a34a 18%, transparent);
-  color: #15803d;
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+  color: var(--success);
 }
 
 .worlds-icon-badge--warn {
   background: color-mix(in srgb, #ea580c 16%, transparent);
-  color: #c2410c;
+  color: color-mix(in srgb, #ea580c 65%, var(--text));
 }
 
 .empty-state {
@@ -557,7 +557,7 @@ button.ghost.worlds-back {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   color: var(--accent);
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: none;
 }
 
 .worlds-cta-btn.primary:hover:not(:disabled) {
@@ -601,8 +601,8 @@ button.ghost.worlds-back {
 }
 
 .worlds-status-mastered {
-  background: color-mix(in srgb, #16a34a 18%, transparent);
-  color: #15803d;
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+  color: var(--success);
 }
 
 .worlds-cover--course .worlds-status-mastered {
@@ -716,7 +716,7 @@ button.ghost.worlds-back {
 
 .worlds-scope-world {
   background: color-mix(in srgb, #ea580c 16%, transparent);
-  color: #c2410c;
+  color: color-mix(in srgb, #ea580c 65%, var(--text));
 }
 
 :root[data-theme='dark'] .worlds-scope-course,
@@ -962,8 +962,8 @@ button.ghost.worlds-back {
 }
 
 .worlds-feedback--ok {
-  border-color: color-mix(in srgb, #16a34a 40%, var(--border));
-  background: color-mix(in srgb, #16a34a 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+  background: color-mix(in srgb, var(--success) 8%, var(--surface));
 }
 
 .worlds-feedback--bad {
@@ -1171,7 +1171,7 @@ button.ghost.worlds-back {
 
 .challenge-ok {
   font-weight: 800;
-  color: #15803d;
+  color: var(--success);
   margin: 0;
 }
 
@@ -1240,7 +1240,7 @@ button.ghost.worlds-back {
   flex-shrink: 0;
   border-radius: 999px;
   background: conic-gradient(
-    #16a34a var(--pct),
+    var(--success) var(--pct),
     color-mix(in srgb, var(--border) 80%, transparent) 0
   );
   display: grid;
@@ -1339,7 +1339,7 @@ button.ghost.worlds-back {
 }
 
 .challenge-review-dot.is-ok {
-  background: #16a34a;
+  background: var(--success);
 }
 
 .challenge-review-dot.is-bad {
@@ -1379,8 +1379,8 @@ button.ghost.worlds-back {
 
 .worlds-review-item.is-ok {
   padding-bottom: 12px;
-  border-color: color-mix(in srgb, #16a34a 32%, var(--border));
-  background: color-mix(in srgb, #16a34a 6%, var(--surface));
+  border-color: color-mix(in srgb, var(--success) 32%, var(--border));
+  background: color-mix(in srgb, var(--success) 6%, var(--surface));
 }
 
 .worlds-review-item.is-bad {
@@ -1416,13 +1416,13 @@ button.ghost.worlds-back {
 }
 
 .worlds-review-badge.is-ok {
-  background: color-mix(in srgb, #16a34a 16%, transparent);
-  color: #15803d;
+  background: color-mix(in srgb, var(--success) 16%, transparent);
+  color: var(--success);
 }
 
 .worlds-review-badge.is-bad {
   background: color-mix(in srgb, #ea580c 16%, transparent);
-  color: #c2410c;
+  color: color-mix(in srgb, #ea580c 65%, var(--text));
 }
 
 .worlds-review-num {
@@ -1468,20 +1468,20 @@ button.ghost.worlds-back {
   padding: 6px 10px;
   border-radius: var(--radius);
   background: color-mix(in srgb, #ea580c 10%, var(--surface));
-  color: #c2410c;
+  color: color-mix(in srgb, #ea580c 65%, var(--text));
 }
 
 .worlds-review-right strong {
-  color: #9a3412;
+  color: color-mix(in srgb, #ea580c 55%, var(--text));
 }
 
 .worlds-review-right.is-ok {
-  background: color-mix(in srgb, #16a34a 12%, var(--surface));
-  color: #15803d;
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
 }
 
 .worlds-review-right.is-ok strong {
-  color: #166534;
+  color: var(--success);
 }
 
 .worlds-review-options {
@@ -1506,9 +1506,9 @@ button.ghost.worlds-back {
 }
 
 .worlds-review-option.is-correct {
-  border-color: color-mix(in srgb, #16a34a 45%, var(--border));
-  background: color-mix(in srgb, #16a34a 12%, var(--surface));
-  color: #166534;
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
 }
 
 .worlds-review-option.is-picked:not(.is-correct) {

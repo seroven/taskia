@@ -466,7 +466,7 @@
   height: auto;
   object-fit: contain;
   border-radius: 16px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
   cursor: default;
 }
 
@@ -1019,8 +1019,9 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  box-shadow: none;
   transition:
     transform 0.34s cubic-bezier(0.22, 1.2, 0.36, 1),
     box-shadow 0.28s ease;
@@ -1028,7 +1029,9 @@
 
 .study-board-toggle.is-on .study-board-toggle-thumb {
   transform: translateX(18px);
-  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 35%, transparent);
+  background: var(--on-accent);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .study-board-toggle-copy {
@@ -1186,8 +1189,8 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #ffffff;
+  border: 2px solid color-mix(in srgb, var(--on-accent) 35%, transparent);
+  border-top-color: var(--on-accent);
   animation: study-spin 0.7s linear infinite;
 }
 

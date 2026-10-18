@@ -20,6 +20,8 @@ Cada acento conserva su par día/noche (azul `#2563eb` / `#60a5fa`, y el resto i
 
 En los gráficos, estudiando y voz usan ese trazo. Las series del acento siguen en `--accent` y los errores en `--danger`. El guardián usa el globo sobrio (sin avatar, 16px), sin el planeta ni el botón grueso del explorador.
 
+Mundos, el detalle de mundo y de curso, y los desafíos conservan su layout. El verde de «dominado» y de la respuesta bien usa `--success`. Las portadas ya no llevan sombra difusa. El naranja de aviso no tiene token: el texto mezcla `#ea580c` con `--text` para leerse de noche, y el punto del resultado sigue en `#ea580c`. La galaxia de Tripulación conserva su propia sombra.
+
 El cielo de la página es CSS (estrellas y nebulosa). `high` en login y hub, `medium` en Campamento, estudio, misión y desafío, `low` en guardián y admin, `none` en Tripulación y en la lista, el detalle de mundo y el detalle de curso. Esas tres de Mundos siguen pintando el lavado `--bg-a` / `--bg-b` / `--bg-c`. La galaxia sigue en `--space-canvas-bg`.
 
 Radios de control: `--r-chip` 999px, `--r-control` 14px, `--r-card` 20px, `--r-panel` 28px. `--radius` sigue en 22px para las tarjetas que aún no se rediseñan.
