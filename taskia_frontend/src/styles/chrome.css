@@ -80,6 +80,10 @@
   animation: appearance-in 180ms ease;
 }
 
+.appearance-popover.is-closing {
+  animation: appearance-out 180ms ease forwards;
+}
+
 @keyframes appearance-in {
   from {
     opacity: 0;
@@ -88,6 +92,17 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes appearance-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
   }
 }
 
@@ -135,7 +150,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .appearance-popover {
+  .appearance-popover,
+  .appearance-popover.is-closing {
     animation: none;
   }
 }

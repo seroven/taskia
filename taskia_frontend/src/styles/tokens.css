@@ -4,10 +4,10 @@
 [data-theme='light'] {
   --bg: #ffffff;
   --surface: #ffffff;
-  --surface-raised: color-mix(in srgb, var(--accent) 9%, #ffffff);
-  --border: color-mix(in srgb, var(--accent) 24%, #ffffff);
+  --surface-raised: color-mix(in srgb, var(--accent) 4%, #ffffff);
+  --border: color-mix(in srgb, var(--accent) 14%, #ffffff);
   --text: #1c1b22;
-  --text-muted: color-mix(in srgb, var(--accent) 32%, #3a3848);
+  --text-muted: color-mix(in srgb, var(--accent) 16%, #3a3848);
   --accent: #2563eb;
   --accent-edge: #1e51c1;
   --accent-soft: color-mix(in srgb, var(--accent) 14%, var(--surface));
@@ -29,12 +29,12 @@
   --bg-a: #f3f5f8;
   --bg-b: #f7f8fa;
   --bg-c: #eef1f5;
-  --column: color-mix(in srgb, var(--accent) 8%, #ffffff);
+  --column: color-mix(in srgb, var(--accent) 4%, #ffffff);
   --scroll-thumb: color-mix(in srgb, var(--accent) 35%, transparent);
   --scroll-thumb-hover: color-mix(in srgb, var(--accent) 55%, transparent);
   --scroll-track: color-mix(in srgb, var(--accent) 8%, transparent);
-  --space-canvas-bg: color-mix(in srgb, var(--accent) 16%, #eef1f6);
-  --space-floor: color-mix(in srgb, var(--accent) 22%, #e4e9f2);
+  --space-canvas-bg: color-mix(in srgb, var(--accent) 6%, #eef1f6);
+  --space-floor: color-mix(in srgb, var(--accent) 8%, #e4e9f2);
   --space-card-bg: color-mix(in srgb, #ffffff 90%, var(--accent-soft));
   --space-card-border: color-mix(in srgb, var(--accent) 35%, var(--border));
   --radius: 22px;
@@ -48,12 +48,12 @@
 }
 
 [data-theme='dark'] {
-  --bg: color-mix(in srgb, var(--accent) 18%, #09080f);
-  --surface: color-mix(in srgb, var(--accent) 12%, #100e18);
-  --surface-raised: color-mix(in srgb, var(--accent) 20%, #16141f);
-  --border: color-mix(in srgb, var(--accent) 34%, #1c1a28);
+  --bg: color-mix(in srgb, var(--accent) 6%, #09080f);
+  --surface: color-mix(in srgb, var(--accent) 5%, #100e18);
+  --surface-raised: color-mix(in srgb, var(--accent) 8%, #16141f);
+  --border: color-mix(in srgb, var(--accent) 16%, #1c1a28);
   --text: #f5f3fb;
-  --text-muted: color-mix(in srgb, var(--accent) 22%, #c9c6d8);
+  --text-muted: color-mix(in srgb, var(--accent) 10%, #c9c6d8);
   --accent: #60a5fa;
   --accent-edge: #4f87cd;
   --on-accent: #1b1640;
@@ -71,9 +71,9 @@
   --bg-a: #0d1016;
   --bg-b: #11151c;
   --bg-c: #0f131a;
-  --column: color-mix(in srgb, var(--accent) 16%, #100e18);
-  --space-canvas-bg: color-mix(in srgb, var(--accent) 14%, #07060f);
-  --space-floor: color-mix(in srgb, var(--accent) 18%, #0c0b14);
+  --column: color-mix(in srgb, var(--accent) 6%, #100e18);
+  --space-canvas-bg: color-mix(in srgb, var(--accent) 5%, #07060f);
+  --space-floor: color-mix(in srgb, var(--accent) 6%, #0c0b14);
   --space-card-bg: color-mix(in srgb, #0f172a 92%, var(--accent-soft));
   --space-card-border: color-mix(in srgb, var(--accent) 40%, #334155);
 }

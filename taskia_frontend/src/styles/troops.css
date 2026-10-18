@@ -292,7 +292,7 @@
   height: 38%;
   left: 8%;
   top: 12%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 35%, transparent), transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
 }
 
 .nebula-b {
@@ -300,7 +300,7 @@
   height: 34%;
   right: 6%;
   bottom: 10%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%);
 }
 
 .nebula-c {
@@ -308,7 +308,7 @@
   height: 24%;
   left: 40%;
   top: 42%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%);
 }
 
 .galaxy-star {

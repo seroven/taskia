@@ -4,8 +4,13 @@ import { ACCENTS, useAccent } from '../accent'
 import { useTheme } from '../theme'
 import { IconButton } from './ui/IconButton'
 
+function reduceMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
 export function AppearanceTools() {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const { theme, setTheme } = useTheme()
   const { accent, setAccent } = useAccent()
@@ -13,12 +18,25 @@ export function AppearanceTools() {
   const modeLabelId = useId()
 
   useEffect(() => {
+    if (open) setMounted(true)
+  }, [open])
+
+  function close() {
+    if (reduceMotion()) {
+      setOpen(false)
+      setMounted(false)
+      return
+    }
+    setOpen(false)
+  }
+
+  useEffect(() => {
     if (!open) return
     function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') close()
     }
     function onPointer(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      if (!rootRef.current?.contains(event.target as Node)) close()
     }
     document.addEventListener('keydown', onKey)
     document.addEventListener('pointerdown', onPointer)
@@ -35,10 +53,22 @@ export function AppearanceTools() {
         label="Apariencia"
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          if (open) close()
+          else setOpen(true)
+        }}
       />
-      {open ? (
-        <div className="appearance-popover" role="dialog" aria-label="Apariencia">
+      {mounted ? (
+        <div
+          className={`appearance-popover${open ? '' : ' is-closing'}`}
+          role="dialog"
+          aria-label="Apariencia"
+          onAnimationEnd={(event) => {
+            if (event.target !== event.currentTarget) return
+            if (event.animationName !== 'appearance-out') return
+            setMounted(false)
+          }}
+        >
           <div
             className="appearance-swatches"
             role="radiogroup"

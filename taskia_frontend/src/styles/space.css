@@ -8,17 +8,17 @@
 
 html[data-space='high'] {
   --space-strength: 1;
-  --nebula: 14%;
+  --nebula: 8%;
 }
 
 html[data-space='medium'] {
   --space-strength: 0.6;
-  --nebula: 14%;
+  --nebula: 8%;
 }
 
 html[data-space='low'] {
   --space-strength: 0.3;
-  --nebula: 14%;
+  --nebula: 8%;
 }
 
 html[data-space='none'] .space-sky {

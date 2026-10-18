@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Icon } from '@phosphor-icons/react'
 import { WorldsIconBadge } from '../worlds/WorldsIconBadge'
@@ -53,7 +54,7 @@ export function ModalShell({
     .filter(Boolean)
     .join(' ')
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -91,6 +92,7 @@ export function ModalShell({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }
