@@ -4,10 +4,10 @@
 [data-theme='light'] {
   --bg: #ffffff;
   --surface: #ffffff;
-  --surface-raised: #eeeafe;
-  --border: #d9d3f5;
-  --text: #1b1640;
-  --text-muted: #5e5890;
+  --surface-raised: color-mix(in srgb, var(--accent) 9%, #ffffff);
+  --border: color-mix(in srgb, var(--accent) 24%, #ffffff);
+  --text: #1c1b22;
+  --text-muted: color-mix(in srgb, var(--accent) 32%, #3a3848);
   --accent: #2563eb;
   --accent-edge: #1e51c1;
   --accent-soft: color-mix(in srgb, var(--accent) 14%, var(--surface));
@@ -29,12 +29,12 @@
   --bg-a: #f3f5f8;
   --bg-b: #f7f8fa;
   --bg-c: #eef1f5;
-  --column: rgba(255, 255, 255, 0.78);
+  --column: color-mix(in srgb, var(--accent) 8%, #ffffff);
   --scroll-thumb: color-mix(in srgb, var(--accent) 35%, transparent);
   --scroll-thumb-hover: color-mix(in srgb, var(--accent) 55%, transparent);
   --scroll-track: color-mix(in srgb, var(--accent) 8%, transparent);
-  --space-canvas-bg: #c7d7f0;
-  --space-floor: #a8c0e8;
+  --space-canvas-bg: color-mix(in srgb, var(--accent) 16%, #eef1f6);
+  --space-floor: color-mix(in srgb, var(--accent) 22%, #e4e9f2);
   --space-card-bg: color-mix(in srgb, #ffffff 90%, var(--accent-soft));
   --space-card-border: color-mix(in srgb, var(--accent) 35%, var(--border));
   --radius: 22px;
@@ -48,12 +48,12 @@
 }
 
 [data-theme='dark'] {
-  --bg: #0d0b2b;
-  --surface: #17143f;
-  --surface-raised: #211d52;
-  --border: #34307a;
-  --text: #f3f0ff;
-  --text-muted: #a9a4d6;
+  --bg: color-mix(in srgb, var(--accent) 18%, #09080f);
+  --surface: color-mix(in srgb, var(--accent) 12%, #100e18);
+  --surface-raised: color-mix(in srgb, var(--accent) 20%, #16141f);
+  --border: color-mix(in srgb, var(--accent) 34%, #1c1a28);
+  --text: #f5f3fb;
+  --text-muted: color-mix(in srgb, var(--accent) 22%, #c9c6d8);
   --accent: #60a5fa;
   --accent-edge: #4f87cd;
   --on-accent: #1b1640;
@@ -71,9 +71,9 @@
   --bg-a: #0d1016;
   --bg-b: #11151c;
   --bg-c: #0f131a;
-  --column: rgba(33, 29, 82, 0.78);
-  --space-canvas-bg: #050816;
-  --space-floor: #0a1024;
+  --column: color-mix(in srgb, var(--accent) 16%, #100e18);
+  --space-canvas-bg: color-mix(in srgb, var(--accent) 14%, #07060f);
+  --space-floor: color-mix(in srgb, var(--accent) 18%, #0c0b14);
   --space-card-bg: color-mix(in srgb, #0f172a 92%, var(--accent-soft));
   --space-card-border: color-mix(in srgb, var(--accent) 40%, #334155);
 }

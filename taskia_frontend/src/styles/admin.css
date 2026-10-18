@@ -16,16 +16,6 @@
   padding: 8px 28px 32px;
 }
 
-.admin-shell .primary,
-.admin-shell .ghost {
-  box-shadow: none;
-}
-
-.admin-shell .primary:active:not(:disabled),
-.admin-shell .ghost:active:not(:disabled) {
-  transform: none;
-}
-
 .admin-accounts-stage .data-table-wrap {
   max-height: min(70vh, 640px);
   overflow: auto;

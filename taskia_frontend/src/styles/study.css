@@ -81,7 +81,8 @@
 
 .study-page .ghost:hover:not(:disabled),
 .study-page .ghost:focus-visible:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--border);
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
@@ -1406,6 +1407,15 @@
   display: grid;
   place-items: center;
   cursor: pointer;
+}
+
+.study-compose-mic {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.study-compose-mic:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--accent-edge);
 }
 
 .study-compose-mic:active:not(:disabled) {

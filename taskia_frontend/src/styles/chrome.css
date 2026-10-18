@@ -668,7 +668,7 @@ input[type='checkbox']:active:not(:disabled) {
   cursor: pointer;
   font-weight: 800;
   font-size: 16px;
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .primary {
@@ -676,6 +676,11 @@ input[type='checkbox']:active:not(:disabled) {
   background: var(--accent);
   color: var(--on-accent);
   box-shadow: 0 4px 0 var(--accent-edge);
+}
+
+.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--accent-edge);
 }
 
 .primary:active:not(:disabled) {
@@ -705,6 +710,11 @@ input[type='checkbox']:active:not(:disabled) {
   box-shadow: 0 4px 0 var(--border);
 }
 
+.ghost:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--border);
+}
+
 .ghost:active:not(:disabled) {
   transform: translateY(3px);
   box-shadow: 0 1px 0 var(--border);
@@ -732,6 +742,15 @@ button.chip {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+button.chip:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+button.chip:active:not(:disabled) {
+  transform: translateY(2px);
 }
 
 .chip.is-active {
@@ -780,6 +799,7 @@ button.chip {
 .segmented button {
   flex: 0 0 auto;
   min-height: 44px;
+  transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease;
   border: 0;
   border-radius: var(--r-chip);
   background: transparent;
@@ -802,9 +822,43 @@ button.chip {
   color: var(--on-accent);
 }
 
+.segmented button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.segmented button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 .segmented button:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary,
+  .ghost,
+  button.chip,
+  .segmented button,
+  .session-icon-btn,
+  .study-compose-mic {
+    transition: none;
+  }
+
+  .primary:hover:not(:disabled),
+  .primary:active:not(:disabled),
+  .ghost:hover:not(:disabled),
+  .ghost:active:not(:disabled),
+  button.chip:hover:not(:disabled),
+  button.chip:active:not(:disabled),
+  .segmented button:hover:not(:disabled),
+  .segmented button:active:not(:disabled),
+  .session-icon-btn:hover,
+  .session-icon-btn:active,
+  .study-compose-mic:hover:not(:disabled),
+  .study-compose-mic:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .kind-toggle.segmented,

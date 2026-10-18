@@ -101,14 +101,6 @@ html[data-space='high'] .space-sky-stars-a {
 }
 
 html[data-space='none'] .worlds-shell {
-  background:
-    radial-gradient(circle at 10% 6%, var(--bg-spot), transparent 20%),
-    radial-gradient(circle at 94% 2%, var(--bg-spot-2), transparent 16%),
-    linear-gradient(165deg, var(--bg-a) 0%, var(--bg-b) 58%, var(--bg-c) 100%);
-  background-attachment: fixed;
-}
-
-html[data-theme='light'][data-space='none'] .worlds-shell {
   background: var(--bg);
 }
 

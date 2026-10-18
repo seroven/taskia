@@ -19,12 +19,18 @@
   color: var(--text);
   cursor: pointer;
   flex-shrink: 0;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .session-icon-btn:hover {
+  transform: translateY(-2px);
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent-ink);
+}
+
+.session-icon-btn:active {
+  transform: translateY(2px);
 }
 
 .session-icon-btn:focus-visible {

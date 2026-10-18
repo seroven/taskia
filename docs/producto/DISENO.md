@@ -6,9 +6,9 @@ Tokens y principios del rediseño espacial. La fuente de verdad en código es `t
 
 Los neutros son fijos. El acento solo tiñe la nebulosa, los controles y el texto de acento.
 
-Día: `--bg #FFFFFF`, `--surface #FFFFFF`, `--surface-raised #EEEAFE`, `--border #D9D3F5`, `--text #1B1640`, `--text-muted #5E5890`.
+Día: `--bg` y `--surface` son `#FFFFFF`. `--surface-raised`, `--border` y `--text-muted` mezclan el acento con un neutro, así el fondo no se queda lila al cambiar de color. `--text` es `#1C1B22`.
 
-Noche: `--bg #0D0B2B`, `--surface #17143F`, `--surface-raised #211D52`, `--border #34307A`, `--text #F3F0FF`, `--text-muted #A9A4D6`.
+Noche: `--bg`, `--surface`, `--surface-raised`, `--border` y `--text-muted` mezclan el acento con un negro neutro. `--text` es `#F5F3FB`. El lavado fijo de Mundos ya no pinta un azul aparte: usa el mismo `--bg`.
 
 Cada acento conserva su par día/noche (azul `#2563eb` / `#60a5fa`, y el resto igual). `--accent-edge` es ese hex mezclado un 18 % con negro. `--accent-soft` es el acento al 14 % sobre `--surface`. `--on-accent` es `#ffffff` o `#1B1640`, el que contrasta más sobre el acento (todos los pares quedan en 4.5:1 o más). `--accent-ink` es un hex fijo, más oscuro de día y el propio acento de noche cuando ese ya llega a 4.5:1 contra `--surface` y contra `--accent-soft`. `--focus` es `--text`. `--star` es `#FFC940`. `--success` es `#148A57` de día y `#2FD08A` de noche. `--danger` es `#D1334A` de día y `#FF5A6E` de noche.
 
@@ -22,7 +22,7 @@ En los gráficos, estudiando y voz usan ese trazo. Las series del acento siguen 
 
 Mundos, el detalle de mundo y de curso, y los desafíos conservan su layout. El verde de «dominado» y de la respuesta bien usa `--success`. Las portadas ya no llevan sombra difusa. El naranja de aviso no tiene token: el texto mezcla `#ea580c` con `--text` para leerse de noche, y el punto del resultado sigue en `#ea580c`. La galaxia de Tripulación conserva su propia sombra.
 
-El cielo de noche es CSS (estrellas y nebulosa). De día el fondo es blanco plano: no hay nebulosa ni partículas. `high` en login y hub, `medium` en Campamento, estudio, misión y desafío, `low` en guardián y admin, `none` en Tripulación y en la lista, el detalle de mundo y el detalle de curso. Esas tres de Mundos, de noche, siguen pintando el lavado `--bg-a` / `--bg-b` / `--bg-c`; de día quedan en `--bg`. La galaxia sigue en `--space-canvas-bg`. El selector de apariencia entra con un desplazamiento corto de 180 ms. El botón es `Button` (`.primary` o `.ghost`). El chip es `Chip` (curso, estado, explorador). El control segmentado es `.segmented` (Día/Noche, Estudiar/Editar, tipo de tarea). El campo de chat usa `.field-control`, el mismo de los formularios. El selector viejo de puntos ya no está. Admin y guardián siguen sin el botón grueso.
+El cielo de noche es CSS (estrellas y nebulosa). De día el fondo es blanco plano: no hay nebulosa ni partículas. `high` en login y hub, `medium` en Campamento, estudio, misión y desafío, `low` en guardián y admin, `none` en Tripulación y en la lista, el detalle de mundo y el detalle de curso. Esas tres de Mundos usan `--bg`. La galaxia usa `--space-canvas-bg`, también mezclado con el acento. El selector de apariencia entra con un desplazamiento corto de 180 ms. El botón es `Button` (`.primary` o `.ghost`). Al pasar el cursor sube 2 px y al pulsar se hunde; lo mismo el chip botón, el segmentado, el icono y Hablar. Admin y guardián usan ese movimiento. El chip es `Chip` (curso, estado, explorador). El control segmentado es `.segmented` (Día/Noche, Estudiar/Editar, tipo de tarea). El campo de chat usa `.field-control`, el mismo de los formularios. El selector viejo de puntos ya no está.
 
 Radios de control: `--r-chip` 999px, `--r-control` 14px, `--r-card` 20px, `--r-panel` 28px. `--radius` sigue en 22px para las tarjetas que aún no se rediseñan.
 
