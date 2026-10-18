@@ -1,7 +1,7 @@
 # Rediseño visual espacial de Taskia
 
 ## Contexto
-Taskia es una plataforma de estudio con IA para niños peruanos de 3.º de primaria a 2.º de secundaria. Front React (Vite, localhost:5173), back Express. Hay 3 roles: explorador (niño), guardián (adulto) y admin. Antes de tocar nada, lee: docs/producto/recorrido/ (capturas y recorrido actual), FUNCIONES.md y STATE.md. Si el recorrido está en otra ruta, búscalo.
+Taskia es una plataforma de estudio con IA para niños peruanos de 3.º de primaria a 2.º de secundaria. Front React (Vite, localhost:5173), back Express. Hay 3 roles: explorador (niño), guardián (adulto) y admin. Antes de tocar nada, lee: FUNCIONES.md, DISENO.md y STATE.md.
 
 Hoy la app es limpia pero genérica: tarjetas iguales con radios iguales y sombras suaves sobre un fondo azul grisáceo. Quiero que se sienta como un viaje espacial para niños: plana, táctil, alegre, con estilo similar a los assets de Kenney (formas sólidas, sin brillos neón ni vidrio esmerilado).
 
@@ -143,4 +143,3 @@ Estudio (data-space="medium"):
 - Corre el linter y el build; deben pasar sin errores nuevos.
 - Revisa cada pantalla en 360px, 768px y 1280px, en modo día y noche, y con al menos 3 acentos (azul, naranja, rosa).
 - Al terminar cada fase, lista: archivos modificados, qué verificaste y qué NO pudiste verificar.
-- Al final, dime cómo regenerar las capturas con node docs/producto/recorrido/capture.mjs para comparar antes y después.

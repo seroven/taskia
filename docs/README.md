@@ -9,7 +9,6 @@ Qué hace la app y cómo se usa.
 - [PRODUCTO.md](producto/PRODUCTO.md) — relato del producto.
 - [FUNCIONES.md](producto/FUNCIONES.md) — guía de lo que ven Guardián y Explorador.
 - [DISENO.md](producto/DISENO.md) — tokens de color y principios del rediseño espacial.
-- [RECORRIDO_ACTUAL.md](producto/recorrido/RECORRIDO_ACTUAL.md) — recorrido con capturas de la app actual ([PDF](producto/recorrido/RECORRIDO_ACTUAL.pdf)).
 
 ## Datos
 
