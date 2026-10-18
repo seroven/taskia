@@ -76,6 +76,19 @@
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: var(--r-card);
+  transform-origin: top right;
+  animation: appearance-in 180ms ease;
+}
+
+@keyframes appearance-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .appearance-label {
@@ -142,6 +155,13 @@
     right: 12px;
     width: auto;
     max-width: none;
+    transform-origin: top center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appearance-popover {
+    animation: none;
   }
 }
 

@@ -25,8 +25,9 @@ html[data-space='none'] .space-sky {
   opacity: 0;
 }
 
-html[data-theme='light'] {
-  --nebula: 8%;
+html[data-theme='light'] .space-sky-nebula,
+html[data-theme='light'] .space-sky-stars {
+  display: none;
 }
 
 .space-sky-nebula,
@@ -79,25 +80,6 @@ html[data-theme='light'] {
   background-size: 520px 520px;
 }
 
-html[data-theme='light'] .space-sky-stars-a {
-  background-image:
-    radial-gradient(1px 1px at 40px 70px, color-mix(in srgb, var(--accent) 14%, transparent), transparent),
-    radial-gradient(1px 1px at 180px 30px, color-mix(in srgb, var(--accent) 12%, transparent), transparent);
-  background-size: 320px 320px;
-}
-
-html[data-theme='light'] .space-sky-stars-b {
-  background-image:
-    radial-gradient(1px 1px at 90px 140px, color-mix(in srgb, var(--accent) 12%, transparent), transparent);
-  background-size: 480px 480px;
-}
-
-html[data-theme='light'] .space-sky-stars-c {
-  background-image:
-    radial-gradient(1px 1px at 120px 200px, color-mix(in srgb, var(--accent) 10%, transparent), transparent);
-  background-size: 680px 680px;
-}
-
 html[data-space='high'] .space-sky-stars-a {
   animation: space-twinkle 6s ease-in-out infinite;
 }
@@ -124,6 +106,10 @@ html[data-space='none'] .worlds-shell {
     radial-gradient(circle at 94% 2%, var(--bg-spot-2), transparent 16%),
     linear-gradient(165deg, var(--bg-a) 0%, var(--bg-b) 58%, var(--bg-c) 100%);
   background-attachment: fixed;
+}
+
+html[data-theme='light'][data-space='none'] .worlds-shell {
+  background: var(--bg);
 }
 
 .app-view-root,
