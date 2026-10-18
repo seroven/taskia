@@ -17,9 +17,9 @@
   --star: #ffc940;
   --success: #148a57;
   --danger: #d1334a;
-  --chart-1: #16a34a;
-  --chart-2: #0d9488;
-  --chart-3: #d97706;
+  --chart-1: #009e73;
+  --chart-2: #0072b2;
+  --chart-3: #d55e00;
   --accent-glow: color-mix(in srgb, var(--accent) 40%, transparent);
   --shadow: 0 18px 44px rgba(27, 22, 64, 0.08);
   --shadow-sm: 0 8px 20px rgba(27, 22, 64, 0.06);
@@ -60,6 +60,9 @@
   --accent-ink: #60a5fa;
   --success: #2fd08a;
   --danger: #ff5a6e;
+  --chart-1: #009e73;
+  --chart-2: #56b4e9;
+  --chart-3: #e69f00;
   --shadow: 0 20px 50px rgba(2, 6, 23, 0.45);
   --shadow-sm: 0 8px 20px rgba(2, 6, 23, 0.35);
   --shadow-md: 0 14px 28px rgba(2, 6, 23, 0.4);

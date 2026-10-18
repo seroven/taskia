@@ -12,11 +12,13 @@ Noche: `--bg #0D0B2B`, `--surface #17143F`, `--surface-raised #211D52`, `--borde
 
 Cada acento conserva su par día/noche (azul `#2563eb` / `#60a5fa`, y el resto igual). `--accent-edge` es ese hex mezclado un 18 % con negro. `--accent-soft` es el acento al 14 % sobre `--surface`. `--on-accent` es `#ffffff` o `#1B1640`, el que contrasta más sobre el acento (todos los pares quedan en 4.5:1 o más). `--accent-ink` es un hex fijo, más oscuro de día y el propio acento de noche cuando ese ya llega a 4.5:1 contra `--surface` y contra `--accent-soft`. `--focus` es `--text`. `--star` es `#FFC940`. `--success` es `#148A57` de día y `#2FD08A` de noche. `--danger` es `#D1334A` de día y `#FF5A6E` de noche.
 
-`--chart-1..3` siguen en `#16a34a`, `#0d9488` y `#d97706` hasta la fase de gráficos. El objetivo, con trazo y marcador distintos:
+`--chart-1..3` ya no dependen del acento. Contraste contra `--surface` de al menos 3:1.
 
 - `--chart-1` (hecho): `#009E73` en ambos modos, trazo continuo, círculo.
 - `--chart-2` (estudiando): día `#0072B2`, noche `#56B4E9`, trazo discontinuo, cuadrado.
 - `--chart-3` (voz): día `#D55E00`, noche `#E69F00`, trazo punteado, triángulo.
+
+En los gráficos, estudiando y voz usan ese trazo. Las series del acento siguen en `--accent` y los errores en `--danger`. El guardián usa el globo sobrio (sin avatar, 16px), sin el planeta ni el botón grueso del explorador.
 
 El cielo de la página es CSS (estrellas y nebulosa). `high` en login y hub, `medium` en Campamento, estudio, misión y desafío, `low` en guardián y admin, `none` en Tripulación y en la lista, el detalle de mundo y el detalle de curso. Esas tres de Mundos siguen pintando el lavado `--bg-a` / `--bg-b` / `--bg-c`. La galaxia sigue en `--space-canvas-bg`.
 

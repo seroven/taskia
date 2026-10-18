@@ -11,9 +11,18 @@
 }
 
 .guardian-xp-level {
-  font-size: 1.25rem;
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 650;
   letter-spacing: -0.02em;
+}
+
+.guardian-xp-star {
+  color: var(--star);
+  opacity: 0.45;
 }
 
 .guardian-xp-bar {
@@ -47,8 +56,8 @@
 }
 
 .guardian-chat.study-chat {
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 4px);
+  border: 2px solid var(--border);
+  border-radius: var(--r-panel);
   overflow: hidden;
 }
 
@@ -69,24 +78,27 @@
 }
 
 .guardian-explorer-chip {
-  border: 2px solid var(--border);
-  background: var(--surface);
+  min-height: 44px;
+  border: 2px solid transparent;
+  background: var(--accent-soft);
   color: var(--text);
-  border-radius: var(--radius-pill);
+  border-radius: var(--r-chip);
   padding: 8px 16px;
   font: inherit;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .guardian-explorer-chip.is-active {
   border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 800;
 }
 
 .guardian-explorer-chip:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -102,17 +114,15 @@
   gap: 6px;
   min-width: 0;
   padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
+  border-radius: var(--r-card);
+  border: 2px solid var(--border);
+  background: var(--surface);
 }
 
 .guardian-activity-label {
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
 }
 
 .guardian-activity-value {
@@ -131,9 +141,9 @@
 }
 
 .guardian-activity-track {
-  height: 8px;
+  height: 12px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 10%, transparent);
+  background: var(--surface-raised);
   overflow: hidden;
 }
 
@@ -148,8 +158,54 @@
   margin: 0;
 }
 
-.guardian-card-head .study-phase-pill {
+.guardian-card-head .study-phase-pill,
+.guardian-chat .study-phase-pill {
   margin: 0;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.guardian-card-head .study-phase-pill {
+  padding: 0;
+  background: transparent;
+  font-size: 16px;
+}
+
+.guardian-progress .troops-table {
+  font-variant-numeric: tabular-nums;
+}
+
+.guardian-progress .troops-table th {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+  opacity: 1;
+}
+
+.guardian-progress .troops-row--mine {
+  background: var(--accent-soft);
+}
+
+.guardian-chat .study-chat-form textarea {
+  border-width: 2px;
+  border-radius: var(--r-control);
+  min-height: 48px;
+  background: var(--surface);
+  font-size: 16px;
+  box-shadow: none;
+}
+
+.guardian-chat .study-chat-form textarea:focus {
+  border-color: var(--accent);
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .guardian-notices {

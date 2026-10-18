@@ -72,6 +72,23 @@ function shortName(name: string) {
   return name.length > 14 ? `${name.slice(0, 13)}…` : name
 }
 
+type ChartMark = { cx?: number; cy?: number; stroke?: string }
+
+function SquareMark({ cx, cy, stroke }: ChartMark) {
+  if (cx == null || cy == null) return null
+  return <rect x={cx - 3.5} y={cy - 3.5} width={7} height={7} fill={stroke} />
+}
+
+function TriangleMark({ cx, cy, stroke }: ChartMark) {
+  if (cx == null || cy == null) return null
+  return (
+    <path
+      d={`M${cx} ${cy - 4.5} L${cx + 4.2} ${cy + 3.4} L${cx - 4.2} ${cy + 3.4} Z`}
+      fill={stroke}
+    />
+  )
+}
+
 function ChartTooltip({
   active,
   payload,
@@ -82,12 +99,9 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null
   return (
-    <div
-      className="admin-chart-tooltip"
-      style={{ background: colors.panel, borderColor: colors.line }}
-    >
+    <div className="admin-chart-tooltip">
       {label != null && label !== '' && (
-        <p className="admin-chart-tooltip-label" style={{ color: colors.muted }}>
+        <p className="admin-chart-tooltip-label">
           {String(label)}
         </p>
       )}
@@ -324,6 +338,8 @@ export function AdminDashboardCharts({
                   fill={colors.studying}
                   fillOpacity={0.12}
                   strokeWidth={2.4}
+                  strokeDasharray="7 4"
+                  dot={<SquareMark />}
                 />
                 <Area
                   type="monotone"
@@ -387,6 +403,8 @@ export function AdminDashboardCharts({
                   fill={colors.studying}
                   fillOpacity={0.16}
                   strokeWidth={2.4}
+                  strokeDasharray="7 4"
+                  dot={<SquareMark />}
                 />
                 <Area
                   type="monotone"
@@ -405,6 +423,8 @@ export function AdminDashboardCharts({
                   fill={colors.voice}
                   fillOpacity={0.12}
                   strokeWidth={2.4}
+                  strokeDasharray="1.5 4"
+                  dot={<TriangleMark />}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -566,6 +586,8 @@ export function AdminDashboardCharts({
                   name="Mensajes"
                   stackId="cost"
                   fill={colors.studying}
+                  stroke={colors.studying}
+                  strokeDasharray="4 3"
                   radius={[0, 0, 0, 0]}
                 />
                 <Bar
@@ -580,6 +602,8 @@ export function AdminDashboardCharts({
                   name="Transcripciones"
                   stackId="cost"
                   fill={colors.voice}
+                  stroke={colors.voice}
+                  strokeDasharray="1.5 3"
                   radius={[0, 6, 6, 0]}
                 />
               </BarChart>
@@ -662,6 +686,8 @@ export function AdminDashboardCharts({
                   dataKey="transcripciones"
                   name="Audios"
                   fill={colors.voice}
+                  stroke={colors.voice}
+                  strokeDasharray="1.5 3"
                   radius={[0, 6, 6, 0]}
                 />
               </BarChart>
@@ -713,7 +739,14 @@ export function AdminDashboardCharts({
                   }}
                 />
                 <Legend wrapperStyle={{ fontWeight: 800, fontSize: 13 }} />
-                <Bar dataKey="estudio" name="Estudio" fill={colors.studying} radius={[0, 6, 6, 0]} />
+                <Bar
+                  dataKey="estudio"
+                  name="Estudio"
+                  fill={colors.studying}
+                  stroke={colors.studying}
+                  strokeDasharray="4 3"
+                  radius={[0, 6, 6, 0]}
+                />
                 <Bar dataKey="tareas" name="Tareas" fill={colors.accent} radius={[0, 6, 6, 0]} />
                 <Bar dataKey="desafios" name="Desafíos" fill={colors.danger} radius={[0, 6, 6, 0]} />
               </BarChart>

@@ -16,6 +16,21 @@
   padding: 8px 28px 32px;
 }
 
+.admin-shell .primary,
+.admin-shell .ghost {
+  box-shadow: none;
+}
+
+.admin-shell .primary:active:not(:disabled),
+.admin-shell .ghost:active:not(:disabled) {
+  transform: none;
+}
+
+.admin-accounts-stage .data-table-wrap {
+  max-height: min(70vh, 640px);
+  overflow: auto;
+}
+
 .admin-view {
   width: 100%;
   display: flex;
@@ -258,9 +273,9 @@
   text-align: left;
   gap: 14px;
   padding: 14px 16px;
-  border-radius: calc(var(--radius) + 4px);
+  border-radius: var(--r-card);
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   min-width: 0;
 }
 
@@ -271,7 +286,7 @@
 .admin-stat-value {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.45rem;
+  font-size: 32px;
   font-weight: 650;
   color: var(--text);
   line-height: 1.1;
@@ -337,10 +352,12 @@
 }
 
 .admin-chart-tooltip {
-  border: 1px solid;
-  border-radius: 14px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--r-card);
   padding: 10px 12px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
+  color: var(--text);
 }
 
 .admin-chart-tooltip p {
@@ -555,14 +572,22 @@
   min-width: 160px;
 }
 
+.data-table,
+.admin-table {
+  font-variant-numeric: tabular-nums;
+}
+
 .data-table th,
 .admin-table th {
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface-raised));
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+  background: var(--surface);
   white-space: nowrap;
 }
 
@@ -576,12 +601,18 @@
   cursor: pointer;
 }
 
+.data-table tbody tr:hover,
+.admin-table tbody tr:hover,
 .data-table tbody tr.is-clickable:hover,
+.admin-table tbody tr.is-clickable:hover {
+  background: var(--surface-raised);
+}
+
 .data-table tbody tr.is-clickable:focus-visible,
-.admin-table tbody tr.is-clickable:hover,
 .admin-table tbody tr.is-clickable:focus-visible {
-  background: var(--accent-soft);
-  outline: none;
+  background: var(--surface-raised);
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
 }
 
 .data-table strong,

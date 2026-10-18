@@ -1440,14 +1440,32 @@
   border-color: var(--accent);
 }
 
-.study-bubble.is-explorador p,
-.study-bubble.is-sober p {
+.study-bubble.is-explorador p {
   font-size: 18px;
   line-height: 1.5;
 }
 
+.study-bubble.is-sober {
+  max-width: min(65ch, 95%);
+  border: 2px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--surface);
+}
+
+.study-bubble.is-sober.study-bubble-user {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
 .study-bubble.is-sober p {
   font-size: 16px;
+  line-height: 1.5;
+}
+
+.study-bubble.is-sober .study-bubble-role {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
 }
 
 .study-voice-orb:focus-visible,

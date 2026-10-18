@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Shield } from '@phosphor-icons/react'
+import { Shield, Star } from '@phosphor-icons/react'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { AppearanceTools } from '../components/AppearanceTools'
 import { AppLoader } from '../components/AppLoader'
 import { EmptyState } from '../components/EmptyState'
 import { SessionActions } from '../components/SessionActions'
+import { StudyBubble } from '../components/study/StudyBubble'
 import { useSpace } from '../components/SpaceSky'
 import { TextField } from '../components/ui/Field'
 import { SwitchToggle } from '../components/ui/SwitchToggle'
@@ -206,16 +207,12 @@ function GuardianChat({
                 </p>
               )}
               {messages.map((m) => (
-                <div key={m.id} className={`study-bubble study-bubble-${m.role}`}>
-                  <span className="study-bubble-role">
-                    {m.role === 'user' ? 'Tú' : 'Taskia'}
-                  </span>
+                <StudyBubble key={m.id} from={m.role} variant="sober">
                   <p>{m.content}</p>
-                </div>
+                </StudyBubble>
               ))}
               {sending && (
-                <div className="study-bubble study-bubble-assistant is-typing">
-                  <span className="study-bubble-role">Taskia</span>
+                <StudyBubble from="assistant" variant="sober" typing>
                   <p>
                     Pensando
                     <span className="study-thinking-dots" aria-hidden>
@@ -224,7 +221,7 @@ function GuardianChat({
                       <span />
                     </span>
                   </p>
-                </div>
+                </StudyBubble>
               )}
             </>
           )}
@@ -291,7 +288,10 @@ function GuardianProgress({ studentId }: { studentId: number }) {
       <section className="admin-panel">
         <SectionBadge>Nivel</SectionBadge>
         <div className="guardian-xp-card">
-          <span className="guardian-xp-level">Nivel {data.xp.level}</span>
+          <span className="guardian-xp-level">
+            <Star className="guardian-xp-star" size={16} weight="fill" aria-hidden />
+            Nivel {data.xp.level}
+          </span>
           <div
             className="xp-bar guardian-xp-bar"
             title={`${data.xp.xp_into_level}/1000 XP hacia el siguiente nivel`}
