@@ -1,19 +1,17 @@
 import { Plus } from '@phosphor-icons/react'
 import { motion } from 'framer-motion'
-import type { Progress } from '../../../lib/worldProgress'
-import { progressFraction, progressLabel } from '../../../lib/worldProgress'
+import { progressFraction, progressLabel, type WorldStats } from '../../../lib/worldProgress'
 import type { StudyWorld } from '../../../lib/worldsTypes'
-import { worldSeed } from '../../../lib/seed'
-import { LinePlanet } from './LinePlanet'
+import { MiniSystem } from './MiniSystem'
 
 type Props = {
   worlds: StudyWorld[]
-  progress: Record<number, Progress | undefined>
+  progress: Record<number, WorldStats | undefined>
   onOpen: (worldId: number) => void
   onCreate: () => void
 }
 
-/** Mapa estelar: cada mundo es un planeta de línea, escalonado como en el hub. */
+/** Mapa estelar: cada mundo es un sistema solar en miniatura (su sol y un planeta por curso), escalonado como en el hub. */
 export function WorldsMap({ worlds, progress, onOpen, onCreate }: Props) {
   return (
     <div className="map-worlds">
@@ -31,7 +29,7 @@ export function WorldsMap({ worlds, progress, onOpen, onCreate }: Props) {
             transition={{ duration: 0.4, delay: Math.min(index * 0.06, 0.3), ease: [0.22, 1, 0.36, 1] }}
             onClick={() => onOpen(world.id)}
           >
-            <LinePlanet seed={worldSeed(world.id)} size={220} />
+            <MiniSystem worldId={world.id} courseIds={stats?.courseIds ?? []} size={280} />
             <span className="map-world-name">{world.title}</span>
             <span className="map-world-meta">{stats ? progressLabel(stats) : 'Cargando…'}</span>
             <span className="map-world-bar" aria-hidden>
@@ -51,9 +49,10 @@ export function WorldsMap({ worlds, progress, onOpen, onCreate }: Props) {
         onClick={onCreate}
       >
         <span className="map-world-slot" aria-hidden>
-          <Plus size={36} weight="bold" />
+          <Plus size={34} weight="bold" />
+          <span className="map-world-slot-label">Nuevo mundo</span>
         </span>
-        <span className="map-world-name">Descubrir un mundo</span>
+        <span className="map-world-name">Descubrir mundos</span>
         <span className="map-world-meta">Crea uno nuevo</span>
       </motion.button>
     </div>

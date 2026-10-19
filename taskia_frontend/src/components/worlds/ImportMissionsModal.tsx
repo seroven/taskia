@@ -51,7 +51,7 @@ export function ImportMissionsModal({
 
   async function onSubmit() {
     if (selected.size === 0) {
-      setError('Elige al menos una misión')
+      setError('Elige al menos una luna')
       return
     }
     setSubmitting(true)
@@ -72,19 +72,19 @@ export function ImportMissionsModal({
       open={open}
       onClose={onClose}
       titleId="import-missions-title"
-      title="Traer misiones"
+      title="Traer lunas"
       lead="Trae temas de otros mundos (mismo curso). Empiezan de cero aquí."
       icon={DownloadSimple}
       size="lg"
     >
             <div className="modal-panel-body">
-              {loading && <AppLoader message="Buscando misiones…" variant="section" />}
+              {loading && <AppLoader message="Buscando lunas…" variant="section" />}
               {!loading && items.length === 0 && (
                 <EmptyState
                   compact
                   icon={DownloadSimple}
                   title="Nada que traer"
-                  description="No hay misiones de este curso en otros mundos."
+                  description="No hay lunas de este curso en otros mundos."
                 />
               )}
               <ul className="worlds-check-list">

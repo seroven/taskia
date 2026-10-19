@@ -28,3 +28,8 @@ export function worldSeed(worldId: number) {
 export function courseSeed(worldId: number, courseId: number) {
   return worldId * 104729 + courseId * 7919 + 5
 }
+
+/** Tono (0-4) de un planeta o sol a partir de su semilla: el mismo que usa el dibujo. */
+export function planetTone(seed: number) {
+  return Math.floor(mulberry32(seed)() * 5)
+}

@@ -23,7 +23,8 @@ function courses(count: number): StudyWorldCourse[] {
 }
 
 function missions(count: number, allDone = false): StudyMission[] {
-  const statuses = ['mastered', 'mastered', 'studying', 'pending', 'pending', 'mastered', 'studying', 'pending', 'pending']
+  const statuses = ['mastered', 'studying', 'studying', 'pending', 'studying', 'mastered', 'studying', 'pending', 'pending']
+  const phases = ['understanding', 'practicing', 'reviewing']
   return Array.from({ length: count }, (_, index) => ({
     id: index + 1,
     world_id: 1,
@@ -32,6 +33,7 @@ function missions(count: number, allDone = false): StudyMission[] {
     title: ['Fracciones', 'Circunferencias', 'Ejercicios con circunferencias', 'Ángulos', 'Triángulos', 'Perímetros', 'Áreas', 'Potencias', 'Raíces'][index] ?? `Tema ${index + 1}`,
     description: null,
     status: allDone ? 'mastered' : statuses[index % statuses.length],
+    tutor_phase: statuses[index % statuses.length] === 'studying' ? phases[index % 3] : null,
     source_mission_id: null,
     sort_order: index,
     created_at: '',
@@ -39,7 +41,7 @@ function missions(count: number, allDone = false): StudyMission[] {
   }))
 }
 
-const progress = Object.fromEntries(worlds.map((w, i) => [w.id, { total: 10, mastered: i * 2 }]))
+const progress = Object.fromEntries(worlds.map((w, i) => [w.id, { total: 10, mastered: i * 2, courseIds: Array.from({ length: [2, 3, 5, 8, 14][i] }, (_, k) => k + 1) }]))
 
 /** Solo dev: `?lab=map` muestra el mapa estelar de Mundos con datos de ejemplo. */
 export function MapLab() {

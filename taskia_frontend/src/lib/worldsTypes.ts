@@ -56,6 +56,8 @@ export interface StudyMission {
   status: MissionStatus | string
   source_mission_id: number | null
   sort_order: number
+  /** Etapa del estudio: understanding | practicing | reviewing (null si no ha empezado). */
+  tutor_phase?: string | null
   created_at: string
   updated_at: string
 }

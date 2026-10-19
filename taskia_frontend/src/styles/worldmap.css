@@ -5,27 +5,27 @@
 
 /* ---------- Planeta de línea: un tono por semilla ---------- */
 
-.scene.line-planet.tone-0 {
+.line-planet.tone-0 {
   --scene-fill: color-mix(in srgb, var(--accent) 24%, var(--surface));
   --scene-fill-strong: color-mix(in srgb, var(--accent) 46%, var(--surface));
 }
 
-.scene.line-planet.tone-1 {
+.line-planet.tone-1 {
   --scene-fill: color-mix(in srgb, var(--star) 38%, var(--surface));
   --scene-fill-strong: color-mix(in srgb, var(--star) 66%, var(--surface));
 }
 
-.scene.line-planet.tone-2 {
+.line-planet.tone-2 {
   --scene-fill: color-mix(in srgb, var(--success) 28%, var(--surface));
   --scene-fill-strong: color-mix(in srgb, var(--success) 50%, var(--surface));
 }
 
-.scene.line-planet.tone-3 {
+.line-planet.tone-3 {
   --scene-fill: color-mix(in srgb, var(--danger) 24%, var(--surface));
   --scene-fill-strong: color-mix(in srgb, var(--danger) 44%, var(--surface));
 }
 
-.scene.line-planet.tone-4 {
+.line-planet.tone-4 {
   --scene-fill: color-mix(in srgb, color-mix(in srgb, var(--accent) 55%, var(--danger)) 28%, var(--surface));
   --scene-fill-strong: color-mix(in srgb, color-mix(in srgb, var(--accent) 55%, var(--danger)) 50%, var(--surface));
 }
@@ -46,7 +46,7 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  width: 220px;
+  width: 290px;
   margin-top: calc(var(--off, 0) * 28px);
   padding: 8px;
   border: 0;
@@ -101,27 +101,50 @@
 }
 
 .map-world--new .map-world-slot {
+  position: relative;
   display: grid;
-  place-items: center;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
   width: 150px;
   height: 150px;
   margin: 13px 0 7px;
-  border: 3px dashed color-mix(in srgb, var(--text) 35%, transparent);
   border-radius: 50%;
   color: var(--text-muted);
   transition:
-    border-color 0.3s ease,
     color 0.3s ease,
-    background-color 0.3s ease,
+    background-color 0.3s ease;
+}
+
+/* El borde punteado es lo único que gira: el texto de dentro se queda quieto. */
+.map-world--new .map-world-slot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 3px dashed color-mix(in srgb, var(--text) 35%, transparent);
+  border-radius: 50%;
+  transition:
+    border-color 0.3s ease,
     transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .map-world--new:hover .map-world-slot,
 .map-world--new:focus-visible .map-world-slot {
-  border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--accent-ink);
+}
+
+.map-world--new:hover .map-world-slot::before,
+.map-world--new:focus-visible .map-world-slot::before {
+  border-color: var(--accent);
   transform: rotate(90deg);
+}
+
+.map-world-slot-label {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: inherit;
 }
 
 .worlds-lead-progress {
@@ -187,6 +210,10 @@
   position: absolute;
   left: 50%;
   top: calc(50% + 24cqw);
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
   width: 60cqw;
   translate: -50% 0;
   text-align: center;
@@ -331,7 +358,13 @@
 
 .system-item-main:hover .system-moon-art,
 .system-item-main:focus-visible .system-moon-art {
-  transform: scale(1.14);
+  transform: translateY(-4px) scale(1.14);
+}
+
+/* El planeta y su aro de avance suben juntos: el salto lo da todo el recuadro, no solo el dibujo. */
+.system-moon-art .line-planet .hov-lift {
+  transform: none !important;
+  transition: none !important;
 }
 
 .moon-ring {
@@ -395,12 +428,12 @@
 /* Trofeo del desafío junto a la luna de una misión */
 .moon-trophy {
   position: absolute;
-  top: -8px;
-  left: calc(50% + var(--moon, 14cqw) * 0.32);
+  top: -12px;
+  left: calc(50% + var(--moon, 14cqw) * 0.3);
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   border: 2px solid var(--border);
   border-radius: 999px;
@@ -498,6 +531,16 @@
 
 .mission-moon.is-pending .mm-body {
   fill: color-mix(in srgb, var(--text) 5%, var(--surface));
+}
+
+.mission-moon.is-studying.phase-crescent .mm-halo {
+  opacity: 0.22;
+  animation: system-halo 3s ease-in-out infinite;
+}
+
+.mission-moon.is-studying.phase-gibbous .mm-halo {
+  opacity: 0.45;
+  animation: system-halo 3s ease-in-out infinite;
 }
 
 .mission-moon.is-studying .mm-halo {
@@ -673,4 +716,62 @@
 
 .system.tier-dense .system-moon-label b {
   -webkit-line-clamp: 1;
+}
+
+/* ---------- Sol del mundo, sombra de planeta y mini sistema de la lista ---------- */
+
+.line-sun.tone-0 {
+  --scene-fill: color-mix(in srgb, var(--star) 70%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, var(--star) 90%, var(--surface));
+}
+
+.line-sun.tone-1 {
+  --scene-fill: color-mix(in srgb, color-mix(in srgb, var(--star) 60%, var(--danger)) 70%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, color-mix(in srgb, var(--star) 55%, var(--danger)) 90%, var(--surface));
+}
+
+.line-sun.tone-2 {
+  --scene-fill: color-mix(in srgb, color-mix(in srgb, var(--star) 60%, var(--success)) 70%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, color-mix(in srgb, var(--star) 55%, var(--success)) 85%, var(--surface));
+}
+
+.line-sun.tone-3 {
+  --scene-fill: color-mix(in srgb, var(--danger) 55%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, var(--danger) 80%, var(--surface));
+}
+
+.line-sun.tone-4 {
+  --scene-fill: color-mix(in srgb, var(--accent) 50%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, var(--accent) 80%, var(--surface));
+}
+
+.planet-shade {
+  fill: var(--text);
+  stroke: none;
+  opacity: 0.1;
+}
+
+.line-sun .sun-rays {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text) 70%, var(--star));
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+/* Cuerpos dibujados en grande y reducidos (la lista): el trazo se compensa para no quedar finísimo. */
+.mini-body :is(path, circle, ellipse) {
+  stroke-width: var(--sw, 2.4);
+}
+
+.mini-body .thin {
+  stroke-width: calc(var(--sw, 2.4) * 0.62);
+}
+
+.mini-body .dots,
+.mini-body .twinkle {
+  display: none;
+}
+
+.mini-body .sun-rays {
+  stroke-width: calc(var(--sw, 2.4) * 1.1);
 }

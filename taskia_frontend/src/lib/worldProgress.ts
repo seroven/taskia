@@ -25,3 +25,12 @@ export function progressLabel({ total, mastered }: Progress) {
 export function progressFraction({ total, mastered }: Progress) {
   return total === 0 ? 0 : Math.min(1, mastered / total)
 }
+
+/** Avance de un mundo más los cursos que lo orbitan (para dibujar su sistema en la lista). */
+export interface WorldStats extends Progress {
+  courseIds: number[]
+}
+
+export function worldStats(courses: StudyWorldCourse[]): WorldStats {
+  return { ...sumProgress(courses), courseIds: courses.map((course) => course.course_id) }
+}

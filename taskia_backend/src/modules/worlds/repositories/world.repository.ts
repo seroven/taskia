@@ -34,6 +34,8 @@ export type MissionView = {
   status: string
   source_mission_id: number | null
   sort_order: number
+  /** Etapa del estudio (understanding | practicing | reviewing); null si aún no empezó. */
+  tutor_phase: string | null
   created_at: string
   updated_at: string
 }
@@ -66,6 +68,7 @@ type MissionRaw = {
   status: string
   source_mission_id: number | null
   sort_order: number
+  tutor_phase: string | null
   created_at: Date | string
   updated_at: Date | string
 }
@@ -92,6 +95,7 @@ function toMission(row: MissionRaw): MissionView {
     status: String(row.status),
     source_mission_id: row.source_mission_id == null ? null : Number(row.source_mission_id),
     sort_order: Number(row.sort_order),
+    tutor_phase: row.tutor_phase ?? null,
     created_at: toInstantISO(row.created_at) ?? '',
     updated_at: toInstantISO(row.updated_at) ?? '',
   }
@@ -142,6 +146,7 @@ function missionQuery() {
     .createQueryBuilder('m')
     .innerJoin(Course, 'c', 'c.id = m.course_id')
     .innerJoin(StudyWorld, 'w', 'w.id = m.world_id')
+    .leftJoin(StudyMissionSession, 'ms', 'ms.mission_id = m.id')
     .select('m.id', 'id')
     .addSelect('m.world_id', 'world_id')
     .addSelect('m.course_id', 'course_id')
@@ -151,6 +156,7 @@ function missionQuery() {
     .addSelect('m.status', 'status')
     .addSelect('m.source_mission_id', 'source_mission_id')
     .addSelect('m.sort_order', 'sort_order')
+    .addSelect('ms.tutor_phase', 'tutor_phase')
     .addSelect('m.created_at', 'created_at')
     .addSelect('m.updated_at', 'updated_at')
 }

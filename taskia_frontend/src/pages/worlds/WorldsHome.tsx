@@ -6,7 +6,7 @@ import { CreateWorldModal } from '../../components/worlds/CreateWorldModal'
 import { WorldsMap } from '../../components/worlds/map/WorldsMap'
 import { PageHeader } from '../../components/PageHeader'
 import { errorMessage } from '../../lib/errors'
-import { sumProgress, type Progress } from '../../lib/worldProgress'
+import { worldStats, type WorldStats } from '../../lib/worldProgress'
 import type { StudyWorld } from '../../lib/worldsTypes'
 import { useToast } from '../../toast'
 
@@ -18,7 +18,7 @@ interface Props {
 export function WorldsHome({ onBack, onOpenWorld }: Props) {
   const { showToast } = useToast()
   const [worlds, setWorlds] = useState<StudyWorld[]>([])
-  const [progress, setProgress] = useState<Record<number, Progress | undefined>>({})
+  const [progress, setProgress] = useState<Record<number, WorldStats | undefined>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -31,9 +31,9 @@ export function WorldsHome({ onBack, onOpenWorld }: Props) {
       list.map(async (world) => {
         try {
           const courses = await api.listWorldCourses(world.id)
-          setProgress((prev) => ({ ...prev, [world.id]: sumProgress(courses) }))
+          setProgress((prev) => ({ ...prev, [world.id]: worldStats(courses) }))
         } catch {
-          setProgress((prev) => ({ ...prev, [world.id]: { total: 0, mastered: 0 } }))
+          setProgress((prev) => ({ ...prev, [world.id]: { total: 0, mastered: 0, courseIds: [] } }))
         }
       }),
     )

@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { BookOpen, Plus, Trophy } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
+import { AddCourseModal } from '../../components/worlds/AddCourseModal'
 import { ChallengeSetupModal } from '../../components/worlds/ChallengeSetupModal'
 import { ChallengeHistoryList } from '../../components/worlds/ChallengeHistoryList'
-import { LinePlanet } from '../../components/worlds/map/LinePlanet'
+import { LineSun } from '../../components/worlds/map/LineSun'
 import { WorldSystem } from '../../components/worlds/map/WorldSystem'
 import { WorldsEmptyState } from '../../components/worlds/WorldsEmptyState'
 import { PageHeader } from '../../components/PageHeader'
-import { SelectField } from '../../components/ui/SelectField'
 import { errorMessage } from '../../lib/errors'
 import { worldSeed } from '../../lib/seed'
 import { progressFraction, progressLabel, sumProgress } from '../../lib/worldProgress'
@@ -38,7 +38,7 @@ export function WorldDetail({
   const [courses, setCourses] = useState<StudyWorldCourse[]>([])
   const [allCourses, setAllCourses] = useState<Course[]>([])
   const [challenges, setChallenges] = useState<StudyChallenge[]>([])
-  const [addCourseId, setAddCourseId] = useState('')
+  const [addOpen, setAddOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [challengeOpen, setChallengeOpen] = useState(false)
@@ -77,29 +77,20 @@ export function WorldDetail({
     (c) => !courses.some((wc) => wc.course_id === c.id),
   )
 
-  async function onAddCourse() {
-    if (!addCourseId) return
-    try {
-      const first = courses.length === 0
-      const next = await api.addWorldCourse(worldId, Number(addCourseId))
-      setCourses(next)
-      setAddCourseId('')
-      if (first) {
-        setArriving(Number(addCourseId))
-        window.setTimeout(() => setArriving(null), 4200)
-      }
-      showToast({
-        tone: 'success',
-        title: first ? 'Tu mundo cobra vida' : 'Curso agregado',
-        subtitle: 'Ya puedes crear misiones en él',
-      })
-    } catch (err) {
-      showToast({
-        tone: 'error',
-        title: 'No se pudo agregar',
-        subtitle: errorMessage(err),
-      })
+  /** Agrega un curso al mundo. El modal muestra el error si algo falla. */
+  async function addCourse(courseId: number) {
+    const first = courses.length === 0
+    const next = await api.addWorldCourse(worldId, courseId)
+    setCourses(next)
+    if (first) {
+      setArriving(courseId)
+      window.setTimeout(() => setArriving(null), 4200)
     }
+    showToast({
+      tone: 'success',
+      title: first ? 'Tu mundo cobra vida' : 'Planeta agregado',
+      subtitle: 'Ya puedes agregar lunas a su curso',
+    })
   }
 
   return (
@@ -107,11 +98,19 @@ export function WorldDetail({
       <PageHeader
         backLabel="Mundos"
         onBack={onBack}
-        art={<LinePlanet seed={worldSeed(worldId)} size={56} animate={false} />}
+        art={<LineSun seed={worldSeed(worldId)} size={60} animate={false} />}
         title={world?.title ?? 'Mundo'}
+        actions={
+          !loading && available.length > 0 ? (
+            <button type="button" className="primary" onClick={() => setAddOpen(true)}>
+              <Plus size={18} weight="bold" />
+              Agregar planeta
+            </button>
+          ) : null
+        }
         lead={
           <>
-            {world?.description ? world.description : 'Toca una luna para entrar a su curso.'}
+            {world?.description ? world.description : 'Toca un planeta para entrar a su curso.'}
             {!loading && courses.length > 0 ? (
               <span className="worlds-lead-progress">
                 {progressLabel(sumProgress(courses))}
@@ -145,32 +144,10 @@ export function WorldDetail({
                 courses={courses}
                 arrivingCourseId={arriving}
                 onOpenCourse={onOpenCourse}
+                onAddCourse={() => setAddOpen(true)}
               />
             ) : null}
 
-            {available.length > 0 && (
-              <div className="worlds-add-course">
-                <SelectField
-                  label="Agregar curso"
-                  value={addCourseId}
-                  onChange={setAddCourseId}
-                  options={available.map((c) => ({
-                    value: String(c.id),
-                    label: c.name,
-                  }))}
-                  placeholder="Elige un curso"
-                />
-                <button
-                  type="button"
-                  className="primary"
-                  disabled={!addCourseId}
-                  onClick={() => void onAddCourse()}
-                >
-                  <Plus size={18} weight="bold" />
-                  Agregar
-                </button>
-              </div>
-            )}
           </section>
 
           <ChallengeHistoryList
@@ -188,13 +165,19 @@ export function WorldDetail({
                 disabled={loading || courses.length === 0}
               >
                 <Trophy size={18} weight="fill" />
-                Desafío del mundo
+                Desafío de mundos
               </button>
             }
           />
         </div>
       </div>
 
+      <AddCourseModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        options={available.map((course) => ({ id: course.id, name: course.name }))}
+        onAdd={addCourse}
+      />
       <ChallengeSetupModal
         open={challengeOpen}
         worldId={worldId}

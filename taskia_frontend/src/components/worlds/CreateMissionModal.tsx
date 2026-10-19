@@ -29,7 +29,7 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     if (!title.trim()) {
-      setError('Ponle un nombre a la misión')
+      setError('Ponle un nombre a la luna')
       return
     }
     setSubmitting(true)
@@ -52,8 +52,8 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
       open={open}
       onClose={onClose}
       titleId="create-mission-title"
-      title="Nueva misión"
-      lead="Un tema para estudiar con Taskia. Luego podrás desafiarlo."
+      title="Agregar luna"
+      lead="Cada luna es un tema para estudiar con Taskia. Luego podrás desafiarlo."
       icon={Rocket}
     >
       <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>
@@ -77,7 +77,7 @@ export function CreateMissionModal({ open, onClose, onCreate }: Props) {
                 </button>
                 <button type="submit" className="primary" disabled={submitting}>
                   <Plus size={18} weight="bold" />
-                  {submitting ? 'Creando…' : 'Crear misión'}
+                  {submitting ? 'Creando…' : 'Crear luna'}
                 </button>
               </div>
             </form>

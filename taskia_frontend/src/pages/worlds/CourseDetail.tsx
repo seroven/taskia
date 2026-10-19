@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   DownloadSimple,
   Plus,
-  Rocket,
   Trophy,
 } from '@phosphor-icons/react'
 import { api } from '../../api'
@@ -13,7 +12,6 @@ import { CreateMissionModal } from '../../components/worlds/CreateMissionModal'
 import { ImportMissionsModal } from '../../components/worlds/ImportMissionsModal'
 import { CourseSystem } from '../../components/worlds/map/CourseSystem'
 import { courseSeed } from '../../lib/seed'
-import { WorldsEmptyState } from '../../components/worlds/WorldsEmptyState'
 import { PageHeader } from '../../components/PageHeader'
 import { LinePlanet } from '../../components/worlds/map/LinePlanet'
 import { errorMessage } from '../../lib/errors'
@@ -76,10 +74,6 @@ export function CourseDetail({
     })()
   }, [refresh])
 
-  /** Dónde seguir: la misión en curso o, si no hay, la primera por empezar. */
-  const next =
-    missions.find((m) => m.status === 'studying') ?? missions.find((m) => m.status === 'pending') ?? null
-
   return (
     <div className="worlds-shell">
       <PageHeader
@@ -93,30 +87,10 @@ export function CourseDetail({
             : 'Toca una luna para estudiar.'
         }
         actions={
-          <>
-            {next ? (
-              <button type="button" className="primary" onClick={() => onStudyMission(next.id)}>
-                <Rocket size={18} weight="fill" />
-                {next.status === 'studying' ? 'Seguir' : 'Empezar'}
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className={next ? 'ghost worlds-cta-btn' : 'primary'}
-              onClick={() => setCreateOpen(true)}
-            >
-              <Plus size={18} weight="bold" />
-              Nueva misión
-            </button>
-            <button
-              type="button"
-              className="ghost worlds-cta-btn"
-              onClick={() => setImportOpen(true)}
-            >
-              <DownloadSimple size={18} weight="bold" />
-              Traer
-            </button>
-          </>
+          <button type="button" className="primary" onClick={() => setCreateOpen(true)}>
+            <Plus size={18} weight="bold" />
+            Agregar luna
+          </button>
         }
       />
 
@@ -125,27 +99,25 @@ export function CourseDetail({
       <div className="worlds-content worlds-stage">
         <div className="worlds-two-col worlds-two-col--system">
           <section className="worlds-panel worlds-panel--system">
-            <p className="worlds-block-label">Misiones</p>
+            <div className="worlds-panel-head">
+              <p className="worlds-block-label">Lunas</p>
+              <button
+                type="button"
+                className="ghost"
+                title="Traer temas de otro mundo"
+                onClick={() => setImportOpen(true)}
+              >
+                <DownloadSimple size={18} weight="bold" />
+                Traer
+              </button>
+            </div>
             {loading && <AppLoader message="Cargando misiones…" variant="section" />}
-            {!loading && missions.length === 0 && (
-              <WorldsEmptyState
-                compact
-                icon={Rocket}
-                title="Todavía no hay misiones"
-                description="Crea una o tráelas de otro mundo."
-                action={
-                  <button type="button" className="primary" onClick={() => setCreateOpen(true)}>
-                    <Plus size={18} weight="bold" />
-                    Nueva misión
-                  </button>
-                }
-              />
-            )}
             {!loading ? (
               <CourseSystem
                 worldId={worldId}
                 courseId={courseId}
                 missions={missions}
+                onCreateMission={() => setCreateOpen(true)}
                 onStudy={onStudyMission}
                 onChallenge={(missionId) => {
                   setMissionChallengeId(missionId)

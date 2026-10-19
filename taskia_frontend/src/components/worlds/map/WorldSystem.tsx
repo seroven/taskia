@@ -1,3 +1,4 @@
+import { Plus } from '@phosphor-icons/react'
 import { progressFraction } from '../../../lib/worldProgress'
 import { courseSeed, worldSeed } from '../../../lib/seed'
 import { courseProgress, type StudyWorldCourse } from '../../../lib/worldsTypes'
@@ -10,6 +11,8 @@ type Props = {
   /** Curso recién agregado: llega a su órbita con una animación. */
   arrivingCourseId?: number | null
   onOpenCourse: (courseId: number) => void
+  /** Si se da, el mundo vacío muestra un botón para agregar el primer curso. */
+  onAddCourse?: () => void
 }
 
 function ProgressRing({ fraction, done }: { fraction: number; done: boolean }) {
@@ -30,7 +33,7 @@ function ProgressRing({ fraction, done }: { fraction: number; done: boolean }) {
 }
 
 /** Sistema del mundo: el planeta al centro y cada curso como una luna con su anillo de avance. */
-export function WorldSystem({ worldId, courses, arrivingCourseId = null, onOpenCourse }: Props) {
+export function WorldSystem({ worldId, courses, arrivingCourseId = null, onOpenCourse, onAddCourse }: Props) {
   const items: OrbitItem[] = courses.map((course) => {
     const progress = courseProgress(course)
     const stats = { total: course.mission_count ?? 0, mastered: course.mastered_count ?? 0 }
@@ -57,9 +60,20 @@ export function WorldSystem({ worldId, courses, arrivingCourseId = null, onOpenC
   return (
     <OrbitSystem
       centerSeed={worldSeed(worldId)}
+      centerKind="sun"
       items={items}
       complete={total > 0 && mastered >= total}
-      emptyHint="Tu mundo está solo. Agrega un curso y empezará a girar."
+      emptyHint={
+        <>
+          <p style={{ margin: 0 }}>Tu sol está solo. Agrega un planeta y empezará a girar.</p>
+          {onAddCourse ? (
+            <button type="button" className="primary" onClick={onAddCourse}>
+              <Plus size={18} weight="bold" />
+              Agregar planeta
+            </button>
+          ) : null}
+        </>
+      }
     />
   )
 }

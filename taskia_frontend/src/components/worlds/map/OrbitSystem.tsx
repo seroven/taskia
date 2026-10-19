@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Spark } from '../../scenes/kit'
 import { sv } from '../../scenes/sv'
 import { LinePlanet } from './LinePlanet'
+import { LineSun } from './LineSun'
 
 export type OrbitItem = {
   key: string | number
@@ -20,6 +21,8 @@ export type OrbitItem = {
 
 type Props = {
   centerSeed: number
+  /** Lo que hay al centro: un sol (el mundo) o un planeta (el curso). */
+  centerKind?: 'sun' | 'planet'
   items: OrbitItem[]
   /** Todo lo de este sistema está dominado: el sistema brilla. */
   complete?: boolean
@@ -75,7 +78,7 @@ const BURST = Array.from({ length: 8 }, (_, index) => {
  * Sistema orbital: un planeta al centro y sus elementos como lunas que lo orbitan muy despacio.
  * Lo usan el mundo (cursos) y el curso (misiones). Al pasar el cursor todo se detiene.
  */
-export function OrbitSystem({ centerSeed, items, complete = false, emptyHint }: Props) {
+export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete = false, emptyHint }: Props) {
   const { groups, radii, moon, core, tier } = plan(items)
   const arrivingKey = items.find((item) => item.arriving)?.key ?? null
 
@@ -101,7 +104,11 @@ export function OrbitSystem({ centerSeed, items, complete = false, emptyHint }: 
           <i />
           <i />
         </span>
-        <LinePlanet seed={centerSeed} size={`${core}cqw`} />
+        {centerKind === 'sun' ? (
+          <LineSun seed={centerSeed} size={`${core}cqw`} />
+        ) : (
+          <LinePlanet seed={centerSeed} size={`${core}cqw`} />
+        )}
       </div>
 
       {empty && emptyHint ? <div className="system-empty">{emptyHint}</div> : null}

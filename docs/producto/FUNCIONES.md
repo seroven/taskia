@@ -377,7 +377,7 @@ Sirve cuando el objetivo no es “terminar la hoja de hoy”, sino “dejar bien
 
 - Desde el hub: puerta **Mundos** (también se puede volver al hub con Inicio).
 - Puede crear un **Nuevo mundo** (nombre y descripción).
-- Ve tarjetas de mundos existentes y entra a uno.
+- Ve sus mundos como sistemas solares en miniatura (el sol del mundo, un planeta por curso) y entra a uno. En el sistema del mundo, cada curso es un planeta; dentro de un curso, cada tema es una luna cuya fase de la luna cuenta el avance (nueva, creciente, cuarto, gibosa, llena).
 
 ### Dentro de un mundo
 
@@ -387,7 +387,7 @@ Sirve cuando el objetivo no es “terminar la hoja de hoy”, sino “dejar bien
   - En marcha
   - Listo (todas las misiones de ese curso en ese mundo están listas)
 - **Agregar curso** (solo entre las materias que ya tiene).
-- **Desafío del mundo** y un **historial** de desafíos hechos a ese nivel.
+- **Desafío de mundos** (el botón del mundo) y un **historial** de desafíos hechos a ese nivel.
 
 ### Dentro de un curso del mundo
 
