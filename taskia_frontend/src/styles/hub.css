@@ -99,6 +99,8 @@
   color: var(--text);
   text-align: center;
   cursor: pointer;
+  /* Crece y vuelve despacio: sin transición el 1.04 se sentía de golpe. */
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hub-destination--worlds {
@@ -221,3 +223,9 @@
   }
 }
 
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-destination {
+    transition: none;
+  }
+}
