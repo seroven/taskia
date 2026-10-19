@@ -299,7 +299,10 @@
   background: var(--surface);
   color: var(--text);
   box-shadow: none;
-  transition: border-color 0.18s ease, background 0.2s ease;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.3s ease,
+    background 0.2s ease;
 }
 
 button.field-control {
@@ -317,10 +320,9 @@ button.field-control {
 .select-trigger.is-open,
 .date-trigger.is-open,
 .password-field:focus-within .field-control {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
+  outline: none;
   border-color: var(--accent);
-  box-shadow: none;
+  box-shadow: var(--ring-soft);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -550,6 +552,7 @@ input[type='checkbox']:active:not(:disabled) {
 .select-search input:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: var(--ring-soft);
 }
 
 .select-search-empty {

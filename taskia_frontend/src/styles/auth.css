@@ -79,21 +79,6 @@
   color: var(--accent-ink);
 }
 
-/* Foco suave en el login: borde del acento y halo, sin el contorno grueso */
-.auth-form .field-control:focus,
-.auth-form .password-field:focus-within .field-control {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
-}
-
-.auth-form .field-control {
-  transition:
-    border-color 0.25s ease,
-    box-shadow 0.3s ease,
-    background 0.2s ease;
-}
-
 /* Error: la tarjeta se sacude un poco */
 .auth-panel.is-shaking {
   animation: auth-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);

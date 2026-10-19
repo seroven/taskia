@@ -292,7 +292,7 @@
   border-color: var(--accent);
   box-shadow:
     var(--shadow-sm),
-    0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+    var(--ring-soft);
 }
 
 .study-chat.is-explorer .study-compose-pill textarea:focus,
