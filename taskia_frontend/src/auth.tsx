@@ -13,7 +13,8 @@ import type { PublicUser } from './types'
 interface AuthContextValue {
   user: PublicUser | null
   loading: boolean
-  login: (username: string, password: string) => Promise<void>
+  /** `beforeEnter` corre con el login ya validado y antes de mostrar la app (p. ej. el despegue del login). */
+  login: (username: string, password: string, beforeEnter?: () => Promise<void>) => Promise<void>
   logout: () => Promise<void>
   setUser: (user: PublicUser) => void
 }
@@ -41,10 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = useCallback(async (username: string, password: string) => {
-    const next = await api.login(username, password)
-    setUser(next)
-  }, [])
+  const login = useCallback(
+    async (username: string, password: string, beforeEnter?: () => Promise<void>) => {
+      const next = await api.login(username, password)
+      await beforeEnter?.()
+      setUser(next)
+    },
+    [],
+  )
 
   const logout = useCallback(async () => {
     await api.logout()

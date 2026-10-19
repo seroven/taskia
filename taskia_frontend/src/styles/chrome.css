@@ -36,22 +36,6 @@
   z-index: 3;
 }
 
-.auth-planet {
-  position: absolute;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.auth-planet--a {
-  top: -80px;
-  left: -90px;
-}
-
-.auth-planet--b {
-  right: -70px;
-  bottom: -100px;
-}
-
 .appearance-tools {
   display: flex;
   align-items: center;

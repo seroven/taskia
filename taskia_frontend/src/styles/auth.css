@@ -1,0 +1,160 @@
+/*
+ * Login: la escena del cohete a la izquierda y la tarjeta a la derecha. Va después de study.css para
+ * ganar a sus reglas de pantalla chica sobre `.auth-shell`.
+ */
+
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 460px);
+  align-items: center;
+  justify-content: center;
+  gap: 16px clamp(24px, 5vw, 72px);
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 24px clamp(20px, 4vw, 48px);
+}
+
+.auth-scene {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  justify-self: end;
+}
+
+.auth-scene .scene {
+  overflow: visible;
+}
+
+.auth-panel {
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border));
+  box-shadow: var(--shadow);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-form .primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.auth-form .primary svg {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.auth-form .primary:hover:not(:disabled) svg {
+  transform: translate(3px, -3px) rotate(-8deg);
+}
+
+/* Ícono dentro del campo */
+.field-icon-wrap,
+.password-field {
+  position: relative;
+}
+
+.field-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.field-control--icon {
+  padding-left: 44px;
+}
+
+.field-icon-wrap:focus-within .field-icon,
+.password-field:focus-within .field-icon {
+  color: var(--accent-ink);
+}
+
+/* Foco suave en el login: borde del acento y halo, sin el contorno grueso */
+.auth-form .field-control:focus,
+.auth-form .password-field:focus-within .field-control {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.auth-form .field-control {
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.3s ease,
+    background 0.2s ease;
+}
+
+/* Error: la tarjeta se sacude un poco */
+.auth-panel.is-shaking {
+  animation: auth-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes auth-shake {
+  10%,
+  90% {
+    translate: -2px 0;
+  }
+  20%,
+  80% {
+    translate: 4px 0;
+  }
+  30%,
+  50%,
+  70% {
+    translate: -6px 0;
+  }
+  40%,
+  60% {
+    translate: 6px 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .auth-shell {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    justify-items: center;
+    gap: 8px;
+    padding: max(12px, env(safe-area-inset-top)) 16px 28px;
+    overflow-y: auto;
+  }
+
+  .auth-scene {
+    order: 1;
+    width: min(300px, 70vw);
+    justify-self: center;
+  }
+
+  .auth-theme-slot {
+    order: 0;
+    position: static;
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .auth-panel {
+    order: 2;
+    width: min(460px, 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-panel.is-shaking {
+    animation: none;
+  }
+
+  .auth-form .primary svg,
+  .field-icon {
+    transition: none;
+  }
+}

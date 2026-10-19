@@ -30,14 +30,26 @@ export function Field({
 export function TextField({
   label,
   className = '',
+  icon,
   ...props
 }: {
   label: string
   className?: string
+  /** Ícono a la izquierda del campo (decorativo). */
+  icon?: ReactNode
 } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <Field label={label} className={className}>
-      <input className="field-control" {...props} />
+      {icon ? (
+        <div className="field-icon-wrap">
+          <span className="field-icon" aria-hidden>
+            {icon}
+          </span>
+          <input className="field-control field-control--icon" {...props} />
+        </div>
+      ) : (
+        <input className="field-control" {...props} />
+      )}
     </Field>
   )
 }
@@ -45,18 +57,26 @@ export function TextField({
 export function PasswordField({
   label,
   className = '',
+  icon,
   ...props
 }: {
   label: string
   className?: string
+  /** Ícono a la izquierda del campo (decorativo). */
+  icon?: ReactNode
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
   const [visible, setVisible] = useState(false)
 
   return (
     <Field label={label} className={className}>
       <div className="password-field">
+        {icon ? (
+          <span className="field-icon" aria-hidden>
+            {icon}
+          </span>
+        ) : null}
         <input
-          className="field-control password-field-control"
+          className={`field-control password-field-control${icon ? ' field-control--icon' : ''}`}
           type={visible ? 'text' : 'password'}
           {...props}
         />

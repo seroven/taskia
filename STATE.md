@@ -43,7 +43,7 @@ Mundos, vínculos, misiones y afiliaciones se archivan (`is_active = false`), no
 - Retomar [ROADMAP_V2.md](docs/planes/ROADMAP_V2.md) cuando se decida (WhatsApp y Flutter). El resumen diario ya es un script de una pasada.
 - En Render / pd: `npm run db:reset:pd -- --yes` (borra el schema `taskia` y reaplica migraciones) si el schema viejo no cuadra.
 - Los instantes ya guardados (si quedan) están corridos +5 h. No se corrigen hasta que se pida.
-- Rediseño visual en curso: faltan el login (aún usa `Planet`, esferas de CSS), la galaxia de Tripulación (`PlanetRenderer`) y Mundos (donde entrará `kenney_planets`). La mascota de Taskia no está definida; la estrella guía es provisional.
+- Rediseño visual en curso: faltan la galaxia de Tripulación (`PlanetRenderer`) y Mundos (donde entrará `kenney_planets`). El login ya es la escena del cohete con despegue (`LaunchScene`). La mascota de Taskia no está definida; la estrella guía es provisional.
 
 ## Cómo correrlo
 

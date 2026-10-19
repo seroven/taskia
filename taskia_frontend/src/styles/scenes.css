@@ -39,6 +39,14 @@
   fill: var(--scene-star);
 }
 
+.scene .fill-surface {
+  fill: var(--surface);
+}
+
+.scene .fill-accent {
+  fill: var(--accent);
+}
+
 .scene .acc {
   stroke: var(--accent-ink);
 }
@@ -335,5 +343,231 @@
 
   .scene .rise {
     display: none;
+  }
+}
+
+/* ---------- Escena del login: cohete en su plataforma ---------- */
+
+.scene-launch .fill-flame {
+  fill: color-mix(in srgb, var(--star) 62%, #ff6a2b);
+}
+
+.scene-launch .lc-flame {
+  opacity: 0;
+  transform-box: view-box;
+  transform-origin: 240px 354px;
+  transform: scale(0.3);
+  transition:
+    opacity 0.25s ease,
+    transform 0.45s var(--scene-ease);
+}
+
+.scene-launch[data-phase='ignition'] .lc-flame,
+.scene-launch[data-phase='liftoff'] .lc-flame {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.scene-launch[data-phase='liftoff'] .lc-flame {
+  transform: scale(1.15, 1.7);
+}
+
+.scene-launch .lc-fly {
+  transition: transform 1.15s cubic-bezier(0.55, 0, 0.9, 0.4);
+}
+
+.scene-launch[data-phase='liftoff'] .lc-fly {
+  transform: translateY(-680px);
+}
+
+.scene-launch[data-phase='ignition'] .lc-shake {
+  animation: lc-shake 0.09s linear infinite alternate;
+}
+
+@keyframes lc-shake {
+  from {
+    transform: translateX(-1.6px);
+  }
+  to {
+    transform: translateX(1.6px);
+  }
+}
+
+.scene-launch .lc-arm {
+  transform-box: view-box;
+  transform-origin: 158px 276px;
+  transition: transform 0.6s var(--scene-ease);
+}
+
+.scene-launch:is([data-phase='ignition'], [data-phase='liftoff']) .lc-arm {
+  transform: rotate(-78deg);
+}
+
+.scene-launch .lc-puff {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.scene-launch:is([data-phase='ignition'], [data-phase='liftoff']) .lc-puff {
+  animation: lc-puff 1.3s ease-out var(--delay, 0s) infinite;
+}
+
+@keyframes lc-puff {
+  0% {
+    opacity: 0.85;
+    transform: translate(0, 0) scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 30px), -26px) scale(2.4);
+  }
+}
+
+/* Armado: cada pieza cae en su sitio en el momento `--bd` */
+.scene-launch .lc-build {
+  animation: lc-drop 0.7s cubic-bezier(0.3, 0.7, 0.4, 1) var(--bd, 0s) backwards;
+}
+
+.scene-launch .lc-build-nozzle {
+  animation-name: lc-rise-in;
+}
+
+.scene-launch .lc-build-fin-l {
+  animation-name: lc-fin-l;
+}
+
+.scene-launch .lc-build-fin-r {
+  animation-name: lc-fin-r;
+}
+
+.scene-launch .lc-build-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lc-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) var(--bd, 0s) backwards;
+}
+
+.scene-launch .lc-late {
+  animation: scene-fade 0.5s ease var(--bd, 0s) backwards;
+}
+
+@keyframes lc-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-130px);
+  }
+  62% {
+    opacity: 1;
+    transform: translateY(5px);
+  }
+  82% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes lc-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(46px) scale(0.7);
+  }
+}
+
+@keyframes lc-fin-l {
+  from {
+    opacity: 0;
+    transform: translateX(-46px) rotate(-18deg);
+  }
+}
+
+@keyframes lc-fin-r {
+  from {
+    opacity: 0;
+    transform: translateX(46px) rotate(18deg);
+  }
+}
+
+@keyframes lc-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-40deg);
+  }
+}
+
+/* Chispazos de soldadura: un destello por pieza */
+.scene-launch .lc-weld {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lc-weld 0.5s ease-out var(--bd, 0s) backwards;
+}
+
+@keyframes lc-weld {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7) rotate(60deg);
+  }
+}
+
+/* El brazo llega a la nave cuando termina el armado */
+.scene-launch .lc-arm {
+  animation: lc-arm-in 0.6s var(--scene-ease) 3.1s backwards;
+}
+
+@keyframes lc-arm-in {
+  from {
+    transform: rotate(-78deg);
+  }
+}
+
+.scene-launch .lc-beacon {
+  animation: scene-breathe 1.6s ease-in-out 3.3s infinite;
+}
+
+/* Lista para despegar: tiembla un poco, la llama piloto prende y sale vapor */
+.scene-launch[data-phase='ready'] .lc-shake {
+  animation: lc-tremble 0.11s linear infinite alternate;
+}
+
+@keyframes lc-tremble {
+  from {
+    transform: translate(-0.7px, 0);
+  }
+  to {
+    transform: translate(0.7px, 0.4px);
+  }
+}
+
+.scene-launch[data-phase='ready'] .lc-flame {
+  opacity: 1;
+  transform: scale(0.4, 0.5);
+}
+
+.scene-launch[data-phase='ready'] .lc-puff {
+  animation: lc-puff-soft 2.6s ease-out var(--delay, 0s) infinite;
+}
+
+@keyframes lc-puff-soft {
+  0% {
+    opacity: 0.45;
+    transform: translate(0, 0) scale(0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx, 30px) * 0.5), -16px) scale(1.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-launch .lc-fly,
+  .scene-launch .lc-flame,
+  .scene-launch .lc-arm {
+    transition: none !important;
   }
 }
