@@ -1,20 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpen, GlobeHemisphereWest, Plus, Trophy } from '@phosphor-icons/react'
+import { BookOpen, Plus, Trophy } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
 import { ChallengeSetupModal } from '../../components/worlds/ChallengeSetupModal'
 import { ChallengeHistoryList } from '../../components/worlds/ChallengeHistoryList'
-import { WorldsCoverCard } from '../../components/worlds/WorldsCoverCard'
-import { WorldsCoverGrid, WorldsCoverItem } from '../../components/worlds/WorldsCoverGrid'
+import { LinePlanet } from '../../components/worlds/map/LinePlanet'
+import { WorldSystem } from '../../components/worlds/map/WorldSystem'
 import { WorldsEmptyState } from '../../components/worlds/WorldsEmptyState'
-import { WorldsHero } from '../../components/worlds/WorldsHero'
-import { WorldsNav } from '../../components/worlds/WorldsNav'
-import { ExplorerXpBar } from '../../components/ExplorerXpBar'
-import { WorldsStatusPill, WorldsTags } from '../../components/worlds/WorldsStatusPill'
+import { PageHeader } from '../../components/PageHeader'
 import { SelectField } from '../../components/ui/SelectField'
 import { errorMessage } from '../../lib/errors'
+import { worldSeed } from '../../lib/seed'
+import { progressFraction, progressLabel, sumProgress } from '../../lib/worldProgress'
 import {
-  courseProgress,
   type StudyChallenge,
   type StudyWorld,
   type StudyWorldCourse,
@@ -44,6 +42,8 @@ export function WorldDetail({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [challengeOpen, setChallengeOpen] = useState(false)
+  /** El primer curso de un mundo llega con animación; el id se limpia solo. */
+  const [arriving, setArriving] = useState<number | null>(null)
 
   const refresh = useCallback(async () => {
     const [worlds, worldCourses, catalog, history] = await Promise.all([
@@ -80,12 +80,17 @@ export function WorldDetail({
   async function onAddCourse() {
     if (!addCourseId) return
     try {
+      const first = courses.length === 0
       const next = await api.addWorldCourse(worldId, Number(addCourseId))
       setCourses(next)
       setAddCourseId('')
+      if (first) {
+        setArriving(Number(addCourseId))
+        window.setTimeout(() => setArriving(null), 4200)
+      }
       showToast({
         tone: 'success',
-        title: 'Curso agregado',
+        title: first ? 'Tu mundo cobra vida' : 'Curso agregado',
         subtitle: 'Ya puedes crear misiones en él',
       })
     } catch (err) {
@@ -99,27 +104,31 @@ export function WorldDetail({
 
   return (
     <div className="worlds-shell">
-      <WorldsNav
+      <PageHeader
         backLabel="Mundos"
         onBack={onBack}
-        trailing={<ExplorerXpBar />}
+        art={<LinePlanet seed={worldSeed(worldId)} size={56} animate={false} />}
+        title={world?.title ?? 'Mundo'}
+        lead={
+          <>
+            {world?.description ? world.description : 'Toca una luna para entrar a su curso.'}
+            {!loading && courses.length > 0 ? (
+              <span className="worlds-lead-progress">
+                {progressLabel(sumProgress(courses))}
+                <span className="map-world-bar" aria-hidden>
+                  <i style={{ width: `${Math.round(progressFraction(sumProgress(courses)) * 100)}%` }} />
+                </span>
+              </span>
+            ) : null}
+          </>
+        }
       />
 
       {error && <p className="form-error banner">{error}</p>}
 
       <div className="worlds-content worlds-stage">
-        <WorldsHero
-          icon={GlobeHemisphereWest}
-          title={world?.title ?? 'Mundo'}
-          lead={
-            world?.description
-              ? world.description
-              : 'Toca un curso para ver sus temas.'
-          }
-        />
-
         <div className="worlds-two-col">
-          <section className="worlds-panel">
+          <section className="worlds-panel worlds-panel--system">
             <p className="worlds-block-label">Cursos</p>
             {loading && <AppLoader message="Cargando cursos…" variant="section" />}
             {!loading && allCourses.length === 0 && (
@@ -130,36 +139,14 @@ export function WorldDetail({
                 description="Pídele a un adulto que te asigne cursos. Después los agregas a este mundo."
               />
             )}
-            {!loading && allCourses.length > 0 && courses.length === 0 && (
-              <WorldsEmptyState
-                compact
-                icon={BookOpen}
-                title="Agrega un curso"
-                description="Elige uno de los tuyos y empieza a crear misiones."
+            {!loading && allCourses.length > 0 ? (
+              <WorldSystem
+                worldId={worldId}
+                courses={courses}
+                arrivingCourseId={arriving}
+                onOpenCourse={onOpenCourse}
               />
-            )}
-            <WorldsCoverGrid>
-              {courses.map((course, index) => {
-                const progress = courseProgress(course)
-                return (
-                  <WorldsCoverItem key={course.course_id} index={index}>
-                    <WorldsCoverCard
-                      kind="course"
-                      icon={BookOpen}
-                      title={course.course_name}
-                      hint="Ver temas"
-                      status={progress}
-                      onClick={() => onOpenCourse(course.course_id)}
-                      tags={
-                        <WorldsTags>
-                          <WorldsStatusPill kind="courseProgress" value={progress} />
-                        </WorldsTags>
-                      }
-                    />
-                  </WorldsCoverItem>
-                )
-              })}
-            </WorldsCoverGrid>
+            ) : null}
 
             {available.length > 0 && (
               <div className="worlds-add-course">

@@ -92,7 +92,7 @@ function ExplorerApp({ userId }: { userId: number }) {
   const space: SpaceLevel =
     view === 'hub'
       ? 'high'
-      : view === 'troops' || view === 'worlds' || view === 'world' || view === 'course'
+      : view === 'troops'
         ? 'none'
         : 'medium'
   useSpace(space)

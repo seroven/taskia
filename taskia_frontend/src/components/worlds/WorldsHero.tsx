@@ -4,12 +4,15 @@ import { WorldsIconBadge } from './WorldsIconBadge'
 
 export function WorldsHero({
   icon,
+  art,
   title,
   lead,
   actions,
   compact = false,
 }: {
-  icon: Icon
+  icon?: Icon
+  /** Reemplaza al ícono (p. ej. el planeta del mundo). */
+  art?: ReactNode
   title: string
   lead?: ReactNode
   actions?: ReactNode
@@ -19,7 +22,7 @@ export function WorldsHero({
     <header
       className={`worlds-hero${compact ? ' worlds-hero--compact' : ' worlds-hero--page'}`}
     >
-      <WorldsIconBadge icon={icon} size="lg" />
+      {art ?? (icon ? <WorldsIconBadge icon={icon} size="lg" /> : null)}
       {compact ? (
         <>
           <h1 className="worlds-hero-title">{title}</h1>

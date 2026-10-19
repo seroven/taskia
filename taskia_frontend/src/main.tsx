@@ -11,6 +11,9 @@ const SceneLab = import.meta.env.DEV
   : null
 const lab = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('lab') : null
 const showLab = SceneLab && lab === 'scenes'
+const MapLab = import.meta.env.DEV
+  ? lazy(() => import('./pages/MapLab').then((m) => ({ default: m.MapLab })))
+  : null
 const CampLab = import.meta.env.DEV
   ? lazy(() => import('./pages/CampLab').then((m) => ({ default: m.CampLab })))
   : null
@@ -20,7 +23,15 @@ const HubLab = import.meta.env.DEV
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {CampLab && lab === 'camp' ? (
+    {MapLab && lab === 'map' ? (
+      <ThemeProvider>
+        <AccentProvider>
+          <Suspense fallback={null}>
+            <MapLab />
+          </Suspense>
+        </AccentProvider>
+      </ThemeProvider>
+    ) : CampLab && lab === 'camp' ? (
       <ThemeProvider>
         <AccentProvider>
           <Suspense fallback={null}>

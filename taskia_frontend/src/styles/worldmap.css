@@ -1,0 +1,606 @@
+/*
+ * Mapa estelar de Mundos: la lista de mundos (planetas), el sistema de un mundo (cursos como lunas
+ * que lo orbitan) y la constelación de un curso (misiones como estrellas). Va después de worlds.css.
+ */
+
+/* ---------- Planeta de línea: un tono por semilla ---------- */
+
+.scene.line-planet.tone-0 {
+  --scene-fill: color-mix(in srgb, var(--accent) 24%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, var(--accent) 46%, var(--surface));
+}
+
+.scene.line-planet.tone-1 {
+  --scene-fill: color-mix(in srgb, var(--star) 38%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, var(--star) 66%, var(--surface));
+}
+
+.scene.line-planet.tone-2 {
+  --scene-fill: color-mix(in srgb, var(--success) 28%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, var(--success) 50%, var(--surface));
+}
+
+.scene.line-planet.tone-3 {
+  --scene-fill: color-mix(in srgb, var(--danger) 24%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, var(--danger) 44%, var(--surface));
+}
+
+.scene.line-planet.tone-4 {
+  --scene-fill: color-mix(in srgb, color-mix(in srgb, var(--accent) 55%, var(--danger)) 28%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, color-mix(in srgb, var(--accent) 55%, var(--danger)) 50%, var(--surface));
+}
+
+/* ---------- Lista de mundos ---------- */
+
+.map-worlds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px clamp(20px, 4vw, 56px);
+  padding: 8px 8px 32px;
+}
+
+.map-world {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 220px;
+  margin-top: calc(var(--off, 0) * 28px);
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.map-world:hover,
+.map-world:focus-visible {
+  transform: scale(1.04);
+}
+
+.map-world:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 6px;
+  border-radius: var(--r-card);
+}
+
+.map-world-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.map-world-meta {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.map-world-bar {
+  display: block;
+  width: 140px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.map-world-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--star);
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.map-world--new .map-world-slot {
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 150px;
+  margin: 13px 0 7px;
+  border: 3px dashed color-mix(in srgb, var(--text) 35%, transparent);
+  border-radius: 50%;
+  color: var(--text-muted);
+  transition:
+    border-color 0.3s ease,
+    color 0.3s ease,
+    background-color 0.3s ease,
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.map-world--new:hover .map-world-slot,
+.map-world--new:focus-visible .map-world-slot {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  transform: rotate(90deg);
+}
+
+.worlds-lead-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 6px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.worlds-lead-progress .map-world-bar {
+  width: 90px;
+}
+
+/* ---------- Sistema orbital (mundo y curso) ---------- */
+
+.worlds-panel--system {
+  background: transparent;
+  border-color: transparent;
+}
+
+.system {
+  position: relative;
+  width: min(540px, 100%);
+  margin: 0 auto 44px;
+  aspect-ratio: 1;
+  container-type: inline-size;
+}
+
+.system-rings {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.system-rings circle {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text) 30%, transparent);
+  stroke-width: 0.35;
+  stroke-dasharray: 0.4 1.6;
+  stroke-linecap: round;
+}
+
+.system.is-empty .system-rings circle {
+  animation: system-ring-breathe 3s ease-in-out infinite;
+}
+
+.system-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+.system-empty {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 24cqw);
+  width: 60cqw;
+  translate: -50% 0;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+/* Ondas que salen del planeta cuando llega el primer curso */
+.system-ripples {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 30cqw;
+  height: 30cqw;
+  translate: -50% -50%;
+}
+
+.system-ripples i {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.system.is-awake .system-ripples i {
+  animation: system-ripple 1.8s ease-out infinite;
+}
+
+.system.is-awake .system-ripples i:nth-child(2) {
+  animation-delay: 0.45s;
+}
+
+.system.is-awake .system-ripples i:nth-child(3) {
+  animation-delay: 0.9s;
+}
+
+.system.is-awake .system-core .line-planet {
+  animation: system-awake 1.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.system.is-awake .system-rings circle {
+  stroke: var(--accent);
+  stroke-width: 0.6;
+  transition: stroke 0.6s ease;
+}
+
+.system.is-complete .system-core .line-planet {
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--star) 70%, transparent));
+}
+
+.system-orbit {
+  position: absolute;
+  inset: 0;
+  animation: system-spin var(--dur, 150s) linear infinite;
+  animation-direction: var(--dir, normal);
+}
+
+.system-moon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--a))
+    translateY(calc(var(--r) * -1cqw + var(--arrive, 0px)))
+    rotate(calc(var(--a) * -1));
+}
+
+/* Llegada: el valor registrado se anima y la luna entra en espiral desde lejos. */
+@property --arrive {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.system-moon.is-arriving {
+  animation: system-arrive 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.9s backwards;
+}
+
+.system-item {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: max-content;
+  translate: -50% -50%;
+  /* Contra-giro: la luna sigue al anillo pero su nombre se queda derecho. */
+  animation: system-spin var(--dur, 150s) linear infinite;
+  animation-direction: var(--dir-b, reverse);
+}
+
+.system-item-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Al pasar el cursor por el sistema todo se detiene, para poder tocar una luna con calma. */
+.system:hover .system-orbit,
+.system:hover .system-item,
+.system:focus-within .system-orbit,
+.system:focus-within .system-item {
+  animation-play-state: paused;
+}
+
+.system-item-main:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 6px;
+  border-radius: var(--r-card);
+}
+
+.system-moon-art {
+  position: relative;
+  display: block;
+  width: var(--moon, 14cqw);
+  min-width: 52px;
+  aspect-ratio: 1;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.system-moon-art .line-planet,
+.system-moon-art .mission-moon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.system-item-main:hover .system-moon-art,
+.system-item-main:focus-visible .system-moon-art {
+  transform: scale(1.14);
+}
+
+.moon-ring {
+  position: absolute;
+  inset: -7%;
+  width: 114%;
+  height: 114%;
+  pointer-events: none;
+}
+
+.moon-ring circle {
+  fill: none;
+  stroke-width: 3.2;
+}
+
+.moon-ring-track {
+  stroke: color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+.moon-ring-fill {
+  stroke: var(--star);
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.moon-ring.is-done .moon-ring-fill {
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--star) 80%, transparent));
+}
+
+.system-moon-label {
+  display: grid;
+  max-width: 24cqw;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.system-moon-label b {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 800;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.system-moon-label i {
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.system-item.is-mastered .system-moon-label i {
+  color: color-mix(in srgb, var(--star) 55%, var(--text));
+}
+
+.system-item.is-studying .system-moon-label i {
+  color: var(--accent-ink);
+}
+
+/* Trofeo del desafío junto a la luna de una misión */
+.moon-trophy {
+  position: absolute;
+  top: -8px;
+  left: calc(50% + var(--moon, 14cqw) * 0.32);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.moon-trophy:hover,
+.moon-trophy:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  box-shadow: 0 4px 0 var(--border);
+}
+
+.moon-trophy:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--border);
+}
+
+/* Destello de llegada */
+.system-burst {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--moon, 14cqw) / 2);
+  width: calc(var(--moon, 14cqw) * 2.2);
+  height: calc(var(--moon, 14cqw) * 2.2);
+  translate: -50% -50%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.burst-spark {
+  stroke: var(--text);
+  stroke-width: 1.4;
+  opacity: 0;
+  animation: system-burst 1.1s ease-out calc(1.9s + var(--bd, 0s)) backwards;
+}
+
+/* ---------- Luna de una misión: la fase cuenta el avance ---------- */
+
+.mission-moon {
+  overflow: visible;
+}
+
+.mm-body {
+  fill: var(--surface);
+  stroke: none;
+}
+
+.mm-rim {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2.4;
+}
+
+.mm-lit {
+  fill: var(--star);
+}
+
+.mm-edge {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.4;
+  opacity: 0.35;
+}
+
+.mm-crater {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.4;
+  opacity: 0.4;
+}
+
+.mm-halo {
+  fill: var(--star);
+  opacity: 0;
+  filter: blur(6px);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mission-moon.is-pending .mm-rim {
+  stroke-dasharray: 5 5;
+  opacity: 0.7;
+}
+
+.mission-moon.is-pending .mm-body {
+  fill: color-mix(in srgb, var(--text) 5%, var(--surface));
+}
+
+.mission-moon.is-studying .mm-halo {
+  opacity: 0.35;
+  animation: system-halo 3s ease-in-out infinite;
+}
+
+.mission-moon.is-mastered .mm-body {
+  fill: var(--star);
+}
+
+.mission-moon.is-mastered .mm-halo {
+  opacity: 0.6;
+  animation: system-halo 3.2s ease-in-out infinite;
+}
+
+.mission-moon.is-mastered .mm-crater {
+  stroke: color-mix(in srgb, var(--text) 60%, var(--star));
+  opacity: 0.55;
+}
+
+/* ---------- Animaciones ---------- */
+
+@keyframes system-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes system-arrive {
+  from {
+    --arrive: -52cqw;
+  }
+}
+
+@keyframes system-ripple {
+  from {
+    opacity: 0.7;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+@keyframes system-awake {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.16);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes system-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--bx), var(--by)) scale(1.3);
+  }
+}
+
+@keyframes system-halo {
+  0%,
+  100% {
+    transform: scale(1.05);
+  }
+  50% {
+    transform: scale(1.4);
+  }
+}
+
+@keyframes system-ring-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  .system-moon-art {
+    min-width: 46px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .system-orbit,
+  .system-item,
+  .system.is-empty .system-rings circle,
+  .system.is-awake .system-ripples i,
+  .system.is-awake .system-core .line-planet,
+  .system-moon.is-arriving,
+  .burst-spark,
+  .mission-moon.is-studying .mm-halo,
+  .mission-moon.is-mastered .mm-halo {
+    animation: none;
+  }
+
+  .map-world,
+  .system-moon-art,
+  .map-world-slot {
+    transition: none;
+  }
+}

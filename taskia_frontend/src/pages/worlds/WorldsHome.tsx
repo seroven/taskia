@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
-import { GlobeHemisphereWest, Plus } from '@phosphor-icons/react'
+import { GlobeHemisphereWest } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
 import { CreateWorldModal } from '../../components/worlds/CreateWorldModal'
-import { WorldsCoverCard } from '../../components/worlds/WorldsCoverCard'
-import { WorldsCoverGrid, WorldsCoverItem } from '../../components/worlds/WorldsCoverGrid'
-import { WorldsEmptyState } from '../../components/worlds/WorldsEmptyState'
-import { WorldsHero } from '../../components/worlds/WorldsHero'
-import { WorldsNav } from '../../components/worlds/WorldsNav'
-import { ExplorerXpBar } from '../../components/ExplorerXpBar'
+import { WorldsMap } from '../../components/worlds/map/WorldsMap'
+import { PageHeader } from '../../components/PageHeader'
 import { errorMessage } from '../../lib/errors'
+import { sumProgress, type Progress } from '../../lib/worldProgress'
 import type { StudyWorld } from '../../lib/worldsTypes'
 import { useToast } from '../../toast'
 
@@ -21,6 +18,7 @@ interface Props {
 export function WorldsHome({ onBack, onOpenWorld }: Props) {
   const { showToast } = useToast()
   const [worlds, setWorlds] = useState<StudyWorld[]>([])
+  const [progress, setProgress] = useState<Record<number, Progress | undefined>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -28,6 +26,17 @@ export function WorldsHome({ onBack, onOpenWorld }: Props) {
   async function refresh() {
     const list = await api.listWorlds()
     setWorlds(list)
+    // El avance de cada mundo sale de sus cursos; llega después, sin frenar el mapa.
+    void Promise.all(
+      list.map(async (world) => {
+        try {
+          const courses = await api.listWorldCourses(world.id)
+          setProgress((prev) => ({ ...prev, [world.id]: sumProgress(courses) }))
+        } catch {
+          setProgress((prev) => ({ ...prev, [world.id]: { total: 0, mastered: 0 } }))
+        }
+      }),
+    )
   }
 
   useEffect(() => {
@@ -46,63 +55,31 @@ export function WorldsHome({ onBack, onOpenWorld }: Props) {
 
   return (
     <div className="worlds-shell">
-      <WorldsNav backLabel="Inicio" onBack={onBack} trailing={<ExplorerXpBar />} />
+      <PageHeader
+        backLabel="Inicio"
+        onBack={onBack}
+        icon={GlobeHemisphereWest}
+        title="Mundos"
+        lead={
+          worlds.length === 0 && !loading
+            ? 'Aquí viven tus cursos y misiones. Empieza con tu primer mundo.'
+            : 'Elige un mundo para explorar… o descubre uno nuevo.'
+        }
+      />
 
       {error && <p className="form-error banner">{error}</p>}
 
       <div className="worlds-content worlds-stage">
-        <WorldsHero
-          icon={GlobeHemisphereWest}
-          title="Mundos"
-          lead="Elige un mundo para estudiar… o crea uno nuevo."
-          actions={
-            worlds.length > 0 ? (
-              <button type="button" className="primary" onClick={() => setModalOpen(true)}>
-                <Plus size={18} weight="bold" />
-                Nuevo mundo
-              </button>
-            ) : null
-          }
-        />
-
-        {loading && <AppLoader message="Cargando mundos…" variant="section" />}
-
-        {!loading && worlds.length === 0 && (
-          <WorldsEmptyState
-            icon={GlobeHemisphereWest}
-            title="Tu primer Mundo"
-            description="Aquí viven tus cursos y misiones. Empieza con uno y listo."
-            action={
-              <button type="button" className="primary" onClick={() => setModalOpen(true)}>
-                <Plus size={20} weight="bold" />
-                Crear mundo
-              </button>
-            }
+        {loading ? (
+          <AppLoader message="Cargando mundos…" variant="section" />
+        ) : (
+          <WorldsMap
+            worlds={worlds}
+            progress={progress}
+            onOpen={onOpenWorld}
+            onCreate={() => setModalOpen(true)}
           />
         )}
-
-        <WorldsCoverGrid>
-          {worlds.map((world, index) => (
-            <WorldsCoverItem
-              key={world.id}
-              index={index}
-              delayStep={0.05}
-              delayCap={0.28}
-              duration={0.28}
-              y={16}
-              scale={0.96}
-            >
-              <WorldsCoverCard
-                kind="world"
-                icon={GlobeHemisphereWest}
-                title={world.title}
-                description={world.description}
-                hint="Entrar"
-                onClick={() => onOpenWorld(world.id)}
-              />
-            </WorldsCoverItem>
-          ))}
-        </WorldsCoverGrid>
       </div>
 
       <CreateWorldModal

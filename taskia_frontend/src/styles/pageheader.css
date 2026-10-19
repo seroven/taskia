@@ -1,0 +1,69 @@
+/*
+ * Encabezado común de Campamento y Mundos (`PageHeader`). Término medio entre el título azul del
+ * Campamento y el hero de Mundos: tipografía de pantalla en el color del texto, ícono o planeta con
+ * acento, una sola fila con las acciones y las herramientas a la derecha.
+ */
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  flex-shrink: 0;
+  padding: 18px 28px 8px;
+}
+
+.page-header-main {
+  display: flex;
+  flex: 1 1 320px;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.page-header-copy {
+  min-width: 0;
+}
+
+.page-header-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.6vw, 1.95rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.page-header-lead {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.page-header-actions,
+.page-header-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .page-header {
+    gap: 10px 12px;
+    padding: max(12px, env(safe-area-inset-top)) 12px 6px;
+  }
+
+  .page-header-actions,
+  .page-header-tools {
+    width: 100%;
+  }
+
+  .page-header-tools {
+    justify-content: space-between;
+  }
+}

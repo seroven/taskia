@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ArrowLeft, CaretLeft, CaretRight, Plus } from '@phosphor-icons/react'
+import { CaretLeft, CaretRight, Plus, Tent } from '@phosphor-icons/react'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { BoardLoader } from '../components/BoardLoader'
@@ -9,10 +9,7 @@ import { EmptyState } from '../components/EmptyState'
 import { CampEmptyDay, CampEmptyProjects } from '../components/scenes/CampEmptyScenes'
 import { TaskDetailModal } from '../components/TaskDetailModal'
 import { TaskFormModal } from '../components/TaskFormModal'
-import { AppearanceTools } from '../components/AppearanceTools'
-import { ExpandIconButton } from '../components/ExpandIconButton'
-import { ExplorerXpBar } from '../components/ExplorerXpBar'
-import { SessionActions } from '../components/SessionActions'
+import { PageHeader } from '../components/PageHeader'
 import {
   canViewStudySession,
   shiftCivilDay,
@@ -192,25 +189,7 @@ export function BoardPage({
 
   return (
     <div className="board-shell camp-shell">
-      <header className="topbar">
-        <div className="topbar-title-row">
-          <ExpandIconButton
-            icon={ArrowLeft}
-            label="Inicio"
-            weight="bold"
-            onClick={onBack}
-          />
-          <div>
-            <p className="brand">Campamento</p>
-            <p className="welcome">Tareas del día · {user?.username}</p>
-          </div>
-        </div>
-        <div className="topbar-actions">
-          <ExplorerXpBar />
-          <AppearanceTools />
-          <SessionActions />
-        </div>
-      </header>
+      <PageHeader backLabel="Inicio" onBack={onBack} icon={Tent} title="Campamento" lead="Tareas del día" />
 
       {error ? <p className="form-error banner">{error}</p> : null}
 

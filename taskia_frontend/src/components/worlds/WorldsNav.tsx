@@ -2,6 +2,7 @@ import { ArrowLeft } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
 import { ExpandIconButton } from '../ExpandIconButton'
 import { AppearanceTools } from '../AppearanceTools'
+import { SessionActions } from '../SessionActions'
 
 export function WorldsNav({
   backLabel,
@@ -26,6 +27,7 @@ export function WorldsNav({
       <div className="worlds-nav-tools">
         {trailing}
         {showAppearance && <AppearanceTools />}
+        <SessionActions />
       </div>
     </nav>
   )

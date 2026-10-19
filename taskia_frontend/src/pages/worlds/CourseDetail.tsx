@@ -11,16 +11,11 @@ import { ChallengeSetupModal } from '../../components/worlds/ChallengeSetupModal
 import { ChallengeHistoryList } from '../../components/worlds/ChallengeHistoryList'
 import { CreateMissionModal } from '../../components/worlds/CreateMissionModal'
 import { ImportMissionsModal } from '../../components/worlds/ImportMissionsModal'
-import { WorldsCoverCard } from '../../components/worlds/WorldsCoverCard'
-import { WorldsCoverGrid, WorldsCoverItem } from '../../components/worlds/WorldsCoverGrid'
+import { CourseSystem } from '../../components/worlds/map/CourseSystem'
+import { courseSeed } from '../../lib/seed'
 import { WorldsEmptyState } from '../../components/worlds/WorldsEmptyState'
-import { WorldsHero } from '../../components/worlds/WorldsHero'
-import { WorldsNav } from '../../components/worlds/WorldsNav'
-import { ExplorerXpBar } from '../../components/ExplorerXpBar'
-import {
-  WorldsStatusPill,
-  WorldsTags,
-} from '../../components/worlds/WorldsStatusPill'
+import { PageHeader } from '../../components/PageHeader'
+import { LinePlanet } from '../../components/worlds/map/LinePlanet'
 import { errorMessage } from '../../lib/errors'
 import {
   type StudyChallenge,
@@ -81,41 +76,55 @@ export function CourseDetail({
     })()
   }, [refresh])
 
+  /** Dónde seguir: la misión en curso o, si no hay, la primera por empezar. */
+  const next =
+    missions.find((m) => m.status === 'studying') ?? missions.find((m) => m.status === 'pending') ?? null
+
   return (
     <div className="worlds-shell">
-      <WorldsNav
+      <PageHeader
         backLabel="Mundo"
         onBack={onBack}
-        trailing={<ExplorerXpBar />}
+        art={<LinePlanet seed={courseSeed(worldId, courseId)} size={56} animate={false} />}
+        title={courseName}
+        lead={
+          missions.length > 0 && missions.every((m) => m.status === 'mastered')
+            ? '¡Dominaste todo este curso!'
+            : 'Toca una luna para estudiar.'
+        }
+        actions={
+          <>
+            {next ? (
+              <button type="button" className="primary" onClick={() => onStudyMission(next.id)}>
+                <Rocket size={18} weight="fill" />
+                {next.status === 'studying' ? 'Seguir' : 'Empezar'}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className={next ? 'ghost worlds-cta-btn' : 'primary'}
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus size={18} weight="bold" />
+              Nueva misión
+            </button>
+            <button
+              type="button"
+              className="ghost worlds-cta-btn"
+              onClick={() => setImportOpen(true)}
+            >
+              <DownloadSimple size={18} weight="bold" />
+              Traer
+            </button>
+          </>
+        }
       />
 
       {error && <p className="form-error banner">{error}</p>}
 
       <div className="worlds-content worlds-stage">
-        <WorldsHero
-          icon={Rocket}
-          title={courseName}
-          lead="Elige una misión para estudiar."
-          actions={
-            <>
-              <button type="button" className="primary" onClick={() => setCreateOpen(true)}>
-                <Plus size={18} weight="bold" />
-                Nueva misión
-              </button>
-              <button
-                type="button"
-                className="ghost worlds-cta-btn"
-                onClick={() => setImportOpen(true)}
-              >
-                <DownloadSimple size={18} weight="bold" />
-                Traer
-              </button>
-            </>
-          }
-        />
-
         <div className="worlds-two-col">
-          <section className="worlds-panel">
+          <section className="worlds-panel worlds-panel--system">
             <p className="worlds-block-label">Misiones</p>
             {loading && <AppLoader message="Cargando misiones…" variant="section" />}
             {!loading && missions.length === 0 && (
@@ -132,38 +141,18 @@ export function CourseDetail({
                 }
               />
             )}
-            <WorldsCoverGrid>
-              {missions.map((mission, index) => (
-                <WorldsCoverItem key={mission.id} index={index}>
-                  <WorldsCoverCard
-                    kind="mission"
-                    icon={Rocket}
-                    title={mission.title}
-                    hint="Estudiar"
-                    status={mission.status}
-                    onClick={() => onStudyMission(mission.id)}
-                    tags={
-                      <WorldsTags>
-                        <WorldsStatusPill kind="mission" value={mission.status} />
-                      </WorldsTags>
-                    }
-                    overlayAction={
-                      <button
-                        type="button"
-                        className="ghost worlds-cover-challenge worlds-cta-btn"
-                        aria-label={`Desafío: ${mission.title}`}
-                        onClick={() => {
-                          setMissionChallengeId(mission.id)
-                          setChallengeOpen(true)
-                        }}
-                      >
-                        <Trophy size={18} weight="fill" />
-                      </button>
-                    }
-                  />
-                </WorldsCoverItem>
-              ))}
-            </WorldsCoverGrid>
+            {!loading ? (
+              <CourseSystem
+                worldId={worldId}
+                courseId={courseId}
+                missions={missions}
+                onStudy={onStudyMission}
+                onChallenge={(missionId) => {
+                  setMissionChallengeId(missionId)
+                  setChallengeOpen(true)
+                }}
+              />
+            ) : null}
           </section>
 
           <ChallengeHistoryList
