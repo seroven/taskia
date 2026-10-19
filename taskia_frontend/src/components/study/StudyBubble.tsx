@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion, type HTMLMotionProps } from 'framer-motion'
+import { TaskiaBeacon } from './TaskiaBeacon'
 
 type BubbleVariant = 'sober' | 'explorador'
 
@@ -36,7 +37,7 @@ export function StudyBubble({
     >
       {variant === 'explorador' && taskia ? (
         <span className="study-avatar" aria-hidden>
-          T
+          <TaskiaBeacon size={34} state={typing ? 'thinking' : 'idle'} />
         </span>
       ) : null}
       <span className="study-bubble-copy">

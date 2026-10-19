@@ -4,6 +4,8 @@ import { ArrowLeft, Check } from '@phosphor-icons/react'
 import { api } from '../api'
 import { AppLoader } from '../components/AppLoader'
 import { StudyChat } from '../components/study/StudyChat'
+import { ExpandIconButton } from '../components/ExpandIconButton'
+import { StudyModeToggle } from '../components/study/StudyModeToggle'
 import { Button } from '../components/ui/Button'
 import { Chip } from '../components/ui/Chip'
 import { TaskEditPanel } from '../components/study/TaskEditPanel'
@@ -189,10 +191,7 @@ export function StudyPage({ taskId, onBack }: Props) {
   return (
     <div className="study-page">
       <header className="study-header">
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft size={18} weight="bold" />
-          Campamento
-        </Button>
+        <ExpandIconButton icon={ArrowLeft} label="Campamento" weight="bold" onClick={onBack} />
         <div className="study-header-main">
           <h1>{task.title}</h1>
           <div className="study-header-tags">
@@ -236,24 +235,7 @@ export function StudyPage({ taskId, onBack }: Props) {
               {completing ? 'Guardando…' : '¡Listo!'}
             </Button>
           ) : null}
-          {!readOnly ? (
-            <div className="study-mode-toggle segmented" role="group" aria-label="Modo">
-              <button
-                type="button"
-                className={mode === 'study' ? 'active' : ''}
-                onClick={() => setMode('study')}
-              >
-                Estudiar
-              </button>
-              <button
-                type="button"
-                className={mode === 'edit' ? 'active' : ''}
-                onClick={() => setMode('edit')}
-              >
-                Editar
-              </button>
-            </div>
-          ) : null}
+          {!readOnly ? <StudyModeToggle mode={mode} onChange={setMode} /> : null}
         </div>
       </header>
 

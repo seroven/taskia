@@ -6,7 +6,7 @@ function currentStep(phase: string): TutorPhase {
   return STEPS.includes(phase as TutorPhase) ? (phase as TutorPhase) : 'understanding'
 }
 
-/** La fase puede volver atrás, así que no hay flechas ni pasos dados por hechos. */
+/** Ruta de tres paradas unidas por una línea. La fase puede volver atrás, así que solo resalta la actual. */
 export function StudyPhaseSteps({ phase }: { phase: string }) {
   const current = currentStep(phase)
   return (
@@ -19,6 +19,7 @@ export function StudyPhaseSteps({ phase }: { phase: string }) {
             className={`study-phase-step${on ? ' is-current' : ''}`}
             aria-current={on ? 'step' : undefined}
           >
+            <i className="study-phase-dot" aria-hidden />
             {phaseLabel(step)}
           </span>
         )

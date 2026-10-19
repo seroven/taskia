@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
-import { Camera, Microphone, Stop, X } from '@phosphor-icons/react'
+import { Camera, Microphone, PaperPlaneRight, Stop, X } from '@phosphor-icons/react'
 import { api } from '../../api'
 import { MathText } from '../math/MathText'
 import { chatVisibleText } from '../../lib/plainMath'
@@ -460,6 +460,8 @@ export function StudyChat({
   }, [displayMessages, liveAssistant])
 
   const voiceBusy = voiceStage != null && voiceStage !== 'ready'
+  const hasInput = Boolean(draft.trim() || photoData)
+  const micMode = voiceEnabled && !hasInput && !sending
   const circleLocked = voiceStage === 'responding' || voiceStage === 'speaking'
 
   function setStage(next: VoiceStage | null) {
@@ -1101,81 +1103,56 @@ export function StudyChat({
         ) : null}
 
         <div className="study-compose-row">
-          {voiceEnabled ? (
+          <div className="study-compose-pill">
             <button
               type="button"
-              className="study-compose-mic"
-              disabled={sending}
-              aria-label="Hablar"
-              aria-pressed={voiceStage != null}
-              onClick={() => {
-                if (stageRef.current != null) closeVoiceStage()
-                else openVoiceStage()
-              }}
+              className="study-compose-photo"
+              aria-label="Foto"
+              title="Adjuntar una foto o pegarla con Ctrl+V"
+              disabled={sending || voiceBusy}
+              onClick={() => photoInputRef.current?.click()}
             >
-              <Microphone size={26} weight="fill" />
+              <Camera size={22} weight="bold" />
             </button>
-          ) : null}
-          <textarea
-            className="field-control"
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value)
-              if (fromVoiceDraft) setFromVoiceDraft(true)
-            }}
-            placeholder="Escríbele a Taskia, o pulsa Hablar."
-            rows={1}
-            disabled={sending || voiceBusy}
-          />
+            <textarea
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value)
+                if (fromVoiceDraft) setFromVoiceDraft(true)
+              }}
+              placeholder="Escríbele a Taskia…"
+              rows={1}
+              disabled={sending || voiceBusy}
+            />
+          </div>
           <button
-            type="button"
-            className="session-icon-btn study-photo-btn"
-            aria-label="Foto"
-            title="Adjuntar una foto o pegarla con Ctrl+V"
-            disabled={sending || voiceBusy}
-            onClick={() => photoInputRef.current?.click()}
-          >
-            <Camera size={20} weight="fill" />
-          </button>
-          <button
-            type="submit"
-            className={`primary study-send-btn${sending ? ' is-loading' : ''}`}
-            disabled={sending || voiceBusy || (!draft.trim() && !photoData)}
+            type={micMode ? 'button' : 'submit'}
+            className={`study-action ${micMode ? 'is-mic' : 'is-send'}${sending ? ' is-loading' : ''}`}
+            disabled={micMode ? false : sending || voiceBusy || !hasInput}
             aria-busy={sending}
+            aria-label={micMode ? 'Hablar' : sending ? 'Enviando' : 'Enviar'}
+            aria-pressed={micMode ? voiceStage != null : undefined}
+            title={micMode ? 'Hablar con Taskia' : 'Enviar'}
+            onClick={
+              micMode
+                ? () => {
+                    if (stageRef.current != null) closeVoiceStage()
+                    else openVoiceStage()
+                  }
+                : undefined
+            }
           >
-          <AnimatePresence mode="wait" initial={false}>
-            {sending ? (
-              <motion.span
-                key="loading"
-                className="study-send-label"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <span className="study-send-spinner" aria-hidden />
-                Enviando…
-              </motion.span>
-            ) : (
-              <motion.span
-                key="idle"
-                className="study-send-label"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              >
-                Enviar
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </button>
+            <span className="study-action-icon is-mic-icon" aria-hidden>
+              <Microphone size={26} weight="fill" />
+            </span>
+            <span className="study-action-icon is-send-icon" aria-hidden>
+              <PaperPlaneRight size={24} weight="fill" />
+            </span>
+            <span className="study-action-icon is-spin-icon" aria-hidden>
+              <span className="study-send-spinner" />
+            </span>
+          </button>
         </div>
-        {voiceEnabled && (
-          <p className="muted study-voice-compose-hint">
-            Pulsa Hablar, sube la foto si quieres y toca el círculo cuando empieces a hablar.
-          </p>
-        )}
       </form>
       )}
       </div>

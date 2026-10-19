@@ -1,0 +1,562 @@
+/*
+ * Chat del explorador (estudio, proyecto y misión). Va después de study.css y sobrescribe la capa
+ * `.is-explorador` / `.is-explorer`; el globo sobrio del guardián no se toca.
+ *
+ * Lenguaje: el hilo vive abierto sobre el cielo, sin columna con bordes. Taskia habla en una caja muy
+ * suave (con su estrella guía al lado) y el niño en una cápsula del acento, así se distinguen a la vista.
+ */
+
+/* ---------- Header ---------- */
+
+.study-page .study-header {
+  gap: 10px 14px;
+  padding: 14px 22px 6px;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.study-header-main h1 {
+  font-size: 1.3rem;
+}
+
+.study-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Hilo ---------- */
+
+.study-chat.is-explorer {
+  border-right: 0;
+  background: transparent;
+}
+
+.study-chat.is-explorer .study-chat-column {
+  padding: 4px 14px 12px;
+}
+
+.study-chat.is-explorer .study-chat-messages {
+  gap: 14px;
+  padding: 6px 6px 10px 0;
+}
+
+/* Ruta de fases: tres paradas con una línea punteada entre ellas */
+.study-phase-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+.study-phase-step {
+  position: relative;
+  min-height: 0;
+  padding: 0;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.study-phase-step + .study-phase-step {
+  margin-left: 12px;
+  padding-left: 40px;
+}
+
+.study-phase-step + .study-phase-step::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 28px;
+  border-top: 2px dotted color-mix(in srgb, var(--text) 35%, transparent);
+}
+
+.study-phase-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  margin-right: 6px;
+  border: 2px solid color-mix(in srgb, var(--text) 40%, transparent);
+  border-radius: 50%;
+  background: var(--surface);
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.study-phase-step.is-current {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.study-phase-step.is-current .study-phase-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.study-chat.is-explorer .study-chat-meta {
+  margin-bottom: 8px;
+}
+
+.study-chat.is-explorer .study-topic-summary {
+  margin: 6px 0 0;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Mensajes ---------- */
+
+.study-bubble.is-explorador,
+.study-bubble.is-explorador.study-bubble-user {
+  gap: 10px;
+  max-width: min(100%, calc(62ch + 52px));
+}
+
+.study-bubble.is-explorador.study-bubble-user {
+  align-self: flex-end;
+}
+
+/* El avatar y el lado ya dicen quién habla: la etiqueta queda solo para lectores de pantalla. */
+.study-bubble.is-explorador .study-bubble-role {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.study-bubble.is-explorador .study-bubble-copy {
+  max-width: 62ch;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--border));
+  border-radius: 20px 20px 20px 6px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+
+.study-bubble.is-explorador.study-bubble-user .study-bubble-copy {
+  border: 0;
+  border-radius: 20px 20px 6px 20px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.study-bubble.is-explorador.study-bubble-user p {
+  color: inherit;
+}
+
+.study-bubble.is-explorador p {
+  font-size: 16.5px;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.study-bubble.is-explorador.is-typing p {
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.study-bubble.is-explorador .study-bubble-photo-btn {
+  margin-bottom: 10px;
+}
+
+.study-bubble.is-explorador .study-bubble-photo {
+  max-width: min(220px, 100%);
+  max-height: 220px;
+  border-radius: 14px;
+}
+
+.study-chat.is-explorer .study-avatar {
+  width: 34px;
+  height: 34px;
+  background: transparent;
+}
+
+/* Estrella guía (avatar de Taskia) */
+.beacon {
+  display: inline-block;
+  line-height: 0;
+}
+
+.beacon svg {
+  display: block;
+  overflow: visible;
+}
+
+.beacon-disc {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  stroke: var(--text);
+  stroke-width: 1.8;
+}
+
+.beacon-orbit {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 1.4;
+  stroke-dasharray: 1 4.5;
+  stroke-linecap: round;
+}
+
+.beacon-star {
+  fill: var(--star);
+  stroke: var(--text);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.beacon-moon {
+  fill: var(--accent-ink);
+  stroke: var(--surface);
+  stroke-width: 1.2;
+}
+
+.beacon-spin {
+  transform-box: view-box;
+  transform-origin: 20px 20px;
+  animation: beacon-spin 16s linear infinite;
+}
+
+.beacon.is-thinking .beacon-spin {
+  animation-duration: 1.4s;
+}
+
+.beacon.is-thinking .beacon-star {
+  animation: beacon-pulse 1s ease-in-out infinite;
+}
+
+@keyframes beacon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes beacon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.22);
+  }
+}
+
+/* ---------- Compositor ---------- */
+
+.study-chat.is-explorer .study-chat-form {
+  gap: 8px;
+  margin-top: 6px;
+  padding: 0 0 calc(4px + env(safe-area-inset-bottom));
+  border-top: 0;
+  background: transparent;
+}
+
+.study-chat.is-explorer .study-compose-row {
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.study-compose-pill {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 4px 6px 4px 4px;
+  border: 2px solid var(--border);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.3s ease;
+}
+
+/* El foco lo lleva la píldora entera, con un halo suave; el campo no dibuja su propio contorno. */
+.study-compose-pill:focus-within {
+  border-color: var(--accent);
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.study-chat.is-explorer .study-compose-pill textarea:focus,
+.study-chat.is-explorer .study-compose-pill textarea:focus-visible {
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+.study-compose-pill textarea {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  max-height: 140px;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  resize: none;
+  outline: none;
+}
+
+.study-compose-pill textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.study-compose-photo {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.study-compose-photo:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  transform: rotate(-8deg) scale(1.08);
+}
+
+.study-compose-photo:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.study-compose-photo:focus-visible,
+.study-action:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Botón único: micrófono con el campo vacío, enviar cuando hay algo escrito o una foto */
+.study-action {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 4px 0 var(--accent-edge);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.2s ease;
+  position: relative;
+}
+
+/* Un solo botón: los tres íconos se funden entre sí (girando y escalando) en vez de remontarse. */
+.study-action-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: scale(0.4) rotate(90deg);
+  transition:
+    opacity 0.22s ease,
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.study-action.is-mic .is-mic-icon,
+.study-action.is-send:not(.is-loading) .is-send-icon,
+.study-action.is-loading .is-spin-icon {
+  opacity: 1;
+  transform: none;
+}
+
+.study-action.is-send .is-mic-icon {
+  transform: scale(0.4) rotate(-90deg);
+}
+
+.study-action:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--accent-edge);
+}
+
+.study-action:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--accent-edge);
+}
+
+.study-action:disabled {
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: default;
+}
+
+.study-action.is-send:disabled {
+  opacity: 0.7;
+}
+
+.study-action .study-send-spinner {
+  border-color: color-mix(in srgb, var(--on-accent) 35%, transparent);
+  border-top-color: var(--on-accent);
+}
+
+.study-chat.is-explorer .study-photo-preview {
+  padding: 0 4px;
+}
+
+/* ---------- Modo voz (panel lateral) ---------- */
+
+.study-voice-dock {
+  border-right: 0;
+  background: transparent;
+}
+
+/* ---------- Movimiento y pantallas chicas ---------- */
+
+@media (max-width: 900px) {
+  .study-page .study-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'back title actions';
+    padding: 10px 12px 4px;
+  }
+
+  .study-header > .expand-btn:first-child {
+    grid-area: back;
+  }
+
+  .study-header-actions {
+    grid-area: actions;
+    width: auto;
+  }
+
+  .study-header-actions .study-mode-toggle {
+    flex: 0 0 auto;
+    margin-left: 0;
+  }
+}
+
+/* En pantallas chicas la ruta muestra solo la parada actual con nombre */
+@media (max-width: 560px) {
+  .study-phase-step:not(.is-current) {
+    font-size: 0;
+  }
+
+  .study-phase-step + .study-phase-step {
+    margin-left: 8px;
+    padding-left: 28px;
+  }
+
+  .study-phase-step + .study-phase-step::before {
+    width: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beacon-spin,
+  .beacon.is-thinking .beacon-star {
+    animation: none;
+  }
+
+  .study-phase-dot,
+  .study-compose-photo,
+  .study-action-icon {
+    transition: none;
+  }
+}
+
+/* El hilo se desvanece en los bordes en vez de cortarse en seco */
+.study-chat.is-explorer .study-chat-messages {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 14px), transparent 100%);
+}
+
+/* ---------- Orbe de voz: una luna lo rodea; más rápido mientras Taskia piensa ---------- */
+
+.study-voice-orb::before,
+.study-voice-orb::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.study-voice-orb::before {
+  inset: -12px;
+  border: 2px dotted color-mix(in srgb, var(--accent-ink) 55%, transparent);
+  border-radius: 50%;
+  animation: study-orb-spin 36s linear infinite reverse;
+}
+
+.study-voice-orb::after {
+  top: -17px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border: 2px solid var(--text);
+  border-radius: 50%;
+  background: var(--star);
+  transform-origin: 7px 101px;
+  animation: study-orb-spin 18s linear infinite;
+}
+
+.study-voice-stage.is-listening .study-voice-orb::after {
+  animation-duration: 7s;
+}
+
+.study-voice-stage.is-responding .study-voice-orb::after {
+  animation-duration: 1.5s;
+}
+
+.study-voice-orb-core {
+  box-shadow: 0 5px 0 var(--accent-edge);
+}
+
+.study-voice-stage.is-ready .study-voice-orb-core {
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+@keyframes study-orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .study-voice-orb::before,
+  .study-voice-orb::after {
+    animation: none;
+  }
+}

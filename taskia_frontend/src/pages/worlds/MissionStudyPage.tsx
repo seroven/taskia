@@ -7,7 +7,8 @@ import {
 import { api } from '../../api'
 import { AppLoader } from '../../components/AppLoader'
 import { StudyChat } from '../../components/study/StudyChat'
-import { Button } from '../../components/ui/Button'
+import { ExpandIconButton } from '../../components/ExpandIconButton'
+import { StudyModeToggle } from '../../components/study/StudyModeToggle'
 import { Chip } from '../../components/ui/Chip'
 import { TextAreaField, TextField } from '../../components/ui/Field'
 import { WorldsStatusPill } from '../../components/worlds/WorldsStatusPill'
@@ -216,10 +217,7 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
   return (
     <div className="study-page">
       <header className="study-header">
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft size={18} weight="bold" />
-          Curso
-        </Button>
+        <ExpandIconButton icon={ArrowLeft} label="Curso" weight="bold" onClick={onBack} />
         <div className="study-header-main">
           <h1>{mission.title}</h1>
           <div className="study-header-tags">
@@ -228,22 +226,7 @@ export function MissionStudyPage({ missionId, onBack }: Props) {
           </div>
         </div>
         <div className="study-header-actions">
-          <div className="study-mode-toggle segmented" role="group" aria-label="Modo">
-            <button
-              type="button"
-              className={mode === 'study' ? 'active' : ''}
-              onClick={() => setMode('study')}
-            >
-              Estudiar
-            </button>
-            <button
-              type="button"
-              className={mode === 'edit' ? 'active' : ''}
-              onClick={() => setMode('edit')}
-            >
-              Editar
-            </button>
-          </div>
+          <StudyModeToggle mode={mode} onChange={setMode} />
         </div>
       </header>
 
