@@ -1,0 +1,339 @@
+/*
+ * Escenas de línea (SVG). Trazo de --text, acento solo en detalles y rellenos suaves.
+ * Cada figura declara su papel con clases:
+ *   draw / pop / fade  entrada (el estado natural es el final; las animaciones usan `backwards`)
+ *   spin, twinkle, flicker, rise, orbit-x / orbit-y, breathe  reposo en bucle
+ *   hov-*  reacción cuando el contenedor `.scene-host` recibe hover o foco
+ * `--i` en línea escalona la entrada. Con menos movimiento todo queda en su estado final.
+ */
+
+.scene {
+  --scene-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --scene-fill: color-mix(in srgb, var(--accent) 20%, var(--surface));
+  --scene-fill-strong: color-mix(in srgb, var(--accent) 42%, var(--surface));
+  --scene-star: var(--star);
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  color: var(--text);
+}
+
+.scene :where(path, circle, ellipse, rect, line) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.scene .fill {
+  fill: var(--scene-fill);
+}
+
+.scene .fill-strong {
+  fill: var(--scene-fill-strong);
+}
+
+.scene .fill-star {
+  fill: var(--scene-star);
+}
+
+.scene .acc {
+  stroke: var(--accent-ink);
+}
+
+.scene .acc-fill {
+  fill: var(--accent-ink);
+  stroke: none;
+}
+
+.scene .thin {
+  stroke-width: 1.6;
+}
+
+.scene .dim {
+  stroke-opacity: 0.4;
+}
+
+.scene .dots {
+  stroke-dasharray: 1 7;
+  stroke-width: 2.4;
+}
+
+.scene .dashes {
+  stroke-dasharray: 5 6;
+  stroke-width: 1.8;
+}
+
+.scene .nostroke {
+  stroke: none;
+}
+
+/* Transformaciones sobre el propio elemento */
+.scene .box {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.scene .box-bottom {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+/* ---------- Entrada ---------- */
+
+.scene .draw {
+  stroke-dasharray: 1;
+  animation: scene-draw 900ms var(--scene-ease) calc(var(--i, 0) * 70ms) backwards;
+}
+
+.scene .pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scene-pop 520ms var(--scene-ease) calc(var(--i, 0) * 70ms + 200ms) backwards;
+}
+
+.scene .draw.pop {
+  animation:
+    scene-draw 900ms var(--scene-ease) calc(var(--i, 0) * 70ms) backwards,
+    scene-pop 520ms var(--scene-ease) calc(var(--i, 0) * 70ms + 200ms) backwards;
+}
+
+.scene .fade {
+  animation: scene-fade 600ms ease calc(var(--i, 0) * 70ms + 300ms) backwards;
+}
+
+@keyframes scene-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes scene-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes scene-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- Reposo ---------- */
+
+.scene .twinkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scene-twinkle var(--dur, 3.2s) ease-in-out var(--delay, 0s) infinite;
+}
+
+@keyframes scene-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
+}
+
+.scene .breathe {
+  animation: scene-breathe var(--dur, 4s) ease-in-out var(--delay, 0s) infinite;
+}
+
+@keyframes scene-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Giro continuo alrededor de (--cx, --cy) en coordenadas del viewBox */
+.scene .spin {
+  transform-box: view-box;
+  transform-origin: var(--cx, 120px) var(--cy, 100px);
+  animation: scene-spin var(--dur, 40s) linear infinite;
+}
+
+@keyframes scene-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * Órbita elíptica sin JS: un seno en X y otro en Y, desfasados un cuarto de ciclo.
+ * Con --ry > 0 la mitad de y>0 es el frente.
+ */
+.scene .orbit-x {
+  animation: scene-orbit-x var(--dur, 9s) ease-in-out infinite alternate;
+}
+
+.scene .orbit-y {
+  animation: scene-orbit-y var(--dur, 9s) ease-in-out calc(var(--dur, 9s) / -2) infinite alternate;
+}
+
+@keyframes scene-orbit-x {
+  from {
+    transform: translateX(calc(var(--rx) * -1));
+  }
+  to {
+    transform: translateX(var(--rx));
+  }
+}
+
+@keyframes scene-orbit-y {
+  from {
+    transform: translateY(calc(var(--ry) * -1));
+  }
+  to {
+    transform: translateY(var(--ry));
+  }
+}
+
+/* Llama */
+.scene .flicker {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: scene-flicker var(--dur, 1.1s) ease-in-out var(--delay, 0s) infinite;
+}
+
+@keyframes scene-flicker {
+  0%,
+  100% {
+    transform: scale(1, 1) skewX(0deg);
+  }
+  25% {
+    transform: scale(0.94, 1.1) skewX(-4deg);
+  }
+  55% {
+    transform: scale(1.04, 0.92) skewX(3deg);
+  }
+  80% {
+    transform: scale(0.97, 1.06) skewX(-2deg);
+  }
+}
+
+/* Chispas que suben y se apagan */
+.scene .rise {
+  animation: scene-rise var(--dur, 2.6s) ease-out var(--delay, 0s) infinite;
+}
+
+@keyframes scene-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(1);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift, 6px), -34px) scale(0.4);
+  }
+}
+
+/* Bandera */
+.scene .wave {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: scene-wave 2.4s ease-in-out infinite;
+}
+
+@keyframes scene-wave {
+  0%,
+  100% {
+    transform: skewY(0deg) scaleX(1);
+  }
+  50% {
+    transform: skewY(-6deg) scaleX(0.92);
+  }
+}
+
+/* Onda de radio que se expande */
+.scene .ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scene-ping 3.2s ease-out var(--delay, 0s) infinite;
+}
+
+@keyframes scene-ping {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+/* ---------- Hover / foco del contenedor ---------- */
+
+.scene .hov-lift {
+  transition: transform 420ms var(--scene-ease);
+}
+
+.scene-host:is(:hover, :focus-visible) .scene .hov-lift {
+  transform: translateY(-6px);
+}
+
+.scene .hov-grow {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform 380ms var(--scene-ease);
+}
+
+.scene-host:is(:hover, :focus-visible) .scene .hov-grow {
+  transform: scale(1.22);
+}
+
+.scene .hov-in {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.7);
+  transition:
+    opacity 300ms ease,
+    transform 420ms var(--scene-ease);
+}
+
+.scene-host:is(:hover, :focus-visible) .scene .hov-in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene *,
+  .scene-host .scene * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.scene .fill-flame {
+  fill: color-mix(in srgb, var(--star) 45%, var(--surface));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene .orbit-x {
+    transform: translateX(calc(var(--rx) * 0.8));
+  }
+
+  .scene .orbit-y {
+    transform: translateY(calc(var(--ry) * 0.6));
+  }
+
+  .scene .rise {
+    display: none;
+  }
+}

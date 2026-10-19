@@ -114,64 +114,17 @@
 .hub-destination--troops {
   grid-column: 1 / -1;
   justify-self: center;
-  width: min(460px, 100%);
+  width: min(280px, 100%);
   cursor: default;
 }
 
 .hub-destination-art {
-  display: grid;
-  place-items: center;
-  height: 168px;
-  color: var(--accent-ink);
-  animation: hub-float 6s ease-in-out infinite;
+  display: block;
+  width: 100%;
 }
 
-.hub-destination--camp .hub-destination-art {
-  animation-delay: -2s;
-}
-
-.hub-destination--troops .hub-destination-art {
-  animation-delay: -4s;
-}
-
-.hub-worlds-art {
-  position: relative;
-  width: 190px;
-}
-
-.hub-worlds-art .planet:nth-child(1) {
-  position: absolute;
-  left: 0;
-  bottom: 18px;
-}
-
-.hub-worlds-art .planet:nth-child(2) {
-  position: relative;
-  z-index: 1;
-}
-
-.hub-worlds-art .planet:nth-child(3) {
-  position: absolute;
-  right: 0;
-  top: 8px;
-}
-
-.hub-camp-art {
-  position: relative;
-  display: grid;
-  place-items: center;
-}
-
-.hub-tent {
-  position: absolute;
-  left: 50%;
-  bottom: 8px;
-  transform: translateX(-50%);
-  color: var(--text);
-}
-
-.hub-station {
-  color: var(--text-muted);
+.hub-destination--troops .hub-destination-sub {
+  white-space: normal;
 }
 
 .hub-destination-title {
@@ -221,22 +174,6 @@
   border-radius: var(--r-card);
 }
 
-@keyframes hub-float {
-  0%,
-  100% {
-    transform: translateY(-6px);
-  }
-  50% {
-    transform: translateY(6px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hub-destination-art {
-    animation: none;
-  }
-}
-
 @media (max-width: 720px) {
   .hub-main {
     padding: 8px 16px 20px;
@@ -251,20 +188,12 @@
     width: 100%;
   }
 
-  .hub-destination-art {
-    height: 160px;
-  }
-
   .hub-destination,
   .hub-destination--worlds,
   .hub-destination--camp,
   .hub-destination--troops {
     margin-top: 0;
     width: min(280px, 88%);
-  }
-
-  .hub-destination--troops {
-    width: 100%;
   }
 
   .hub-destination-sub {
