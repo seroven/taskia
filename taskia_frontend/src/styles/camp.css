@@ -237,7 +237,16 @@
   overflow: hidden;
 }
 
+/* De noche --text es casi blanco: el velo se hace con el fondo oscuro, no con la letra. */
+html[data-theme='dark'] .modal-backdrop {
+  background: color-mix(in srgb, color-mix(in srgb, var(--accent) 6%, #04030a) 68%, transparent);
+}
+
 @media (prefers-reduced-transparency: reduce) {
+  html[data-theme='dark'] .modal-backdrop {
+    background: color-mix(in srgb, color-mix(in srgb, var(--accent) 6%, #04030a) 88%, transparent);
+  }
+
   .modal-backdrop {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
