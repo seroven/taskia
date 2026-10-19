@@ -210,11 +210,6 @@ export function SpaceSky() {
               ))}
             </g>
           ))}
-          <g opacity="0.7">
-            <circle cx="1530" cy="780" r="96" />
-            <path d="M1400 800 A150 34 -18 0 0 1650 740" />
-            <path d="M1420 770 A130 28 -18 0 1 1640 720" opacity="0.5" />
-          </g>
           <ShootingStar dur={29} delay={-6} />
           <ShootingStar dur={41} delay={-27} />
         </g>
