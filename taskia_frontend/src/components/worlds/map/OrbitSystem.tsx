@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { Spark } from '../../scenes/kit'
 import { sv } from '../../scenes/sv'
@@ -27,24 +27,42 @@ type Props = {
   emptyHint?: ReactNode
 }
 
-type Plan = { groups: OrbitItem[][]; radii: number[]; moon: number; core: number }
+type Tier = 'roomy' | 'normal' | 'dense' | 'packed'
+type Plan = { groups: OrbitItem[][]; radii: number[]; moon: number; core: number; tier: Tier }
 
-/** Reparte las lunas en 1, 2 o 3 anillos y ajusta su tamaño al número. */
+/** Reparte `n` lunas entre anillos en proporción a su longitud (los de afuera caben más). */
+function split(items: OrbitItem[], radii: number[]) {
+  const total = radii.reduce((sum, radius) => sum + radius, 0)
+  const counts = radii.map((radius) => Math.floor((items.length * radius) / total))
+  let left = items.length - counts.reduce((sum, count) => sum + count, 0)
+  for (let index = counts.length - 1; left > 0; index = (index - 1 + counts.length) % counts.length) {
+    counts[index] += 1
+    left -= 1
+  }
+  const groups: OrbitItem[][] = []
+  let start = 0
+  for (const count of counts) {
+    groups.push(items.slice(start, start + count))
+    start += count
+  }
+  return groups
+}
+
+/**
+ * Plan del sistema según cuántas lunas hay: hasta 6 en un anillo holgado; hasta 12 en dos; hasta 24 en tres
+ * (más chicas); más allá, los nombres pasan a aparecer solo al apuntar. Las medidas son % del ancho.
+ */
 function plan(items: OrbitItem[]): Plan {
   const n = items.length
-  if (n <= 5) return { groups: [items], radii: [34], moon: 14, core: 30 }
-  if (n <= 11) {
-    const inner = Math.ceil(n / 2)
-    return { groups: [items.slice(0, inner), items.slice(inner)], radii: [25, 40], moon: 12, core: 28 }
+  if (n <= 6) return { groups: [items], radii: [34], moon: 18, core: 50, tier: 'roomy' }
+  if (n <= 12) {
+    const radii = [28, 42]
+    return { groups: split(items, radii), radii, moon: 13, core: 38, tier: 'normal' }
   }
-  const a = Math.ceil(n / 4)
-  const b = Math.ceil((n - a) / 2)
-  return {
-    groups: [items.slice(0, a), items.slice(a, a + b), items.slice(a + b)],
-    radii: [18, 31, 44],
-    moon: 9.5,
-    core: 22,
-  }
+  const radii = [20, 33, 45]
+  return n <= 24
+    ? { groups: split(items, radii), radii, moon: 10.5, core: 27, tier: 'dense' }
+    : { groups: split(items, radii), radii, moon: 8, core: 25, tier: 'packed' }
 }
 
 const RING_SECONDS = [150, 190, 230]
@@ -58,23 +76,17 @@ const BURST = Array.from({ length: 8 }, (_, index) => {
  * Lo usan el mundo (cursos) y el curso (misiones). Al pasar el cursor todo se detiene.
  */
 export function OrbitSystem({ centerSeed, items, complete = false, emptyHint }: Props) {
-  const { groups, radii, moon, core } = plan(items)
+  const { groups, radii, moon, core, tier } = plan(items)
   const arrivingKey = items.find((item) => item.arriving)?.key ?? null
 
-  // El despertar (ondas desde el planeta) dura un rato y se apaga solo.
-  const [awake, setAwake] = useState(false)
-  useEffect(() => {
-    if (arrivingKey == null) return
-    setAwake(true)
-    const timer = window.setTimeout(() => setAwake(false), 3200)
-    return () => window.clearTimeout(timer)
-  }, [arrivingKey])
+  // El despertar (ondas desde el planeta) dura lo que dura la llegada: la pantalla limpia `arriving` sola.
+  const awake = arrivingKey != null
 
   const empty = items.length === 0
 
   return (
     <div
-      className={`system${complete ? ' is-complete' : ''}${awake ? ' is-awake' : ''}${empty ? ' is-empty' : ''}`}
+      className={`system tier-${tier}${items.length > 10 ? ' is-still' : ''}${complete ? ' is-complete' : ''}${awake ? ' is-awake' : ''}${empty ? ' is-empty' : ''}`}
       style={{ ['--moon' as string]: `${moon}cqw` }}
     >
       <svg className="system-rings" viewBox="0 0 100 100" aria-hidden>
@@ -105,7 +117,7 @@ export function OrbitSystem({ centerSeed, items, complete = false, emptyHint }: 
           }}
         >
           {group.map((item, index) => {
-            const angle = ((index + ringIndex * 0.5) / group.length) * 360 + 30
+            const angle = ((index + (ringIndex % 2) * 0.5) / Math.max(group.length, 1)) * 360 + 30
             return (
               <div
                 key={item.key}

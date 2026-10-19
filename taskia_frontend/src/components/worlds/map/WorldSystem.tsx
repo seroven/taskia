@@ -44,7 +44,7 @@ export function WorldSystem({ worldId, courses, arrivingCourseId = null, onOpenC
       onClick: () => onOpenCourse(course.course_id),
       art: (
         <>
-          <LinePlanet seed={courseSeed(worldId, course.course_id)} size="100%" animate={false} />
+          <LinePlanet seed={courseSeed(worldId, course.course_id)} size="170%" animate={false} />
           <ProgressRing fraction={progressFraction(stats)} done={done} />
         </>
       ),

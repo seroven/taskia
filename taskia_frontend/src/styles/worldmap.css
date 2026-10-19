@@ -146,7 +146,9 @@
 
 .system {
   position: relative;
-  width: min(540px, 100%);
+  /* Todo el alto disponible de la pantalla (menos el header), sin pasar de 940 px ni del panel. */
+  width: min(100%, calc(100vh - 190px), 940px);
+  min-width: min(100%, 320px);
   margin: 0 auto 44px;
   aspect-ratio: 1;
   container-type: inline-size;
@@ -314,11 +316,17 @@
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.system-moon-art .line-planet,
 .system-moon-art .mission-moon {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* El planeta de una luna se dibuja a ~52 % de su recuadro; el recuadro se agranda y se centra. */
+.system-moon-art .line-planet {
+  display: block;
+  max-width: none;
+  margin: -35%;
 }
 
 .system-item-main:hover .system-moon-art,
@@ -413,12 +421,12 @@
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--accent-ink);
-  box-shadow: 0 4px 0 var(--border);
+  box-shadow: 0 6px 0 var(--edge-outline);
 }
 
 .moon-trophy:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--border);
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--edge-outline);
 }
 
 /* Destello de llegada */
@@ -603,4 +611,66 @@
   .map-world-slot {
     transition: none;
   }
+}
+
+/* Con muchas lunas no giran (los nombres no se cruzan) y los nombres se achican; con más aún, aparecen al apuntar. */
+.system.is-still .system-orbit,
+.system.is-still .system-item {
+  animation: none;
+}
+
+.system.tier-dense .system-moon-label b {
+  font-size: 13px;
+}
+
+.system.tier-dense .system-moon-label i {
+  font-size: 12px;
+}
+
+.system.tier-dense .system-moon-label {
+  max-width: 19cqw;
+}
+
+.system.tier-packed .system-moon-label {
+  position: absolute;
+  top: calc(100% - 4px);
+  z-index: 5;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.system.tier-packed .system-item-main:hover .system-moon-label,
+.system.tier-packed .system-item-main:focus-visible .system-moon-label {
+  opacity: 1;
+}
+
+/* Mundo y curso: el panel de desafíos conserva su ancho de siempre (la proporción de .worlds-two-col). */
+@media (max-width: 1000px) {
+  .system {
+    width: min(100%, 640px);
+  }
+}
+
+/* Con muchas lunas el trofeo y el nombre largo estorban: el trofeo aparece al apuntar y el nombre va en una línea. */
+.system.tier-dense .moon-trophy,
+.system.tier-packed .moon-trophy {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.system.tier-dense .system-item:hover .moon-trophy,
+.system.tier-dense .system-item:focus-within .moon-trophy,
+.system.tier-packed .system-item:hover .moon-trophy,
+.system.tier-packed .system-item:focus-within .moon-trophy {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.system.tier-dense .system-moon-label b {
+  -webkit-line-clamp: 1;
 }

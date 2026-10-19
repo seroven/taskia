@@ -27,7 +27,7 @@
 
 .session-icon-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 var(--border);
+  box-shadow: 0 6px 0 var(--edge-outline);
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent-ink);
@@ -35,7 +35,7 @@
 
 .session-icon-btn:active {
   transform: translateY(3px);
-  box-shadow: 0 1px 0 var(--border);
+  box-shadow: 0 1px 0 var(--edge-outline);
 }
 
 .session-icon-btn:focus-visible {
@@ -125,11 +125,11 @@
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent-ink);
-  box-shadow: 0 6px 0 var(--border);
+  box-shadow: 0 6px 0 var(--edge-outline);
 }
 
 .expand-btn--ghost:active:not(:disabled) {
-  box-shadow: 0 1px 0 var(--border);
+  box-shadow: 0 1px 0 var(--edge-outline);
 }
 
 .expand-btn--primary {

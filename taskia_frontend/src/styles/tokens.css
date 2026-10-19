@@ -22,6 +22,8 @@
   --chart-3: #d55e00;
   --accent-glow: color-mix(in srgb, var(--accent) 40%, transparent);
   /* Halo de foco de los campos de texto (el mismo en el chat, el login y los formularios). */
+  /* Relieve de los botones de contorno al hover: el mismo grosor que el de color entero, teñido del acento. */
+  --edge-outline: color-mix(in srgb, var(--accent) 45%, var(--border));
   --ring-soft: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
   --shadow: 0 18px 44px rgba(27, 22, 64, 0.08);
   --shadow-sm: 0 8px 20px rgba(27, 22, 64, 0.06);

@@ -82,7 +82,7 @@
 .study-page .ghost:hover:not(:disabled),
 .study-page .ghost:focus-visible:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 var(--border);
+  box-shadow: 0 6px 0 var(--edge-outline);
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);

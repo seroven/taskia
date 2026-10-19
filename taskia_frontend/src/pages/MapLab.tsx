@@ -10,7 +10,7 @@ const worlds: StudyWorld[] = ['Examenes bimestrales', 'Ciencias del colegio', 'V
 )
 
 function courses(count: number): StudyWorldCourse[] {
-  return NAMES.slice(0, count).map((name, index) => ({
+  return Array.from({ length: count }, (_, index) => NAMES[index] ?? `Curso ${index + 1}`).map((name, index) => ({
     world_id: 1,
     course_id: index + 1,
     course_name: name,
@@ -55,6 +55,10 @@ export function MapLab() {
       <CourseSystem worldId={1} courseId={2} missions={missions(4, true)} onStudy={() => {}} onChallenge={() => {}} />
       <h2 style={{ fontFamily: 'var(--font-display)' }}>Curso con 13 misiones (tres anillos)</h2>
       <CourseSystem worldId={1} courseId={3} missions={missions(13)} onStudy={() => {}} onChallenge={() => {}} />
+      <h2 style={{ fontFamily: 'var(--font-display)' }}>Mundo con 15 cursos</h2>
+      <WorldSystem worldId={5} courses={courses(15)} onOpenCourse={() => {}} />
+      <h2 style={{ fontFamily: 'var(--font-display)' }}>Curso con 22 misiones</h2>
+      <CourseSystem worldId={1} courseId={4} missions={missions(22)} onStudy={() => {}} onChallenge={() => {}} />
       <h2 style={{ fontFamily: 'var(--font-display)' }}>Mundo vacío</h2>
       <WorldSystem worldId={2} courses={[]} onOpenCourse={() => {}} />
       <h2 style={{ fontFamily: 'var(--font-display)' }}>Llega el primer curso</h2>

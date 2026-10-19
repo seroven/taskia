@@ -14,7 +14,11 @@ type Props = {
 
 /** Sistema del curso: su planeta al centro y cada misión como una luna cuya fase cuenta el avance. */
 export function CourseSystem({ worldId, courseId, missions, onStudy, onChallenge }: Props) {
-  const items: OrbitItem[] = missions.map((mission) => ({
+  // Lo que se está estudiando, adentro y más cerca del planeta; lo dominado, afuera.
+  const rank = (status: string) => (status === 'studying' ? 0 : status === 'mastered' ? 2 : 1)
+  const ordered = [...missions].sort((a, b) => rank(a.status) - rank(b.status))
+
+  const items: OrbitItem[] = ordered.map((mission) => ({
     key: mission.id,
     label: mission.title,
     sub: MISSION_STATUS_LABEL[mission.status] ?? mission.status,
