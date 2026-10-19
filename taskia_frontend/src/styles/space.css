@@ -53,8 +53,52 @@ html[data-space='none'] .space-sky {
   animation: space-drift-b 95s ease-in-out infinite alternate;
 }
 
-html[data-theme='light'] .space-sky-glow {
+/* El sol solo existe de día: una luz cálida que entra por la esquina superior derecha. */
+.space-sky-glow-sun {
+  right: -18vmax;
+  top: -26vmax;
   display: none;
+  animation: space-drift-b 70s ease-in-out infinite alternate-reverse;
+}
+
+/*
+ * De día la luz viene del acento (esquinas) y de una mancha cálida (el sol), más fuertes que de noche
+ * porque sobre blanco una mezcla baja no se ve. Encima, un velo que aclara hacia arriba.
+ */
+html[data-theme='light'] .space-sky-glow-a {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--accent) 17%, transparent),
+    transparent
+  );
+}
+
+html[data-theme='light'] .space-sky-glow-b {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    transparent
+  );
+}
+
+html[data-theme='light'] .space-sky-glow-sun {
+  display: block;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--star) 30%, transparent),
+    transparent
+  );
+}
+
+html[data-theme='light'] .space-sky::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 6%, transparent),
+    transparent 45%
+  );
 }
 
 .space-sky-lines {
@@ -103,7 +147,14 @@ html[data-theme='light'] .space-sky-lines {
   stroke: none;
   transform-box: fill-box;
   transform-origin: center;
-  animation: space-twinkle var(--dur, 4s) ease-in-out var(--delay, 0s) infinite;
+  animation:
+    space-twinkle var(--dur, 4s) ease-in-out var(--delay, 0s) infinite,
+    space-float var(--fdur, 12s) ease-in-out var(--fdelay, 0s) infinite alternate;
+}
+
+/* Una constelación entera deriva junta: las líneas siguen a sus estrellas. */
+.space-sky-lines .sky-drift {
+  animation: space-float var(--fdur, 16s) ease-in-out var(--fdelay, 0s) infinite alternate;
 }
 
 .space-sky-lines .sky-star-key {
@@ -125,9 +176,10 @@ html[data-theme='light'] .space-sky-lines {
 }
 
 .space-sky-lines .sky-shoot {
-  stroke-width: 2.4;
+  stroke: url(#sky-tail);
+  stroke-width: 2.6;
   opacity: 0;
-  animation: space-shoot var(--dur, 38s) ease-in var(--delay, 0s) infinite;
+  animation: space-shoot var(--dur, 30s) cubic-bezier(0.3, 0.55, 0.5, 1) var(--delay, 0s) infinite;
 }
 
 @keyframes space-twinkle {
@@ -142,18 +194,31 @@ html[data-theme='light'] .space-sky-lines {
   }
 }
 
+/* Cruza en ~1 s: aparece, cae rápido y se apaga al final del trazo. */
 @keyframes space-shoot {
   0%,
-  92% {
+  96.4% {
     opacity: 0;
     transform: translate(0, 0);
   }
-  93% {
+  96.8% {
+    opacity: 1;
+  }
+  99% {
     opacity: 1;
   }
   100% {
     opacity: 0;
-    transform: translate(-380px, 150px);
+    transform: translate(-620px, 215px);
+  }
+}
+
+@keyframes space-float {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: var(--fx, 6px) var(--fy, 6px);
   }
 }
 
@@ -171,6 +236,7 @@ html[data-theme='light'] .space-sky-lines {
 
 @media (prefers-reduced-motion: reduce) {
   .space-sky-lines .sky-star,
+  .space-sky-lines .sky-drift,
   .space-sky-lines .sky-shoot,
   .space-sky-glow {
     animation: none;

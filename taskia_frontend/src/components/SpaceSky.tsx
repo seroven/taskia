@@ -14,7 +14,19 @@ export function useSpace(level: SpaceLevel) {
 const W = 1600
 const H = 900
 
-type Star = { x: number; y: number; s: number; spark: boolean; dur: number; delay: number }
+type Star = {
+  x: number
+  y: number
+  s: number
+  spark: boolean
+  dur: number
+  delay: number
+  /** Deriva lenta: hasta dónde se desplaza, cuánto tarda y con qué desfase. */
+  fx: number
+  fy: number
+  fdur: number
+  fdelay: number
+}
 
 function mulberry32(seed: number) {
   let a = seed
@@ -27,7 +39,7 @@ function mulberry32(seed: number) {
 }
 
 /** Estrellas fijas (misma semilla siempre) con separación mínima entre sí y respecto a `avoid`. */
-function scatter(count: number, minGap: number, sizes: [number, number], seed: number, avoid: Star[] = []) {
+function scatter(count: number, minGap: number, sizes: [number, number], seed: number, drift: number, avoid: Star[] = []) {
   const rand = mulberry32(seed)
   const out: Star[] = []
   let guard = 0
@@ -42,6 +54,10 @@ function scatter(count: number, minGap: number, sizes: [number, number], seed: n
       spark: rand() > 0.35,
       dur: 3 + rand() * 4,
       delay: -rand() * 7,
+      fx: (rand() - 0.5) * 2 * drift,
+      fy: (rand() - 0.5) * 2 * drift,
+      fdur: 8 + rand() * 10,
+      fdelay: -rand() * 18,
     })
   }
   return out
@@ -53,9 +69,20 @@ const KEY_GROUPS: [number, number][][] = [
   [[1090, 744], [1176, 700], [1262, 764], [1346, 722]],
 ]
 
-const NEAR = scatter(8, 220, [6, 9], 11)
-const MID = scatter(16, 130, [3.5, 6], 23, NEAR)
-const FAR = scatter(28, 80, [1.6, 3], 37, [...NEAR, ...MID])
+const NEAR = scatter(8, 220, [6, 9], 11, 12)
+const MID = scatter(16, 130, [3.5, 6], 23, 9, NEAR)
+const FAR = scatter(28, 80, [1.6, 3], 37, 6, [...NEAR, ...MID])
+
+function starStyle(star: Star) {
+  return sv({
+    '--dur': `${star.dur}s`,
+    '--delay': `${star.delay}s`,
+    '--fx': `${star.fx.toFixed(1)}px`,
+    '--fy': `${star.fy.toFixed(1)}px`,
+    '--fdur': `${star.fdur.toFixed(1)}s`,
+    '--fdelay': `${star.fdelay.toFixed(1)}s`,
+  })
+}
 
 function StarField({ stars }: { stars: Star[] }) {
   return (
@@ -68,7 +95,7 @@ function StarField({ stars }: { stars: Star[] }) {
             y={star.y}
             s={star.s}
             className="sky-star"
-            style={sv({ '--dur': `${star.dur}s`, '--delay': `${star.delay}s` })}
+            style={starStyle(star)}
           />
         ) : (
           <circle
@@ -77,7 +104,7 @@ function StarField({ stars }: { stars: Star[] }) {
             cy={star.y}
             r={star.s * 0.35}
             className="sky-star"
-            style={sv({ '--dur': `${star.dur}s`, '--delay': `${star.delay}s` })}
+            style={starStyle(star)}
           />
         ),
       )}
@@ -111,12 +138,19 @@ export function SpaceSky() {
     <div className="space-sky" ref={rootRef} aria-hidden>
       <div className="space-sky-glow space-sky-glow-a" />
       <div className="space-sky-glow space-sky-glow-b" />
+      <div className="space-sky-glow space-sky-glow-sun" />
       <svg
         className="space-sky-lines"
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMid slice"
         focusable="false"
       >
+        <defs>
+          <linearGradient id="sky-tail" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="-150" y2="52">
+            <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+            <stop offset="1" stopColor="currentColor" stopOpacity="1" />
+          </linearGradient>
+        </defs>
         <g className="space-sky-layer" data-depth="far">
           <StarField stars={FAR} />
         </g>
@@ -129,7 +163,11 @@ export function SpaceSky() {
         <g className="space-sky-layer" data-depth="near">
           <StarField stars={NEAR} />
           {KEY_GROUPS.map((group, index) => (
-            <g key={index}>
+            <g
+              key={index}
+              className="sky-drift"
+              style={sv({ '--fx': `${index % 2 ? -7 : 7}px`, '--fy': `${index === 1 ? 6 : -6}px`, '--fdur': `${15 + index * 4}s`, '--fdelay': `${-index * 5}s` })}
+            >
               <path className="sky-link" d={`M${group.map(([x, y]) => `${x} ${y}`).join(' L')}`} />
               {group.map(([x, y], i) => (
                 <Spark
@@ -149,10 +187,10 @@ export function SpaceSky() {
             <path d="M1420 770 A130 28 -18 0 1 1640 720" opacity="0.5" />
           </g>
           <g transform="translate(1180 90)">
-            <path className="sky-shoot" d="M0 0 L-120 42" style={sv({ '--dur': '38s', '--delay': '-6s' })} />
+            <path className="sky-shoot" d="M0 0 L-150 52" style={sv({ '--dur': '29s', '--delay': '-6s' })} />
           </g>
           <g transform="translate(520 60)">
-            <path className="sky-shoot" d="M0 0 L-110 38" style={sv({ '--dur': '47s', '--delay': '-27s' })} />
+            <path className="sky-shoot" d="M0 0 L-130 45" style={sv({ '--dur': '41s', '--delay': '-27s' })} />
           </g>
         </g>
       </svg>
