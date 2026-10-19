@@ -1,102 +1,188 @@
+/*
+ * Cielo de línea: estrellas de cuatro puntas, constelaciones punteadas, un planeta lejano en trazo y
+ * estrellas fugaces. Tres capas con parallax leve. De día usa tinta sobre blanco; de noche, las mismas
+ * formas en claro más dos manchas de acento que derivan despacio. `data-space` regula la intensidad.
+ */
 .space-sky {
   position: fixed;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
   pointer-events: none;
   opacity: var(--space-strength, 1);
 }
 
 html[data-space='high'] {
   --space-strength: 1;
-  --nebula: 8%;
 }
 
 html[data-space='medium'] {
-  --space-strength: 0.6;
-  --nebula: 8%;
+  --space-strength: 0.7;
 }
 
 html[data-space='low'] {
-  --space-strength: 0.3;
-  --nebula: 8%;
+  --space-strength: 0.4;
 }
 
 html[data-space='none'] .space-sky {
   opacity: 0;
 }
 
-html[data-theme='light'] .space-sky-nebula,
-html[data-theme='light'] .space-sky-stars {
+.space-sky-glow {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--accent) 7%, transparent),
+    transparent
+  );
+  will-change: transform;
+}
+
+.space-sky-glow-a {
+  left: -25vmax;
+  top: -25vmax;
+  animation: space-drift-a 80s ease-in-out infinite alternate;
+}
+
+.space-sky-glow-b {
+  right: -25vmax;
+  bottom: -30vmax;
+  animation: space-drift-b 95s ease-in-out infinite alternate;
+}
+
+html[data-theme='light'] .space-sky-glow {
   display: none;
 }
 
-.space-sky-nebula,
-.space-sky-stars {
+.space-sky-lines {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--text);
 }
 
-.space-sky-nebula {
-  background:
-    radial-gradient(
-      ellipse at 0% 0%,
-      color-mix(in srgb, var(--accent) var(--nebula, 14%), transparent),
-      transparent 58%
-    ),
-    radial-gradient(
-      ellipse at 100% 100%,
-      color-mix(in srgb, var(--accent) var(--nebula, 14%), transparent),
-      transparent 52%
-    );
+html[data-theme='light'] .space-sky-lines {
+  opacity: 0.4;
 }
 
-.space-sky-stars-a,
-.space-sky-stars-b,
-.space-sky-stars-c {
-  background-repeat: repeat;
+.space-sky-layer {
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.space-sky-stars-a {
-  background-image:
-    radial-gradient(1.5px 1.5px at 28px 46px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1px 1px at 150px 22px, rgba(255, 255, 255, 0.8), transparent),
-    radial-gradient(1.5px 1.5px at 96px 168px, rgba(255, 255, 255, 0.8), transparent);
-  background-size: 240px 240px;
+.space-sky-layer[data-depth='far'] {
+  opacity: 0.45;
+  transform: translate(calc(var(--sky-x, 0) * 6px), calc(var(--sky-y, 0) * 6px));
 }
 
-.space-sky-stars-b {
-  background-image:
-    radial-gradient(1px 1px at 70px 90px, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 240px 40px, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1px 1px at 180px 260px, rgba(255, 255, 255, 0.5), transparent);
-  background-size: 360px 360px;
+.space-sky-layer[data-depth='mid'] {
+  opacity: 0.7;
+  transform: translate(calc(var(--sky-x, 0) * 14px), calc(var(--sky-y, 0) * 14px));
 }
 
-.space-sky-stars-c {
-  background-image:
-    radial-gradient(2px 2px at 80px 120px, rgba(255, 255, 255, 0.3), transparent),
-    radial-gradient(1.5px 1.5px at 340px 80px, rgba(255, 255, 255, 0.3), transparent),
-    radial-gradient(2px 2px at 220px 400px, rgba(255, 255, 255, 0.3), transparent);
-  background-size: 520px 520px;
+.space-sky-layer[data-depth='near'] {
+  opacity: 0.9;
+  transform: translate(calc(var(--sky-x, 0) * 26px), calc(var(--sky-y, 0) * 26px));
 }
 
-html[data-space='high'] .space-sky-stars-a {
-  animation: space-twinkle 6s ease-in-out infinite;
+.space-sky-lines path,
+.space-sky-lines circle,
+.space-sky-lines ellipse {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.space-sky-lines .sky-star {
+  fill: currentColor;
+  stroke: none;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: space-twinkle var(--dur, 4s) ease-in-out var(--delay, 0s) infinite;
+}
+
+.space-sky-lines .sky-star-key {
+  fill: var(--star);
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+
+.space-sky-lines .sky-link {
+  stroke-dasharray: 4 8;
+  stroke-width: 1.4;
+  opacity: 0.55;
+}
+
+.space-sky-lines .sky-orbit {
+  stroke-dasharray: 1 9;
+  stroke-width: 2.2;
+  opacity: 0.5;
+}
+
+.space-sky-lines .sky-shoot {
+  stroke-width: 2.4;
+  opacity: 0;
+  animation: space-shoot var(--dur, 38s) ease-in var(--delay, 0s) infinite;
 }
 
 @keyframes space-twinkle {
   0%,
   100% {
-    opacity: 0.55;
+    opacity: 1;
+    transform: scale(1);
   }
   50% {
+    opacity: 0.25;
+    transform: scale(0.65);
+  }
+}
+
+@keyframes space-shoot {
+  0%,
+  92% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  93% {
     opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-380px, 150px);
+  }
+}
+
+@keyframes space-drift-a {
+  to {
+    transform: translate(12vmax, 8vmax);
+  }
+}
+
+@keyframes space-drift-b {
+  to {
+    transform: translate(-10vmax, -9vmax);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-space='high'] .space-sky-stars-a {
+  .space-sky-lines .sky-star,
+  .space-sky-lines .sky-shoot,
+  .space-sky-glow {
     animation: none;
+  }
+
+  .space-sky-lines .sky-shoot {
+    display: none;
+  }
+
+  .space-sky-layer {
+    transition: none;
+    transform: none !important;
   }
 }
 

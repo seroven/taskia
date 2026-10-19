@@ -1,0 +1,197 @@
+/* Medidor de nivel del explorador: cohete sobre una estela */
+.level-meter {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 4px 12px 4px 4px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-chip);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.level-meter:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.level-badge {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.level-track {
+  position: relative;
+  width: 176px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.level-lane {
+  --pct: 0;
+  position: absolute;
+  inset: 0 28px 0 8px;
+}
+
+.level-line,
+.level-trail {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 0;
+  border-top: 3px dotted color-mix(in srgb, var(--text) 50%, transparent);
+  width: 100%;
+  border-radius: 2px;
+}
+
+.level-trail {
+  width: calc(var(--pct) * 1%);
+  border-top: 4px solid var(--accent);
+  transition: width 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.level-ship {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--pct) * 1%);
+  transform: translate(-50%, -50%);
+  transition: left 1100ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.level-bob {
+  display: block;
+  animation: level-bob 2.4s ease-in-out infinite;
+}
+
+.level-rocket-art {
+  display: block;
+  width: 58px;
+  height: auto;
+  overflow: visible;
+}
+
+.level-rocket-art path,
+.level-rocket-art circle {
+  stroke: var(--text);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.level-body {
+  fill: var(--surface);
+}
+
+.level-fin {
+  fill: var(--accent);
+}
+
+.level-window {
+  fill: var(--star);
+}
+
+.level-flame {
+  fill: var(--star);
+  transform-box: fill-box;
+  transform-origin: 100% 50%;
+  animation: level-flame 0.5s ease-in-out infinite;
+}
+
+.level-goal {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-left: -32px;
+  color: var(--star);
+}
+
+.level-goal svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--text);
+  stroke-width: 10;
+  paint-order: stroke;
+}
+
+.level-tip {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 2px;
+  width: max-content;
+  max-width: 260px;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.3;
+  text-align: left;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 160ms ease,
+    transform 200ms ease;
+}
+
+.level-meter:is(:hover, :focus-visible, .is-open) .level-tip {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes level-bob {
+  0%,
+  100% {
+    transform: translateY(-1.5px) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(1.5px) rotate(2deg);
+  }
+}
+
+@keyframes level-flame {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.35, 0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .level-bob,
+  .level-flame {
+    animation: none;
+  }
+
+  .level-trail,
+  .level-ship,
+  .level-tip {
+    transition: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .level-track {
+    width: 120px;
+  }
+}

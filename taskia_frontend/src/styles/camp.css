@@ -724,3 +724,7 @@
   }
 }
 
+
+.camp-empty-mark .scene-empty {
+  width: min(240px, 70vw);
+}

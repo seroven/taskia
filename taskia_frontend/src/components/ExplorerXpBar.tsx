@@ -1,31 +1,16 @@
-import { Star } from '@phosphor-icons/react'
-import { progressPct } from '../lib/xp'
 import { useAuth } from '../auth'
+import { LevelRocket } from './LevelRocket'
 
-/** Barra de nivel compacta (estilo progreso de juego). */
+/** Nivel del explorador en el header. */
 export function ExplorerXpBar() {
   const { user } = useAuth()
   if (!user || user.role !== 'user') return null
 
-  const level = user.level ?? 1
-  const into = user.xp_into_level ?? 0
-  const pct = progressPct(user)
-
   return (
-    <div
-      className="xp-bar"
-      title={`Nivel ${level} · ${into}/1000 XP`}
-      aria-label={`Nivel ${level}, ${into} de 1000 experiencia`}
-    >
-      <Star className="xp-bar-star" size={16} weight="fill" aria-hidden />
-      <span className="xp-bar-level">Nv. {level}</span>
-      <div className="xp-bar-track">
-        <div className="xp-bar-fill" style={{ width: `${pct}%` }} />
-      </div>
-      <span className="xp-bar-frac">
-        {into}
-        <span className="xp-bar-max">/1000</span>
-      </span>
-    </div>
+    <LevelRocket
+      level={user.level ?? 1}
+      into={user.xp_into_level ?? 0}
+      toNext={user.xp_to_next}
+    />
   )
 }

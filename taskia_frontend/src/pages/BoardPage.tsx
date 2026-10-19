@@ -6,7 +6,7 @@ import { useAuth } from '../auth'
 import { BoardLoader } from '../components/BoardLoader'
 import { CampTaskRow } from '../components/CampTaskRow'
 import { EmptyState } from '../components/EmptyState'
-import { Planet } from '../components/Planet'
+import { CampEmptyDay, CampEmptyProjects } from '../components/scenes/CampEmptyScenes'
 import { TaskDetailModal } from '../components/TaskDetailModal'
 import { TaskFormModal } from '../components/TaskFormModal'
 import { AppearanceTools } from '../components/AppearanceTools'
@@ -357,7 +357,7 @@ export function BoardPage({
                   compact
                   illustration={
                     <span className="camp-empty-mark">
-                      <Planet size={120} variant="sand" />
+                      {scope === 'project' ? <CampEmptyProjects /> : <CampEmptyDay />}
                     </span>
                   }
                   title={scope === 'project' ? 'Sin proyectos' : 'Nada para este día'}
