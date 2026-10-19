@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Spark } from './scenes/kit'
 import { sv } from './scenes/sv'
 
@@ -112,6 +112,35 @@ function StarField({ stars }: { stars: Star[] }) {
   )
 }
 
+type Shot = { x: number; y: number; angle: number }
+
+/** Punto de entrada y pendiente al azar, siempre dentro del cielo visible y cayendo hacia abajo a la izquierda. */
+function randomShot(): Shot {
+  return {
+    x: 700 + Math.random() * 800,
+    y: 50 + Math.random() * 380,
+    angle: 16 + Math.random() * 20,
+  }
+}
+
+/**
+ * Estrella fugaz. La animación solo la muestra el último ~3,5 % de cada ciclo; al reiniciarse
+ * (`animationiteration`, con la estrella oculta) cambia de lugar, así cada pasada nace en otro punto.
+ */
+function ShootingStar({ dur, delay }: { dur: number; delay: number }) {
+  const [shot, setShot] = useState(randomShot)
+  return (
+    <g transform={`translate(${shot.x.toFixed(0)} ${shot.y.toFixed(0)}) rotate(${(-shot.angle).toFixed(1)})`}>
+      <path
+        className="sky-shoot"
+        d="M0 0 L-150 0"
+        style={sv({ '--dur': `${dur}s`, '--delay': `${delay}s` })}
+        onAnimationIteration={() => setShot(randomShot())}
+      />
+    </g>
+  )
+}
+
 export function SpaceSky() {
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -146,7 +175,7 @@ export function SpaceSky() {
         focusable="false"
       >
         <defs>
-          <linearGradient id="sky-tail" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="-150" y2="52">
+          <linearGradient id="sky-tail" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="-150" y2="0">
             <stop offset="0" stopColor="currentColor" stopOpacity="0" />
             <stop offset="1" stopColor="currentColor" stopOpacity="1" />
           </linearGradient>
@@ -186,12 +215,8 @@ export function SpaceSky() {
             <path d="M1400 800 A150 34 -18 0 0 1650 740" />
             <path d="M1420 770 A130 28 -18 0 1 1640 720" opacity="0.5" />
           </g>
-          <g transform="translate(1180 90)">
-            <path className="sky-shoot" d="M0 0 L-150 52" style={sv({ '--dur': '29s', '--delay': '-6s' })} />
-          </g>
-          <g transform="translate(520 60)">
-            <path className="sky-shoot" d="M0 0 L-130 45" style={sv({ '--dur': '41s', '--delay': '-27s' })} />
-          </g>
+          <ShootingStar dur={29} delay={-6} />
+          <ShootingStar dur={41} delay={-27} />
         </g>
       </svg>
     </div>

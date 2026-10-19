@@ -194,7 +194,7 @@ html[data-theme='light'] .space-sky-lines {
   }
 }
 
-/* Cruza en ~1 s: aparece, cae rápido y se apaga al final del trazo. */
+/* Cruza en ~1 s: aparece, cae rápido y se apaga al final del trazo. Avanza por su propio eje (el <g> la gira). */
 @keyframes space-shoot {
   0%,
   96.4% {
@@ -209,7 +209,7 @@ html[data-theme='light'] .space-sky-lines {
   }
   100% {
     opacity: 0;
-    transform: translate(-620px, 215px);
+    transform: translateX(-640px);
   }
 }
 
