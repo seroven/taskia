@@ -99,8 +99,7 @@ export function CourseDetail({
       <div className="worlds-content worlds-stage">
         <div className="worlds-two-col worlds-two-col--system">
           <section className="worlds-panel worlds-panel--system">
-            <div className="worlds-panel-head">
-              <p className="worlds-block-label">Lunas</p>
+            <div className="worlds-panel-corner">
               <button
                 type="button"
                 className="ghost"

@@ -163,16 +163,25 @@
 /* ---------- Sistema orbital (mundo y curso) ---------- */
 
 .worlds-panel--system {
+  position: relative;
   background: transparent;
   border-color: transparent;
+}
+
+/* Acción suelta de la esquina (Traer): flota para no sumar una fila de altura y provocar scroll. */
+.worlds-panel-corner {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 4;
 }
 
 .system {
   position: relative;
   /* Todo el alto disponible de la pantalla (menos el header), sin pasar de 940 px ni del panel. */
-  width: min(100%, calc(100vh - 190px), 940px);
+  width: min(100%, calc(100vh - 215px), 940px);
   min-width: min(100%, 320px);
-  margin: 0 auto 44px;
+  margin: 0 auto;
   aspect-ratio: 1;
   container-type: inline-size;
 }
