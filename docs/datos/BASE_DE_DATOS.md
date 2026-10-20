@@ -392,9 +392,7 @@ Contenedor de la tripulación. Cupo máximo **10** miembros activos: se valida e
 | `id` | bigint | PK |
 | `name` | varchar(80) | nombre visible |
 | `is_active` | boolean | baja lógica de la tripulación |
-| `planet_style_id` | varchar(40) | familia del dibujo (`rocky_blue` por defecto) |
-| `planet_seed` | int | semilla fija del aspecto; no cambia al personalizar el estilo |
-| `planet_params` | jsonb | solo si Capitán o Copiloto aplican un diseño; si no, manda la semilla |
+| `ship_config` | jsonb NOT NULL | la nave: una pieza por ranura (casco, cabina, nariz, alas, cola, motores, módulo de arriba y de abajo, marcas, ventanillas) y 4 colores. Esquema en `modules/troops/lib/ship-config.ts`. Se genera al crear la tripulación y la cambian el Capitán o el Copiloto |
 | `created_at` / `updated_at` | timestamptz | |
 
 ### `troop_members`
@@ -503,7 +501,7 @@ Todos los campos con opciones fijas, en un solo lugar. Cambiarlos es tocar el `C
 | `study_challenges` | `difficulty` | `warm`, `quest`, `boss` |
 | `study_challenges` | `status` | `in_progress`, `completed`, `abandoned` |
 | `study_challenge_questions` | `kind` | `multiple_choice`, `short_text`, `fill_blank` |
-| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade`, `challenge_photo_grade`, `parent_tutor`, `planet_generate`, `daily_summary`, `board_intent`, `board_facts`, `speak` |
+| `llm_usage` | `kind` | `task_tutor`, `mission_tutor`, `transcribe`, `challenge_generate`, `challenge_grade`, `challenge_photo_grade`, `parent_tutor`, `ship_generate`, `daily_summary`, `board_intent`, `board_facts`, `speak` |
 | `xp_awards` | `source_type` | `task_done_simple`, `task_study`, `mission`, `challenge` |
 | `troop_members` | `role` | `captain`, `copilot`, `member` |
 | `troop_invites` | `status` | `pending`, `accepted`, `rejected`, `cancelled` |

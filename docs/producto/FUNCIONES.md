@@ -419,23 +419,23 @@ También puede **editar** título, descripción y si el tema es práctico desde 
 
 ### Qué son
 
-Una **tripulación** es el equipo del explorador: hasta **10** compañeros. Se ve como un **universo** de planetas (una tripulación = un planeta). Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat. Hoy el explorador no entra: la puerta del hub está cerrada. El Guardián sí puede ver la tripulación en lectura.
+Una **tripulación** es el equipo del explorador: hasta **10** compañeros. Se ve como una **galaxia** de naves (una tripulación = una nave). Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat. Hoy el explorador no entra: la puerta del hub está cerrada. El Guardián sí puede ver la tripulación en lectura.
 
 ### Roles
 
 | Rol | Puede |
 | --- | --- |
-| **Capitán** | Invitar, sacar miembros, elegir o cambiar **Copiloto**, aceptar/rechazar pedidos de unión, personalizar el planeta (estilo o IA) |
-| **Copiloto** | Invitar, aceptar/rechazar pedidos de unión, personalizar el planeta |
+| **Capitán** | Invitar, sacar miembros, elegir o cambiar **Copiloto**, aceptar/rechazar pedidos de unión, personalizar la nave (piezas, colores o IA) |
+| **Copiloto** | Invitar, aceptar/rechazar pedidos de unión, personalizar la nave |
 | **Explorador** | Ver el universo, su tripulación y el ranking; pedir unirse si aún no tiene tripulación; salir cuando quiera |
 
 Quien crea la tripulación es Capitán. Solo se puede estar en **una** tripulación a la vez.
 
-### Universo, planeta y avatar
+### Galaxia, nave y avatar
 
-- Al abrir **Tripulación** entra a la galaxia dibujada: se arrastra para mover la vista, la rueda hace zoom y un toque en un planeta abre su ficha. El cursor en el borde no desplaza la vista. El cielo tiene nebulosa y estrellas. El planeta sale de `planet_config` o de la semilla: cara simple, motivo, a veces anillos y como máximo una luna. Los anillos se ocultan mientras la ficha está abierta.
-- Cada planeta muestra el nombre de la tripulación. La propia se marca con un aro del color elegido. El Top 3 semanal lleva una medalla con su puesto. Con la ficha abierta se ve el **nivel de tripulación** (promedio) en una estrella.
-- Capitanía/copilotaje eligen un estilo de planeta del catálogo o piden a Taskia un diseño (vista previa → aplicar). No se sube foto del planeta.
+- Al abrir **Tripulación** entra a la galaxia dibujada y su nave aparece al centro, grande. Se arrastra para mover la vista; la rueda, los botones + y − o el pellizco hacen zoom; un toque en una nave abre su ficha y la acerca. Una nave se agranda sola cuando se acerca al centro de la vista, para apreciar sus piezas. El cielo tiene nebulosa y estrellas. La nave se arma con piezas (casco, cabina, nariz, alas, cola, motores y estela, módulo de arriba y de abajo, marcas y ventanillas) y cuatro colores; tiene **una ventanilla por miembro**.
+- Cada nave muestra el nombre de la tripulación. La propia se marca con un halo del acento. El Top 3 semanal lleva una medalla con su puesto. Con la ficha abierta se ve el **nivel de tripulación** (promedio) en una estrella.
+- Capitanía y copilotaje arman la nave en el editor (piezas, paletas o colores sueltos, «Sorpréndeme») o se la piden a Taskia con una frase (la vista previa se puede retocar antes de guardar). No se sube foto de la nave. Cada tripulación nace con una nave distinta.
 - Cada explorador elige **avatar** (preset o foto en serverfiles) y un **marco** (algunos solo Capitán/Copiloto).
 
 ### Qué puede hacer el explorador

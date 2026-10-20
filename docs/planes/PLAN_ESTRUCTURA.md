@@ -203,7 +203,7 @@ Sin código. Responder las decisiones abiertas.
 
 **B6. `guardian`.** Hoy `routes/parent.ts`. El prefijo HTTP sigue `/parent`.
 
-**B7. `troops`.** Universo, solicitudes, planeta. `planetParams` entra en este módulo.
+**B7. `troops`.** Universo, solicitudes, nave. `ship-config` entra en este módulo.
 
 **B8. `worlds`.** El archivo más grande. Partir por mundo, curso del mundo, misión y desafío antes de mover el SQL. No empezar este corte hasta que B2–B5 estén aburridos de tan repetidos.
 
@@ -256,7 +256,7 @@ Hecho y compilado (`npm run build` en `taskia_backend`):
 - **B4.** `modules/tasks`.
 - **B5.** `modules/study` (routes, controller, schema, service, repository).
 - **B6.** `modules/guardian`. El prefijo HTTP sigue siendo `/parent`.
-- **B7.** `modules/troops`. `planetParams` está en `modules/troops/lib/planet-params.ts`.
+- **B7.** `modules/troops`. La nave está en `modules/troops/lib/ship-config.ts`.
 - **Mundos y admin.** `modules/worlds/` y `modules/admin/`. El acceso a datos de todo el backend es TypeORM.
 
 Siguiente: frontend, desde F1.

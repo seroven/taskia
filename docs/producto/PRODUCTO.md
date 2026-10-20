@@ -177,7 +177,7 @@ Adulto crea alumno y materias
         ▼
    Alumno entra → hub
         │
-        ├── Tripulación ──► universo de planetas, equipo, campana, ranking, avatar/planeta
+        ├── Tripulación ──► galaxia de naves, equipo, campana, ranking, avatar/nave
         │
         ├── Campamento ──► tarea ──► (si needs_help) Taskia ──► Listo ──► XP
         │
@@ -204,7 +204,7 @@ Nada de eso exige que el adulto esté sentado al lado en el chat. El adulto conf
 
 ## Apariencia
 
-Tema claro u oscuro y un color de acento (azul por defecto; también verde, ámbar, violeta, etc.). Vale para alumno y adulto. No cambia las reglas, solo cómo se ve. En **Tripulación**, el universo 3D toma el fondo y el acento del tema; si el sistema pide menos movimiento (`prefers-reduced-motion`), se apagan estrellas, giro de planetas y animaciones fuertes del card.
+Tema claro u oscuro y un color de acento (azul por defecto; también verde, ámbar, violeta, etc.). Vale para alumno y adulto. No cambia las reglas, solo cómo se ve. En **Tripulación**, la galaxia de naves toma el fondo y el acento del tema; si el sistema pide menos movimiento (`prefers-reduced-motion`), se apagan estrellas, el vaivén de las naves y las animaciones fuertes de la ficha.
 
 ---
 
