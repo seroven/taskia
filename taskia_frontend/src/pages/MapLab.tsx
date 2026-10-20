@@ -61,6 +61,12 @@ export function MapLab() {
       <WorldSystem worldId={5} courses={courses(15)} onOpenCourse={() => {}} />
       <h2 style={{ fontFamily: 'var(--font-display)' }}>Curso con 22 misiones</h2>
       <CourseSystem worldId={1} courseId={4} missions={missions(22)} onStudy={() => {}} onChallenge={() => {}} />
+      <h2 style={{ fontFamily: 'var(--font-display)' }}>Mundo con 30 cursos</h2>
+      <WorldSystem worldId={6} courses={courses(30)} onOpenCourse={() => {}} />
+      <h2 style={{ fontFamily: 'var(--font-display)' }}>Mundo con 60 cursos</h2>
+      <WorldSystem worldId={7} courses={courses(60)} onOpenCourse={() => {}} />
+      <h2 style={{ fontFamily: 'var(--font-display)' }}>Curso con 40 misiones</h2>
+      <CourseSystem worldId={1} courseId={5} missions={missions(40)} onStudy={() => {}} onChallenge={() => {}} />
       <h2 style={{ fontFamily: 'var(--font-display)' }}>Mundo vacío</h2>
       <WorldSystem worldId={2} courses={[]} onOpenCourse={() => {}} />
       <h2 style={{ fontFamily: 'var(--font-display)' }}>Llega el primer curso</h2>

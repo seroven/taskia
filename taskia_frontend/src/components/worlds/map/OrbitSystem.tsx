@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { Spark } from '../../scenes/kit'
 import { sv } from '../../scenes/sv'
@@ -31,15 +31,52 @@ type Props = {
 }
 
 type Tier = 'roomy' | 'normal' | 'dense' | 'packed'
-type Plan = { groups: OrbitItem[][]; radii: number[]; moon: number; core: number; tier: Tier }
+/** Las medidas de radios, luna y núcleo son % del ancho del sistema. */
+type Plan = { groups: OrbitItem[][]; radii: number[]; moon: number; core: number; tier: Tier; still: boolean }
 
-/** Reparte `n` lunas entre anillos en proporción a su longitud (los de afuera caben más). */
-function split(items: OrbitItem[], radii: number[]) {
-  const total = radii.reduce((sum, radius) => sum + radius, 0)
-  const counts = radii.map((radius) => Math.floor((items.length * radius) / total))
+/** Ancho que el sistema supone antes de medirse. */
+const DEFAULT_WIDTH = 700
+/** Un planeta se dibuja a ~1,15 veces el recuadro de su luna (con el aro de avance). */
+const ART = 1.15
+
+type Mode = {
+  tier: Exclude<Tier, 'roomy'>
+  /** Tamaño de la luna: de `from` (fracción del ancho) hasta `min` px. */
+  from: number
+  min: number
+  /** Lo que ocupa una luna con su nombre, en px: `v` es el dibujo de la luna. */
+  foot: (v: number, width: number) => { w: number; h: number }
+}
+
+/** Mismo ancho que `.system.tier-normal .system-moon-label` en CSS. */
+const labelWidth = (width: number) => Math.min(130, Math.max(90, width * 0.17))
+
+/**
+ * Del más holgado al más apretado: nombre y avance a la vista, solo el nombre en una línea corta, y solo el
+ * dibujo (el nombre aparece al apuntar). Se usa el primero en que caben todas las lunas sin pisarse.
+ * Los modos con nombre lo muestran en dos líneas: con una sola, «Razonamiento Verbal» y «Razonamiento Matemático»
+ * quedarían iguales.
+ */
+const MODES: Mode[] = [
+  { tier: 'normal', from: 0.13, min: 64, foot: (v, width) => ({ w: Math.max(v, labelWidth(width)), h: v + 56 }) },
+  { tier: 'dense', from: 0.11, min: 56, foot: (v) => ({ w: Math.max(v, 96), h: v + 36 }) },
+  { tier: 'packed', from: 0.1, min: 28, foot: (v) => ({ w: v + 6, h: v + 6 }) },
+]
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+/** Reparte `n` lunas entre anillos en proporción a lo que cabe en cada uno. */
+function split(items: OrbitItem[], caps: number[]) {
+  const total = caps.reduce((sum, cap) => sum + cap, 0)
+  const counts = caps.map((cap) => Math.min(cap, Math.floor((items.length * cap) / total)))
   let left = items.length - counts.reduce((sum, count) => sum + count, 0)
-  for (let index = counts.length - 1; left > 0; index = (index - 1 + counts.length) % counts.length) {
-    counts[index] += 1
+  while (left > 0) {
+    // El anillo con más holgura recibe la que sobra.
+    let best = 0
+    for (let index = 1; index < caps.length; index += 1) {
+      if (caps[index] - counts[index] > caps[best] - counts[best]) best = index
+    }
+    counts[best] += 1
     left -= 1
   }
   const groups: OrbitItem[][] = []
@@ -51,21 +88,84 @@ function split(items: OrbitItem[], radii: number[]) {
   return groups
 }
 
-/**
- * Plan del sistema según cuántas lunas hay: hasta 6 en un anillo holgado; hasta 12 en dos; hasta 24 en tres
- * (más chicas); más allá, los nombres pasan a aparecer solo al apuntar. Las medidas son % del ancho.
- */
-function plan(items: OrbitItem[]): Plan {
-  const n = items.length
-  if (n <= 6) return { groups: [items], radii: [34], moon: 18, core: 50, tier: 'roomy' }
-  if (n <= 12) {
-    const radii = [28, 42]
-    return { groups: split(items, radii), radii, moon: 13, core: 38, tier: 'normal' }
+/** Intenta acomodar `n` lunas de diámetro `d` px en un sistema de `width` px; null si no caben sin pisarse. */
+function fit(items: OrbitItem[], d: number, mode: Mode, width: number): Plan | null {
+  const { w, h } = mode.foot(d * ART, width)
+  // Separación mínima entre dos lunas vecinas del mismo anillo, en cualquier punto de la órbita.
+  const gap = Math.max(w, h, Math.SQRT2 * Math.min(w, h))
+  // Solo con el dibujo (sin nombres) el sol puede achicarse para dejar más sitio a las lunas.
+  const sun = clamp(0.9 * d, (mode.tier === 'packed' ? 0.06 : 0.1) * width, 0.16 * width)
+  const inner = sun + h / 2 + 6
+  const outer = width / 2 - h / 2 - 4
+  if (outer < inner) return null
+  const maxRings = Math.floor((outer - inner) / (h + 4)) + 1
+
+  for (let rings = 1; rings <= maxRings; rings += 1) {
+    const radii = rings === 1 ? [(inner + outer) / 2] : Array.from({ length: rings }, (_, k) => inner + ((outer - inner) * k) / (rings - 1))
+    const caps = radii.map((radius) => Math.floor((2 * Math.PI * radius) / gap))
+    if (caps.reduce((sum, cap) => sum + cap, 0) < items.length) continue
+    // Con varios anillos girando a distinta velocidad, solo es seguro si una luna no alcanza a rozar a la del anillo vecino.
+    const step = rings === 1 ? Infinity : (outer - inner) / (rings - 1)
+    const need = mode.tier === 'packed' ? w : Math.hypot(w, h)
+    return {
+      groups: split(items, caps),
+      radii: radii.map((radius) => (radius / width) * 100),
+      moon: (d / width) * 100,
+      core: ((sun / 0.36) / width) * 100,
+      tier: mode.tier,
+      still: step < need,
+    }
   }
-  const radii = [20, 33, 45]
-  return n <= 24
-    ? { groups: split(items, radii), radii, moon: 10.5, core: 27, tier: 'dense' }
-    : { groups: split(items, radii), radii, moon: 8, core: 25, tier: 'packed' }
+  return null
+}
+
+/**
+ * Plan del sistema según cuántas lunas hay y cuánto mide en pantalla: hasta 6 en un anillo holgado; desde ahí se
+ * prueba cada modo y cada tamaño de luna hasta que quepan todas sin pisarse. Si ni así, se apretan lo posible.
+ */
+function plan(items: OrbitItem[], width: number): Plan {
+  const n = items.length
+  const roomy: Plan = { groups: [items], radii: [34], moon: 18, core: 50, tier: 'roomy', still: false }
+  if (n === 0) return roomy
+
+  // El anillo holgado de siempre, si en este ancho cabe sin pisar el sol ni salirse.
+  if (n <= 6) {
+    const v = Math.max(0.18 * width, 52) * ART
+    const w = Math.max(v, 0.24 * width)
+    const h = v + 56
+    const radius = 0.34 * width
+    const gap = Math.max(w, h, Math.SQRT2 * Math.min(w, h))
+    const fits =
+      radius + h / 2 <= width / 2 - 4 &&
+      radius - h / 2 >= 0.18 * width + 6 &&
+      Math.floor((2 * Math.PI * radius) / gap) >= n
+    if (fits) return roomy
+  }
+
+  for (const mode of MODES) {
+    for (let d = Math.min(110, mode.from * width); d >= mode.min; d -= 4) {
+      const found = fit(items, d, mode, width)
+      if (found) return found
+    }
+  }
+
+  const last = MODES[MODES.length - 1]
+  const d = last.min
+  const { h } = last.foot(d * ART, width)
+  const sun = clamp(0.9 * d, 0.06 * width, 0.16 * width)
+  const inner = sun + h / 2 + 6
+  const outer = width / 2 - h / 2 - 4
+  const rings = Math.max(1, Math.floor((outer - inner) / (h + 4)) + 1)
+  const radii = Array.from({ length: rings }, (_, k) => (rings === 1 ? (inner + outer) / 2 : inner + ((outer - inner) * k) / (rings - 1)))
+  const caps = radii.map((radius) => Math.max(1, Math.ceil(radius)))
+  return {
+    groups: split(items, caps),
+    radii: radii.map((radius) => (radius / width) * 100),
+    moon: (d / width) * 100,
+    core: (sun / 0.36 / width) * 100,
+    tier: 'packed',
+    still: true,
+  }
 }
 
 const RING_SECONDS = [150, 190, 230]
@@ -79,7 +179,20 @@ const BURST = Array.from({ length: 8 }, (_, index) => {
  * Lo usan el mundo (cursos) y el curso (misiones). Al pasar el cursor todo se detiene.
  */
 export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete = false, emptyHint }: Props) {
-  const { groups, radii, moon, core, tier } = plan(items)
+  const ref = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(DEFAULT_WIDTH)
+
+  // El plan depende del ancho en px: se mide antes de pintar y se vuelve a medir al redimensionar.
+  useLayoutEffect(() => {
+    const node = ref.current
+    if (!node) return
+    setWidth(node.getBoundingClientRect().width || DEFAULT_WIDTH)
+    const observer = new ResizeObserver(([entry]) => setWidth(Math.round(entry.contentRect.width) || DEFAULT_WIDTH))
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  const { groups, radii, moon, core, tier, still } = plan(items, width)
   const arrivingKey = items.find((item) => item.arriving)?.key ?? null
 
   // El despertar (ondas desde el planeta) dura lo que dura la llegada: la pantalla limpia `arriving` sola.
@@ -89,8 +202,9 @@ export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete
 
   return (
     <div
-      className={`system tier-${tier}${items.length > 10 ? ' is-still' : ''}${complete ? ' is-complete' : ''}${awake ? ' is-awake' : ''}${empty ? ' is-empty' : ''}`}
-      style={{ ['--moon' as string]: `${moon}cqw` }}
+      ref={ref}
+      className={`system tier-${tier}${still ? ' is-still' : ''}${complete ? ' is-complete' : ''}${awake ? ' is-awake' : ''}${empty ? ' is-empty' : ''}`}
+      style={{ ['--moon' as string]: `${moon}cqw`, ['--moon-min' as string]: tier === 'roomy' ? '52px' : '0px' }}
     >
       <svg className="system-rings" viewBox="0 0 100 100" aria-hidden>
         {(empty ? [radii[0]] : radii.slice(0, groups.length)).map((radius, index) => (
@@ -141,7 +255,7 @@ export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete
                     ease: [0.22, 1, 0.36, 1],
                   }}
                 >
-                  <button type="button" className="system-item-main scene-host" onClick={item.onClick}>
+                  <button type="button" className="system-item-main scene-host" title={item.label} onClick={item.onClick}>
                     <span className="system-moon-art">{item.art}</span>
                     <span className="system-moon-label">
                       <b>{item.label}</b>

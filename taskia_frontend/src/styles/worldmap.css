@@ -350,7 +350,7 @@
   position: relative;
   display: block;
   width: var(--moon, 14cqw);
-  min-width: 52px;
+  min-width: var(--moon-min, 52px);
   aspect-ratio: 1;
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -668,22 +668,29 @@
   }
 }
 
-/* Con muchas lunas no giran (los nombres no se cruzan) y los nombres se achican; con más aún, aparecen al apuntar. */
+/* Si varios anillos girando se rozarían, el sistema se queda quieto. */
 .system.is-still .system-orbit,
 .system.is-still .system-item {
   animation: none;
 }
 
+/* Los anchos de las etiquetas deben coincidir con los que supone `plan()` en OrbitSystem.tsx. */
+.system.tier-normal .system-moon-label {
+  max-width: clamp(90px, 17cqw, 130px);
+}
+
+/* Muchas lunas: el nombre se achica a dos líneas y el avance queda en el aro. */
+.system.tier-dense .system-moon-label {
+  max-width: 96px;
+}
+
 .system.tier-dense .system-moon-label b {
-  font-size: 13px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .system.tier-dense .system-moon-label i {
-  font-size: 12px;
-}
-
-.system.tier-dense .system-moon-label {
-  max-width: 19cqw;
+  display: none;
 }
 
 .system.tier-packed .system-moon-label {
@@ -724,10 +731,6 @@
 .system.tier-packed .system-item:focus-within .moon-trophy {
   opacity: 1;
   pointer-events: auto;
-}
-
-.system.tier-dense .system-moon-label b {
-  -webkit-line-clamp: 1;
 }
 
 /* ---------- Sol del mundo, sombra de planeta y mini sistema de la lista ---------- */
