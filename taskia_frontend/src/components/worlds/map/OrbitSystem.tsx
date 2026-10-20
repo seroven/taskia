@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { Spark } from '../../scenes/kit'
 import { sv } from '../../scenes/sv'
@@ -36,6 +36,9 @@ type Plan = { groups: OrbitItem[][]; radii: number[]; moon: number; core: number
 
 /** Ancho que el sistema supone antes de medirse. */
 const DEFAULT_WIDTH = 700
+/** Velocidad del giro mientras se apunta al sistema (1 = normal) y lo que tarda en pasar de una a otra. */
+const SLOW_RATE = 0.2
+const SLOW_MS = 500
 /** Un planeta se dibuja a ~1,15 veces el recuadro de su luna (con el aro de avance). */
 const ART = 1.15
 
@@ -192,6 +195,28 @@ export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete
     return () => observer.disconnect()
   }, [])
 
+  // Al apuntar, los anillos no se detienen: giran más despacio, para poder tocar una luna con calma.
+  const rate = useRef(1)
+  const frame = useRef(0)
+  const slow = (target: number) => {
+    cancelAnimationFrame(frame.current)
+    const from = rate.current
+    const start = performance.now()
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / SLOW_MS)
+      rate.current = from + (target - from) * t
+      // `updatePlaybackRate` conserva la posición actual: no hay saltos al cambiar de velocidad.
+      ref.current?.getAnimations({ subtree: true }).forEach((animation) => {
+        if (animation instanceof CSSAnimation && animation.animationName === 'system-spin') {
+          animation.updatePlaybackRate(rate.current)
+        }
+      })
+      if (t < 1) frame.current = requestAnimationFrame(tick)
+    }
+    frame.current = requestAnimationFrame(tick)
+  }
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
+
   const { groups, radii, moon, core, tier, still } = plan(items, width)
   const arrivingKey = items.find((item) => item.arriving)?.key ?? null
 
@@ -203,6 +228,10 @@ export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete
   return (
     <div
       ref={ref}
+      onPointerEnter={() => slow(SLOW_RATE)}
+      onPointerLeave={() => slow(1)}
+      onFocus={() => slow(SLOW_RATE)}
+      onBlur={() => slow(1)}
       className={`system tier-${tier}${still ? ' is-still' : ''}${complete ? ' is-complete' : ''}${awake ? ' is-awake' : ''}${empty ? ' is-empty' : ''}`}
       style={{ ['--moon' as string]: `${moon}cqw`, ['--moon-min' as string]: tier === 'roomy' ? '52px' : '0px' }}
     >
@@ -255,7 +284,7 @@ export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete
                     ease: [0.22, 1, 0.36, 1],
                   }}
                 >
-                  <button type="button" className="system-item-main scene-host" title={item.label} onClick={item.onClick}>
+                  <button type="button" className="system-item-main scene-host" title={tier === 'packed' ? undefined : item.label} onClick={item.onClick}>
                     <span className="system-moon-art">{item.art}</span>
                     <span className="system-moon-label">
                       <b>{item.label}</b>

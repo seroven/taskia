@@ -332,12 +332,10 @@
   cursor: pointer;
 }
 
-/* Al pasar el cursor por el sistema todo se detiene, para poder tocar una luna con calma. */
-.system:hover .system-orbit,
-.system:hover .system-item,
-.system:focus-within .system-orbit,
-.system:focus-within .system-item {
-  animation-play-state: paused;
+/* La luna apuntada (y su nombre) queda por encima de los anillos de afuera, que se pintan después. */
+.system-orbit:hover,
+.system-orbit:focus-within {
+  z-index: 6;
 }
 
 .system-item-main:focus-visible {
@@ -693,17 +691,31 @@
   display: none;
 }
 
+/* Sin esto el nombre tomaría el ancho del recuadro de la luna (unos 40 px) y se partiría en cada letra. */
 .system.tier-packed .system-moon-label {
   position: absolute;
-  top: calc(100% - 4px);
+  left: 50%;
+  top: calc(100% + 2px);
   z-index: 5;
-  padding: 4px 8px;
+  width: max-content;
+  max-width: min(240px, 60cqw);
+  padding: 6px 12px;
   border: 1px solid var(--border);
   border-radius: var(--r-control);
   background: var(--surface);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--text) 14%, transparent);
+  translate: -50% 0;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
+}
+
+.system.tier-packed .system-moon-label b {
+  font-size: 16px;
+}
+
+.system.tier-packed .system-moon-label i {
+  font-size: 14px;
 }
 
 .system.tier-packed .system-item-main:hover .system-moon-label,
