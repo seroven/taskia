@@ -211,20 +211,14 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
     .leftJoin(XpAward, 'a', 'a.user_id = tm.user_id AND a.week_start = :weekStart', { weekStart })
     .select('t.id', 'id')
     .addSelect('t.name', 'name')
-    .addSelect('t.planet_style_id', 'planet_style_id')
-    .addSelect('t.planet_seed', 'planet_seed')
-    .addSelect('t.planet_params', 'planet_params')
-    .addSelect('t.planet_config', 'planet_config')
+    .addSelect('t.ship_config', 'ship_config')
     .addSelect('COUNT(DISTINCT tm.user_id)', 'member_count')
     .addSelect('COALESCE(AVG(u.level), 1)', 'avg_level')
     .addSelect('COALESCE(SUM(a.amount), 0)', 'xp_week')
     .where('t.is_active = TRUE')
     .groupBy('t.id')
     .addGroupBy('t.name')
-    .addGroupBy('t.planet_style_id')
-    .addGroupBy('t.planet_seed')
-    .addGroupBy('t.planet_params')
-    .addGroupBy('t.planet_config')
+    .addGroupBy('t.ship_config')
     .addSelect(`CASE WHEN t.id = ${mine} THEN 0 ELSE 1 END`, 'mine_sort')
     .orderBy('mine_sort', 'ASC')
     .addOrderBy('t.id', 'ASC')
@@ -233,10 +227,7 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
     .getRawMany<{
       id: number
       name: string
-      planet_style_id: string
-      planet_seed: number
-      planet_params: unknown
-      planet_config: unknown
+      ship_config: unknown
       member_count: string
       avg_level: string
       xp_week: string
@@ -261,11 +252,10 @@ export async function searchExplorers(userId: number, q: string) {
     .getRawMany<{ id: number; username: string; level: number; xp_total: number; troop_id: number | null }>()
 }
 
-export async function createTroopWithCaptain(name: string, userId: number) {
+export async function createTroopWithCaptain(name: string, userId: number, shipConfig: unknown) {
   return AppDataSource.transaction(async (manager) => {
     const troops = manager.getRepository(Troop)
-    const saved = await troops.save(troops.create({ name }))
-    await troops.update({ id: saved.id }, { planetSeed: saved.id % 2147483647 })
+    const saved = await troops.save(troops.create({ name, shipConfig }))
     const members = manager.getRepository(TroopMember)
     await members.save(members.create({ troopId: saved.id, userId, role: 'captain' }))
     return saved.id
@@ -474,54 +464,22 @@ export async function leaveTroop(troopId: number, userId: number, wasCaptain: bo
   })
 }
 
-export async function setPlanetStyle(troopId: number, styleId: string) {
+export async function setShipConfig(troopId: number, config: unknown) {
   await AppDataSource.getRepository(Troop)
     .createQueryBuilder()
     .update()
-    .set({
-      planetStyleId: styleId,
-      planetParams: () => 'NULL',
-      planetConfig: () => 'NULL',
-    })
-    .where('id = :id', { id: troopId })
-    .execute()
-}
-
-export async function setPlanetConfig(troopId: number, config: unknown | null) {
-  const update = AppDataSource.getRepository(Troop)
-    .createQueryBuilder()
-    .update()
-    .where('id = :id', { id: troopId })
-  if (config == null) {
-    await update.set({ planetConfig: () => 'NULL' }).execute()
-    return
-  }
-  await update
-    .set({ planetConfig: () => 'CAST(:config AS jsonb)' })
+    .set({ shipConfig: () => 'CAST(:config AS jsonb)' })
     .setParameter('config', JSON.stringify(config))
+    .where('id = :id', { id: troopId })
     .execute()
 }
 
-export async function listPlanetConfigs(exceptId: number) {
+/** Las naves de las demás tripulaciones, para no repetir el dibujo. */
+export async function listShipConfigs(exceptId: number) {
   return AppDataSource.getRepository(Troop)
     .createQueryBuilder('t')
-    .select('t.planet_config', 'planet_config')
-    .where('t.planet_config IS NOT NULL')
+    .select('t.ship_config', 'ship_config')
+    .where('t.is_active = TRUE')
     .andWhere('t.id <> :id', { id: exceptId })
-    .getRawMany<{ planet_config: unknown }>()
-}
-
-export async function setPlanetParams(troopId: number, params: unknown | null) {
-  const update = AppDataSource.getRepository(Troop)
-    .createQueryBuilder()
-    .update()
-    .where('id = :id', { id: troopId })
-  if (params == null) {
-    await update.set({ planetParams: () => 'NULL' }).execute()
-    return
-  }
-  await update
-    .set({ planetParams: () => 'CAST(:params AS jsonb)' })
-    .setParameter('params', JSON.stringify(params))
-    .execute()
+    .getRawMany<{ ship_config: unknown }>()
 }

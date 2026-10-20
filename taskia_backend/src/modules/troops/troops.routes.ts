@@ -19,8 +19,8 @@ router.post('/invites/:id/reject', troopController.rejectInvite)
 router.post('/copilot', troopController.setCopilot)
 router.delete('/members/:memberUserId', troopController.kickMember)
 router.post('/leave', troopController.leaveTroop)
-router.post('/planet/generate', troopController.generatePlanet)
-router.patch('/planet', troopController.updatePlanet)
+router.post('/ship/generate', troopController.generateShip)
+router.patch('/ship', troopController.updateShip)
 router.get('/:id', troopController.getTroop)
 
 export default router

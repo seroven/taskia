@@ -13,7 +13,7 @@ export type LlmUsageKind =
   | 'challenge_grade'
   | 'challenge_photo_grade'
   | 'parent_tutor'
-  | 'planet_generate'
+  | 'ship_generate'
   | 'daily_summary'
   | 'board_intent'
   | 'board_facts'

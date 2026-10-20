@@ -32,31 +32,13 @@ export function parseExplorerSearch(raw: unknown) {
   return parsed.data
 }
 
-export function parsePlanetPrompt(raw: unknown) {
+export function parseShipPrompt(raw: unknown) {
   const prompt = String(raw ?? '').normalize('NFC').replace(/\s+/g, ' ').trim()
   const parsed = z
     .string()
-    .min(3, 'Cuéntame el planeta en 3 a 200 caracteres')
-    .max(200, 'Cuéntame el planeta en 3 a 200 caracteres')
+    .min(3, 'Cuéntame la nave en 3 a 200 caracteres')
+    .max(200, 'Cuéntame la nave en 3 a 200 caracteres')
     .safeParse(prompt)
-  if (!parsed.success) throw new AppError('Cuéntame el planeta en 3 a 200 caracteres')
-  return parsed.data
-}
-
-const PLANET_STYLE_IDS = [
-  'rocky_blue',
-  'gas_teal',
-  'lava_amber',
-  'neon_violet',
-  'ice_cyan',
-  'forest_green',
-  'rose_dust',
-  'shadow_slate',
-] as const
-
-export function parsePlanetStyleId(raw: unknown) {
-  const styleId = String(raw ?? '').trim()
-  const parsed = z.enum(PLANET_STYLE_IDS, { message: 'Estilo de planeta no válido' }).safeParse(styleId)
-  if (!parsed.success) throw new AppError('Estilo de planeta no válido')
+  if (!parsed.success) throw new AppError('Cuéntame la nave en 3 a 200 caracteres')
   return parsed.data
 }

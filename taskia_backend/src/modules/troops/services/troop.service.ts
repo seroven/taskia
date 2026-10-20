@@ -1,14 +1,16 @@
+import { randomUUID } from 'node:crypto'
 import { civilDayFromInstant } from '../../../infrastructure/database/civil-date.js'
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
-import { PLANET_GENERATE_SYSTEM } from '../../../prompts/planet.js'
+import { SHIP_GENERATE_SYSTEM } from '../../../prompts/ship.js'
 import { PRODUCT_TZ, weekStartMonday } from '../../../services/xp.js'
 import { AppError, extractJson, toInstantISO } from '../../../utils/helpers.js'
-import { normalizePlanetParams } from '../lib/planet-params.js'
 import {
-  generateFromSeed,
-  planetFingerprint,
-  sanitizePlanetConfig,
-} from '../lib/planet-config.js'
+  DECALS,
+  generateShipFromSeed,
+  resolveTroopShip,
+  sanitizeShipConfig,
+  shipFingerprint,
+} from '../lib/ship-config.js'
 import {
   cancelPendingInvitesTo,
   countActiveMembers,
@@ -31,10 +33,8 @@ import {
   replaceCopilot,
   searchExplorers as searchExplorerRows,
   setInviteStatus,
-  setPlanetParams,
-  setPlanetStyle,
-  setPlanetConfig,
-  listPlanetConfigs,
+  setShipConfig,
+  listShipConfigs,
   troopWeekXp,
   universePage,
   weeklyRanks,
@@ -42,8 +42,7 @@ import {
 } from '../repositories/troop.repository.js'
 import {
   parseExplorerSearch,
-  parsePlanetPrompt,
-  parsePlanetStyleId,
+  parseShipPrompt,
   parseTroopName,
 } from '../schemas/troop.schema.js'
 
@@ -128,10 +127,7 @@ async function loadTroopDetail(troopId: number, viewerId: number) {
     level,
     xp_week: xpWeek,
     rank: ranks.get(Number(troop.id)) ?? null,
-    planet_style_id: String(troop.planetStyleId ?? 'rocky_blue'),
-    planet_seed: Number(troop.planetSeed ?? troop.id),
-    planet_params: troop.planetParams ?? null,
-    planet_config: troop.planetConfig ?? null,
+    ship_config: resolveTroopShip(troop.shipConfig, Number(troop.id)),
     created_at: toInstantISO(troop.createdAt) ?? '',
   }
 }
@@ -216,10 +212,7 @@ export async function getUniverse(req: TroopReq) {
         xp_week: Number(r.xp_week),
         rank: ranks.get(id) ?? null,
         is_mine: myTroopId != null && id === myTroopId,
-        planet_style_id: String(r.planet_style_id ?? 'rocky_blue'),
-        planet_seed: Number(r.planet_seed ?? id),
-        planet_params: r.planet_params ?? null,
-        planet_config: r.planet_config ?? null,
+        ship_config: resolveTroopShip(r.ship_config, id),
       }
     }),
   }
@@ -245,7 +238,8 @@ export async function createTroop(req: TroopReq) {
   if (await findActiveMembership(userId)) {
     throw new AppError('Ya estás en una tripulación. Sal primero para crear otra.')
   }
-  const troopId = await createTroopWithCaptain(name, userId)
+  // Cada tripulación nace con su propia nave; después el Capitán o el Copiloto la cambian.
+  const troopId = await createTroopWithCaptain(name, userId, generateShipFromSeed(`${name}:${randomUUID()}`))
   return loadTroopDetail(troopId, userId)
 }
 
@@ -444,89 +438,62 @@ export async function leaveTroop(req: TroopReq) {
   return { ok: true }
 }
 
-/** Capitán o Copiloto pide a la IA un planeta (vista previa, no guarda). */
-export async function generatePlanet(req: TroopReq) {
+/** Capitán o Copiloto pide a la IA una nave (vista previa, no guarda). */
+export async function generateShip(req: TroopReq) {
   const userId = req.user!.id
   const membership = await findActiveMembership(userId)
   const role = membership?.role as TroopRole | undefined
   if (!membership || (role !== 'captain' && role !== 'copilot')) {
-    throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
+    throw new AppError('Solo el Capitán o el Copiloto pueden personalizar la nave')
   }
-  const prompt = parsePlanetPrompt(req.body.prompt)
+  const prompt = parseShipPrompt(req.body.prompt)
   const troopId = Number(membership.troop_id)
   let note = ''
-  let preview = null as ReturnType<typeof sanitizePlanetConfig> | null
+  let preview = null as ReturnType<typeof sanitizeShipConfig> | null
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const raw = await callGemini({
-        system: PLANET_GENERATE_SYSTEM,
+        system: SHIP_GENERATE_SYSTEM,
         user: `Pedido del explorador: ${prompt}\n${note}`,
-        usage: { userId, kind: 'planet_generate' },
+        usage: { userId, kind: 'ship_generate' },
       })
-      preview = sanitizePlanetConfig(JSON.parse(extractJson(raw)), `${prompt}:${attempt}`)
+      preview = sanitizeShipConfig(JSON.parse(extractJson(raw)), `${prompt}:${attempt}`)
       break
     } catch (err) {
       note = `El intento anterior no era un JSON válido (${err instanceof Error ? err.message : 'error'}). Devuelve solo el JSON del esquema.`
     }
   }
-  if (!preview) preview = generateFromSeed(prompt)
+  if (!preview) preview = generateShipFromSeed(prompt)
 
   const taken = new Set(
-    (await listPlanetConfigs(troopId)).map((row) => {
+    (await listShipConfigs(troopId)).map((row) => {
       try {
-        return planetFingerprint(sanitizePlanetConfig(row.planet_config, 'otro'))
+        return shipFingerprint(sanitizeShipConfig(row.ship_config, 'otra'))
       } catch {
         return ''
       }
     }),
   )
-  if (taken.has(planetFingerprint(preview))) {
-    preview = sanitizePlanetConfig(
-      { ...preview, accessory: preview.accessory === 'leaf' ? 'crown' : 'leaf' },
-      preview.seed,
-    )
+  // Si otra tripulación ya tiene exactamente este dibujo, se cambia la marca del casco hasta que sea distinto.
+  for (let step = 1; step <= DECALS.length && taken.has(shipFingerprint(preview)); step++) {
+    preview = sanitizeShipConfig({ ...preview, decal: DECALS[(DECALS.indexOf(preview.decal) + 1) % DECALS.length] }, preview.seed)
   }
   return { preview, prompt }
 }
 
-/** Capitán o Copiloto cambia estilo de catálogo o aplica params IA. */
-export async function updatePlanet(req: TroopReq) {
+/** Capitán o Copiloto aplica una nave (la que armó en el editor o la que pidió a la IA). */
+export async function updateShip(req: TroopReq) {
   const userId = req.user!.id
   const membership = await findActiveMembership(userId)
   const role = membership?.role as TroopRole | undefined
   if (!membership || (role !== 'captain' && role !== 'copilot')) {
-    throw new AppError('Solo el Capitán o el Copiloto pueden personalizar el planeta')
+    throw new AppError('Solo el Capitán o el Copiloto pueden personalizar la nave')
   }
   const troopId = Number(membership.troop_id)
-  const hasStyle = req.body.planet_style_id !== undefined
-  const hasParams = req.body.planet_params !== undefined
-  const hasConfig = req.body.planet_config !== undefined
-
-  if (!hasStyle && !hasParams && !hasConfig) {
-    throw new AppError('Indica un estilo o parámetros de planeta')
+  if (req.body.ship_config === undefined || req.body.ship_config === null) {
+    throw new AppError('Indica la nave')
   }
-
-  if (hasStyle) {
-    const styleId = parsePlanetStyleId(req.body.planet_style_id)
-    await setPlanetStyle(troopId, styleId)
-  }
-
-  if (hasParams) {
-    if (req.body.planet_params === null) {
-      await setPlanetParams(troopId, null)
-    } else {
-      await setPlanetParams(troopId, normalizePlanetParams(req.body.planet_params))
-    }
-  }
-
-  if (hasConfig) {
-    if (req.body.planet_config === null) {
-      await setPlanetConfig(troopId, null)
-    } else {
-      await setPlanetConfig(troopId, sanitizePlanetConfig(req.body.planet_config, String(troopId)))
-    }
-  }
-
+  await setShipConfig(troopId, sanitizeShipConfig(req.body.ship_config, `troop-${troopId}`))
   return loadTroopDetail(troopId, userId)
 }
 

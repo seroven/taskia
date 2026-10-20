@@ -7,6 +7,7 @@ import {
   countInvitesSentToday,
   weeklyRanks,
 } from '../src/modules/troops/repositories/troop.repository.js'
+import { generateShipFromSeed } from '../src/modules/troops/lib/ship-config.js'
 import { getMe, getRanking, getUniverse, searchExplorers } from '../src/modules/troops/services/troop.service.js'
 import { PRODUCT_TZ, weekStartMonday } from '../src/services/xp.js'
 
@@ -33,7 +34,10 @@ async function main() {
   if (universe.troops[0]?.id !== member.troopId) throw new Error('Mi tropa no quedó primera')
   if (!me.troop || me.troop.id !== member.troopId) throw new Error('getMe no devolvió la tropa')
   if (!me.troop.members.length) throw new Error('La tropa no tiene miembros')
-  if (typeof me.troop.planet_style_id !== 'string') throw new Error('Falta el estilo del planeta')
+  if (typeof me.troop.ship_config?.hull !== 'string') throw new Error('Falta la nave de la tropa')
+  if (!universe.troops.every((troop) => typeof troop.ship_config?.hull === 'string')) {
+    throw new Error('El universo devolvió una tropa sin nave')
+  }
 
   const self = await AppDataSource.getRepository(User).findOneBy({ id: member.userId })
   if (!self || self.username.length < 2) throw new Error('El explorador no tiene nombre buscable')
@@ -53,31 +57,13 @@ async function main() {
   try {
     await AppDataSource.transaction(async (manager) => {
       const troops = manager.getRepository(Troop)
-      const saved = await troops.save(troops.create({ name: marker }))
+      const ship = generateShipFromSeed(marker)
+      const saved = await troops.save(troops.create({ name: marker, shipConfig: ship }))
       createdId = Number(saved.id)
-      const seed = createdId % 2147483647
-      await troops.update({ id: createdId }, { planetSeed: seed })
-      await troops
-        .createQueryBuilder()
-        .update()
-        .set({ planetParams: () => 'CAST(:params AS jsonb)' })
-        .where('id = :id', { id: createdId })
-        .setParameter(
-          'params',
-          JSON.stringify({
-            color: '#112233',
-            emissive: '#000000',
-            roughness: 0.4,
-            metalness: 0.2,
-            atmosphere: null,
-            label: 'T6',
-          }),
-        )
-        .execute()
       const again = await troops.findOneBy({ id: createdId })
-      const params = again?.planetParams as { label?: string } | null
-      if (!again || Number(again.planetSeed) !== seed) throw new Error('La semilla del planeta no se guardó')
-      if (!params || params.label !== 'T6') throw new Error('planet_params no volvió como objeto')
+      const stored = again?.shipConfig as { seed?: string; hull?: string } | null
+      if (!stored || stored.seed !== ship.seed) throw new Error('La semilla de la nave no se guardó')
+      if (stored.hull !== ship.hull) throw new Error('ship_config no volvió como objeto')
 
       const free = await manager
         .getRepository(User)

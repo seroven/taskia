@@ -208,6 +208,7 @@ async function tablesInPublic(client: pg.Client) {
  */
 async function baselineAlreadyMaterialized(client: pg.Client) {
   if (await hasColumn(client, 'troops', 'planet_config')) return true
+  if (await hasColumn(client, 'troops', 'ship_config')) return true
 
   const legacy = await client.query(
     `SELECT id FROM ${migrationsTable} WHERE id = ANY($1::text[])`,
@@ -217,7 +218,7 @@ async function baselineAlreadyMaterialized(client: pg.Client) {
 
   if (await hasTable(client, 'users')) {
     throw new Error(
-      'La base tiene migraciones anteriores, pero no el esquema actual (falta troops.planet_config). No recreo las tablas. En development, npm run db:reset solo si se pueden perder los datos.',
+      'La base tiene migraciones anteriores, pero no el esquema actual (falta troops.ship_config). No recreo las tablas. En development, npm run db:reset solo si se pueden perder los datos.',
     )
   }
   return false

@@ -53,12 +53,12 @@ export const leaveTroop = asyncHandler(async (req, res) => {
   res.json(await troopService.leaveTroop(req))
 })
 
-export const generatePlanet = asyncHandler(async (req, res) => {
-  res.json(await troopService.generatePlanet(req))
+export const generateShip = asyncHandler(async (req, res) => {
+  res.json(await troopService.generateShip(req))
 })
 
-export const updatePlanet = asyncHandler(async (req, res) => {
-  res.json(await troopService.updatePlanet(req))
+export const updateShip = asyncHandler(async (req, res) => {
+  res.json(await troopService.updateShip(req))
 })
 
 export const getTroop = asyncHandler(async (req, res) => {

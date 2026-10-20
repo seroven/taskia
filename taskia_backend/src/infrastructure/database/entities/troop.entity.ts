@@ -11,17 +11,9 @@ export class Troop {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean
 
-  @Column({ type: 'varchar', length: 40, default: 'rocky_blue' })
-  planetStyleId!: string
-
-  @Column({ type: 'int', default: 0 })
-  planetSeed!: number
-
-  @Column({ type: 'jsonb', nullable: true })
-  planetParams!: unknown | null
-
-  @Column({ type: 'jsonb', nullable: true })
-  planetConfig!: unknown | null
+  /** La nave de la tripulación: ranuras de piezas y colores (ver modules/troops/lib/ship-config.ts). */
+  @Column({ type: 'jsonb' })
+  shipConfig!: unknown
 
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   createdAt!: Date
