@@ -18,10 +18,10 @@
     "semantic_hash": "dc1f6c05b1fb98f04a7302619d4c2648"
   },
   "taskia_backend/db/migrate.ts": {
-    "mtime": 1791478495.2726438,
-    "seen": 1792358606.954148,
-    "ast_hash": "ca4faf9e13ccc4842f7b6159e0518181",
-    "semantic_hash": "ca4faf9e13ccc4842f7b6159e0518181"
+    "mtime": 1792531134.5787947,
+    "seen": 1792531157.7909024,
+    "ast_hash": "a639b79632d3ad247a624f45b8cb18e5",
+    "semantic_hash": ""
   },
   "taskia_backend/db/migrations/001_baseline.ts": {
     "mtime": 1791478495.2736435,
@@ -120,10 +120,10 @@
     "semantic_hash": "5fee3e071e200a7a9ec4609e626f52e1"
   },
   "taskia_backend/scripts/t6-check.ts": {
-    "mtime": 1791153493.8756478,
-    "seen": 1792358606.954148,
-    "ast_hash": "545b04158c6c1923f83dd6871fe222a9",
-    "semantic_hash": "545b04158c6c1923f83dd6871fe222a9"
+    "mtime": 1792531134.5803564,
+    "seen": 1792531157.7909024,
+    "ast_hash": "f717ddff433c25b7b2e9ccb9c03ed273",
+    "semantic_hash": ""
   },
   "taskia_backend/scripts/t7-check.ts": {
     "mtime": 1791153493.8756478,
@@ -312,10 +312,10 @@
     "semantic_hash": "f26b8429090f1527d4422ee90c610175"
   },
   "taskia_backend/src/infrastructure/database/entities/troop.entity.ts": {
-    "mtime": 1791153493.8952138,
-    "seen": 1792358606.954148,
-    "ast_hash": "dd7d75c0f931be23e99b2e45e4327825",
-    "semantic_hash": "dd7d75c0f931be23e99b2e45e4327825"
+    "mtime": 1792531134.5839655,
+    "seen": 1792531157.7909024,
+    "ast_hash": "2f84fa2396aced593de2fd508c216c73",
+    "semantic_hash": ""
   },
   "taskia_backend/src/infrastructure/database/entities/user-study-memory.entity.ts": {
     "mtime": 1791153493.8952138,
@@ -348,10 +348,10 @@
     "semantic_hash": "b8cf468ab63323f7015df6e28b801d04"
   },
   "taskia_backend/src/infrastructure/gemini/gemini.client.ts": {
-    "mtime": 1791478495.2869594,
-    "seen": 1792358606.954148,
-    "ast_hash": "ec5cc536826fd7ecd1d23aa11b746417",
-    "semantic_hash": "ec5cc536826fd7ecd1d23aa11b746417"
+    "mtime": 1792531134.5849688,
+    "seen": 1792531157.7909024,
+    "ast_hash": "47647b6707c81e90e405baeb5fc129f3",
+    "semantic_hash": ""
   },
   "taskia_backend/src/infrastructure/storage/local-file-storage.ts": {
     "mtime": 1791153493.90022,
@@ -588,46 +588,34 @@
     "semantic_hash": "4c3bae02ee63c025a2b8bfada8d7a98e"
   },
   "taskia_backend/src/modules/troops/controllers/troop.controller.ts": {
-    "mtime": 1791153493.9372458,
-    "seen": 1792358606.954148,
-    "ast_hash": "301d275d32ed803a6c63cd286ad45b72",
-    "semantic_hash": "301d275d32ed803a6c63cd286ad45b72"
-  },
-  "taskia_backend/src/modules/troops/lib/planet-config.ts": {
-    "mtime": 1791153493.9392471,
-    "seen": 1792358606.954148,
-    "ast_hash": "e312edd699be451af21a76cac674b9fd",
-    "semantic_hash": "e312edd699be451af21a76cac674b9fd"
-  },
-  "taskia_backend/src/modules/troops/lib/planet-params.ts": {
-    "mtime": 1791153493.9402485,
-    "seen": 1792358606.954148,
-    "ast_hash": "f06014d28b57be257f62823c3f66eaf0",
-    "semantic_hash": "f06014d28b57be257f62823c3f66eaf0"
+    "mtime": 1792531134.5859969,
+    "seen": 1792531157.7909024,
+    "ast_hash": "2f94870f38de1159111ecc35308865d7",
+    "semantic_hash": ""
   },
   "taskia_backend/src/modules/troops/repositories/troop.repository.ts": {
-    "mtime": 1791153493.9402485,
-    "seen": 1792358606.954148,
-    "ast_hash": "1da3cd89309ac0821fe3285fe172249c",
-    "semantic_hash": "1da3cd89309ac0821fe3285fe172249c"
+    "mtime": 1792531134.5880907,
+    "seen": 1792531157.7909024,
+    "ast_hash": "701d7e8487a1d06b077faa317c022216",
+    "semantic_hash": ""
   },
   "taskia_backend/src/modules/troops/schemas/troop.schema.ts": {
-    "mtime": 1791153493.9412467,
-    "seen": 1792358606.954148,
-    "ast_hash": "b352bc3565a527a6610a468f400b92fa",
-    "semantic_hash": "b352bc3565a527a6610a468f400b92fa"
+    "mtime": 1792531134.5890906,
+    "seen": 1792531157.7909024,
+    "ast_hash": "85200bf6fc5c3dd9164c782451da73eb",
+    "semantic_hash": ""
   },
   "taskia_backend/src/modules/troops/services/troop.service.ts": {
-    "mtime": 1791153493.943246,
-    "seen": 1792358606.954148,
-    "ast_hash": "54ee4e77f1ef2bb0ee918d4850c70078",
-    "semantic_hash": "54ee4e77f1ef2bb0ee918d4850c70078"
+    "mtime": 1792531134.591138,
+    "seen": 1792531157.7909024,
+    "ast_hash": "248817d82f6c4c1708c5e02bc433a872",
+    "semantic_hash": ""
   },
   "taskia_backend/src/modules/troops/troops.routes.ts": {
-    "mtime": 1791153493.943246,
-    "seen": 1792358606.954148,
-    "ast_hash": "5e2f8528ea5dc9973be45d3eb8627543",
-    "semantic_hash": "5e2f8528ea5dc9973be45d3eb8627543"
+    "mtime": 1792531134.5921443,
+    "seen": 1792531157.7909024,
+    "ast_hash": "3272ffc39c170394f9975a44e69e86bd",
+    "semantic_hash": ""
   },
   "taskia_backend/src/modules/worlds/controllers/world.controller.ts": {
     "mtime": 1791489406.5036497,
@@ -706,12 +694,6 @@
     "seen": 1792358606.954148,
     "ast_hash": "ef44154e2fb15bf1f0dea59debe69bec",
     "semantic_hash": "ef44154e2fb15bf1f0dea59debe69bec"
-  },
-  "taskia_backend/src/prompts/planet.ts": {
-    "mtime": 1791153493.9552522,
-    "seen": 1792358606.954148,
-    "ast_hash": "129022432f237e9fd154895fb8116363",
-    "semantic_hash": "129022432f237e9fd154895fb8116363"
   },
   "taskia_backend/src/prompts/project-tutor.ts": {
     "mtime": 1791505066.2258759,
@@ -822,10 +804,10 @@
     "semantic_hash": "959ef2adeb679634b481dc088ade6715"
   },
   "taskia_frontend/src/api.ts": {
-    "mtime": 1791489406.5086837,
-    "seen": 1792358606.954148,
-    "ast_hash": "36a19f909f4a50ad6255201ce717e59a",
-    "semantic_hash": "36a19f909f4a50ad6255201ce717e59a"
+    "mtime": 1792531134.5946493,
+    "seen": 1792531157.7909024,
+    "ast_hash": "9d926e671f2b79bbd0a85ee0f88ba8a1",
+    "semantic_hash": ""
   },
   "taskia_frontend/src/auth.tsx": {
     "mtime": 1792528710.3162036,
@@ -917,18 +899,6 @@
     "ast_hash": "3f342dc4cbe6dd31f577f2d2afddf5d5",
     "semantic_hash": "3f342dc4cbe6dd31f577f2d2afddf5d5"
   },
-  "taskia_frontend/src/components/planet/PlanetLab.tsx": {
-    "mtime": 1791153493.9777677,
-    "seen": 1792358606.954148,
-    "ast_hash": "d725970eb77768e5f343cf505c482d05",
-    "semantic_hash": "d725970eb77768e5f343cf505c482d05"
-  },
-  "taskia_frontend/src/components/planet/PlanetRenderer.tsx": {
-    "mtime": 1791153493.9777677,
-    "seen": 1792358606.954148,
-    "ast_hash": "a1e3a36f787762537cbd2893c4b26456",
-    "semantic_hash": "a1e3a36f787762537cbd2893c4b26456"
-  },
   "taskia_frontend/src/components/study/StudyBubble.tsx": {
     "mtime": 1792417579.6355283,
     "seen": 1792525934.5226955,
@@ -960,16 +930,16 @@
     "semantic_hash": "db8b06f08525bc3ef6893ea8589c0758"
   },
   "taskia_frontend/src/components/troops/TroopSpaceCard.tsx": {
-    "mtime": 1791153493.9827676,
-    "seen": 1792358606.954148,
-    "ast_hash": "034d6a2864bce61a796af923fe4085d6",
-    "semantic_hash": "034d6a2864bce61a796af923fe4085d6"
+    "mtime": 1792531134.5976765,
+    "seen": 1792531157.7909024,
+    "ast_hash": "e384dee79ba85d9ecdbe8be29ff1cfc9",
+    "semantic_hash": ""
   },
   "taskia_frontend/src/components/troops/space/GalaxyUniverse.tsx": {
-    "mtime": 1791153493.983769,
-    "seen": 1792358606.954148,
-    "ast_hash": "a3bf9ffaa2f73647085112022bf95e92",
-    "semantic_hash": "a3bf9ffaa2f73647085112022bf95e92"
+    "mtime": 1792531134.6003098,
+    "seen": 1792531157.7909024,
+    "ast_hash": "4ca511c2b8b62ff9b1eccf4e3655c67e",
+    "semantic_hash": ""
   },
   "taskia_frontend/src/components/ui/Button.tsx": {
     "mtime": 1792417579.6395464,
@@ -1151,30 +1121,6 @@
     "ast_hash": "80eef870d1ff5aef113505b337453573",
     "semantic_hash": "80eef870d1ff5aef113505b337453573"
   },
-  "taskia_frontend/src/lib/planetLayout.ts": {
-    "mtime": 1791153493.997286,
-    "seen": 1792358606.954148,
-    "ast_hash": "14284da5161df230df1e00bc4d8441ae",
-    "semantic_hash": "14284da5161df230df1e00bc4d8441ae"
-  },
-  "taskia_frontend/src/lib/planetStyles.ts": {
-    "mtime": 1791153493.9982858,
-    "seen": 1792358606.954148,
-    "ast_hash": "7833a363033e47037d916d3862234014",
-    "semantic_hash": "7833a363033e47037d916d3862234014"
-  },
-  "taskia_frontend/src/lib/planet/engine.ts": {
-    "mtime": 1791153493.9962845,
-    "seen": 1792358606.954148,
-    "ast_hash": "e312edd699be451af21a76cac674b9fd",
-    "semantic_hash": "e312edd699be451af21a76cac674b9fd"
-  },
-  "taskia_frontend/src/lib/planet/planet.test.ts": {
-    "mtime": 1791153493.997286,
-    "seen": 1792358606.954148,
-    "ast_hash": "78bc7cceed6c2e7fd0bec88965bb900c",
-    "semantic_hash": "78bc7cceed6c2e7fd0bec88965bb900c"
-  },
   "taskia_frontend/src/lib/sessionPlace.test.ts": {
     "mtime": 1791478495.3235457,
     "seen": 1792358606.954148,
@@ -1200,10 +1146,10 @@
     "semantic_hash": "bba6deb2bfb39c35cdcf8c5c3b626bfd"
   },
   "taskia_frontend/src/lib/troopsTypes.ts": {
-    "mtime": 1791153494.0002844,
-    "seen": 1792358606.954148,
-    "ast_hash": "7e658ec29e6abea561b7e72c25981b61",
-    "semantic_hash": "7e658ec29e6abea561b7e72c25981b61"
+    "mtime": 1792531134.6023104,
+    "seen": 1792531157.7919016,
+    "ast_hash": "5ba2209682dcbeb51e5d27b4b8c4cc84",
+    "semantic_hash": ""
   },
   "taskia_frontend/src/lib/voiceRecorder.ts": {
     "mtime": 1791478495.3265471,
@@ -1224,9 +1170,9 @@
     "semantic_hash": "fa85e74a96bafa1601ea7d97684d3691"
   },
   "taskia_frontend/src/main.tsx": {
-    "mtime": 1792528710.389071,
-    "seen": 1792528886.4094048,
-    "ast_hash": "be013eadaeef52450cb1613e39236338",
+    "mtime": 1792531134.6033092,
+    "seen": 1792531157.7919016,
+    "ast_hash": "e4ffe4fbfdf2038f472e142e568331e5",
     "semantic_hash": ""
   },
   "taskia_frontend/src/pages/AdminPage.tsx": {
@@ -1266,9 +1212,9 @@
     "semantic_hash": ""
   },
   "taskia_frontend/src/pages/TroopsPage.tsx": {
-    "mtime": 1792528681.6142986,
-    "seen": 1792528886.4094048,
-    "ast_hash": "09f5cc06bab34970366b365b082eec5a",
+    "mtime": 1792531134.6068487,
+    "seen": 1792531157.7919016,
+    "ast_hash": "c447bbd2b0ee8b3d25ce97fa9a5785f4",
     "semantic_hash": ""
   },
   "taskia_frontend/src/pages/admin/AdminAccountsPage.tsx": {
@@ -1581,6 +1527,78 @@
     "mtime": 1792528379.4426408,
     "seen": 1792528886.4094048,
     "ast_hash": "41f50e8795260ba3bb55df821e448880",
+    "semantic_hash": ""
+  },
+  "taskia_backend/db/migrations/005_troop_ships.ts": {
+    "mtime": 1792530109.9682539,
+    "seen": 1792531157.7909024,
+    "ast_hash": "835374df286fff6bb07640bbccdfd780",
+    "semantic_hash": ""
+  },
+  "taskia_backend/src/modules/troops/lib/ship-config.test.ts": {
+    "mtime": 1792530856.9361744,
+    "seen": 1792531157.7909024,
+    "ast_hash": "71aaefc3c39054ccd75a8c8f8fb38114",
+    "semantic_hash": ""
+  },
+  "taskia_backend/src/modules/troops/lib/ship-config.ts": {
+    "mtime": 1792530866.2560287,
+    "seen": 1792531157.7909024,
+    "ast_hash": "99118c678bc433351eaa2060e67eec2c",
+    "semantic_hash": ""
+  },
+  "taskia_backend/src/prompts/ship.ts": {
+    "mtime": 1792530815.962753,
+    "seen": 1792531157.7909024,
+    "ast_hash": "c4c1c4ff1cb32c563a38c1e95474207e",
+    "semantic_hash": ""
+  },
+  "taskia_frontend/src/components/ship/ShipRenderer.tsx": {
+    "mtime": 1792530684.1272774,
+    "seen": 1792531157.7909024,
+    "ast_hash": "8302d80f8a5b46fdc6848634c8a4b9ac",
+    "semantic_hash": ""
+  },
+  "taskia_frontend/src/components/troops/ShipEditorModal.tsx": {
+    "mtime": 1792530684.1288266,
+    "seen": 1792531157.7909024,
+    "ast_hash": "0b7267e711bb23f6fb887586cd787c34",
+    "semantic_hash": ""
+  },
+  "taskia_frontend/src/lib/shipLayout.ts": {
+    "mtime": 1792530273.188703,
+    "seen": 1792531157.7919016,
+    "ast_hash": "fec356159151d518897c5f77c60caee2",
+    "semantic_hash": ""
+  },
+  "taskia_frontend/src/lib/ship/color.ts": {
+    "mtime": 1792529817.0326068,
+    "seen": 1792531157.7919016,
+    "ast_hash": "b9e2637bd117b724b152b355fc9c17e2",
+    "semantic_hash": ""
+  },
+  "taskia_frontend/src/lib/ship/geometry.ts": {
+    "mtime": 1792529963.6022682,
+    "seen": 1792531157.7919016,
+    "ast_hash": "38d429a236ab6505b3ea63044252f113",
+    "semantic_hash": ""
+  },
+  "taskia_frontend/src/lib/ship/ship.test.ts": {
+    "mtime": 1792530857.0223796,
+    "seen": 1792531157.7919016,
+    "ast_hash": "da8fa304c00b309241e9f5d1aa9a1436",
+    "semantic_hash": ""
+  },
+  "taskia_frontend/src/lib/ship/types.ts": {
+    "mtime": 1792529816.5880463,
+    "seen": 1792531157.7919016,
+    "ast_hash": "21957b552c511a30129295061d6245db",
+    "semantic_hash": ""
+  },
+  "taskia_frontend/src/pages/ShipLab.tsx": {
+    "mtime": 1792529886.4414048,
+    "seen": 1792531157.7919016,
+    "ast_hash": "1925ef30f50cd68398748011d6dff9a7",
     "semantic_hash": ""
   }
 }
