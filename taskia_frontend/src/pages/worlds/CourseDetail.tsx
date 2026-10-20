@@ -110,7 +110,7 @@ export function CourseDetail({
                 Traer
               </button>
             </div>
-            {loading && <AppLoader message="Cargando misiones…" variant="section" />}
+            {loading && <AppLoader context="worlds" message="Cargando misiones…" variant="section" />}
             {!loading ? (
               <CourseSystem
                 worldId={worldId}

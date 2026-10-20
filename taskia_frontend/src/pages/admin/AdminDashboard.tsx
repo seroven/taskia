@@ -126,7 +126,7 @@ export function AdminDashboard({ onOpenStudent, onOpenAccounts }: Props) {
       </div>
 
       {error && <p className="form-error banner">{error}</p>}
-      {loading && <AppLoader message="Cargando dashboard…" />}
+      {loading && <AppLoader context="admin" message="Cargando dashboard…" />}
 
       {data && !loading && (
         <>

@@ -357,7 +357,7 @@ export function ChallengePlayPage({ challengeId, onBack }: Props) {
   if (loading) {
     return (
       <div className="worlds-shell">
-        <AppLoader message="Cargando desafío…" />
+        <AppLoader context="challenge" message="Cargando desafío…" />
       </div>
     )
   }

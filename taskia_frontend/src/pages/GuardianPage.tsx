@@ -74,7 +74,7 @@ export function GuardianPage() {
 
       <div className={`admin-body${selected ? ' admin-body--guardian' : ''}`}>
         {loading ? (
-          <AppLoader message="Cargando exploradores…" />
+          <AppLoader context="guardian" message="Cargando exploradores…" />
         ) : error ? (
           <p className="form-error banner">{error}</p>
         ) : explorers.length === 0 ? (
@@ -198,7 +198,7 @@ function GuardianChat({
         </div>
         <div className="study-chat-messages" ref={listRef}>
           {loading ? (
-            <AppLoader message="Cargando chat…" variant="section" />
+            <AppLoader context="guardian" message="Cargando chat…" variant="section" />
           ) : (
             <>
               {messages.length === 0 && !sending && (
@@ -276,7 +276,7 @@ function GuardianProgress({ studentId }: { studentId: number }) {
   }, [studentId])
 
   if (error) return <p className="form-error">{error}</p>
-  if (!data) return <AppLoader message="Cargando progreso…" variant="section" />
+  if (!data) return <AppLoader context="guardian" message="Cargando progreso…" variant="section" />
 
   const xpPct = Math.min(
     100,
@@ -455,7 +455,7 @@ function GuardianPrefs({ onSaved }: { onSaved: () => void }) {
   }, [])
 
   if (error) return <p className="form-error">{error}</p>
-  if (!prefs) return <AppLoader message="Cargando avisos…" variant="section" />
+  if (!prefs) return <AppLoader context="guardian" message="Cargando avisos…" variant="section" />
 
   async function save(next: ParentNotifyPrefs) {
     setSaving(true)

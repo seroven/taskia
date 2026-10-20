@@ -194,7 +194,7 @@ export function AdminWorldsExplorer({
         </button>
       </div>
       {error && <p className="form-error">{error}</p>}
-      {loading && <AppLoader message="Cargando mundos…" variant="section" />}
+      {loading && <AppLoader context="admin" message="Cargando mundos…" variant="section" />}
       {!loading && data && data.worlds.length === 0 && (
         <EmptyState
           compact

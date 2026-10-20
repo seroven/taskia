@@ -69,7 +69,7 @@ export function AdminAccountsPage({ onBack, onOpenExplorer }: Props) {
   }, [])
 
   if (loading) {
-    return <AppLoader message="Cargando cuentas…" />
+    return <AppLoader context="admin" message="Cargando cuentas…" />
   }
   if (error) {
     return <p className="form-error banner">{error}</p>
@@ -401,7 +401,7 @@ function EditGuardianModal({
     >
       {loading || !detail ? (
         <div className="modal-panel-body">
-          <AppLoader message="Cargando…" variant="section" />
+          <AppLoader context="admin" message="Cargando…" variant="section" />
         </div>
       ) : (
         <form onSubmit={(e) => void onSubmit(e)}>

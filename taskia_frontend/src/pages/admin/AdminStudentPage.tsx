@@ -119,7 +119,7 @@ export function AdminStudentPage({
   }
 
   if (loading) {
-    return <AppLoader message="Cargando ficha…" />
+    return <AppLoader context="admin" message="Cargando ficha…" />
   }
 
   if (error || !overview) {
@@ -504,7 +504,7 @@ function TasksTab({
       </div>
       {error && <p className="form-error">{error}</p>}
       {loading ? (
-        <AppLoader message="Cargando tareas…" variant="section" />
+        <AppLoader context="admin" message="Cargando tareas…" variant="section" />
       ) : rows.length === 0 ? (
         <EmptyState
           compact
@@ -590,7 +590,7 @@ function TaskStudyBlock({ studentId }: { studentId: number }) {
       </div>
       {error && <p className="form-error">{error}</p>}
       {loading ? (
-        <AppLoader message="Cargando estudio…" variant="section" />
+        <AppLoader context="admin" message="Cargando estudio…" variant="section" />
       ) : rows.length === 0 ? (
         <EmptyState
           compact
@@ -958,7 +958,7 @@ function ImportCoursesBlock({
             onChange={setSourceId}
           />
           {loadingCourses && (
-            <AppLoader message="Cargando cursos…" variant="section" />
+            <AppLoader context="admin" message="Cargando cursos…" variant="section" />
           )}
           {!loadingCourses && sourceId && sourceCourses.length === 0 && (
             <EmptyState
@@ -1055,7 +1055,7 @@ function ExplorerGuardiansReadonly({ studentId }: { studentId: number }) {
         Para vincular o desvincular, usa Guardianes y Exploradores en el panel.
       </p>
       {loading ? (
-        <AppLoader message="Cargando…" variant="section" />
+        <AppLoader context="admin" message="Cargando…" variant="section" />
       ) : guardians.length === 0 ? (
         <EmptyState
           compact

@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { CaretLeft, CaretRight, Plus, Tent } from '@phosphor-icons/react'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { BoardLoader } from '../components/BoardLoader'
+import { AppLoader } from '../components/AppLoader'
 import { CampTaskRow } from '../components/CampTaskRow'
 import { EmptyState } from '../components/EmptyState'
 import { CampEmptyDay, CampEmptyProjects } from '../components/scenes/CampEmptyScenes'
@@ -314,7 +314,7 @@ export function BoardPage({
           </div>
 
           {!hasLoadedOnce && loading ? (
-            <BoardLoader />
+            <AppLoader context="camp" message="Buscando tareas…" variant="section" />
           ) : (
             <div
               className="camp-swap-host"

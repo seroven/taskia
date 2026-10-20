@@ -190,7 +190,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
       {error && <p className="form-error banner">{error}</p>}
 
       {loading ? (
-        <AppLoader message="Entrando al universo…" variant="section" />
+        <AppLoader context="troops" message="Entrando al universo…" variant="section" />
       ) : (
         <div className="space-stage">
           <GalaxyUniverse

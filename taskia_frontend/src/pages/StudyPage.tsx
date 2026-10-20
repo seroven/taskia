@@ -170,7 +170,7 @@ export function StudyPage({ taskId, onBack }: Props) {
   if (loading) {
     return (
       <div className="study-page">
-        <AppLoader message="Preparando tu estudio…" />
+        <AppLoader context="study" message="Preparando tu estudio…" />
       </div>
     )
   }

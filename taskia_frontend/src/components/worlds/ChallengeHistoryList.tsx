@@ -136,7 +136,7 @@ export function ChallengeHistoryList({
         {action}
       </div>
       {loading ? (
-        <AppLoader message="Cargando desafíos…" variant="section" />
+        <AppLoader context="worlds" message="Cargando desafíos…" variant="section" />
       ) : items.length === 0 ? (
         <EmptyState
           compact

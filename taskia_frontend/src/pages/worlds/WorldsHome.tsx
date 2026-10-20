@@ -71,7 +71,7 @@ export function WorldsHome({ onBack, onOpenWorld }: Props) {
 
       <div className="worlds-content worlds-stage">
         {loading ? (
-          <AppLoader message="Cargando mundos…" variant="section" />
+          <AppLoader context="worlds" message="Cargando mundos…" variant="section" />
         ) : (
           <WorldsMap
             worlds={worlds}

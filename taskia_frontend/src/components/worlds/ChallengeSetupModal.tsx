@@ -128,7 +128,7 @@ export function ChallengeSetupModal({
     >
             <div className="modal-panel-body">
               {loading && (
-                <AppLoader message="Cargando niveles…" variant="section" />
+                <AppLoader context="challenge" message="Cargando niveles…" variant="section" />
               )}
               <div className="worlds-diff-grid" role="group" aria-label="Nivel del desafío">
                 {options.map((opt) => (

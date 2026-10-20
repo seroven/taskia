@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './styles/index.css'
 import App from './App.tsx'
 import { AccentProvider } from './accent'
+import { AuthProvider } from './auth'
 import { ThemeProvider } from './theme'
 
 /** Banco de pruebas visual: solo en dev, con `?lab=scenes`. */
@@ -21,9 +22,23 @@ const HubLab = import.meta.env.DEV
   ? lazy(() => import('./pages/HubLab').then((m) => ({ default: m.HubLab })))
   : null
 
+const LoaderLab = import.meta.env.DEV
+  ? lazy(() => import('./pages/LoaderLab').then((m) => ({ default: m.LoaderLab })))
+  : null
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {MapLab && lab === 'map' ? (
+    {LoaderLab && lab === 'loader' ? (
+      <ThemeProvider>
+        <AccentProvider>
+          <AuthProvider>
+            <Suspense fallback={null}>
+              <LoaderLab />
+            </Suspense>
+          </AuthProvider>
+        </AccentProvider>
+      </ThemeProvider>
+    ) : MapLab && lab === 'map' ? (
       <ThemeProvider>
         <AccentProvider>
           <Suspense fallback={null}>

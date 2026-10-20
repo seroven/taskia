@@ -128,7 +128,7 @@ export function WorldDetail({
       <div className="worlds-content worlds-stage">
         <div className="worlds-two-col worlds-two-col--system">
           <section className="worlds-panel worlds-panel--system">
-            {loading && <AppLoader message="Cargando cursos…" variant="section" />}
+            {loading && <AppLoader context="worlds" message="Cargando cursos…" variant="section" />}
             {!loading && allCourses.length === 0 && (
               <WorldsEmptyState
                 compact

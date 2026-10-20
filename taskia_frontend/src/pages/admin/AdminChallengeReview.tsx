@@ -37,7 +37,7 @@ export function AdminChallengeReview({ studentId, challengeId, onBack }: Props) 
   }, [studentId, challengeId])
 
   if (loading) {
-    return <AppLoader message="Cargando desafío…" />
+    return <AppLoader context="admin" message="Cargando desafío…" />
   }
 
   if (error || !detail) {
