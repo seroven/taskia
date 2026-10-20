@@ -152,6 +152,8 @@ export function WorldDetail({
           <ChallengeHistoryList
             className="worlds-panel worlds-challenges-panel"
             items={challenges}
+            groupBy="course"
+            worldId={worldId}
             loading={loading}
             onOpen={onOpenChallenge}
             title="Desafíos"

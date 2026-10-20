@@ -279,6 +279,8 @@
 .system-orbit {
   position: absolute;
   inset: 0;
+  /* Cada anillo ocupa todo el sistema: sin esto el de afuera tapa las lunas del de adentro. */
+  pointer-events: none;
   animation: system-spin var(--dur, 150s) linear infinite;
   animation-direction: var(--dir, normal);
 }
@@ -312,6 +314,7 @@
   z-index: 2;
   width: max-content;
   translate: -50% -50%;
+  pointer-events: auto;
   /* Contra-giro: la luna sigue al anillo pero su nombre se queda derecho. */
   animation: system-spin var(--dur, 150s) linear infinite;
   animation-direction: var(--dir-b, reverse);

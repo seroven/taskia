@@ -129,6 +129,9 @@ export function CourseDetail({
           <ChallengeHistoryList
             className="worlds-panel worlds-challenges-panel"
             items={challenges}
+            groupBy="mission"
+            worldId={worldId}
+            courseId={courseId}
             loading={loading}
             onOpen={onOpenChallenge}
             title="Desafíos"
