@@ -13,12 +13,9 @@ import { TextField } from '../components/ui/Field'
 import { ModalShell } from '../components/ui/ModalShell'
 import { WorldsNav } from '../components/worlds/WorldsNav'
 import { GalaxyUniverse } from '../components/troops/space/GalaxyUniverse'
-import { PlanetLab } from '../components/planet/PlanetLab'
+import { ShipEditorModal } from '../components/troops/ShipEditorModal'
 import { TroopSpaceCard } from '../components/troops/TroopSpaceCard'
 import { errorMessage } from '../lib/errors'
-import { PLANET_STYLES } from '../lib/planetStyles'
-import { generateFromSeed, type PlanetConfig } from '../lib/planet/engine'
-import { PlanetRenderer } from '../components/planet/PlanetRenderer'
 import type {
   TroopDetail,
   TroopInvite,
@@ -44,11 +41,10 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
   const [openId, setOpenId] = useState<number | null>(null)
   const [openDetail, setOpenDetail] = useState<TroopDetail | null>(null)
   const [focusToken, setFocusToken] = useState(0)
-  const [labOpen, setLabOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
-  const [planetOpen, setPlanetOpen] = useState(false)
+  const [shipOpen, setShipOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [rankingOpen, setRankingOpen] = useState(false)
   const [ranking, setRanking] = useState<TroopRankingRow[]>([])
@@ -202,6 +198,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
               setOpenId(null)
               setOpenDetail(null)
             }}
+            openNames={openDetail?.id === openId ? openDetail?.members.map((m) => m.username) : undefined}
             onRequestMore={requestMoreUniverse}
             focusToken={focusToken}
           />
@@ -245,12 +242,6 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
               <Trophy size={22} weight="duotone" />
             </button>
 
-            {import.meta.env.DEV && (
-              <button type="button" className="ghost space-lab-fab" onClick={() => setLabOpen(true)}>
-                Lab
-              </button>
-            )}
-
             {showBackHome && (
               <button
                 type="button"
@@ -287,10 +278,10 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                         ? () => setInviteOpen(true)
                         : undefined
                     }
-                    onCustomizePlanet={
+                    onCustomizeShip={
                       openDetail.my_role === 'captain' ||
                       openDetail.my_role === 'copilot'
-                        ? () => setPlanetOpen(true)
+                        ? () => setShipOpen(true)
                         : undefined
                     }
                     viewerUserId={user?.id}
@@ -558,56 +549,22 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
         }}
       />
 
-      <PlanetStyleModal
-        open={planetOpen}
-        currentStyleId={openDetail?.planet_style_id ?? myTroop?.planet_style_id}
-        onClose={() => setPlanetOpen(false)}
-        onPick={async (styleId) => {
-          const updated = await api.setTroopPlanetStyle(styleId)
-          setOpenDetail(updated)
-          setMyTroop(updated)
-          setUniverse((prev) =>
-            prev.map((t) =>
-              t.id === updated.id
-                ? {
-                    ...t,
-                    planet_style_id: updated.planet_style_id,
-                    planet_params: updated.planet_params,
-                    planet_config: updated.planet_config,
-                  }
-                : t,
-            ),
-          )
-          showToast({
-            tone: 'success',
-            title: 'Planeta actualizado',
-            subtitle: updated.name,
-          })
-        }}
-        onGenerate={async (prompt) => api.generateTroopPlanet(prompt)}
-        onApplyAi={async (config) => {
-          const updated = await api.applyTroopPlanetConfig(config)
-          setOpenDetail(updated)
-          setMyTroop(updated)
-          setUniverse((prev) =>
-            prev.map((t) =>
-              t.id === updated.id
-                ? {
-                    ...t,
-                    planet_style_id: updated.planet_style_id,
-                    planet_params: updated.planet_params,
-                    planet_config: updated.planet_config,
-                  }
-                : t,
-            ),
-          )
-          showToast({
-            tone: 'success',
-            title: 'Planeta con IA aplicado',
-            subtitle: updated.name,
-          })
-        }}
-      />
+      {(openDetail?.my_role != null || myTroop) && (
+        <ShipEditorModal
+          open={shipOpen}
+          current={(openDetail?.my_role != null ? openDetail : myTroop)!.ship_config}
+          crew={(openDetail?.my_role != null ? openDetail : myTroop)!.member_count}
+          onClose={() => setShipOpen(false)}
+          onGenerate={(prompt) => api.generateTroopShip(prompt)}
+          onSave={async (config) => {
+            const updated = await api.applyTroopShip(config)
+            setOpenDetail(updated)
+            setMyTroop(updated)
+            setUniverse((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ship_config: updated.ship_config } : t)))
+            showToast({ tone: 'success', title: 'Nave guardada', subtitle: updated.name })
+          }}
+        />
+      )}
 
       <AvatarModal
         open={avatarOpen}
@@ -627,7 +584,6 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
         }}
       />
 
-      {labOpen && <PlanetLab onClose={() => setLabOpen(false)} />}
     </div>
   )
 }
@@ -715,15 +671,15 @@ function AvatarModal({
       lead="Elige un icono, sube una foto y un marco."
     >
       <div className="modal-panel-body">
-        <div className="planet-style-grid">
+        <div className="option-grid">
           {AVATAR_PRESETS.map((p) => (
             <button
               key={p.id}
               type="button"
               className={
                 presetId === p.id
-                  ? 'planet-style-swatch is-selected'
-                  : 'planet-style-swatch'
+                  ? 'option-swatch is-selected'
+                  : 'option-swatch'
               }
               onClick={() => setPresetId(p.id)}
             >
@@ -769,167 +725,6 @@ function AvatarModal({
             onClick={() => void savePreset()}
           >
             {submitting ? 'Guardando…' : 'Guardar icono'}
-          </button>
-        </div>
-      </div>
-    </ModalShell>
-  )
-}
-
-function PlanetStyleModal({
-  open,
-  currentStyleId,
-  onClose,
-  onPick,
-  onGenerate,
-  onApplyAi,
-}: {
-  open: boolean
-  currentStyleId?: string
-  onClose: () => void
-  onPick: (styleId: string) => Promise<void>
-  onGenerate: (prompt: string) => Promise<{ preview: PlanetConfig; prompt: string }>
-  onApplyAi: (config: PlanetConfig) => Promise<void>
-}) {
-  const [busyId, setBusyId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [prompt, setPrompt] = useState('')
-  const [preview, setPreview] = useState<PlanetConfig | null>(null)
-  const [aiBusy, setAiBusy] = useState(false)
-
-  useEffect(() => {
-    if (!open) return
-    setPrompt('')
-    setPreview(null)
-    setError(null)
-    setBusyId(null)
-    setAiBusy(false)
-  }, [open])
-
-  return (
-    <ModalShell
-      open={open}
-      onClose={onClose}
-      titleId="planet-style-title"
-      title="Estilo del planeta"
-      lead="Elige un estilo o pídele a Taskia uno a tu medida."
-      size="md"
-    >
-      <div className="modal-panel-body">
-        <div className="planet-style-grid">
-          {PLANET_STYLES.map((style) => (
-            <button
-              key={style.id}
-              type="button"
-              className={
-                style.id === currentStyleId
-                  ? 'planet-style-swatch is-selected'
-                  : 'planet-style-swatch'
-              }
-              disabled={busyId != null || aiBusy}
-              onClick={() => {
-                void (async () => {
-                  setBusyId(style.id)
-                  setError(null)
-                  try {
-                    await onPick(style.id)
-                    onClose()
-                  } catch (err) {
-                    setError(errorMessage(err))
-                  } finally {
-                    setBusyId(null)
-                  }
-                })()
-              }}
-            >
-              <span className="planet-style-orb">
-                <PlanetRenderer
-                  config={generateFromSeed(`estilo:${style.id}`, style.id)}
-                  size={56}
-                  showRings={false}
-                  animate={false}
-                />
-              </span>
-              <span>{style.label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="planet-ai-block">
-          <p className="planet-ai-title">Diseño con IA</p>
-          <p className="planet-ai-lead">
-            Describe el planeta (colores, clima, vibe). Verás una vista previa antes de
-            aplicarlo.
-          </p>
-          <TextField
-            label="Pedido"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Ej. un planeta de cristal azul con anillos suaves"
-            maxLength={200}
-            disabled={aiBusy || busyId != null}
-          />
-          {preview && (
-            <div className="planet-ai-preview">
-              <span className="planet-style-orb">
-                <PlanetRenderer config={preview} size={56} showRings animate={false} />
-              </span>
-              <div>
-                <strong>Vista previa</strong>
-                <p>Así se vería en el universo.</p>
-              </div>
-            </div>
-          )}
-          <div className="planet-ai-actions">
-            <button
-              type="button"
-              className="ghost"
-              disabled={aiBusy || busyId != null || prompt.trim().length < 3}
-              onClick={() => {
-                void (async () => {
-                  setAiBusy(true)
-                  setError(null)
-                  try {
-                    const res = await onGenerate(prompt.trim())
-                    setPreview(res.preview)
-                  } catch (err) {
-                    setError(errorMessage(err))
-                  } finally {
-                    setAiBusy(false)
-                  }
-                })()
-              }}
-            >
-              {aiBusy ? 'Diseñando…' : 'Generar vista previa'}
-            </button>
-            <button
-              type="button"
-              disabled={!preview || aiBusy || busyId != null}
-              onClick={() => {
-                if (!preview) return
-                void (async () => {
-                  setAiBusy(true)
-                  setError(null)
-                  try {
-                    await onApplyAi(preview)
-                    onClose()
-                  } catch (err) {
-                    setError(errorMessage(err))
-                  } finally {
-                    setAiBusy(false)
-                  }
-                })()
-              }}
-            >
-              Aplicar al planeta
-            </button>
-          </div>
-        </div>
-
-        {error && <p className="form-error">{error}</p>}
-        <div className="modal-actions">
-          <button type="button" className="ghost" onClick={onClose}>
-            Cerrar
           </button>
         </div>
       </div>

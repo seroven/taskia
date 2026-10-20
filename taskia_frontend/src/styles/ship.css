@@ -1,0 +1,238 @@
+/* ---------- Naves de las tripulaciones (ShipRenderer) ---------- */
+
+.ship {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Todo el trazo de la nave: el mismo contorno oscuro de las demás ilustraciones de línea. */
+.ship-ink {
+  stroke: var(--ship-line, var(--text));
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.ship-ink.ship-thin {
+  stroke-width: 1.4;
+}
+
+.ship-flame {
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+.ship.is-live .ship-flame {
+  animation: ship-flicker 0.42s ease-in-out infinite alternate;
+}
+
+.ship.is-live .ship-sweep {
+  animation: ship-sweep 3.2s ease-in-out infinite alternate;
+}
+
+.ship.is-live .ship-blink {
+  animation: ship-blink 1.4s ease-in-out infinite;
+}
+
+.ship.is-live .ship-window {
+  animation: ship-twinkle 3.4s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.37s);
+}
+
+@keyframes ship-flicker {
+  from {
+    transform: scale(1, 1);
+  }
+  to {
+    transform: scale(0.82, 0.92);
+  }
+}
+
+@keyframes ship-sweep {
+  from {
+    transform: rotate(-16deg);
+  }
+  to {
+    transform: rotate(16deg);
+  }
+}
+
+@keyframes ship-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes ship-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ship.is-live .ship-flame,
+  .ship.is-live .ship-sweep,
+  .ship.is-live .ship-blink,
+  .ship.is-live .ship-window {
+    animation: none;
+  }
+}
+
+/* ---------- Editor de la nave ---------- */
+
+.ship-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* La nave queda fija arriba mientras se recorren las piezas. */
+.ship-editor-preview {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 14px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--space-canvas-bg, #0f172a) 88%, var(--accent-soft));
+}
+
+.ship-editor-preview .ship {
+  width: min(100%, 420px);
+}
+
+.ship-editor-tools {
+  display: flex;
+  justify-content: center;
+}
+
+.ship-editor-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px 24px;
+  min-width: 0;
+}
+
+.ship-editor-wide {
+  grid-column: 1 / -1;
+}
+
+.ship-editor-slot h3 {
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ship-editor-slot .ship-chips + .ship-chips {
+  margin-top: 6px;
+}
+
+.ship-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ship-chip {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.ship-chip:hover {
+  border-color: var(--accent);
+}
+
+.ship-chip.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.ship-palettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ship-palette {
+  display: flex;
+  overflow: hidden;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: 2px solid var(--text);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.ship-palette i {
+  flex: 1;
+}
+
+.ship-colors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+
+.ship-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.ship-color input {
+  width: 36px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--text);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ship-ai-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.ship-ai-title {
+  margin: 0;
+  font-weight: 800;
+}
+
+.ship-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+

@@ -22,13 +22,24 @@ const HubLab = import.meta.env.DEV
   ? lazy(() => import('./pages/HubLab').then((m) => ({ default: m.HubLab })))
   : null
 
+const ShipLab = import.meta.env.DEV
+  ? lazy(() => import('./pages/ShipLab').then((m) => ({ default: m.ShipLab })))
+  : null
 const LoaderLab = import.meta.env.DEV
   ? lazy(() => import('./pages/LoaderLab').then((m) => ({ default: m.LoaderLab })))
   : null
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {LoaderLab && lab === 'loader' ? (
+    {ShipLab && lab === 'ships' ? (
+      <ThemeProvider>
+        <AccentProvider>
+          <Suspense fallback={null}>
+            <ShipLab />
+          </Suspense>
+        </AccentProvider>
+      </ThemeProvider>
+    ) : LoaderLab && lab === 'loader' ? (
       <ThemeProvider>
         <AccentProvider>
           <AuthProvider>

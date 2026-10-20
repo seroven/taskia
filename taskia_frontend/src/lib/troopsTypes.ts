@@ -1,3 +1,5 @@
+import type { ShipConfig } from './ship/types'
+
 export type TroopRole = 'captain' | 'copilot' | 'member'
 
 export interface TroopMember {
@@ -25,10 +27,7 @@ export interface TroopDetail {
   level: number
   xp_week: number
   rank: number | null
-  planet_style_id: string
-  planet_seed: number
-  planet_params: unknown
-  planet_config?: unknown
+  ship_config: ShipConfig
   created_at: string
 }
 
@@ -76,10 +75,7 @@ export interface UniverseTroop {
   xp_week: number
   rank: number | null
   is_mine: boolean
-  planet_style_id: string
-  planet_seed: number
-  planet_params: unknown
-  planet_config?: unknown
+  ship_config: ShipConfig
 }
 
 export interface UniverseResponse {

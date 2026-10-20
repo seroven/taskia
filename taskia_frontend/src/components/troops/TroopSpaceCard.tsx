@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { PaintBrush, Plus, SignOut, Star } from '@phosphor-icons/react'
-import { PlanetRenderer } from '../planet/PlanetRenderer'
-import { resolveTroopPlanet } from '../../lib/planet/engine'
+import { ShipRenderer } from '../ship/ShipRenderer'
+import { MAX_CREW } from '../../lib/ship/types'
 import {
   troopRoleLabel,
   type TroopDetail,
@@ -23,7 +23,7 @@ export function TroopSpaceCard({
   canRequestJoin,
   onRequestJoin,
   onInvite,
-  onCustomizePlanet,
+  onCustomizeShip,
   onEditAvatar,
   viewerUserId,
   onLeave,
@@ -35,14 +35,13 @@ export function TroopSpaceCard({
   canRequestJoin?: boolean
   onRequestJoin?: () => void
   onInvite?: () => void
-  onCustomizePlanet?: () => void
+  onCustomizeShip?: () => void
   onEditAvatar?: () => void
   viewerUserId?: number
   onLeave?: () => void
   onSetCopilot?: (userId: number | null) => void
   onKick?: (userId: number) => void
 }) {
-  const planet = resolveTroopPlanet(detail)
   const reduceMotion = useReducedMotion()
   const isMine = detail.my_role != null
   const canInvite =
@@ -61,9 +60,14 @@ export function TroopSpaceCard({
           : { type: 'spring', stiffness: 320, damping: 26 }
       }
     >
-      <div className="troop-space-card-planet" aria-hidden>
-        <PlanetRenderer config={planet} size={64} showRings={false} animate={false} />
-        <span className="troop-space-card-planet-star">
+      <div className="troop-space-card-ship">
+        <ShipRenderer
+          config={detail.ship_config}
+          crew={Math.min(detail.member_count, MAX_CREW)}
+          crewNames={detail.members.map((m) => m.username)}
+          label={`Nave de ${detail.name}`}
+        />
+        <span className="troop-space-card-ship-star">
           <LevelStar level={detail.level} />
         </span>
       </div>
@@ -89,15 +93,15 @@ export function TroopSpaceCard({
               Invitar
             </button>
           )}
-          {onCustomizePlanet && (
+          {onCustomizeShip && (
             <button
               type="button"
               className="ghost"
               disabled={busy}
-              onClick={onCustomizePlanet}
+              onClick={onCustomizeShip}
             >
               <PaintBrush size={16} weight="bold" />
-              Planeta
+              Nave
             </button>
           )}
           {onLeave && (

@@ -185,22 +185,33 @@
   pointer-events: auto;
 }
 
-.space-planet-name {
+.space-ship-name {
+  position: absolute;
+  left: 0;
+  top: 0;
   margin: 0;
-  padding: 2px 8px;
+  padding: 2px 10px;
   border: 0;
   background: transparent;
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 650;
-  color: rgba(248, 250, 252, 0.78);
+  color: var(--text);
   white-space: nowrap;
-  text-shadow: 0 2px 10px rgba(2, 6, 23, 0.85);
+  text-shadow:
+    0 0 10px var(--space-canvas-bg),
+    0 0 4px var(--space-canvas-bg),
+    0 0 2px var(--space-canvas-bg);
   cursor: pointer;
 }
 
-.space-planet-name.is-hot {
-  color: #fff;
+.space-ship-name:hover,
+.space-ship-name.is-open {
+  color: var(--accent-ink);
+}
+
+.space-ship-name.is-mine {
+  font-size: 17px;
 }
 
 .space-rank-badge {
@@ -218,53 +229,11 @@
     0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
-.space-lab-fab {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  z-index: 5;
-}
-
-.planet-lab {
-  position: absolute;
-  inset: 0;
-  z-index: 30;
-  overflow: auto;
-  background: var(--bg);
-  color: var(--text);
-  padding: 20px;
-}
-
-.planet-lab header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.planet-lab-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 88px);
-  gap: 10px;
-  margin: 16px 0;
-}
-
-.planet-lab-grid button,
-.planet-lab-edit button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.planet-lab-edit {
-  display: grid;
-  gap: 10px;
-  max-width: 280px;
-}
-
 .galaxy-stage {
   position: absolute;
   inset: 0;
+  /* El orden de profundidad de las naves vive aquí dentro: nunca pasa por encima de la ficha ni de los botones. */
+  isolation: isolate;
   overflow: hidden;
   background: var(--space-canvas-bg);
   cursor: grab;
@@ -336,71 +305,107 @@
   animation: galaxy-shoot 1.3s linear forwards;
 }
 
+/* Las naves se colocan en px desde la esquina de la vista (ver GalaxyUniverse). */
 .galaxy-world {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0;
-  height: 0;
+  inset: 0;
 }
 
-.galaxy-planet {
+/* Cada nave se coloca y escala desde JS (transform en línea); aquí solo su aspecto. */
+.galaxy-ship {
   position: absolute;
-  width: var(--planet-size);
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  animation: galaxy-bob 4.8s ease-in-out infinite;
+  left: 0;
+  top: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
 
-.galaxy-planet.personality-sleepy { animation-duration: 7s; }
-.galaxy-planet.personality-energetic,
-.galaxy-planet.personality-bouncy { animation-duration: 2.8s; }
-.galaxy-planet.personality-shy { animation-duration: 6.2s; }
-.galaxy-planet.is-still { animation: none; }
-.galaxy-planet.is-hot { z-index: 2; }
-.galaxy-planet.is-hot .planet-svg { transform: scale(1.06); }
-
-.galaxy-planet-hit {
+.galaxy-ship-hit {
+  display: block;
+  width: 100%;
   border: 0;
   padding: 0;
   background: transparent;
   cursor: pointer;
 }
 
-.galaxy-home-ring {
+.galaxy-ship-hit:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 6px;
+  border-radius: 24px;
+}
+
+.galaxy-ship-art {
+  display: block;
+  animation: galaxy-bob 5.2s ease-in-out infinite;
+  animation-delay: var(--bob-delay, 0s);
+  transition: filter 0.2s ease;
+}
+
+.galaxy-ship:hover .galaxy-ship-art {
+  filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.35));
+}
+
+.galaxy-ship.is-still .galaxy-ship-art {
+  animation: none;
+}
+
+/* La propia: un halo del acento detrás de la nave. */
+.galaxy-aura {
   position: absolute;
   left: 50%;
-  top: 46%;
-  width: 78%;
-  height: 22%;
+  top: 50%;
+  width: 118%;
+  height: 150%;
   transform: translate(-50%, -50%);
-  border: 3px solid var(--accent);
   border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 38%, transparent), transparent 72%);
   pointer-events: none;
 }
 
 .galaxy-medal {
   position: absolute;
-  top: -6px;
-  right: 8px;
+  top: -4%;
+  right: 4%;
   z-index: 2;
-  width: 26px;
-  height: 26px;
+  width: 12%;
+  aspect-ratio: 1;
   border-radius: 999px;
   display: grid;
   place-items: center;
   font-family: var(--font-display);
   font-weight: 700;
+  font-size: clamp(12px, 5.5%, 28px);
   color: #1c1917;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.55);
   pointer-events: none;
 }
 
-.planet-moon-spin {
-  transform-origin: 50px 50px;
-  animation: galaxy-orbit 14s linear infinite;
+.galaxy-zoom {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.galaxy-zoom button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--space-card-border);
+  border-radius: 50%;
+  background: var(--space-card-bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.galaxy-zoom button:hover {
+  border-color: var(--accent);
 }
 
 @keyframes galaxy-twinkle {
@@ -413,26 +418,56 @@
 }
 
 @keyframes galaxy-bob {
-  0%, 100% { margin-top: 0; }
-  50% { margin-top: -8px; }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3.5%); }
 }
 
-@keyframes galaxy-orbit {
-  to { transform: rotate(360deg); }
-}
-
+/* La ficha va al costado (la galaxia corre su centro para que la nave quede libre); en pantallas angostas, abajo. */
 .space-card-slot {
   position: absolute;
-  left: 50%;
-  top: 52%;
-  transform: translate(-50%, -42%);
-  width: min(360px, calc(100% - 28px));
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(380px, calc(100% - 28px));
+  max-height: calc(100% - 32px);
   z-index: 4;
+}
+
+@media (max-width: 899px) {
+  .space-card-slot {
+    right: 50%;
+    top: auto;
+    bottom: 12px;
+    transform: translateX(50%);
+  }
+
+  /* La nave ya se ve en la galaxia, arriba de la ficha: no se repite dentro. */
+  .troop-space-card-ship {
+    display: none;
+  }
+
+  .troop-space-card {
+    padding-top: 14px;
+  }
+
+  /* El zoom pasa al costado: abajo lo taparía la ficha. */
+  .galaxy-zoom {
+    top: 72px;
+    right: 12px;
+    bottom: auto;
+    left: auto;
+  }
+
+  /* El botón de volver no puede quedar encima de la ficha (la regla base está más abajo: se sube la especificidad). */
+  .space-overlays .space-home-fab {
+    top: 12px;
+    bottom: auto;
+  }
 }
 
 .troop-space-card {
   position: relative;
-  padding: 40px 16px 14px;
+  padding: 62px 16px 14px;
   border-radius: 18px;
   border: 1px solid var(--space-card-border);
   background: var(--space-card-bg);
@@ -440,22 +475,19 @@
   color: var(--text);
 }
 
-.troop-space-card-planet {
+.troop-space-card-ship {
   position: absolute;
   left: 50%;
   top: 0;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  transform: translate(-50%, -52%);
-  border: 3px solid color-mix(in srgb, #fff 35%, transparent);
-  overflow: hidden;
+  width: 190px;
+  transform: translate(-50%, -62%);
+  pointer-events: none;
 }
 
-.troop-space-card-planet-star {
+.troop-space-card-ship-star {
   position: absolute;
-  right: -6px;
-  bottom: -4px;
+  right: -10px;
+  bottom: -8px;
 }
 
 .troop-space-card-head h2 {
@@ -716,13 +748,13 @@
   margin: 8px 12px 12px;
 }
 
-.planet-style-grid {
+.option-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.planet-style-swatch {
+.option-swatch {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -735,60 +767,9 @@
   cursor: pointer;
 }
 
-.planet-style-swatch.is-selected {
+.option-swatch.is-selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
-}
-
-.planet-style-orb {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 2px solid color-mix(in srgb, #fff 30%, transparent);
-  flex-shrink: 0;
-}
-
-.planet-ai-block {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.planet-ai-title {
-  margin: 0;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.planet-ai-lead {
-  margin: 0;
-  font-size: 0.92rem;
-  color: var(--text-muted);
-}
-
-.planet-ai-preview {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-}
-
-.planet-ai-preview p {
-  margin: 2px 0 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.planet-ai-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .explorer-avatar-btn {
@@ -859,8 +840,7 @@
 @media (prefers-reduced-motion: reduce) {
   .troop-space-card,
   .space-fab,
-  .space-inbox-btn,
-  .planet-style-orb {
+  .space-inbox-btn {
     transition: none !important;
     animation: none !important;
   }
