@@ -62,7 +62,7 @@ export function SceneLab() {
         {[
           { title: 'Mundos', sub: 'Temas, misiones y desafíos', scene: <WorldsScene /> },
           { title: 'Campamento', sub: 'Tareas del día', scene: <CampScene /> },
-          { title: 'Tripulación', sub: 'Pronto', scene: <CrewScene /> },
+          { title: 'Tripulación', sub: 'Tu nave y tu equipo', scene: <CrewScene /> },
         ].map((item) => (
           <button
             key={item.title}

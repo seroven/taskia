@@ -204,6 +204,13 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
           />
 
           <div className="space-overlays">
+            {universe.length === 0 && (
+              <div className="space-empty">
+                <p className="space-empty-title">La galaxia está vacía</p>
+                <p>Crea la primera tripulación, arma tu nave e invita a tus compañeros.</p>
+              </div>
+            )}
+
             {!myTroop && (
               <button
                 type="button"

@@ -2,7 +2,7 @@ import { CampScene } from './scenes/CampScene'
 import { CrewScene } from './scenes/CrewScene'
 import { WorldsScene } from './scenes/WorldsScene'
 
-type HubDoor = 'worlds' | 'camp'
+type HubDoor = 'troops' | 'worlds' | 'camp'
 
 /** Destinos del hub: cada uno es una escena de línea animada (`components/scenes`). */
 export function HubDestinations({ onOpen }: { onOpen: (door: HubDoor) => void }) {
@@ -32,14 +32,17 @@ export function HubDestinations({ onOpen }: { onOpen: (door: HubDoor) => void })
         <span className="hub-destination-sub">Tareas del día</span>
       </button>
 
-      <div className="hub-destination hub-destination--troops" aria-disabled="true">
+      <button
+        type="button"
+        className="hub-destination hub-destination--troops scene-host"
+        onClick={() => onOpen('troops')}
+      >
         <span className="hub-destination-art" aria-hidden>
           <CrewScene />
         </span>
-        <span className="hub-soon">Pronto</span>
         <span className="hub-destination-title">Tripulación</span>
-        <span className="hub-destination-sub">Estamos armando este lugar. Vuelve pronto.</span>
-      </div>
+        <span className="hub-destination-sub">Tu nave y tu equipo</span>
+      </button>
     </div>
   )
 }

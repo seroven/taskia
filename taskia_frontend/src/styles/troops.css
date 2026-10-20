@@ -846,3 +846,31 @@
   }
 }
 
+/* Galaxia sin ninguna nave todavía */
+.space-empty {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: min(360px, calc(100% - 32px));
+  transform: translate(-50%, -50%);
+  padding: 20px 22px;
+  border-radius: 20px;
+  border: 1px solid var(--space-card-border);
+  background: var(--space-card-bg);
+  text-align: center;
+  color: var(--text);
+  pointer-events: none;
+}
+
+.space-empty p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.space-empty .space-empty-title {
+  margin-bottom: 6px;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}

@@ -571,3 +571,56 @@
     transition: none !important;
   }
 }
+
+/* Tripulación en el hub: cielo de estrellas con la nave flotando encima. */
+.scene-crew {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 240 / 200;
+}
+
+.scene-crew-sky {
+  position: absolute;
+  inset: 0;
+}
+
+.scene-crew-ship {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: 92%;
+  translate: -50% -50%;
+  animation:
+    crew-arrive 0.9s var(--scene-ease, cubic-bezier(0.22, 1, 0.36, 1)) backwards,
+    crew-float 5.6s ease-in-out 0.9s infinite;
+  transition: transform 0.45s var(--scene-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.scene-host:is(:hover, :focus-visible) .scene-crew-ship {
+  transform: translateY(-5%) rotate(-3deg) scale(1.05);
+}
+
+@keyframes crew-arrive {
+  from {
+    opacity: 0;
+    transform: translateX(-30%) scale(0.85);
+  }
+}
+
+@keyframes crew-float {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+  50% {
+    margin-top: -4%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-crew-ship {
+    animation: none;
+    transition: none;
+  }
+}

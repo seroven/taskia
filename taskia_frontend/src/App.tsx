@@ -113,6 +113,7 @@ function ExplorerApp({ userId }: { userId: number }) {
               onOpen={(door) => {
                 if (door === 'worlds') setView('worlds')
                 else if (door === 'camp') setView('board')
+                else if (door === 'troops') setView('troops')
               }}
             />
           ) : view === 'troops' ? (

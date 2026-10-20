@@ -403,7 +403,8 @@ type Props = {
   label?: string
 }
 
-function ShipRendererBase({ config, size, crew = 0, crewNames = [], animate = true, className = '', label }: Props) {
+/** Las piezas de la nave, sin el <svg>: para quien la dibuja dentro de otro lienzo. */
+export function ShipArt({ config, crew = 0, crewNames = [] }: Pick<Props, 'config' | 'crew' | 'crewNames'>) {
   const uid = useId().replace(/:/g, '')
   const geo = hullGeo(config.hull)
   const pal = config.palette
@@ -411,16 +412,7 @@ function ShipRendererBase({ config, size, crew = 0, crewNames = [], animate = tr
   const shade = darken(pal.hull, 0.16)
 
   return (
-    <svg
-      className={`ship${animate ? ' is-live' : ''} ${className}`.trim()}
-      viewBox={`0 0 ${VB_W} ${VB_H}`}
-      width={size}
-      height={size ? size * (VB_H / VB_W) : undefined}
-      role={label ? 'img' : undefined}
-      aria-label={label}
-      aria-hidden={label ? undefined : true}
-      focusable="false"
-    >
+    <>
       <defs>
         <clipPath id={clip}>
           <path d={geo.path} />
@@ -444,6 +436,23 @@ function ShipRendererBase({ config, size, crew = 0, crewNames = [], animate = tr
       <Windows geo={geo} pal={pal} kind={config.windows} crew={crew} names={crewNames} />
       <Nose geo={geo} pal={pal} kind={config.nose} clip={clip} />
       <Wings geo={geo} pal={pal} kind={config.wings} />
+    </>
+  )
+}
+
+function ShipRendererBase({ config, size, crew = 0, crewNames = [], animate = true, className = '', label }: Props) {
+  return (
+    <svg
+      className={`ship${animate ? ' is-live' : ''} ${className}`.trim()}
+      viewBox={`0 0 ${VB_W} ${VB_H}`}
+      width={size}
+      height={size ? size * (VB_H / VB_W) : undefined}
+      role={label ? 'img' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+      focusable="false"
+    >
+      <ShipArt config={config} crew={crew} crewNames={crewNames} />
     </svg>
   )
 }

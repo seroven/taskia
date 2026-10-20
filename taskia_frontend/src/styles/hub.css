@@ -147,27 +147,10 @@
   text-overflow: ellipsis;
 }
 
-.hub-soon {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 2px 10px;
-  border-radius: var(--r-chip);
-  background: var(--accent-soft);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-}
-
 .hub-destination:hover,
 .hub-destination:focus-visible,
 .hub-destination:active {
   transform: scale(1.04);
-}
-
-.hub-destination--troops:hover,
-.hub-destination--troops:active {
-  transform: none;
 }
 
 .hub-destination:focus-visible {
