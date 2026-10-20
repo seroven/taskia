@@ -61,7 +61,7 @@ Al entrar, el explorador ve un **hub** con tres puertas:
 | Cómo se cierra | Sin ayuda: el niño marca **Listo**. Con ayuda: Taskia cierra sola. | Taskia marca la misión **Lista** cuando domina el tema | Se gana **XP** estudiando; el ranking semanal suma el XP del equipo |
 | Extra | Tope de **20 tareas creadas / día** | Después puede haber **desafíos** | Una sola tripulación a la vez; invitaciones por nombre |
 
-Un explorador puede usar Campamento y Mundos el mismo día. La puerta **Tripulación** se ve en el hub, pero no abre: dice que ese lugar se está armando.
+Un explorador puede usar Campamento y Mundos el mismo día. La puerta **Tripulación** abre la galaxia de naves.
 
 ### Nivel y XP
 
@@ -233,7 +233,7 @@ En una frase: **consulta, conversa y deja listas las preferencias de aviso**.
 
 El explorador necesita:
 
-1. Elegir a dónde ir desde el **hub** (Mundos o Campamento; Tripulación se ve cerrada).
+1. Elegir a dónde ir desde el **hub** (Mundos, Campamento o Tripulación).
 2. Ver **qué tiene pendiente** (Campamento).
 3. **Estudiar con ayuda** sin que le suelten la respuesta entera (Taskia).
 4. Trabajar **temas largos** y demostrarlos (mundos + desafíos).
@@ -253,7 +253,7 @@ El tono de botones y estados está pensado para él: claro y cercano (Por hacer,
 
 ### Después de entrar
 
-El explorador llega al **hub**, no directo al tablero. Tres puertas: **Tripulación** (cerrada, con el aviso de que se está armando), **Mundos**, **Campamento**. En la cabecera ve su **barra de nivel/XP**, apariencia, cuenta y salir. Si recarga la pestaña, sigue en la misma pantalla (hub, Campamento, estudio, mundo, misión o desafío). Cerrar la pestaña olvida ese lugar y la próxima entrada abre el hub.
+El explorador llega al **hub**, no directo al tablero. Tres puertas: **Tripulación** (la galaxia de naves), **Mundos**, **Campamento**. En la cabecera ve su **barra de nivel/XP**, apariencia, cuenta y salir. Si recarga la pestaña, sigue en la misma pantalla (hub, Campamento, estudio, mundo, misión o desafío). Cerrar la pestaña olvida ese lugar y la próxima entrada abre el hub.
 
 Dentro de Campamento o Mundos:
 
@@ -419,7 +419,7 @@ También puede **editar** título, descripción y si el tema es práctico desde 
 
 ### Qué son
 
-Una **tripulación** es el equipo del explorador: hasta **10** compañeros. Se ve como una **galaxia** de naves (una tripulación = una nave). Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat. Hoy el explorador no entra: la puerta del hub está cerrada. El Guardián sí puede ver la tripulación en lectura.
+Una **tripulación** es el equipo del explorador: hasta **10** compañeros. Se ve como una **galaxia** de naves (una tripulación = una nave). Sirve para pertenecer a un grupo y comparar progreso (nivel y XP de la semana), no para estudiar juntos en el mismo chat. El explorador entra desde la puerta del hub. El Guardián puede ver la tripulación en lectura.
 
 ### Roles
 
@@ -564,7 +564,7 @@ Las **materias** son el puente: sin ellas no hay tareas ni cursos dentro de mund
 | Preferencias WhatsApp | Se guardan |
 | Envío real de WhatsApp | Aún no |
 | Lista del día / cierre con Taskia | Activo: diaria auto-Listo; proyecto cierra el niño (chat o Listo) |
-| Hub Tripulación | Visible y cerrada (aviso de que se está armando) |
+| Hub Tripulación | Abierta: lleva a la galaxia de naves |
 | Hub Mundos / Campamento | Activo |
 | Nivel, XP y tripulación | Activos (ranking semanal, Guardián solo lectura) |
 | Misión a Lista al dominar | Activo |
