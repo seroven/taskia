@@ -178,6 +178,7 @@ export async function getRanking(req: TroopReq) {
       name: r.name,
       member_count: Number(r.member_count),
       xp_week: Number(r.xp_week),
+      ship_config: resolveTroopShip(r.ship_config, Number(r.id)),
     })),
   }
 }

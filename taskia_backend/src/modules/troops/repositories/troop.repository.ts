@@ -190,16 +190,18 @@ export async function rankingPage(weekStart: string, limit: number, offset: numb
     .leftJoin(XpAward, 'a', 'a.user_id = tm.user_id AND a.week_start = :weekStart', { weekStart })
     .select('t.id', 'id')
     .addSelect('t.name', 'name')
+    .addSelect('t.ship_config', 'ship_config')
     .addSelect('COUNT(DISTINCT tm.user_id)', 'member_count')
     .addSelect('COALESCE(SUM(a.amount), 0)', 'xp_week')
     .where('t.is_active = TRUE')
     .groupBy('t.id')
     .addGroupBy('t.name')
+    .addGroupBy('t.ship_config')
     .orderBy('xp_week', 'DESC')
     .addOrderBy('t.name', 'ASC')
     .limit(limit)
     .offset(offset)
-    .getRawMany<{ id: number; name: string; member_count: string; xp_week: string }>()
+    .getRawMany<{ id: number; name: string; ship_config: unknown; member_count: string; xp_week: string }>()
 }
 
 export async function universePage(weekStart: string, myTroopId: number | null, limit: number, offset: number) {
