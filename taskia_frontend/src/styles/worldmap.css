@@ -666,12 +666,6 @@
   }
 }
 
-/* Si varios anillos girando se rozarían, el sistema se queda quieto. */
-.system.is-still .system-orbit,
-.system.is-still .system-item {
-  animation: none;
-}
-
 /* Los anchos de las etiquetas deben coincidir con los que supone `plan()` en OrbitSystem.tsx. */
 .system.tier-normal .system-moon-label {
   max-width: clamp(90px, 17cqw, 130px);

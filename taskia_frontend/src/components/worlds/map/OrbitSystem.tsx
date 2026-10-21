@@ -32,7 +32,7 @@ type Props = {
 
 type Tier = 'roomy' | 'normal' | 'dense' | 'packed'
 /** Las medidas de radios, luna y núcleo son % del ancho del sistema. */
-type Plan = { groups: OrbitItem[][]; radii: number[]; moon: number; core: number; tier: Tier; still: boolean }
+type Plan = { groups: OrbitItem[][]; radii: number[]; moon: number; core: number; tier: Tier; rigid: boolean }
 
 /** Ancho que el sistema supone antes de medirse. */
 const DEFAULT_WIDTH = 700
@@ -107,7 +107,7 @@ function fit(items: OrbitItem[], d: number, mode: Mode, width: number): Plan | n
     const radii = rings === 1 ? [(inner + outer) / 2] : Array.from({ length: rings }, (_, k) => inner + ((outer - inner) * k) / (rings - 1))
     const caps = radii.map((radius) => Math.floor((2 * Math.PI * radius) / gap))
     if (caps.reduce((sum, cap) => sum + cap, 0) < items.length) continue
-    // Con varios anillos girando a distinta velocidad, solo es seguro si una luna no alcanza a rozar a la del anillo vecino.
+    // Con varios anillos a distinta velocidad una luna podría rozar a la del anillo vecino: si no hay sitio para eso, los anillos giran juntos (misma velocidad y sentido), como un solo cuerpo, y nunca se acercan.
     const step = rings === 1 ? Infinity : (outer - inner) / (rings - 1)
     const need = mode.tier === 'packed' ? w : Math.hypot(w, h)
     return {
@@ -116,7 +116,7 @@ function fit(items: OrbitItem[], d: number, mode: Mode, width: number): Plan | n
       moon: (d / width) * 100,
       core: ((sun / 0.36) / width) * 100,
       tier: mode.tier,
-      still: step < need,
+      rigid: step < need,
     }
   }
   return null
@@ -128,7 +128,7 @@ function fit(items: OrbitItem[], d: number, mode: Mode, width: number): Plan | n
  */
 function plan(items: OrbitItem[], width: number): Plan {
   const n = items.length
-  const roomy: Plan = { groups: [items], radii: [34], moon: 18, core: 50, tier: 'roomy', still: false }
+  const roomy: Plan = { groups: [items], radii: [34], moon: 18, core: 50, tier: 'roomy', rigid: false }
   if (n === 0) return roomy
 
   // El anillo holgado de siempre, si en este ancho cabe sin pisar el sol ni salirse.
@@ -167,7 +167,7 @@ function plan(items: OrbitItem[], width: number): Plan {
     moon: (d / width) * 100,
     core: (sun / 0.36 / width) * 100,
     tier: 'packed',
-    still: true,
+    rigid: true,
   }
 }
 
@@ -217,7 +217,7 @@ export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete
   }
   useEffect(() => () => cancelAnimationFrame(frame.current), [])
 
-  const { groups, radii, moon, core, tier, still } = plan(items, width)
+  const { groups, radii, moon, core, tier, rigid } = plan(items, width)
   const arrivingKey = items.find((item) => item.arriving)?.key ?? null
 
   // El despertar (ondas desde el planeta) dura lo que dura la llegada: la pantalla limpia `arriving` sola.
@@ -232,7 +232,7 @@ export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete
       onPointerLeave={() => slow(1)}
       onFocus={() => slow(SLOW_RATE)}
       onBlur={() => slow(1)}
-      className={`system tier-${tier}${still ? ' is-still' : ''}${complete ? ' is-complete' : ''}${awake ? ' is-awake' : ''}${empty ? ' is-empty' : ''}`}
+      className={`system tier-${tier}${complete ? ' is-complete' : ''}${awake ? ' is-awake' : ''}${empty ? ' is-empty' : ''}`}
       style={{ ['--moon' as string]: `${moon}cqw`, ['--moon-min' as string]: tier === 'roomy' ? '52px' : '0px' }}
     >
       <svg className="system-rings" viewBox="0 0 100 100" aria-hidden>
@@ -261,9 +261,9 @@ export function OrbitSystem({ centerSeed, centerKind = 'planet', items, complete
           key={ringIndex}
           className="system-orbit"
           style={{
-            ['--dur' as string]: `${RING_SECONDS[ringIndex]}s`,
-            ['--dir' as string]: ringIndex % 2 === 0 ? 'normal' : 'reverse',
-            ['--dir-b' as string]: ringIndex % 2 === 0 ? 'reverse' : 'normal',
+            ['--dur' as string]: `${RING_SECONDS[rigid ? 0 : ringIndex]}s`,
+            ['--dir' as string]: rigid || ringIndex % 2 === 0 ? 'normal' : 'reverse',
+            ['--dir-b' as string]: rigid || ringIndex % 2 === 0 ? 'reverse' : 'normal',
           }}
         >
           {group.map((item, index) => {
