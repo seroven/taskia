@@ -5,8 +5,8 @@
  */
 
 export const HULLS = ['rocket', 'bean', 'arrow', 'barge', 'saucer', 'dart', 'drop', 'leaf', 'bullet', 'brick', 'dolphin', 'whale', 'needle', 'blimp', 'diamond'] as const
-export const NOSES = ['none', 'probe', 'cap', 'drill'] as const
-export const COCKPITS = ['none', 'bubble', 'visor'] as const
+export const NOSES = ['none', 'probe', 'cap', 'drill', 'ball', 'cone', 'fork', 'ring', 'beak', 'lamp', 'spark', 'bumper', 'whisker', 'pennant'] as const
+export const COCKPITS = ['none', 'bubble', 'visor', 'dome', 'twin', 'porthole', 'slit', 'hood', 'panorama', 'periscope', 'eye', 'tower', 'wedge'] as const
 export const WINGS = ['none', 'delta', 'swept', 'stub', 'blade', 'leaf', 'manta', 'steps', 'hook', 'biplane', 'scissor', 'butterfly', 'saw', 'boomerang'] as const
 export const TAILS = ['none', 'shark', 'twin', 'block', 'fins', 'sail', 'spike', 'crest', 'fishtail', 'sickle', 'disc', 'notch', 'zig', 'rotor', 'crown'] as const
 export const ENGINES = ['bell', 'pods', 'ring', 'orb'] as const
@@ -14,7 +14,7 @@ export const FLAMES = ['classic', 'bolt', 'puff', 'none'] as const
 export const TOPS = ['none', 'antenna', 'dish', 'solar', 'beacon'] as const
 export const BELLIES = ['none', 'pod', 'legs', 'tank'] as const
 export const DECALS = ['none', 'stripe', 'chevrons', 'checker', 'star'] as const
-export const WINDOWS = ['round', 'square', 'arch'] as const
+export const WINDOWS = ['round', 'square', 'arch', 'hex', 'diamond', 'star', 'heart', 'slot', 'tri', 'oval', 'cross', 'moon', 'drop'] as const
 
 export type Hull = (typeof HULLS)[number]
 export type Nose = (typeof NOSES)[number]
@@ -82,11 +82,31 @@ export const SHIP_OPTIONS = {
     { id: 'probe', label: 'Explorador' },
     { id: 'cap', label: 'Gorrito' },
     { id: 'drill', label: 'Barrena' },
+    { id: 'ball', label: 'Bolita' },
+    { id: 'cone', label: 'Cono' },
+    { id: 'fork', label: 'Horquilla' },
+    { id: 'ring', label: 'Aro' },
+    { id: 'beak', label: 'Pico' },
+    { id: 'lamp', label: 'Linterna' },
+    { id: 'spark', label: 'Chispazo' },
+    { id: 'bumper', label: 'Almohadilla' },
+    { id: 'whisker', label: 'Bigotes' },
+    { id: 'pennant', label: 'Banderín' },
   ] satisfies Option<Nose>[],
   cockpit: [
     { id: 'none', label: 'Sin domo' },
     { id: 'bubble', label: 'Pecera' },
     { id: 'visor', label: 'Mirada' },
+    { id: 'dome', label: 'Cúpula' },
+    { id: 'twin', label: 'Gemelas' },
+    { id: 'porthole', label: 'Escotilla' },
+    { id: 'slit', label: 'Rendija' },
+    { id: 'hood', label: 'Capucha' },
+    { id: 'panorama', label: 'Panorámica' },
+    { id: 'periscope', label: 'Periscopio' },
+    { id: 'eye', label: 'Ojo' },
+    { id: 'tower', label: 'Torreta' },
+    { id: 'wedge', label: 'Cuña' },
   ] satisfies Option<Cockpit>[],
   wings: [
     { id: 'none', label: 'Sin alas' },
@@ -157,6 +177,16 @@ export const SHIP_OPTIONS = {
     { id: 'round', label: 'Ojos de buey' },
     { id: 'square', label: 'Píxeles' },
     { id: 'arch', label: 'Portales' },
+    { id: 'hex', label: 'Colmena' },
+    { id: 'diamond', label: 'Rombos' },
+    { id: 'star', label: 'Estrellitas' },
+    { id: 'heart', label: 'Corazones' },
+    { id: 'slot', label: 'Ranuras' },
+    { id: 'tri', label: 'Triángulos' },
+    { id: 'oval', label: 'Óvalos' },
+    { id: 'cross', label: 'Cruces' },
+    { id: 'moon', label: 'Lunas' },
+    { id: 'drop', label: 'Gotas' },
   ] satisfies Option<WindowKind>[],
 }
 

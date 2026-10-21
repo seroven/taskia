@@ -22,7 +22,7 @@ export function ShipLab() {
       <button type="button" onClick={() => setOffset((n) => n + 1)}>
         Otras 24
       </button>
-      {(['hull', 'wings', 'tail'] as const).map((slot) => (
+      {(['hull', 'wings', 'tail', 'nose', 'cockpit', 'windows'] as const).map((slot) => (
         <section key={slot}>
           <h3>Cada opción de «{slot}» sobre una nave base</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>

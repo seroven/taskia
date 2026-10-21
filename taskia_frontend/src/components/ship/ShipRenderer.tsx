@@ -486,6 +486,43 @@ function Decals({ geo, pal, kind, clip }: Ctx & { kind: ShipConfig['decal']; cli
   )
 }
 
+/** Contorno de las ventanillas que no son redondas, cuadradas ni en arco. Todas caben en el mismo hueco (radio `r`). */
+function windowPath(kind: ShipConfig['windows'], x: number, y: number, r: number) {
+  const poly = (list: [number, number][]) => `M${list.map(([px, py]) => `${num(px)} ${num(py)}`).join(' L')} Z`
+  if (kind === 'hex') return poly(Array.from({ length: 6 }, (_, i) => [x + Math.cos((Math.PI / 3) * i) * r * 1.15, y + Math.sin((Math.PI / 3) * i) * r * 1.15]))
+  if (kind === 'diamond') return poly([[x, y - r * 1.3], [x + r * 1.05, y], [x, y + r * 1.3], [x - r * 1.05, y]])
+  if (kind === 'star') {
+    return poly(Array.from({ length: 10 }, (_, i) => {
+      const a = (Math.PI / 5) * i - Math.PI / 2
+      const rad = i % 2 === 0 ? r * 1.35 : r * 0.6
+      return [x + Math.cos(a) * rad, y + Math.sin(a) * rad + r * 0.08]
+    }))
+  }
+  if (kind === 'heart') {
+    return `M${num(x)} ${num(y + r * 1.0)} C${num(x - r * 1.7)} ${num(y - r * 0.1)} ${num(x - r * 0.8)} ${num(y - r * 1.3)} ${num(x)} ${num(y - r * 0.4)} C${num(x + r * 0.8)} ${num(y - r * 1.3)} ${num(x + r * 1.7)} ${num(y - r * 0.1)} ${num(x)} ${num(y + r * 1.0)} Z`
+  }
+  if (kind === 'slot') {
+    const w = r * 0.62
+    const h = r * 1.3
+    return `M${num(x - w)} ${num(y - h + w)} A${num(w)} ${num(w)} 0 0 1 ${num(x + w)} ${num(y - h + w)} V${num(y + h - w)} A${num(w)} ${num(w)} 0 0 1 ${num(x - w)} ${num(y + h - w)} Z`
+  }
+  if (kind === 'tri') return poly([[x, y - r * 1.2], [x + r * 1.15, y + r * 0.9], [x - r * 1.15, y + r * 0.9]])
+  if (kind === 'oval') {
+    const rx = r * 1.35
+    const ry = r * 0.85
+    return `M${num(x - rx)} ${num(y)} A${num(rx)} ${num(ry)} 0 1 0 ${num(x + rx)} ${num(y)} A${num(rx)} ${num(ry)} 0 1 0 ${num(x - rx)} ${num(y)} Z`
+  }
+  if (kind === 'cross') {
+    const a = r * 0.5
+    const b = r * 1.25
+    return poly([[x - a, y - b], [x + a, y - b], [x + a, y - a], [x + b, y - a], [x + b, y + a], [x + a, y + a], [x + a, y + b], [x - a, y + b], [x - a, y + a], [x - b, y + a], [x - b, y - a], [x - a, y - a]])
+  }
+  if (kind === 'moon') {
+    return `M${num(x + r * 0.3)} ${num(y - r * 1.2)} A${num(r * 1.2)} ${num(r * 1.2)} 0 1 0 ${num(x + r * 0.3)} ${num(y + r * 1.2)} A${num(r * 0.62)} ${num(r * 1.0)} 0 1 1 ${num(x + r * 0.3)} ${num(y - r * 1.2)} Z`
+  }
+  return `M${num(x)} ${num(y - r * 1.35)} C${num(x + r * 0.5)} ${num(y - r * 0.5)} ${num(x + r)} ${num(y)} ${num(x + r)} ${num(y + r * 0.3)} A${num(r)} ${num(r * 0.9)} 0 0 1 ${num(x - r)} ${num(y + r * 0.3)} C${num(x - r)} ${num(y)} ${num(x - r * 0.5)} ${num(y - r * 0.5)} ${num(x)} ${num(y - r * 1.35)} Z`
+}
+
 function Windows({ geo, pal, kind, crew, names }: Ctx & { kind: ShipConfig['windows']; crew: number; names: string[] }) {
   if (crew <= 0) return null
   const { r, spots } = windowSpots(geo, Math.min(crew, MAX_CREW))
@@ -500,6 +537,8 @@ function Windows({ geo, pal, kind, crew, names }: Ctx & { kind: ShipConfig['wind
           shape = <rect x={x - r} y={y - r} width={r * 2} height={r * 2} rx={r * 0.3} fill={pal.glass} className="ship-ink ship-thin" />
         } else if (kind === 'arch') {
           shape = <path d={`M${x - r} ${y + r} V${y - r * 0.1} A${r} ${r} 0 0 1 ${x + r} ${y - r * 0.1} V${y + r} Z`} fill={pal.glass} className="ship-ink ship-thin" />
+        } else if (kind !== 'round') {
+          shape = <path d={windowPath(kind, x, y, r)} fill={pal.glass} className="ship-ink ship-thin" />
         } else {
           shape = <circle cx={x} cy={y} r={r} fill={pal.glass} className="ship-ink ship-thin" />
         }
@@ -527,6 +566,108 @@ function Cockpit({ geo, pal, kind, clip }: Ctx & { kind: ShipConfig['cockpit']; 
       <g>
         <path d={`M${x - w} ${y1 + 1.5} A${w} ${w * 0.95} 0 0 1 ${x + w} ${y2 + 1.5} Z`} fill={canopy} className="ship-ink" />
         <path d={`M${x - w * 0.55} ${y1 - 3} Q${x - w * 0.2} ${y1 - w * 0.8} ${x + w * 0.2} ${y1 - w * 0.78}`} stroke="#fff" strokeWidth={2.2} strokeLinecap="round" fill="none" opacity={0.85} />
+      </g>
+    )
+  }
+  const topAt = (x: number) => geo.top(x)
+  if (kind === 'dome') {
+    const x = geo.at(0.68)
+    const w = 17
+    return (
+      <g>
+        <path d={`M${x - w} ${topAt(x - w) + 1.5} A${w} ${w * 1.05} 0 0 1 ${x + w} ${topAt(x + w) + 1.5} Z`} fill={canopy} className="ship-ink" />
+        <path d={`M${x - w * 0.55} ${topAt(x - w) - 4} Q${x - w * 0.15} ${topAt(x) - w * 0.95} ${x + w * 0.25} ${topAt(x) - w * 0.9}`} stroke="#fff" strokeWidth={2.4} strokeLinecap="round" fill="none" opacity={0.85} />
+      </g>
+    )
+  }
+  if (kind === 'twin') {
+    return (
+      <g>
+        {[0.6, 0.79].map((u) => {
+          const x = geo.at(u)
+          const w = 8.5
+          return (
+            <g key={u}>
+              <path d={`M${x - w} ${topAt(x - w) + 1.5} A${w} ${w * 1.05} 0 0 1 ${x + w} ${topAt(x + w) + 1.5} Z`} fill={canopy} className="ship-ink" />
+              <path d={`M${x - w * 0.5} ${topAt(x) - 2} Q${x - w * 0.2} ${topAt(x) - w * 0.8} ${x + w * 0.1} ${topAt(x) - w * 0.85}`} stroke="#fff" strokeWidth={1.6} strokeLinecap="round" fill="none" opacity={0.85} />
+            </g>
+          )
+        })}
+      </g>
+    )
+  }
+  if (kind === 'porthole' || kind === 'eye') {
+    const x = geo.at(0.72)
+    const y = (geo.top(x) + geo.bot(x)) / 2 - 1
+    const r = Math.min(10, geo.half(x) * 0.62)
+    return (
+      <g>
+        <circle cx={x} cy={y} r={r + 2.4} fill={pal.accent} className="ship-ink" />
+        <circle cx={x} cy={y} r={r} fill={kind === 'eye' ? '#fff' : canopy} className="ship-ink ship-thin" />
+        {kind === 'eye' && <circle cx={x + r * 0.28} cy={y + r * 0.05} r={r * 0.48} fill="#1e293b" />}
+        <circle cx={x - r * 0.35} cy={y - r * 0.4} r={Math.max(1.2, r * 0.24)} fill="#fff" opacity={0.9} />
+      </g>
+    )
+  }
+  if (kind === 'slit') {
+    // Una ranura horizontal a media altura, como los ojos de un robot.
+    const x = geo.at(0.72)
+    const y = (geo.top(x) + geo.bot(x)) / 2 - 3
+    return (
+      <g>
+        <rect x={x - 13} y={y - 3.4} width={26} height={6.8} rx={3.4} fill={canopy} className="ship-ink" />
+        <path d={`M${x - 8} ${y - 0.6} H${x + 2}`} stroke="#fff" strokeWidth={1.6} strokeLinecap="round" opacity={0.85} />
+      </g>
+    )
+  }
+  if (kind === 'hood') {
+    const x = geo.at(0.7)
+    return (
+      <g>
+        <polygon points={pts([[x - 15, topAt(x - 15) + 2], [x - 9, topAt(x - 9) - 13], [x + 7, topAt(x + 7) - 13], [x + 15, topAt(x + 15) + 2]])} fill={pal.trim} className="ship-ink" />
+        <polygon points={pts([[x - 9, topAt(x - 9) - 2], [x - 5, topAt(x - 5) - 10], [x + 5, topAt(x + 5) - 10], [x + 10, topAt(x + 10) - 2]])} fill={canopy} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'panorama') {
+    const a = geo.at(0.46)
+    let b = geo.at(0.86)
+    while (b > a && geo.half(b) < 8) b -= 1
+    const xs = Array.from({ length: 16 }, (_, i) => a + ((b - a) * i) / 15)
+    const lower = xs.map((x) => `${num(x)} ${num(geo.top(x) + 1)}`)
+    const upper = [...xs].reverse().map((x, i) => `${num(x)} ${num(geo.top(x) - 9 * Math.sin((Math.PI * (15 - i)) / 15))}`)
+    return (
+      <g>
+        <path d={`M${lower.join(' L')} L${upper.join(' L')} Z`} fill={canopy} className="ship-ink" />
+        <path d={`M${num(a + (b - a) * 0.2)} ${num(geo.top(a + (b - a) * 0.2) - 3.5)} L${num(a + (b - a) * 0.55)} ${num(geo.top(a + (b - a) * 0.55) - 5.5)}`} stroke="#fff" strokeWidth={2} strokeLinecap="round" opacity={0.85} fill="none" />
+      </g>
+    )
+  }
+  if (kind === 'periscope') {
+    const x = geo.at(0.62)
+    const y = topAt(x)
+    return (
+      <g>
+        <polygon points={pts([[x - 3, y + 3], [x - 3, y - 20], [x + 11, y - 20], [x + 11, y - 12], [x + 3, y - 12], [x + 3, y + 3]])} fill={pal.trim} className="ship-ink" />
+        <circle cx={x + 11} cy={y - 16} r={3} fill={canopy} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'tower') {
+    const x = geo.at(0.66)
+    return (
+      <g>
+        <polygon points={pts([[x - 12, topAt(x - 12) + 2], [x - 8, topAt(x - 8) - 14], [x + 8, topAt(x + 8) - 14], [x + 12, topAt(x + 12) + 2]])} fill={pal.trim} className="ship-ink" />
+        <rect x={x - 5} y={topAt(x) - 11} width={10} height={6} rx={1.6} fill={canopy} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'wedge') {
+    const x = geo.at(0.7)
+    return (
+      <g>
+        <polygon points={pts([[x - 14, topAt(x - 14) + 2], [x - 7, topAt(x - 7) - 12], [x + 15, topAt(x + 15) + 2]])} fill={canopy} className="ship-ink" />
+        <path d={`M${x - 7} ${topAt(x - 7) - 5} L${x + 2} ${topAt(x + 2) - 6}`} stroke="#fff" strokeWidth={2} strokeLinecap="round" opacity={0.85} fill="none" />
       </g>
     )
   }
@@ -561,6 +702,72 @@ function Nose({ geo, pal, kind, clip }: Ctx & { kind: ShipConfig['nose']; clip: 
       <g clipPath={`url(#${clip})`}>
         <path d={`M${x - 15} ${CY - geo.H} L${x - 15} ${CY + geo.H} L${x + 4} ${CY + geo.H} L${x + 4} ${CY - geo.H} Z`} fill={pal.accent} />
         <path d={`M${x - 15} ${CY - geo.H} V${CY + geo.H}`} className="ship-ink ship-thin" fill="none" />
+      </g>
+    )
+  }
+  if (kind === 'ball') {
+    return (
+      <g>
+        <circle cx={x + 5} cy={CY} r={6.5} fill={pal.accent} className="ship-ink" />
+        <circle cx={x + 3} cy={CY - 2.2} r={1.8} fill="#fff" opacity={0.85} />
+      </g>
+    )
+  }
+  if (kind === 'cone') {
+    return <path d={`M${x - 5} ${CY - 8.5} L${x + 17} ${CY} L${x - 5} ${CY + 8.5} Z`} fill={pal.accent} className="ship-ink" />
+  }
+  if (kind === 'fork') {
+    return (
+      <g>
+        <path d={`M${x - 3} ${CY - 3} Q${x + 8} ${CY - 11} ${x + 18} ${CY - 8} M${x - 3} ${CY + 3} Q${x + 8} ${CY + 11} ${x + 18} ${CY + 8}`} className="ship-ink" fill="none" />
+        <circle cx={x + 18} cy={CY - 8} r={2.6} fill={pal.accent} className="ship-ink ship-thin" />
+        <circle cx={x + 18} cy={CY + 8} r={2.6} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'ring') {
+    const ry = geo.half(x - 9) + 4
+    return (
+      <g fill="none">
+        <ellipse cx={x - 8} cy={CY} rx={3.4} ry={ry} className="ship-ink" style={{ strokeWidth: 6.2 }} />
+        <ellipse cx={x - 8} cy={CY} rx={3.4} ry={ry} stroke={pal.accent} strokeWidth={3} />
+      </g>
+    )
+  }
+  if (kind === 'beak') {
+    return <path d={`M${x - 4} ${CY - 9} Q${x + 16} ${CY - 5} ${x + 15} ${CY + 5} Q${x + 6} ${CY + 8} ${x - 4} ${CY + 8} Z`} fill={pal.accent} className="ship-ink" />
+  }
+  if (kind === 'lamp') {
+    return (
+      <g>
+        <polygon points={pts([[x + 6, CY - 3], [x + 30, CY - 15], [x + 30, CY + 15], [x + 6, CY + 3]])} fill={lighten(pal.accent, 0.55)} opacity={0.5} />
+        <path d={`M${x - 4} ${CY - 7} A7 7 0 0 1 ${x - 4} ${CY + 7} Z`} fill={pal.accent} className="ship-ink" />
+        <circle cx={x - 4} cy={CY} r={2.4} fill="#fff" />
+      </g>
+    )
+  }
+  if (kind === 'spark') {
+    return <Spark x={x + 9} y={CY} s={9} className="ship-ink" style={{ fill: pal.accent }} />
+  }
+  if (kind === 'bumper') {
+    return <rect x={x - 5} y={CY - 8} width={10} height={16} rx={5} fill={pal.trim} className="ship-ink" />
+  }
+  if (kind === 'whisker') {
+    return (
+      <g>
+        <path d={`M${x - 3} ${CY - 2} Q${x + 12} ${CY - 12} ${x + 24} ${CY - 8} M${x - 3} ${CY + 2} Q${x + 12} ${CY + 12} ${x + 24} ${CY + 8}`} className="ship-ink ship-thin" fill="none" />
+        <circle cx={x + 24} cy={CY - 8} r={2.2} fill={pal.accent} className="ship-ink ship-thin" />
+        <circle cx={x + 24} cy={CY + 8} r={2.2} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'pennant') {
+    const px = x - 6
+    const py = geo.top(px) + 2
+    return (
+      <g>
+        <path d={`M${px} ${py} V${py - 26}`} className="ship-ink" fill="none" />
+        <polygon points={pts([[px, py - 26], [px + 16, py - 21], [px, py - 14]])} fill={pal.accent} className="ship-ink ship-thin" />
       </g>
     )
   }
