@@ -1,13 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { User } from '@phosphor-icons/react'
-import { api } from '../api'
 import { useAuth } from '../auth'
-import { errorMessage } from '../lib/errors'
-import { useToast } from '../toast'
+import { UserAvatar } from './avatar/UserAvatar'
+import { ProfileModal } from './avatar/ProfileModal'
 import { ExpandIconButton } from './ExpandIconButton'
-import { PasswordField, TextField } from './ui/Field'
-import { ModalShell } from './ui/ModalShell'
 
+/** El botón de perfil del encabezado: el avatar del usuario con su marco; abre el perfil. */
 export function UserChip() {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
@@ -17,115 +15,14 @@ export function UserChip() {
     <>
       <ExpandIconButton
         icon={User}
+        media={<UserAvatar avatar={user.avatar_config} frame={user.frame_id} size={32} name={user.username} />}
         label={user.username}
-        variant="accent"
-        aria-label={`Mi cuenta: ${user.username}`}
-        title="Mi cuenta"
+        variant="ghost"
+        aria-label={`Mi perfil: ${user.username}`}
+        title="Mi perfil"
         onClick={() => setOpen(true)}
       />
-      <AccountModal open={open} onClose={() => setOpen(false)} />
+      <ProfileModal open={open} onClose={() => setOpen(false)} />
     </>
-  )
-}
-
-function AccountModal({
-  open,
-  onClose,
-}: {
-  open: boolean
-  onClose: () => void
-}) {
-  const { user, setUser } = useAuth()
-  const { showToast } = useToast()
-  const [username, setUsername] = useState(user?.username ?? '')
-  const [email, setEmail] = useState(user?.email ?? '')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-
-  useEffect(() => {
-    if (!open || !user) return
-    setUsername(user.username)
-    setEmail(user.email)
-    setPassword('')
-    setError(null)
-  }, [open, user])
-
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault()
-    setSubmitting(true)
-    setError(null)
-    try {
-      const next = await api.updateMe({
-        username: username.trim(),
-        email: email.trim(),
-        password: password.trim() || undefined,
-      })
-      setUser(next)
-      setPassword('')
-      showToast({
-        tone: 'success',
-        title: 'Cuenta actualizada',
-        subtitle: 'Tus datos quedaron guardados.',
-      })
-      onClose()
-    } catch (err) {
-      setError(errorMessage(err))
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <ModalShell
-      open={open}
-      onClose={onClose}
-      titleId="account-title"
-      title="Tu cuenta"
-      lead="Cambia tu usuario, correo o contraseña cuando quieras."
-      icon={User}
-    >
-      <form className="modal-panel-body" onSubmit={(e) => void onSubmit(e)}>
-        <TextField
-          label="Usuario"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
-          required
-          minLength={3}
-          autoFocus
-        />
-        <TextField
-          label="Correo"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          required
-        />
-        <PasswordField
-          label="Nueva contraseña (opcional)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="new-password"
-          minLength={6}
-          placeholder="Déjala vacía si no la cambias"
-        />
-        {error && <p className="form-error">{error}</p>}
-        <div className="modal-actions">
-          <button
-            type="button"
-            className="ghost"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            Cancelar
-          </button>
-          <button type="submit" className="primary" disabled={submitting}>
-            {submitting ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-      </form>
-    </ModalShell>
   )
 }

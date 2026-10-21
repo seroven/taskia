@@ -2,6 +2,7 @@ import { AppearanceTools } from '../components/AppearanceTools'
 import { HubDestinations } from '../components/HubDestinations'
 import { SessionActions } from '../components/SessionActions'
 import { ExplorerXpBar } from '../components/ExplorerXpBar'
+import { UserAvatar } from '../components/avatar/UserAvatar'
 import { useAuth } from '../auth'
 
 type HubDoor = 'troops' | 'worlds' | 'camp'
@@ -18,7 +19,10 @@ export function HubPage({
       <header className="topbar hub-topbar">
         <div>
           <p className="brand">Taskia</p>
-          <p className="welcome">¡Hola, {user?.username}!</p>
+          <p className="welcome">
+            {user && <UserAvatar avatar={user.avatar_config} frame={user.frame_id} size={26} name={user.username} className="welcome-avatar" />}
+            ¡Hola, {user?.username}!
+          </p>
         </div>
         <div className="topbar-actions">
           <ExplorerXpBar />

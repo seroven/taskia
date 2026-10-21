@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { AccentProvider } from './accent'
 import { AuthProvider, useAuth } from './auth'
 import { AppLoader } from './components/AppLoader'
+import { ProfileModal } from './components/avatar/ProfileModal'
 import { SpaceSky, useSpace, type SpaceLevel } from './components/SpaceSky'
 import { ThemeProvider } from './theme'
 import { ToastProvider } from './toast'
@@ -212,6 +213,8 @@ function AppRouter() {
   }
 
   if (!user) return <AuthPage />
+  // Quien aún no tiene avatar lo crea primero: la pantalla no se puede cerrar hasta guardarlo.
+  if (!user.avatar_config) return <ProfileModal key={user.id} open required onClose={() => undefined} />
   if (user.role === 'admin') return <AdminPage key={user.id} />
   if (user.role === 'parent') return <GuardianPage key={user.id} />
   return <ExplorerApp key={user.id} userId={user.id} />

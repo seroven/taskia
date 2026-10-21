@@ -21,6 +21,7 @@ import {
   AirplaneTilt,
   type Icon,
 } from '@phosphor-icons/react'
+import { ColorPicker } from '../ui/ColorPicker'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { ModalShell } from '../ui/ModalShell'
 import { ShipRenderer } from '../ship/ShipRenderer'
@@ -84,61 +85,6 @@ const PROMPT_IDEAS = [
 const optionLabel = (slot: SlotKey, draft: ShipConfig) => {
   if (slot === 'engine') return SHIP_OPTIONS.engine.find((o) => o.id === draft.engine.kind)?.label ?? ''
   return (SHIP_OPTIONS[slot] as { id: string; label: string }[]).find((o) => o.id === draft[slot])?.label ?? ''
-}
-
-/** Muestras para elegir un color de un toque, por familias; el resto se escribe en hexadecimal. */
-const SWATCHES = [
-  '#fecdd3', '#fda4af', '#fb7185', '#f43f5e', '#be123c', '#fbcfe8', '#f472b6', '#db2777',
-  '#fed7aa', '#fdba74', '#f97316', '#c2410c', '#fef08a', '#fde68a', '#fbbf24', '#f59e0b',
-  '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#15803d', '#99f6e4', '#5eead4', '#0d9488',
-  '#bae6fd', '#7dd3fc', '#38bdf8', '#3b82f6', '#1d4ed8', '#c7d2fe', '#a5b4fc', '#4338ca',
-  '#e9d5ff', '#c4b5fd', '#a78bfa', '#8b5cf6', '#6d28d9', '#ffffff', '#e2e8f0', '#94a3b8',
-  '#64748b', '#334155', '#1e293b', '#0f172a',
-]
-
-const HEX = /^#[0-9a-f]{6}$/i
-
-/** Selector de color con el estilo de la app (sin el del navegador): muestras y un campo hexadecimal. */
-function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (hex: string) => void }) {
-  const [text, setText] = useState<string | null>(null)
-  const shown = text ?? value
-  return (
-    <div className="ship-picker" role="group" aria-label={`Color de ${label}`}>
-      <div className="ship-swatches">
-        {SWATCHES.map((hex) => (
-          <button
-            key={hex}
-            type="button"
-            className={`ship-swatch${hex.toLowerCase() === value.toLowerCase() ? ' is-selected' : ''}`}
-            style={{ background: hex }}
-            aria-label={hex}
-            aria-pressed={hex.toLowerCase() === value.toLowerCase()}
-            onClick={() => {
-              setText(null)
-              onChange(hex)
-            }}
-          />
-        ))}
-      </div>
-      <label className="ship-hex">
-        <i style={{ background: HEX.test(shown) ? shown : value }} />
-        <span>Código</span>
-        <input
-          type="text"
-          value={shown}
-          onBlur={() => setText(null)}
-          maxLength={7}
-          spellCheck={false}
-          aria-invalid={!HEX.test(shown)}
-          onChange={(event) => {
-            const next = event.target.value.startsWith('#') ? event.target.value : `#${event.target.value}`
-            setText(next)
-            if (HEX.test(next)) onChange(next.toLowerCase())
-          }}
-        />
-      </label>
-    </div>
-  )
 }
 
 /** Una opción con su nave en miniatura: se ve cómo quedaría puesta en la nave actual. */

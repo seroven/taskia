@@ -1,3 +1,4 @@
+import type { AvatarConfig } from './lib/avatar/types'
 export type UserRole = 'user' | 'admin' | 'parent'
 
 export type TaskStatus = 'pending' | 'studying' | 'done'
@@ -13,9 +14,8 @@ export interface PublicUser {
   xp_total: number
   xp_into_level: number
   xp_to_next: number
-  avatar_kind?: 'preset' | 'upload'
-  avatar_preset_id?: string | null
-  avatar_file?: string | null
+  /** `null` hasta que crea su avatar: la app se lo pide antes de dejarlo entrar. */
+  avatar_config?: AvatarConfig | null
   frame_id?: string | null
 }
 

@@ -1,3 +1,4 @@
+import type { AvatarConfig } from './avatar/types'
 import type { ShipConfig } from './ship/types'
 
 export type TroopRole = 'captain' | 'copilot' | 'member'
@@ -11,9 +12,7 @@ export interface TroopMember {
   xp_week: number
   joined_at: string
   rank: number
-  avatar_kind?: 'preset' | 'upload'
-  avatar_preset_id?: string | null
-  avatar_file?: string | null
+  avatar_config?: AvatarConfig | null
   frame_id?: string | null
 }
 

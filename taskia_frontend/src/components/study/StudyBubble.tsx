@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { motion, type HTMLMotionProps } from 'framer-motion'
+import { useAuth } from '../../auth'
+import { UserAvatar } from '../avatar/UserAvatar'
 import { TaskiaBeacon } from './TaskiaBeacon'
 
 type BubbleVariant = 'sober' | 'explorador'
@@ -20,6 +22,7 @@ export function StudyBubble({
   children,
   ...motionProps
 }: Props) {
+  const { user } = useAuth()
   const taskia = from !== 'user'
   const name = taskia ? 'Taskia' : 'Tú'
   return (
@@ -44,6 +47,11 @@ export function StudyBubble({
         <span className="study-bubble-role">{name}</span>
         {children}
       </span>
+      {variant === 'explorador' && !taskia && user ? (
+        <span className="study-avatar study-avatar--me" aria-hidden>
+          <UserAvatar avatar={user.avatar_config} frame={user.frame_id} size={32} name={user.username} />
+        </span>
+      ) : null}
     </motion.div>
   )
 }
