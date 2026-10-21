@@ -191,21 +191,26 @@ function ShipEditorForm({ current, crew, level, onClose, onSave, onGenerate }: O
     value: T,
     apply: (id: T) => ShipConfig,
     lockSlot: string,
-  ) => (
-    <div className="ship-tiles">
-      {options.map((option) => (
-        <OptionTile
-          key={option.id}
-          preview={apply(option.id)}
-          crew={shown}
-          label={option.label}
-          selected={option.id === value}
-          lockedUntil={option.id === ownedPiece(lockSlot) || shipPartLevel(lockSlot, option.id) <= level ? 0 : shipPartLevel(lockSlot, option.id)}
-          onPick={() => update(apply(option.id))}
-        />
-      ))}
-    </div>
-  )
+  ) => {
+    const lockedUntil = (id: string) => (id === ownedPiece(lockSlot) || shipPartLevel(lockSlot, id) <= level ? 0 : shipPartLevel(lockSlot, id))
+    // Las disponibles primero, en su orden de siempre; las bloqueadas al final, de menor a mayor nivel (el sort es estable).
+    const sorted = [...options].sort((x, y) => (lockedUntil(x.id) || 0) - (lockedUntil(y.id) || 0))
+    return (
+      <div className="ship-tiles">
+        {sorted.map((option) => (
+          <OptionTile
+            key={option.id}
+            preview={apply(option.id)}
+            crew={shown}
+            label={option.label}
+            selected={option.id === value}
+            lockedUntil={lockedUntil(option.id)}
+            onPick={() => update(apply(option.id))}
+          />
+        ))}
+      </div>
+    )
+  }
 
   const slotOptions = (key: SlotKey) => {
     if (key !== 'engine') {
