@@ -52,7 +52,7 @@ export function ShipLab() {
       <h3>Escudo de nivel: un adorno por hito (5, 10, 15, 20, 25)</h3>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 28, padding: '16px 8px 8px' }}>
         {[1, 4, 5, 10, 15, 20, 25, 60].map((level) => (
-          <LevelBadge key={level} level={level} size="lg" progress={(level * 0.17) % 1} tier={levelTier(level)} color="#dc2626" light="#fee2e2" />
+          <LevelBadge key={level} level={level} size="lg" progress={(level * 0.17) % 1} tier={levelTier(level)} color="#dc2626" light="#fee2e2" accent="#f87171" />
         ))}
       </div>
       <h3>Al azar</h3>

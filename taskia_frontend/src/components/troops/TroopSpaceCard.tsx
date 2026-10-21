@@ -82,6 +82,7 @@ export function TroopSpaceCard({
           tier={levelTier(detail.level)}
           color={detail.ship_config.palette.trim}
           light={detail.ship_config.palette.hull}
+          accent={detail.ship_config.palette.accent}
         />
         <div className="troop-space-card-head-text">
           <h2>{detail.name}</h2>
