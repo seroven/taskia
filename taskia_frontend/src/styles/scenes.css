@@ -573,6 +573,15 @@
 }
 
 /* Tripulación en el hub: cielo de estrellas con la nave flotando encima. */
+/* Casco de la nave del hub: el tono suave del acento (claro en el tema claro, oscuro en el oscuro). */
+.scene-crew {
+  --hub-ship-hull: color-mix(in srgb, var(--accent) 28%, #ffffff);
+}
+
+html[data-theme='dark'] .scene-crew {
+  --hub-ship-hull: color-mix(in srgb, var(--accent) 40%, #100e18);
+}
+
 .scene-crew {
   position: relative;
   width: 100%;

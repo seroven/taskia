@@ -3,7 +3,11 @@ import type { ShipConfig } from '../../lib/ship/types'
 import { Spark } from './kit'
 import { sv } from './sv'
 
-/** La nave de la puerta: una de muestra, con cinco ventanillas encendidas. */
+/**
+ * La nave de la puerta: una de muestra, con cinco ventanillas encendidas. Sus colores son variables CSS del tema y del
+ * acento (alas y motores con `--accent`, casco con `--hub-ship-hull`, definida en `scenes.css`), no valores calculados
+ * en React: así cambian dentro de la transición de apariencia, a la vez que el resto de la escena.
+ */
 const HUB_SHIP: ShipConfig = {
   seed: 'hub',
   hull: 'bean',
@@ -16,7 +20,7 @@ const HUB_SHIP: ShipConfig = {
   belly: 'pod',
   decal: 'stripe',
   windows: 'round',
-  palette: { hull: '#7dd3fc', trim: '#3b82f6', accent: '#fbbf24', glass: '#fef9c3' },
+  palette: { hull: 'var(--hub-ship-hull)', trim: 'var(--accent)', accent: '#fbbf24', glass: '#fef9c3' },
 }
 
 /**

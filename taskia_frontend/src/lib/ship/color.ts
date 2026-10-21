@@ -10,7 +10,17 @@ function toHex(r: number, g: number, b: number) {
   return `#${part(r)}${part(g)}${part(b)}`
 }
 
+const HEX = /^#[0-9a-f]{6}$/i
+
+/**
+ * Mezcla dos colores. Con hexadecimales devuelve otro hexadecimal; si alguno es una variable CSS o un `color-mix`
+ * (la nave del hub usa los colores del tema), devuelve un `color-mix` que el navegador resuelve, así los colores
+ * cambian junto con el tema, dentro de su transición, y no antes.
+ */
 export function mix(a: string, b: string, t: number) {
+  if (!HEX.test(a) || !HEX.test(b)) {
+    return `color-mix(in srgb, ${a} ${Math.round((1 - t) * 100)}%, ${b} ${Math.round(t * 100)}%)`
+  }
   const [ar, ag, ab] = parse(a)
   const [br, bg, bb] = parse(b)
   return toHex(ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t)
