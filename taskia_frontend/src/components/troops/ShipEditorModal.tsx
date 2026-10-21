@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion, useAnimationControls } from 'framer-motion'
 import { DiceFive, MagicWand } from '@phosphor-icons/react'
 import { TextField } from '../ui/Field'
 import { ModalShell } from '../ui/ModalShell'
@@ -95,16 +96,28 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
   const [error, setError] = useState<string | null>(null)
   const [aiBusy, setAiBusy] = useState(false)
   const [saving, setSaving] = useState(false)
+  /** Falso hasta el primer cambio: abrir el editor no arma la nave a saltos; después, cada pieza nueva aparece con rebote. */
+  const [touched, setTouched] = useState(false)
+  const bounce = useAnimationControls()
 
   const busy = aiBusy || saving
+
+  /** Todo cambio de la nave pasa por aquí: guarda el borrador, activa las animaciones y la hace rebotar un poco. */
+  const update = (next: ShipConfig) => {
+    setDraft(next)
+    setTouched(true)
+    void bounce.start({ y: [0, -9, 0], rotate: [0, -1.6, 1, 0], transition: { duration: 0.55, ease: 'easeOut' } })
+  }
 
   return (
     <>
       <div className="modal-panel-body ship-editor">
         <div className="ship-editor-preview">
-          <ShipRenderer config={draft} crew={Math.min(Math.max(crew, 1), MAX_CREW)} label="Vista previa de la nave" />
+          <motion.div className="ship-editor-stage" animate={bounce}>
+            <ShipRenderer config={draft} crew={Math.min(Math.max(crew, 1), MAX_CREW)} edit={{ appear: touched }} label="Vista previa de la nave" />
+          </motion.div>
           <div className="ship-editor-tools">
-            <button type="button" className="ghost" disabled={busy} onClick={() => setDraft(randomShip(`nave-${Date.now()}`))}>
+            <button type="button" className="ghost" disabled={busy} onClick={() => update(randomShip(`nave-${Date.now()}`))}>
               <DiceFive size={18} weight="bold" />
               Sorpréndeme
             </button>
@@ -120,7 +133,7 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
                 label={slot.label}
                 options={SHIP_OPTIONS[slot.key] as { id: string; label: string }[]}
                 value={draft[slot.key]}
-                onPick={(id) => setDraft({ ...draft, [slot.key]: id })}
+                onPick={(id) => update({ ...draft, [slot.key]: id })}
               />
             </section>
           ))}
@@ -131,7 +144,7 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
               label="Tipo de motor"
               options={SHIP_OPTIONS.engine}
               value={draft.engine.kind}
-              onPick={(kind) => setDraft({ ...draft, engine: { ...draft.engine, kind } })}
+              onPick={(kind) => update({ ...draft, engine: { ...draft.engine, kind } })}
             />
             <Chips
               label="Cuántos motores"
@@ -141,13 +154,13 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
                 { id: '3', label: '3' },
               ]}
               value={String(draft.engine.count)}
-              onPick={(id) => setDraft({ ...draft, engine: { ...draft.engine, count: Number(id) as 1 | 2 | 3 } })}
+              onPick={(id) => update({ ...draft, engine: { ...draft.engine, count: Number(id) as 1 | 2 | 3 } })}
             />
             <Chips
               label="Estela"
               options={SHIP_OPTIONS.flame}
               value={draft.engine.flame}
-              onPick={(flame) => setDraft({ ...draft, engine: { ...draft.engine, flame } })}
+              onPick={(flame) => update({ ...draft, engine: { ...draft.engine, flame } })}
             />
           </section>
 
@@ -161,7 +174,7 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
                   className="ship-palette"
                   title={preset.label}
                   aria-label={`Paleta ${preset.label}`}
-                  onClick={() => setDraft({ ...draft, palette: preset.palette })}
+                  onClick={() => update({ ...draft, palette: preset.palette })}
                 >
                   <i style={{ background: preset.palette.hull }} />
                   <i style={{ background: preset.palette.trim }} />
@@ -176,7 +189,7 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
                     type="color"
                     value={draft.palette[field.key]}
                     onChange={(event) =>
-                      setDraft({ ...draft, palette: { ...draft.palette, [field.key]: event.target.value } })
+                      update({ ...draft, palette: { ...draft.palette, [field.key]: event.target.value } })
                     }
                   />
                   <span>{field.label}</span>
@@ -205,7 +218,7 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
                 setError(null)
                 try {
                   const res = await onGenerate(prompt.trim())
-                  setDraft(res.preview)
+                  update(res.preview)
                 } catch (err) {
                   setError(errorMessage(err))
                 } finally {

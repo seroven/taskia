@@ -57,6 +57,7 @@ export interface TroopRankingRow {
   name: string
   member_count: number
   xp_week: number
+  ship_config: ShipConfig
 }
 
 export interface TroopRankingResponse {

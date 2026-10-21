@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion'
-import { PaintBrush, Plus, SignOut, Star } from '@phosphor-icons/react'
+import { Lightning, PaintBrush, Plus, SignOut, Trophy, Users } from '@phosphor-icons/react'
 import { ShipRenderer } from '../ship/ShipRenderer'
 import { MAX_CREW } from '../../lib/ship/types'
 import {
@@ -7,15 +7,7 @@ import {
   type TroopDetail,
 } from '../../lib/troopsTypes'
 import { ExplorerAvatar } from './ExplorerAvatar'
-
-export function LevelStar({ level }: { level: number }) {
-  return (
-    <span className="level-star" title={`Nivel ${level}`}>
-      <Star size={18} weight="fill" />
-      <span className="level-star-num">{level}</span>
-    </span>
-  )
-}
+import { LevelBadge } from './LevelBadge'
 
 export function TroopSpaceCard({
   detail,
@@ -67,17 +59,28 @@ export function TroopSpaceCard({
           crewNames={detail.members.map((m) => m.username)}
           label={`Nave de ${detail.name}`}
         />
-        <span className="troop-space-card-ship-star">
-          <LevelStar level={detail.level} />
-        </span>
       </div>
 
       <header className="troop-space-card-head">
-        <h2>{detail.name}</h2>
-        <p className="troops-muted">
-          {detail.rank != null ? `#${detail.rank} esta semana · ` : ''}
-          {detail.xp_week} XP sem. · {detail.member_count}/{detail.max_members}
-        </p>
+        <LevelBadge level={detail.level} size="lg" title={`Nivel de la tripulación: ${detail.level}`} />
+        <div className="troop-space-card-head-text">
+          <h2>{detail.name}</h2>
+          <ul className="troop-space-card-stats">
+            {detail.rank != null && (
+              <li className="is-rank" title="Puesto en el ranking de esta semana">
+                <Trophy size={14} weight="fill" />#{detail.rank}
+              </li>
+            )}
+            <li title="XP que sumó la tripulación esta semana">
+              <Lightning size={14} weight="fill" />
+              {detail.xp_week} XP
+            </li>
+            <li title="Miembros">
+              <Users size={14} weight="fill" />
+              {detail.member_count}/{detail.max_members}
+            </li>
+          </ul>
+        </div>
       </header>
 
       {(isMine || canRequestJoin) && (
@@ -157,7 +160,7 @@ export function TroopSpaceCard({
               <span className={`troops-role troops-role--${m.role}`}>
                 {troopRoleLabel(m.role)}
               </span>
-              <LevelStar level={m.level} />
+              <LevelBadge level={m.level} size="sm" />
             </div>
             {isCaptain && m.role !== 'captain' && onSetCopilot && onKick && (
               <div className="troop-space-member-actions">

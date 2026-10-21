@@ -1,10 +1,14 @@
 import { memo, useId, type ReactNode } from 'react'
+import { motion } from 'framer-motion'
 import { darken, lighten, mix } from '../../lib/ship/color'
 import { CY, VB_H, VB_W, hullGeo, type HullGeo } from '../../lib/ship/geometry'
 import { MAX_CREW, type ShipConfig, type ShipPalette } from '../../lib/ship/types'
 import { Spark } from '../scenes/kit'
 
 type Ctx = { geo: HullGeo; pal: ShipPalette }
+
+/** Modo editor: las piezas cambiadas aparecen con rebote (`appear` es falso hasta el primer cambio). */
+type Anim = { appear: boolean }
 
 const num = (value: number) => Math.round(value * 10) / 10
 const pts = (list: [number, number][]) => list.map(([x, y]) => `${num(x)},${num(y)}`).join(' ')
@@ -398,18 +402,44 @@ type Props = {
   /** Nombres de los miembros, para el tooltip y los lectores de pantalla. */
   crewNames?: string[]
   animate?: boolean
+  /** Solo el editor: las piezas que cambian aparecen con un rebote y los colores se mezclan suavemente. */
+  edit?: Anim
   /** Contorno más fino: para tamaños pequeños. */
   className?: string
   label?: string
 }
 
+/**
+ * Una pieza de la nave. En el editor (`anim`) cada pieza que se monta de nuevo (porque cambió de variante) aparece
+ * con un rebote, escalonado por `order`; las que no cambian no se tocan. `anim.appear` es falso en el primer
+ * dibujo, para que abrir el editor no arme la nave a saltos. Fuera del editor es solo un fragmento.
+ */
+function Pop({ anim, order, children }: { anim?: Anim; order: number; children: ReactNode }) {
+  if (!anim) return <>{children}</>
+  return (
+    <motion.g
+      initial={anim.appear ? { opacity: 0, scale: 0.5 } : false}
+      animate={{ opacity: 1, scale: 1 }}
+      // La opacidad va con una transición corta (un resorte la haría oscilar); el rebote es solo de la escala.
+      transition={{
+        opacity: { duration: 0.18, delay: order * 0.035 },
+        scale: { type: 'spring', stiffness: 420, damping: 17, delay: order * 0.035 },
+      }}
+      style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+    >
+      {children}
+    </motion.g>
+  )
+}
+
 /** Las piezas de la nave, sin el <svg>: para quien la dibuja dentro de otro lienzo. */
-export function ShipArt({ config, crew = 0, crewNames = [] }: Pick<Props, 'config' | 'crew' | 'crewNames'>) {
+export function ShipArt({ config, crew = 0, crewNames = [], anim }: Pick<Props, 'config' | 'crew' | 'crewNames'> & { anim?: Anim }) {
   const uid = useId().replace(/:/g, '')
   const geo = hullGeo(config.hull)
   const pal = config.palette
   const clip = `${uid}-hull`
   const shade = darken(pal.hull, 0.16)
+  const hull = config.hull
 
   return (
     <>
@@ -419,31 +449,52 @@ export function ShipArt({ config, crew = 0, crewNames = [] }: Pick<Props, 'confi
         </clipPath>
       </defs>
 
-      <Engines geo={geo} pal={pal} config={config.engine} />
-      <Tail geo={geo} pal={pal} kind={config.tail} />
-      <TopModule geo={geo} pal={pal} kind={config.top} />
-      <Belly geo={geo} pal={pal} kind={config.belly} />
+      {/* La clave lleva el casco: al cambiarlo, las piezas se reposicionan y todas vuelven a aparecer. */}
+      <Pop key={`engine-${hull}-${config.engine.kind}-${config.engine.count}-${config.engine.flame}`} anim={anim} order={5}>
+        <Engines geo={geo} pal={pal} config={config.engine} />
+      </Pop>
+      <Pop key={`tail-${hull}-${config.tail}`} anim={anim} order={3}>
+        <Tail geo={geo} pal={pal} kind={config.tail} />
+      </Pop>
+      <Pop key={`top-${hull}-${config.top}`} anim={anim} order={2}>
+        <TopModule geo={geo} pal={pal} kind={config.top} />
+      </Pop>
+      <Pop key={`belly-${hull}-${config.belly}`} anim={anim} order={4}>
+        <Belly geo={geo} pal={pal} kind={config.belly} />
+      </Pop>
 
-      <path d={geo.path} fill={pal.hull} className="ship-ink" />
-      <g clipPath={`url(#${clip})`}>
-        <rect x={geo.x0} y={CY + geo.H * 0.14} width={geo.L} height={geo.H} fill={shade} opacity={0.5} />
-        <path d={`M${geo.at(0.2)} ${geo.top(geo.at(0.2)) + 5} L${geo.at(0.62)} ${geo.top(geo.at(0.62)) + 5}`} stroke="#fff" strokeWidth={3} strokeLinecap="round" opacity={0.5} />
-      </g>
-      <path d={geo.path} fill="none" className="ship-ink" />
+      <Pop key={`hull-${hull}`} anim={anim} order={0}>
+        <path d={geo.path} fill={pal.hull} className="ship-ink" />
+        <g clipPath={`url(#${clip})`}>
+          <rect x={geo.x0} y={CY + geo.H * 0.14} width={geo.L} height={geo.H} fill={shade} opacity={0.5} />
+          <path d={`M${geo.at(0.2)} ${geo.top(geo.at(0.2)) + 5} L${geo.at(0.62)} ${geo.top(geo.at(0.62)) + 5}`} stroke="#fff" strokeWidth={3} strokeLinecap="round" opacity={0.5} />
+        </g>
+        <path d={geo.path} fill="none" className="ship-ink" />
+      </Pop>
 
-      <Decals geo={geo} pal={pal} kind={config.decal} clip={clip} />
-      <Cockpit geo={geo} pal={pal} kind={config.cockpit} clip={clip} />
-      <Windows geo={geo} pal={pal} kind={config.windows} crew={crew} names={crewNames} />
-      <Nose geo={geo} pal={pal} kind={config.nose} clip={clip} />
-      <Wings geo={geo} pal={pal} kind={config.wings} />
+      <Pop key={`decal-${hull}-${config.decal}`} anim={anim} order={1}>
+        <Decals geo={geo} pal={pal} kind={config.decal} clip={clip} />
+      </Pop>
+      <Pop key={`cockpit-${hull}-${config.cockpit}`} anim={anim} order={2}>
+        <Cockpit geo={geo} pal={pal} kind={config.cockpit} clip={clip} />
+      </Pop>
+      <Pop key={`windows-${hull}-${config.windows}-${crew}`} anim={anim} order={1}>
+        <Windows geo={geo} pal={pal} kind={config.windows} crew={crew} names={crewNames} />
+      </Pop>
+      <Pop key={`nose-${hull}-${config.nose}`} anim={anim} order={3}>
+        <Nose geo={geo} pal={pal} kind={config.nose} clip={clip} />
+      </Pop>
+      <Pop key={`wings-${hull}-${config.wings}`} anim={anim} order={4}>
+        <Wings geo={geo} pal={pal} kind={config.wings} />
+      </Pop>
     </>
   )
 }
 
-function ShipRendererBase({ config, size, crew = 0, crewNames = [], animate = true, className = '', label }: Props) {
+function ShipRendererBase({ config, size, crew = 0, crewNames = [], animate = true, edit, className = '', label }: Props) {
   return (
     <svg
-      className={`ship${animate ? ' is-live' : ''} ${className}`.trim()}
+      className={`ship${animate ? ' is-live' : ''}${edit ? ' is-editing' : ''} ${className}`.trim()}
       viewBox={`0 0 ${VB_W} ${VB_H}`}
       width={size}
       height={size ? size * (VB_H / VB_W) : undefined}
@@ -452,7 +503,7 @@ function ShipRendererBase({ config, size, crew = 0, crewNames = [], animate = tr
       aria-hidden={label ? undefined : true}
       focusable="false"
     >
-      <ShipArt config={config} crew={crew} crewNames={crewNames} />
+      <ShipArt config={config} crew={crew} crewNames={crewNames} anim={edit} />
     </svg>
   )
 }

@@ -15,6 +15,7 @@ import { WorldsNav } from '../components/worlds/WorldsNav'
 import { GalaxyUniverse } from '../components/troops/space/GalaxyUniverse'
 import { ShipEditorModal } from '../components/troops/ShipEditorModal'
 import { TroopSpaceCard } from '../components/troops/TroopSpaceCard'
+import { TroopRankingPanel } from '../components/troops/TroopRankingPanel'
 import { errorMessage } from '../lib/errors'
 import type {
   TroopDetail,
@@ -451,77 +452,17 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
             )}
 
             {rankingOpen && (
-              <div
-                className="space-ranking-backdrop"
-                onClick={() => setRankingOpen(false)}
-                role="presentation"
-              >
-                <aside
-                  className="space-ranking-panel"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <header className="space-ranking-head">
-                    <h2>Ranking semanal</h2>
-                    <button
-                      type="button"
-                      className="ghost"
-                      onClick={() => setRankingOpen(false)}
-                    >
-                      Cerrar
-                    </button>
-                  </header>
-                  <ul
-                    className="space-ranking-list"
-                    onScroll={(e) => {
-                      const el = e.currentTarget
-                      if (
-                        el.scrollTop + el.clientHeight >
-                        el.scrollHeight - 48
-                      ) {
-                        void ensureRanking(false)
-                      }
-                    }}
-                  >
-                    {ranking.map((row) => (
-                      <li
-                        key={row.id}
-                        className={
-                          row.rank <= 3
-                            ? `space-ranking-row space-ranking-row--${row.rank}`
-                            : 'space-ranking-row'
-                        }
-                      >
-                        <span className="space-ranking-pos">#{row.rank}</span>
-                        <strong>{row.name}</strong>
-                        <span className="troops-muted">{row.xp_week} XP</span>
-                      </li>
-                    ))}
-                    {rankingLoading && (
-                      <li className="troops-muted">Cargando…</li>
-                    )}
-                  </ul>
-                  {myTroopId != null && (
-                    <button
-                      type="button"
-                      className="ghost space-ranking-jump"
-                      onClick={() => {
-                        const el = document.querySelector(
-                          `.space-ranking-row`,
-                        )
-                        void el
-                        const idx = ranking.findIndex((r) => r.id === myTroopId)
-                        if (idx >= 0) {
-                          document
-                            .querySelectorAll('.space-ranking-row')
-                            [idx]?.scrollIntoView({ block: 'center' })
-                        }
-                      }}
-                    >
-                      Ir a mi posición
-                    </button>
-                  )}
-                </aside>
-              </div>
+              <TroopRankingPanel
+                rows={ranking}
+                myTroopId={myTroopId}
+                loading={rankingLoading}
+                onMore={() => void ensureRanking(false)}
+                onClose={() => setRankingOpen(false)}
+                onPick={(id) => {
+                  setRankingOpen(false)
+                  void selectTroop(id)
+                }}
+              />
             )}
           </div>
         </div>

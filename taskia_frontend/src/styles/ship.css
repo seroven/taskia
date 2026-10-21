@@ -88,6 +88,13 @@
   }
 }
 
+/* En el editor los colores se mezclan en vez de saltar. */
+.ship.is-editing :is(path, rect, circle, ellipse, polygon) {
+  transition:
+    fill 0.3s ease,
+    stroke 0.3s ease;
+}
+
 /* ---------- Editor de la nave ---------- */
 
 .ship-editor {
@@ -159,6 +166,15 @@
   font-weight: 700;
   font-size: 0.88rem;
   cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.ship-chip:active {
+  transform: scale(0.93);
 }
 
 .ship-chip:hover {
@@ -169,6 +185,35 @@
   border-color: var(--accent);
   background: var(--accent-soft);
   box-shadow: 0 0 0 2px var(--accent-soft);
+  animation: chip-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes chip-pop {
+  from {
+    transform: scale(0.88);
+  }
+}
+
+.ship-palette {
+  transition: transform 0.15s ease;
+}
+
+.ship-palette:hover {
+  transform: translateY(-2px) scale(1.06);
+}
+
+.ship-palette:active {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ship-chip,
+  .ship-chip.is-selected,
+  .ship-palette,
+  .ship.is-editing :is(path, rect, circle, ellipse, polygon) {
+    animation: none;
+    transition: none;
+  }
 }
 
 .ship-palettes {

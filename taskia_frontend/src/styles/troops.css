@@ -240,8 +240,22 @@
   touch-action: none;
 }
 
-.galaxy-stage:active {
+.galaxy-stage.is-dragging {
   cursor: grabbing;
+}
+
+.galaxy-stage {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.galaxy-stage svg {
+  -webkit-user-drag: none;
+}
+
+.galaxy-stage:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
 }
 
 .galaxy-sky {
@@ -254,6 +268,26 @@
   position: absolute;
   border-radius: 50%;
   filter: blur(8px);
+  animation: nebula-float 28s ease-in-out infinite alternate;
+}
+
+.nebula-b {
+  animation-duration: 34s;
+  animation-delay: -9s;
+}
+
+.nebula-c {
+  animation-duration: 22s;
+  animation-delay: -15s;
+}
+
+@keyframes nebula-float {
+  from {
+    transform: translate(-3%, -2%) scale(1);
+  }
+  to {
+    transform: translate(4%, 3%) scale(1.08);
+  }
 }
 
 .nebula-a {
@@ -280,19 +314,41 @@
   background: radial-gradient(circle, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%);
 }
 
-.galaxy-star {
+/*
+ * Fondo vivo: tres capas de estrellas (polvo, estrellas y rayitas de velocidad) que derivan solas hacia la
+ * izquierda a distinta velocidad, como si las naves volaran hacia la derecha. Cada capa es una baldosa SVG usada
+ * de máscara, así se pinta con el color del tema y se repite sin costuras (ver lib/skyTile.ts). El parallax con la
+ * cámara se aplica en JS sobre `mask-position`; la deriva es solo `transform`, que no repinta.
+ */
+.galaxy-stage {
+  --galaxy-star: var(--text);
+}
+
+.galaxy-layer {
   position: absolute;
-  border-radius: 50%;
-  background: #f8fafc;
-  opacity: 0.75;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  /* Una baldosa más ancha que la vista: la deriva recorre justo una baldosa y vuelve a empezar sin salto. */
+  width: calc(100% + var(--tile, 640px));
+  background: var(--galaxy-star);
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: var(--tile, 640px) var(--tile, 640px);
+  mask-size: var(--tile, 640px) var(--tile, 640px);
+  pointer-events: none;
+  animation: galaxy-drift var(--drift, 60s) linear infinite;
+  will-change: transform;
 }
 
-.galaxy-star.is-twinkle {
-  animation: galaxy-twinkle 3.4s ease-in-out infinite;
+.galaxy-layer.is-still {
+  animation: none;
 }
 
-.galaxy-star.is-big {
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.65);
+@keyframes galaxy-drift {
+  to {
+    transform: translateX(calc(var(--tile, 640px) * -1));
+  }
 }
 
 .galaxy-shooting {
@@ -408,11 +464,6 @@
   border-color: var(--accent);
 }
 
-@keyframes galaxy-twinkle {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
-}
-
 @keyframes galaxy-shoot {
   to { transform: translate(70vw, 28vh); opacity: 0; }
 }
@@ -484,21 +535,50 @@
   pointer-events: none;
 }
 
-.troop-space-card-ship-star {
-  position: absolute;
-  right: -10px;
-  bottom: -8px;
+.troop-space-card-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.troop-space-card-head-text {
+  min-width: 0;
 }
 
 .troop-space-card-head h2 {
   margin: 0;
-  font-size: 1.15rem;
-  text-align: center;
+  overflow: hidden;
+  font-size: 1.2rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.troop-space-card-head p {
-  margin: 4px 0 0;
-  text-align: center;
+.troop-space-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.troop-space-card-stats li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.troop-space-card-stats li.is-rank {
+  background: color-mix(in srgb, var(--star) 28%, transparent);
+  color: var(--text);
 }
 
 .troop-space-card-actions {
@@ -545,22 +625,63 @@
   justify-content: flex-end;
 }
 
-.level-star {
+/* Insignia de nivel: estrella de línea con el número grande (LevelBadge). */
+.lvl-star {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  color: #fbbf24;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  aspect-ratio: 1;
+  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--text) 18%, transparent));
+  animation: badge-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
 }
 
-.level-star-num {
-  position: absolute;
-  font-size: 0.62rem;
+.lvl-star--sm {
+  width: 30px;
+}
+
+.lvl-star--lg {
+  width: 56px;
+}
+
+.lvl-star svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.lvl-star-star {
+  stroke: var(--text);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+
+.lvl-star-shine {
+  stroke: #fff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+
+.lvl-star-num {
+  font-family: var(--font-display);
   font-weight: 800;
-  color: #111827;
-  line-height: 1;
+  fill: #3a2a00;
+}
+
+@keyframes badge-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(-18deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lvl-star {
+    animation: none;
+  }
 }
 
 .space-rank-fab,
@@ -669,7 +790,8 @@
 .space-home-fab {
   bottom: 18px;
   left: 50%;
-  transform: translateX(-50%);
+  /* `translate` y no `transform`: el hover de los botones sube con `transform` y se llevaba el -50 % de la posición. */
+  translate: -50% 0;
 }
 
 .space-ranking-backdrop {
@@ -873,4 +995,361 @@
   font-size: 1.2rem;
   font-weight: 700;
   color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galaxy-layer,
+  .galaxy-nebula {
+    animation: none;
+  }
+}
+
+/* ---------- Ranking semanal (TroopRankingPanel) ---------- */
+
+.rank-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  background: rgba(2, 6, 23, 0.4);
+  animation: rank-fade 0.2s ease;
+}
+
+.rank-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(410px, 100%);
+  max-height: calc(100% - 20px);
+  margin: 10px;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--space-card-border);
+  background: var(--space-card-bg);
+  color: var(--text);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4);
+  animation: rank-slide 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rank-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 10px;
+}
+
+.rank-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  line-height: 1.15;
+}
+
+.rank-head p {
+  margin: 3px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.rank-close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.rank-scroll {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 12px 14px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.rank-empty {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* Podio: el primero al centro, más alto; cada uno con su nave. */
+.rank-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  padding: 18px 0 6px;
+}
+
+.rank-podium-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 18px 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--medal, var(--border)) 55%, var(--border));
+  border-radius: 16px;
+  background: linear-gradient(to top, color-mix(in srgb, var(--medal, var(--accent)) 16%, transparent), transparent 80%), var(--surface);
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s ease;
+}
+
+.rank-podium-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.rank-podium-card--1 {
+  --medal: #fbbf24;
+  padding-top: 26px;
+  padding-bottom: 16px;
+}
+
+.rank-podium-card--2 {
+  --medal: #94a3b8;
+}
+
+.rank-podium-card--3 {
+  --medal: #d97706;
+  padding-bottom: 6px;
+}
+
+.rank-podium-card.is-mine,
+.rank-row.is-mine {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.rank-crown {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  translate: -50% 0;
+  color: #fbbf24;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35));
+}
+
+.rank-medal {
+  position: absolute;
+  top: -11px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--space-card-bg);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1c1917;
+}
+
+.rank-podium-card--1 .rank-crown + .rank-medal {
+  left: 8px;
+}
+
+.rank-podium-ship {
+  display: block;
+  width: 100%;
+}
+
+.rank-podium-card .rank-name {
+  display: -webkit-box;
+  min-height: 2.4em;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.rank-podium-card--1 .rank-podium-ship {
+  width: 112%;
+  margin-inline: -6%;
+}
+
+.rank-name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-xp {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.rank-xp svg {
+  color: #f59e0b;
+}
+
+.rank-tag {
+  margin-top: 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--accent-ink);
+}
+
+/* El resto: una fila por tripulación con su nave y su barra de XP frente al líder. */
+.rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rank-row {
+  display: grid;
+  grid-template-columns: 38px 64px minmax(0, 1fr) 62px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px 7px 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.rank-row:hover {
+  transform: translateX(-2px);
+  border-color: var(--accent);
+}
+
+.rank-pos {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.rank-ship {
+  display: block;
+}
+
+.rank-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.rank-info .rank-name {
+  text-align: left;
+}
+
+.rank-info small {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.rank-score {
+  position: relative;
+  display: grid;
+  justify-items: end;
+  padding-bottom: 7px;
+  line-height: 1.1;
+}
+
+.rank-score b {
+  font-size: 1rem;
+}
+
+.rank-score small {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.rank-score i {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  min-width: 4px;
+  max-width: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.rank-score::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.rank-score i {
+  z-index: 1;
+}
+
+.rank-foot {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+
+@keyframes rank-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rank-slide {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+
+@media (max-width: 520px) {
+  .rank-row {
+    grid-template-columns: 30px 52px minmax(0, 1fr) 54px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rank-backdrop,
+  .rank-panel {
+    animation: none;
+  }
 }
