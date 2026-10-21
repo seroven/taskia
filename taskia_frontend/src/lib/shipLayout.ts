@@ -26,9 +26,9 @@ function unit(seed: number, salt: number): number {
 }
 
 /** Distancia mínima entre dos naves, para que ni al agrandarse se encimen del todo. */
-const MIN_GAP = 330
-const RING_BASE = 640
-const RING_STEP = 330
+const MIN_GAP = 380
+const RING_BASE = 740
+const RING_STEP = 380
 const ELLIPSE_X = 1.3
 const ELLIPSE_Y = 0.8
 

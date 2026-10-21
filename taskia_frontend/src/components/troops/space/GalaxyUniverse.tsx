@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Crown, Medal, Minus, Plus } from '@phosphor-icons/react'
 import { ShipRenderer } from '../../ship/ShipRenderer'
 import { MY_SHIP_WIDTH, OTHER_SHIP_WIDTH, layoutShips } from '../../../lib/shipLayout'
@@ -10,11 +10,20 @@ import type { UniverseTroop } from '../../../lib/troopsTypes'
 const CARD_INSET = 400
 const SIDE_CARD_MIN_WIDTH = 900
 
-const ZOOM_MIN = 0.4
+const ZOOM_MIN = 0.5
 const ZOOM_MAX = 2.4
 /** Cuánto crece una nave al llegar al centro de la vista (1 = nada): las ajenas más; la propia ya es grande. */
 const BOOST_OTHER = 0.95
 const BOOST_MINE = 0.12
+
+/**
+ * Solo existen en el DOM las naves cercanas a la vista: entra una cuando cae a menos de `MOUNT_MARGIN` pantallas y se
+ * va cuando se aleja más de `UNMOUNT_MARGIN` (la diferencia evita que parpadee en el borde). Así el coste depende de
+ * lo que se ve y no de cuántas naves hay cargadas. Los cambios se agrupan cada `ACTIVE_DELAY` ms.
+ */
+const MOUNT_MARGIN = 0.9
+const UNMOUNT_MARGIN = 1.5
+const ACTIVE_DELAY = 110
 
 /**
  * Qué tan pegada sigue la cámara a lo que se le pide, como constante de tiempo (ms): menos es más pegada.
@@ -114,6 +123,14 @@ export function GalaxyUniverse({
     })
   }, [troops, myTroopId])
   const spotsRef = useRef(spots)
+  /** Naves montadas ahora. Al empezar: las que caen cerca del origen, donde arranca la cámara. */
+  const [active, setActive] = useState<Set<number>>(() => {
+    const w = typeof window === 'undefined' ? 1440 : window.innerWidth
+    const h = typeof window === 'undefined' ? 900 : window.innerHeight
+    return new Set(spots.filter((spot) => spot.mine || (Math.abs(spot.x) < w * 1.6 && Math.abs(spot.y) < h * 1.6)).map((spot) => spot.troop.id))
+  })
+  const activeRef = useRef(active)
+  const pending = useRef<{ ids: Set<number> | null; timer: number }>({ ids: null, timer: 0 })
   /** Nave con la ficha abierta y si ya llegó al centro de la vista; `clearRef` cierra la ficha cuando deja de ser el foco. */
   const focus = useRef<{ id: number | null; seen: boolean }>({ id: openId, seen: false })
   const clearRef = useRef(onClearTroop)
@@ -141,6 +158,34 @@ export function GalaxyUniverse({
       el.style.setProperty('-webkit-mask-position', position)
     }
 
+    // Qué naves deben existir: se decide con las posiciones en pantalla y se aplica en bloque, no en cada cuadro.
+    const mountPx = Math.max(w, h) * MOUNT_MARGIN
+    const unmountPx = Math.max(w, h) * UNMOUNT_MARGIN
+    const mounted = activeRef.current
+    let changed = false
+    const wanted: number[] = []
+    for (const spot of spotsRef.current) {
+      const id = spot.troop.id
+      const reach2 = (mounted.has(id) ? unmountPx : mountPx) + spot.base * zoom
+      const px = cx + (spot.x + x) * zoom
+      const py = cy + (spot.y + y) * zoom
+      const keep = spot.mine || id === focus.current.id || (px > -reach2 && px < w + reach2 && py > -reach2 && py < h + reach2)
+      if (keep) wanted.push(id)
+      if (keep !== mounted.has(id)) changed = true
+    }
+    if (changed || wanted.length !== mounted.size) {
+      pending.current.ids = new Set(wanted)
+      if (!pending.current.timer) {
+        pending.current.timer = window.setTimeout(() => {
+          pending.current.timer = 0
+          const next = pending.current.ids
+          if (!next) return
+          activeRef.current = next
+          setActive(next)
+        }, ACTIVE_DELAY)
+      }
+    }
+
     for (const spot of spotsRef.current) {
       const el = shipEls.current.get(spot.troop.id)
       const label = labelEls.current.get(spot.troop.id)
@@ -162,6 +207,9 @@ export function GalaxyUniverse({
       const half = spot.base * scale
       const visible = sx > -half && sx < w + half && sy > -half && sy < h + half
       el.style.visibility = visible ? 'visible' : 'hidden'
+      // Solo se animan (balanceo, estela, parpadeos) las naves que se ven: es lo que más cuesta.
+      const live = visible ? '1' : '0'
+      if (el.dataset.live !== live) el.dataset.live = live
       el.style.transform = `translate(${(sx - spot.base / 2).toFixed(1)}px, ${(sy - spot.base / 4).toFixed(1)}px) scale(${scale.toFixed(3)})`
       el.style.zIndex = String(Math.round(scale * 100))
       if (label) {
@@ -170,6 +218,16 @@ export function GalaxyUniverse({
         label.style.zIndex = String(Math.round(scale * 100) + 1)
       }
     }
+  }, [])
+
+  // Las naves recién montadas no tienen posición hasta que se dibujan: se colocan antes del primer pintado.
+  useLayoutEffect(() => {
+    draw()
+  }, [active, draw])
+
+  useEffect(() => {
+    const state = pending.current
+    return () => window.clearTimeout(state.timer)
   }, [])
 
   const moreAt = useRef(0)
@@ -530,6 +588,7 @@ export function GalaxyUniverse({
 
       <div className="galaxy-world" data-sky="1">
         {spots.map(({ troop, base, mine }, index) => {
+          if (!active.has(troop.id)) return null
           const rank = troop.rank != null && troop.rank <= 3 ? troop.rank : null
           const open = openId === troop.id
           return (

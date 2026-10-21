@@ -511,6 +511,8 @@
 .galaxy-world {
   position: absolute;
   inset: 0;
+  /* Las naves llevan z-index según su tamaño (hasta ~240): aquí dentro quedan, y nunca tapan los botones de zoom. */
+  z-index: 1;
 }
 
 /* Cada nave se coloca y escala desde JS (transform en línea); aquí solo su aspecto. */
@@ -520,6 +522,12 @@
   top: 0;
   transform-origin: 50% 50%;
   will-change: transform;
+}
+
+/* Una nave que no se ve no se anima: ni balanceo, ni estela, ni parpadeo de ventanillas. */
+.galaxy-ship[data-live='0'],
+.galaxy-ship[data-live='0'] * {
+  animation: none !important;
 }
 
 .galaxy-ship-hit {
