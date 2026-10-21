@@ -17,7 +17,15 @@ const pts = (list: [number, number][]) => list.map(([x, y]) => `${num(x)},${num(
 const SHORT = 'M27 45 C24 22 40 17 50 17 C62 17 76 23 73 45 C68 35 60 31 50 31 C40 31 32 35 27 45 Z'
 
 /** Dónde caen los ojos y la boca según el personaje (el gato los lleva un poco más abajo). */
-const faceY = (base: AvatarConfig['base']) => ({ ey: base === 'cat' ? 49 : 46, my: base === 'cat' ? 61 : 60 })
+const FACE: Partial<Record<AvatarConfig['base'], { ey: number; my: number }>> = {
+  cat: { ey: 49, my: 61 },
+  bunny: { ey: 48, my: 61 },
+  panda: { ey: 47, my: 61 },
+  dino: { ey: 47, my: 61 },
+  monster: { ey: 47, my: 61 },
+  ghost: { ey: 45, my: 59 },
+}
+const faceY = (base: AvatarConfig['base']) => FACE[base] ?? { ey: 46, my: 60 }
 
 /* ---------- Detrás de la cabeza ---------- */
 
@@ -93,6 +101,50 @@ function BaseBack({ base, pal }: { base: AvatarConfig['base']; pal: Pal }) {
       </g>
     )
   }
+  if (base === 'panda') {
+    return (
+      <g fill="#1f2937" className={ink}>
+        <circle cx={29.5} cy={29} r={8.6} />
+        <circle cx={70.5} cy={29} r={8.6} />
+      </g>
+    )
+  }
+  if (base === 'bunny') {
+    return (
+      <g>
+        <ellipse cx={39} cy={17} rx={6.8} ry={18} transform="rotate(-9 39 17)" fill={pal.skin} className={ink} />
+        <ellipse cx={61} cy={17} rx={6.8} ry={18} transform="rotate(9 61 17)" fill={pal.skin} className={ink} />
+        <ellipse cx={39} cy={18} rx={3} ry={12} transform="rotate(-9 39 18)" fill="#fbcfe8" />
+        <ellipse cx={61} cy={18} rx={3} ry={12} transform="rotate(9 61 18)" fill="#fbcfe8" />
+      </g>
+    )
+  }
+  if (base === 'monster') {
+    return (
+      <g fill={pal.accent} className={ink}>
+        <polygon points={pts([[30, 34], [25, 10], [42, 27]])} />
+        <polygon points={pts([[70, 34], [75, 10], [58, 27]])} />
+      </g>
+    )
+  }
+  if (base === 'dino') {
+    return (
+      <g fill={pal.accent} className={ink}>
+        <polygon points={pts([[35, 31], [39, 16], [47, 27]])} />
+        <polygon points={pts([[45, 26], [50, 11], [55, 26]])} />
+        <polygon points={pts([[53, 27], [61, 16], [65, 31]])} />
+      </g>
+    )
+  }
+  if (base === 'owl') {
+    return (
+      <g fill={pal.skin} className={ink}>
+        <polygon points={pts([[28, 36], [25, 12], [43, 29]])} />
+        <polygon points={pts([[72, 36], [75, 12], [57, 29]])} />
+      </g>
+    )
+  }
+  if (base === 'ghost') return null
   return (
     <g>
       <path d="M50 24 V13" className={ink} fill="none" />
@@ -324,6 +376,14 @@ function Head({ base, pal }: { base: AvatarConfig['base']; pal: Pal }) {
   if (base === 'cat') {
     return <ellipse cx={50} cy={50} rx={25} ry={22} fill={pal.skin} className={ink} />
   }
+  if (base === 'panda') return <ellipse cx={50} cy={48} rx={24} ry={22} fill={pal.skin} className={ink} />
+  if (base === 'bunny') return <ellipse cx={50} cy={50} rx={22} ry={22} fill={pal.skin} className={ink} />
+  if (base === 'dino') return <ellipse cx={50} cy={49} rx={23} ry={24} fill={pal.skin} className={ink} />
+  if (base === 'owl') return <ellipse cx={50} cy={48} rx={25} ry={25} fill={pal.skin} className={ink} />
+  if (base === 'monster') return <rect x={26} y={24} width={48} height={48} rx={20} fill={pal.skin} className={ink} />
+  if (base === 'ghost') {
+    return <path d="M27 70 C27 10 73 10 73 70 Q68 77 63 70 Q58 77 53 70 Q48 77 43 70 Q38 77 33 70 Q30 77 27 70 Z" fill={pal.skin} className={ink} />
+  }
   return <ellipse cx={50} cy={47} rx={22} ry={25} fill={pal.skin} className={ink} />
 }
 
@@ -347,6 +407,15 @@ function Eyes({ kind, base, pal }: { kind: AvatarConfig['eyes']; base: AvatarCon
       </g>
     )
   }
+  if (kind === 'led') {
+    return (
+      <g>
+        <rect x={32} y={ey - 5} width={36} height={10} rx={5} fill="#0f172a" className={thin} />
+        <rect x={37} y={ey - 2.2} width={9} height={4.4} rx={2.2} fill={pal.accent} />
+        <rect x={54} y={ey - 2.2} width={9} height={4.4} rx={2.2} fill={pal.accent} />
+      </g>
+    )
+  }
   return (
     <g>
       {[41, 59].map((x, i) => {
@@ -363,6 +432,75 @@ function Eyes({ kind, base, pal }: { kind: AvatarConfig['eyes']; base: AvatarCon
         if (kind === 'sleepy') return <path key={x} d={arc(x, false)} {...stroke} />
         if (kind === 'wink') return i === 0 ? <circle key={x} cx={x} cy={ey} r={2.7} fill={FEATURE} /> : <path key={x} d={arc(x, true)} {...stroke} />
         if (kind === 'star') return <polygon key={x} points={pts(starPoints(x, ey, 5.6))} fill={pal.accent} className={thin} />
+        if (kind === 'heart') {
+          return <path key={x} d={`M${x} ${ey + 4.6} C${x - 8.6} ${ey - 0.6} ${x - 4.2} ${ey - 6.6} ${x} ${ey - 2.2} C${x + 4.2} ${ey - 6.6} ${x + 8.6} ${ey - 0.6} ${x} ${ey + 4.6} Z`} fill="#f43f5e" className={thin} />
+        }
+        if (kind === 'angry') {
+          const dir = i === 0 ? 1 : -1
+          return (
+            <g key={x}>
+              <circle cx={x} cy={ey + 0.6} r={2.7} fill={FEATURE} />
+              <path d={`M${x - 5.6 * dir} ${ey - 6.2} L${x + 4.6 * dir} ${ey - 3}`} {...stroke} />
+            </g>
+          )
+        }
+        if (kind === 'wide') {
+          return (
+            <g key={x}>
+              <circle cx={x} cy={ey} r={6.8} fill="#fff" className={thin} />
+              <circle cx={x} cy={ey} r={1.9} fill={FEATURE} />
+            </g>
+          )
+        }
+        if (kind === 'lashes') {
+          const dir = i === 0 ? -1 : 1
+          return (
+            <g key={x}>
+              <circle cx={x} cy={ey} r={4.8} fill="#fff" className={thin} />
+              <circle cx={x + 0.5} cy={ey} r={2.4} fill={FEATURE} />
+              <path d={`M${x + 3.6 * dir} ${ey - 3} L${x + 7.4 * dir} ${ey - 5.4} M${x + 1.6 * dir} ${ey - 4.6} L${x + 3.4 * dir} ${ey - 8.4} M${x + 4.6 * dir} ${ey - 0.6} L${x + 8.6 * dir} ${ey - 1.4}`} stroke={FEATURE} strokeWidth={1.6} strokeLinecap="round" />
+            </g>
+          )
+        }
+        if (kind === 'tired') {
+          return (
+            <g key={x}>
+              <circle cx={x} cy={ey} r={5} fill="#fff" className={thin} />
+              <circle cx={x + 0.4} cy={ey + 1.2} r={2.4} fill={FEATURE} />
+              <path d={`M${x - 5} ${ey - 0.6} A5 5 0 0 1 ${x + 5} ${ey - 0.6} Z`} fill={darken(pal.skin, 0.1)} className={thin} />
+            </g>
+          )
+        }
+        if (kind === 'spiral') {
+          const d = Array.from({ length: 26 }, (_, k) => {
+            const a = k * 0.62
+            const r = 0.7 + k * 0.17
+            return `${k === 0 ? 'M' : 'L'}${num(x + Math.cos(a) * r)} ${num(ey + Math.sin(a) * r)}`
+          }).join(' ')
+          return <path key={x} d={d} stroke={FEATURE} strokeWidth={1.5} strokeLinecap="round" fill="none" />
+        }
+        if (kind === 'cross') {
+          return <path key={x} d={`M${x - 3.8} ${ey - 3.8} L${x + 3.8} ${ey + 3.8} M${x + 3.8} ${ey - 3.8} L${x - 3.8} ${ey + 3.8}`} {...stroke} />
+        }
+        if (kind === 'shiny') {
+          return (
+            <g key={x}>
+              <ellipse cx={x} cy={ey} rx={5} ry={6.6} fill={FEATURE} />
+              <circle cx={x - 1.6} cy={ey - 2.6} r={1.9} fill="#fff" />
+              <circle cx={x + 1.8} cy={ey + 2.2} r={1} fill="#fff" />
+            </g>
+          )
+        }
+        if (kind === 'sad') {
+          const dir = i === 0 ? -1 : 1
+          return (
+            <g key={x}>
+              <circle cx={x} cy={ey + 0.6} r={2.7} fill={FEATURE} />
+              <path d={`M${x + 5 * dir} ${ey - 5.4} L${x - 4.6 * dir} ${ey - 7.6}`} {...stroke} />
+              {i === 0 && <path d={`M${x - 3.6} ${ey + 5} Q${x - 6.2} ${ey + 9.4} ${x - 3.6} ${ey + 11} Q${x - 1} ${ey + 9.4} ${x - 3.6} ${ey + 5} Z`} fill="#7dd3fc" className={thin} />}
+            </g>
+          )
+        }
         return (
           <g key={x}>
             <circle cx={x} cy={ey} r={6.4} fill="#fff" className={thin} />
@@ -402,16 +540,71 @@ function Mouth({ kind, base }: { kind: AvatarConfig['mouth']; base: AvatarConfig
       </g>
     )
   }
+  if (kind === 'laugh') {
+    return (
+      <g>
+        <path d={`M39.5 ${my - 4.4} Q50 ${my - 2} 60.5 ${my - 4.4} C60.5 ${my + 11} 39.5 ${my + 11} 39.5 ${my - 4.4} Z`} fill="#7f1d1d" className={thin} />
+        <path d={`M41 ${my - 3.8} Q50 ${my - 1.6} 59 ${my - 3.8} L59 ${my - 0.8} Q50 ${my + 1.4} 41 ${my - 0.8} Z`} fill="#fff" />
+        <ellipse cx={50} cy={my + 6.6} rx={5.6} ry={3.2} fill="#fb7185" />
+      </g>
+    )
+  }
+  if (kind === 'frown') return <path d={`M43 ${my + 4.4} Q50 ${my - 4.4} 57 ${my + 4.4}`} {...stroke} />
+  if (kind === 'kiss') {
+    return (
+      <g>
+        <circle cx={50} cy={my + 1.6} r={3.6} fill="#fb7185" className={thin} />
+        <circle cx={48.9} cy={my + 0.6} r={0.9} fill="#fff" opacity={0.9} />
+      </g>
+    )
+  }
+  if (kind === 'fangs') {
+    return (
+      <g>
+        <path d={`M43 ${my - 2} Q50 ${my + 7} 57 ${my - 2}`} {...stroke} />
+        <polygon points={pts([[44.6, my + 1.2], [48, my + 2.6], [46.2, my + 6.8]])} fill="#fff" className={thin} />
+        <polygon points={pts([[55.4, my + 1.2], [52, my + 2.6], [53.8, my + 6.8]])} fill="#fff" className={thin} />
+      </g>
+    )
+  }
+  if (kind === 'wavy') return <path d={`M41.5 ${my + 1.4} q2.4 -3.4 4.8 0 t4.8 0 t4.8 0 t4.8 0`} {...stroke} />
+  if (kind === 'buck') {
+    return (
+      <g>
+        <path d={`M43 ${my - 2} Q50 ${my + 7} 57 ${my - 2}`} {...stroke} />
+        <rect x={47} y={my + 2.4} width={6} height={6.6} rx={1.4} fill="#fff" className={thin} />
+      </g>
+    )
+  }
+  if (kind === 'cat') return <path d={`M50 ${my - 2} V${my + 1.4} M50 ${my + 1.4} Q45.8 ${my + 6.4} 41.6 ${my + 1.6} M50 ${my + 1.4} Q54.2 ${my + 6.4} 58.4 ${my + 1.6}`} {...stroke} />
+  if (kind === 'oh') return <ellipse cx={50} cy={my + 2.6} rx={2.8} ry={3.6} fill="#7f1d1d" className={thin} />
+  if (kind === 'braces') {
+    return (
+      <g>
+        <path d={`M41.5 ${my - 3} Q50 ${my + 11} 58.5 ${my - 3} Z`} fill="#fff" className={thin} />
+        <path d={`M43.2 ${my + 0.6} Q50 ${my + 4.6} 56.8 ${my + 0.6}`} stroke="#94a3b8" strokeWidth={2.2} strokeLinecap="round" fill="none" />
+        <path d={`M45.6 ${my - 0.6} V${my + 2.6} M50 ${my - 0.4} V${my + 3.8} M54.4 ${my - 0.6} V${my + 2.6}`} stroke="#94a3b8" strokeWidth={1.2} />
+      </g>
+    )
+  }
+  if (kind === 'teasing') {
+    return (
+      <g>
+        <path d={`M54 ${my + 1.4} Q56.4 ${my + 9.4} 59.8 ${my + 5.8} Q60.8 ${my + 1.4} 57.2 ${my - 0.4} Z`} fill="#fb7185" className={thin} />
+        <path d={`M43.5 ${my} Q51 ${my + 5} 58 ${my - 3.5}`} {...stroke} />
+      </g>
+    )
+  }
   if (kind === 'smirk') return <path d={`M43.5 ${my + 1} Q52 ${my + 5} 58 ${my - 3.5}`} {...stroke} />
   if (kind === 'flat') return <path d={`M44 ${my + 1.5} H56`} {...stroke} />
   return <path d={`M43 ${my - 2} Q50 ${my + 7} 57 ${my - 2}`} {...stroke} />
 }
 
-function Extras({ base }: { base: AvatarConfig['base'] }) {
+function Extras({ base, pal }: { base: AvatarConfig['base']; pal: Pal }) {
   const { ey, my } = faceY(base)
   return (
     <g>
-      {base !== 'robot' && (
+      {base !== 'robot' && base !== 'owl' && (
         <g fill="#fb7185" opacity={0.32}>
           <circle cx={34.5} cy={my - 4} r={3.6} />
           <circle cx={65.5} cy={my - 4} r={3.6} />
@@ -421,6 +614,40 @@ function Extras({ base }: { base: AvatarConfig['base'] }) {
         <g>
           <polygon points={pts([[47, ey + 6], [53, ey + 6], [50, ey + 10]])} fill="#f472b6" className={thin} />
           <path d={`M30 ${ey + 8} L20 ${ey + 5} M30 ${ey + 11} L20 ${ey + 12} M70 ${ey + 8} L80 ${ey + 5} M70 ${ey + 11} L80 ${ey + 12}`} className={thin} fill="none" />
+        </g>
+      )}
+      {base === 'panda' && (
+        <g>
+          <ellipse cx={40.5} cy={ey + 1} rx={6.8} ry={8.6} transform={`rotate(20 40.5 ${ey + 1})`} fill="#475569" className={thin} />
+          <ellipse cx={59.5} cy={ey + 1} rx={6.8} ry={8.6} transform={`rotate(-20 59.5 ${ey + 1})`} fill="#475569" className={thin} />
+          <ellipse cx={50} cy={ey + 9} rx={3.8} ry={2.7} fill="#1f2937" />
+        </g>
+      )}
+      {base === 'bunny' && (
+        <g>
+          <polygon points={pts([[47, ey + 6], [53, ey + 6], [50, ey + 10]])} fill="#f472b6" className={thin} />
+          <path d={`M31 ${ey + 8} L22 ${ey + 5} M31 ${ey + 11} L22 ${ey + 12} M69 ${ey + 8} L78 ${ey + 5} M69 ${ey + 11} L78 ${ey + 12}`} className={thin} fill="none" />
+        </g>
+      )}
+      {base === 'monster' && (
+        <g fill={darken(pal.skin, 0.2)} opacity={0.7}>
+          <circle cx={36} cy={31} r={2.6} />
+          <circle cx={63} cy={33} r={3.2} />
+          <circle cx={58} cy={67} r={2.2} />
+          <circle cx={39} cy={66} r={2.6} />
+        </g>
+      )}
+      {base === 'dino' && (
+        <g fill="#1f2937">
+          <circle cx={46} cy={ey + 6} r={1.4} />
+          <circle cx={54} cy={ey + 6} r={1.4} />
+        </g>
+      )}
+      {base === 'owl' && (
+        <g>
+          <circle cx={40.5} cy={ey} r={9.8} fill="#fff" className={ink} />
+          <circle cx={59.5} cy={ey} r={9.8} fill="#fff" className={ink} />
+          <polygon points={pts([[46.6, ey + 5], [53.4, ey + 5], [50, ey + 11]])} fill={pal.accent} className={ink} />
         </g>
       )}
     </g>
@@ -728,7 +955,7 @@ export function AvatarArt({ config, anim }: { config: AvatarConfig; anim?: Avata
         <Pop key={`base-${config.base}`} anim={anim} order={0}>
           <BaseBack base={config.base} pal={pal} />
           <Head base={config.base} pal={pal} />
-          <Extras base={config.base} />
+          <Extras base={config.base} pal={pal} />
         </Pop>
         <Pop key={`eyes-${config.base}-${config.eyes}`} anim={anim} order={1}>
           <Eyes kind={config.eyes} base={config.base} pal={pal} />

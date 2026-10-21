@@ -4,9 +4,9 @@
  * (`taskia_backend/src/modules/auth/lib/avatar-config.ts`): si cambia una lista, cambia en los dos.
  */
 
-export const BASES = ['human', 'alien', 'robot', 'cat'] as const
-export const EYES = ['dots', 'round', 'happy', 'sleepy', 'wink', 'star', 'big', 'cyclops'] as const
-export const MOUTHS = ['smile', 'grin', 'open', 'tongue', 'smirk', 'flat'] as const
+export const BASES = ['human', 'alien', 'robot', 'cat', 'panda', 'bunny', 'ghost', 'monster', 'dino', 'owl'] as const
+export const EYES = ['dots', 'round', 'happy', 'sleepy', 'wink', 'star', 'big', 'cyclops', 'heart', 'angry', 'wide', 'lashes', 'tired', 'spiral', 'cross', 'shiny', 'sad', 'led'] as const
+export const MOUTHS = ['smile', 'grin', 'open', 'tongue', 'smirk', 'flat', 'laugh', 'frown', 'kiss', 'fangs', 'wavy', 'buck', 'cat', 'oh', 'braces', 'teasing'] as const
 export const HAIRS = ['none', 'short', 'spiky', 'long', 'curly', 'bun', 'mohawk', 'pigtails', 'bob', 'afro', 'braids', 'ponytail', 'buns', 'wavy', 'fringe', 'parted', 'buzz', 'tuft', 'bowl'] as const
 export const OUTFITS = ['tee', 'hoodie', 'suit', 'overalls', 'jacket', 'armor', 'poncho', 'turtleneck', 'stripes', 'vest', 'dress', 'tie', 'cape', 'lab', 'sailor', 'puffer', 'tanktop', 'scarf'] as const
 export const ACCESSORIES = ['none', 'glasses', 'shades', 'headphones', 'antennas', 'cap', 'bow', 'crown', 'monocle', 'beanie', 'tophat', 'patch', 'helmet', 'bandana', 'flower', 'mask', 'halo', 'mustache'] as const
@@ -48,6 +48,12 @@ export const AVATAR_OPTIONS = {
     { id: 'alien', label: 'Alienígena' },
     { id: 'robot', label: 'Robot' },
     { id: 'cat', label: 'Gatonauta' },
+    { id: 'panda', label: 'Panda' },
+    { id: 'bunny', label: 'Conejo' },
+    { id: 'ghost', label: 'Fantasma' },
+    { id: 'monster', label: 'Monstruo' },
+    { id: 'dino', label: 'Dino' },
+    { id: 'owl', label: 'Búho' },
   ] satisfies Option<Base>[],
   eyes: [
     { id: 'dots', label: 'Puntitos' },
@@ -58,6 +64,16 @@ export const AVATAR_OPTIONS = {
     { id: 'star', label: 'Estrellas' },
     { id: 'big', label: 'Grandes' },
     { id: 'cyclops', label: 'Un ojo' },
+    { id: 'heart', label: 'Corazones' },
+    { id: 'angry', label: 'Enojados' },
+    { id: 'wide', label: 'Asombrados' },
+    { id: 'lashes', label: 'Pestañas' },
+    { id: 'tired', label: 'Cansados' },
+    { id: 'spiral', label: 'Mareados' },
+    { id: 'cross', label: 'Cruces' },
+    { id: 'shiny', label: 'Brillantes' },
+    { id: 'sad', label: 'Tristes' },
+    { id: 'led', label: 'Pantalla' },
   ] satisfies Option<Eyes>[],
   mouth: [
     { id: 'smile', label: 'Sonrisa' },
@@ -66,6 +82,16 @@ export const AVATAR_OPTIONS = {
     { id: 'tongue', label: 'Lengua' },
     { id: 'smirk', label: 'Pícara' },
     { id: 'flat', label: 'Seria' },
+    { id: 'laugh', label: 'Carcajada' },
+    { id: 'frown', label: 'Triste' },
+    { id: 'kiss', label: 'Beso' },
+    { id: 'fangs', label: 'Colmillos' },
+    { id: 'wavy', label: 'Nerviosa' },
+    { id: 'buck', label: 'Dientón' },
+    { id: 'cat', label: 'Gatuna' },
+    { id: 'oh', label: 'Oh' },
+    { id: 'braces', label: 'Frenos' },
+    { id: 'teasing', label: 'Burla' },
   ] satisfies Option<Mouth>[],
   hair: [
     { id: 'none', label: 'Sin pelo' },
