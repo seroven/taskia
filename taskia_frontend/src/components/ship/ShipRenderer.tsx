@@ -14,9 +14,9 @@ const num = (value: number) => Math.round(value * 10) / 10
 const pts = (list: [number, number][]) => list.map(([x, y]) => `${num(x)},${num(y)}`).join(' ')
 
 /** Dónde caben las ventanillas: la franja del casco que es lo bastante gruesa, sin invadir cola ni nariz. */
-function windowSpots(geo: HullGeo, count: number) {
+function windowSpots(geo: HullGeo, count: number, end = 0.74) {
   let a = geo.at(0.17)
-  let b = geo.at(0.74)
+  let b = geo.at(end)
   while (a < b && geo.half(a) < 11) a += 1
   while (b > a && geo.half(b) < 11) b -= 1
   const span = Math.max(20, b - a)
@@ -963,9 +963,12 @@ function windowPath(kind: ShipConfig['windows'], x: number, y: number, r: number
   return `M${num(x)} ${num(y - r * 1.35)} C${num(x + r * 0.5)} ${num(y - r * 0.5)} ${num(x + r)} ${num(y)} ${num(x + r)} ${num(y + r * 0.3)} A${num(r)} ${num(r * 0.9)} 0 0 1 ${num(x - r)} ${num(y + r * 0.3)} C${num(x - r)} ${num(y)} ${num(x - r * 0.5)} ${num(y - r * 0.5)} ${num(x)} ${num(y - r * 1.35)} Z`
 }
 
-function Windows({ geo, pal, kind, crew, names }: Ctx & { kind: ShipConfig['windows']; crew: number; names: string[] }) {
+/** Cabinas que se dibujan a media altura del casco, donde irían las ventanillas: estas acaban antes para no pisarlas. */
+const MID_COCKPITS: ShipConfig['cockpit'][] = ['porthole', 'eye', 'slit']
+
+function Windows({ geo, pal, kind, crew, names, cockpit }: Ctx & { kind: ShipConfig['windows']; crew: number; names: string[]; cockpit: ShipConfig['cockpit'] }) {
   if (crew <= 0) return null
-  const { r, spots } = windowSpots(geo, Math.min(crew, MAX_CREW))
+  const { r, spots } = windowSpots(geo, Math.min(crew, MAX_CREW), MID_COCKPITS.includes(cockpit) ? 0.58 : 0.74)
   const mid = spots[Math.floor(spots.length / 2)]!
   const y = (geo.top(mid) + geo.bot(mid)) / 2 - 1
   return (
@@ -1070,7 +1073,7 @@ function Cockpit({ geo, pal, kind, clip }: Ctx & { kind: ShipConfig['cockpit']; 
     )
   }
   if (kind === 'panorama') {
-    const a = geo.at(0.46)
+    const a = geo.at(0.56)
     let b = geo.at(0.86)
     while (b > a && geo.half(b) < 8) b -= 1
     const xs = Array.from({ length: 16 }, (_, i) => a + ((b - a) * i) / 15)
@@ -1306,8 +1309,8 @@ export function ShipArt({ config, crew = 0, crewNames = [], anim }: Pick<Props, 
       <Pop key={`cockpit-${hull}-${config.cockpit}`} anim={anim} order={2}>
         <Cockpit geo={geo} pal={pal} kind={config.cockpit} clip={clip} />
       </Pop>
-      <Pop key={`windows-${hull}-${config.windows}-${crew}`} anim={anim} order={1}>
-        <Windows geo={geo} pal={pal} kind={config.windows} crew={crew} names={crewNames} />
+      <Pop key={`windows-${hull}-${config.windows}-${config.cockpit}-${crew}`} anim={anim} order={1}>
+        <Windows geo={geo} pal={pal} kind={config.windows} crew={crew} names={crewNames} cockpit={config.cockpit} />
       </Pop>
       <Pop key={`nose-${hull}-${config.nose}`} anim={anim} order={3}>
         <Nose geo={geo} pal={pal} kind={config.nose} clip={clip} />
