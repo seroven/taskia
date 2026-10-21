@@ -29,17 +29,12 @@ export class User {
   @Column({ type: 'bigint', default: 0, transformer: bigintTransformer })
   xpTotal!: number
 
-  @Column({ type: 'text', default: 'preset' })
-  avatarKind!: string
+  /** Avatar armado por piezas (ver `modules/auth/lib/avatar-config.ts`). `null` hasta que el usuario lo crea. */
+  @Column({ type: 'jsonb', nullable: true })
+  avatarConfig!: unknown
 
-  @Column({ type: 'varchar', length: 40, nullable: true })
-  avatarPresetId!: string | null
-
-  @Column({ type: 'varchar', length: 120, nullable: true })
-  avatarFile!: string | null
-
-  @Column({ type: 'varchar', length: 40, nullable: true })
-  frameId!: string | null
+  @Column({ type: 'varchar', length: 40, default: 'none' })
+  frameId!: string
 
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   createdAt!: Date

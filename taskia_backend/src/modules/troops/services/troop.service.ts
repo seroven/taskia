@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { civilDayFromInstant } from '../../../infrastructure/database/civil-date.js'
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
 import { SHIP_GENERATE_SYSTEM } from '../../../prompts/ship.js'
+import { resolveUserAvatar } from '../../auth/lib/avatar-config.js'
 import { PRODUCT_TZ, weekStartMonday } from '../../../services/xp.js'
 import { AppError, extractJson, toInstantISO } from '../../../utils/helpers.js'
 import {
@@ -68,9 +69,7 @@ function mapMember(r: MemberRow) {
     xp_total: Number(r.xp_total ?? 0),
     xp_week: Number(r.xp_week ?? 0),
     joined_at: toInstantISO(r.joined_at) ?? '',
-    avatar_kind: (r.avatar_kind as 'preset' | 'upload' | undefined) ?? 'preset',
-    avatar_preset_id: r.avatar_preset_id ?? 'rocket',
-    avatar_file: r.avatar_file ?? null,
+    avatar_config: resolveUserAvatar(r.avatar_config, Number(r.user_id)),
     frame_id: r.frame_id ?? 'none',
   }
 }

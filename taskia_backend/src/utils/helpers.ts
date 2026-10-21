@@ -1,4 +1,5 @@
 import { AppError } from '../shared/errors/app-error.js'
+import type { AvatarConfig } from '../modules/auth/lib/avatar-config.js'
 
 export type UserRole = 'user' | 'admin' | 'parent'
 
@@ -16,10 +17,9 @@ export interface PublicUser {
   xp_total: number
   xp_into_level: number
   xp_to_next: number
-  avatar_kind: 'preset' | 'upload'
-  avatar_preset_id: string | null
-  avatar_file: string | null
-  frame_id: string | null
+  /** `null` hasta que el usuario crea su avatar: la app se lo pide antes de dejarlo entrar. */
+  avatar_config: AvatarConfig | null
+  frame_id: string
 }
 
 export interface JwtPayload {

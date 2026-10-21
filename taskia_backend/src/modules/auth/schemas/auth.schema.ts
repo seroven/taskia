@@ -55,11 +55,7 @@ export function parseProfileBody(
 export function readAvatarBody(body: unknown) {
   const record = asRecord(body)
   return {
-    kind: String(record.avatar_kind ?? 'preset'),
-    imageBase64: String(record.image_base64 ?? ''),
-    mimeType: typeof record.mime_type === 'string' ? record.mime_type : undefined,
-    presetId: String(record.avatar_preset_id ?? 'rocket'),
-    frameId:
-      record.frame_id === undefined ? undefined : String(record.frame_id ?? 'none'),
+    avatarConfig: record.avatar_config,
+    frameId: record.frame_id === undefined ? undefined : String(record.frame_id ?? 'none'),
   }
 }

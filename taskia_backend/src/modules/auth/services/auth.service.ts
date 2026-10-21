@@ -1,25 +1,13 @@
 import bcrypt from 'bcryptjs'
-import { saveAvatarUpload } from '../../../infrastructure/storage/local-file-storage.js'
 import { AppError } from '../../../shared/errors/app-error.js'
 import { progressFromXpTotal } from '../../../services/xp.js'
 import type { PublicUser, UserRole } from '../../../utils/helpers.js'
-import {
-  frameAllowedForRole,
-  isAvatarPreset,
-  isFrameId,
-} from '../lib/avatars.js'
+import { frameUnlocked, isFrameId, resolveUserAvatar, sanitizeAvatarConfig } from '../lib/avatar-config.js'
 import * as users from '../repositories/user.repository.js'
 
-function avatarFields(row: {
-  avatar_kind?: unknown
-  avatar_preset_id?: unknown
-  avatar_file?: unknown
-  frame_id?: unknown
-}) {
+function avatarFields(row: { avatar_config?: unknown; frame_id?: unknown }, userId: number) {
   return {
-    avatar_kind: (row.avatar_kind as 'preset' | 'upload' | undefined) ?? 'preset',
-    avatar_preset_id: (row.avatar_preset_id as string | null) ?? 'rocket',
-    avatar_file: (row.avatar_file as string | null) ?? null,
+    avatar_config: resolveUserAvatar(row.avatar_config, userId),
     frame_id: (row.frame_id as string | null) ?? 'none',
   }
 }
@@ -30,9 +18,7 @@ function toPublicUser(
     username: string
     email: string
     xp_total: number
-    avatar_kind: string
-    avatar_preset_id: string | null
-    avatar_file: string | null
+    avatar_config: unknown
     frame_id: string | null
   },
   role: UserRole,
@@ -44,7 +30,7 @@ function toPublicUser(
     email: row.email as string,
     role,
     ...progress,
-    ...avatarFields(row),
+    ...avatarFields(row, id),
   }
 }
 
@@ -67,45 +53,25 @@ export async function currentUser(userId: number): Promise<PublicUser> {
   return toPublicUser(userId, row, row.role as UserRole)
 }
 
+/**
+ * Guarda el avatar y, si se pide, el marco. El marco debe existir y estar desbloqueado por el nivel del usuario.
+ */
 export async function updateAvatar(
   current: PublicUser,
-  input: {
-    kind: string
-    imageBase64: string
-    mimeType?: string
-    presetId: string
-    frameId?: string
-  },
+  input: { avatarConfig: unknown; frameId?: string },
 ): Promise<PublicUser> {
-  let avatarKind: 'preset' | 'upload' = 'preset'
-  let presetId: string | null = null
-  let fileName: string | null = null
-
-  if (input.kind === 'upload') {
-    avatarKind = 'upload'
-    fileName = saveAvatarUpload(current.id, input.imageBase64, input.mimeType)
-  } else {
-    if (!isAvatarPreset(input.presetId)) throw new AppError('Avatar no válido')
-    presetId = input.presetId
+  if (input.avatarConfig == null || typeof input.avatarConfig !== 'object') {
+    throw new AppError('Arma tu avatar para guardarlo')
   }
+  const avatarConfig = sanitizeAvatarConfig(input.avatarConfig, `user-${current.id}`)
 
-  let frameId = input.frameId
+  const frameId = input.frameId
   if (frameId !== undefined) {
     if (!isFrameId(frameId)) throw new AppError('Marco no válido')
-    const troopRole = await users.findActiveTroopRole(current.id)
-    if (!frameAllowedForRole(frameId, troopRole)) {
-      throw new AppError('Ese marco aún no está desbloqueado')
-    }
+    if (!frameUnlocked(frameId, current.level)) throw new AppError('Ese marco aún no está desbloqueado')
   }
 
-  await users.updateAvatar({
-    userId: current.id,
-    avatarKind,
-    presetId,
-    fileName,
-    frameId,
-  })
-
+  await users.updateAvatar({ userId: current.id, avatarConfig, frameId })
   return currentUser(current.id)
 }
 
@@ -135,6 +101,6 @@ export async function updateProfile(
     email: input.email,
     role: current.role,
     ...progress,
-    ...avatarFields(row ?? {}),
+    ...avatarFields(row ?? {}, current.id),
   }
 }

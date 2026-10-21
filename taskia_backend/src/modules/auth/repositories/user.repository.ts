@@ -20,9 +20,7 @@ async function withRole(user: User | null) {
     is_active: user.isActive,
     xp_total: user.xpTotal,
     level: user.level,
-    avatar_kind: user.avatarKind,
-    avatar_preset_id: user.avatarPresetId,
-    avatar_file: user.avatarFile,
+    avatar_config: user.avatarConfig,
     frame_id: user.frameId,
     role: role.code,
   }
@@ -51,20 +49,14 @@ export async function findActiveTroopRole(userId: number) {
   return null
 }
 
-export async function updateAvatar(input: {
-  userId: number
-  avatarKind: 'preset' | 'upload'
-  presetId: string | null
-  fileName: string | null
-  frameId?: string
-}) {
-  const patch: Partial<User> = {
-    avatarKind: input.avatarKind,
-    avatarPresetId: input.presetId,
-    avatarFile: input.fileName,
-  }
-  if (input.frameId !== undefined) patch.frameId = input.frameId
-  await users().update({ id: input.userId }, patch)
+export async function updateAvatar(input: { userId: number; avatarConfig: Record<string, unknown>; frameId?: string }) {
+  await users()
+    .createQueryBuilder()
+    .update()
+    .set({ avatarConfig: () => 'CAST(:config AS jsonb)', ...(input.frameId !== undefined ? { frameId: input.frameId } : {}) })
+    .setParameter('config', JSON.stringify(input.avatarConfig))
+    .where('id = :id', { id: input.userId })
+    .execute()
 }
 
 export async function findUserIdByUsername(username: string, exceptUserId: number) {
@@ -87,7 +79,7 @@ export async function updateProfile(input: {
   email: string
   passwordHash?: string
 }) {
-  const patch: Partial<User> = {
+  const patch: { username: string; email: string; passwordHash?: string } = {
     username: input.username,
     email: input.email,
   }
@@ -100,9 +92,7 @@ export async function findAvatarRow(userId: number) {
   if (!user) return null
   return {
     xp_total: user.xpTotal,
-    avatar_kind: user.avatarKind,
-    avatar_preset_id: user.avatarPresetId,
-    avatar_file: user.avatarFile,
+    avatar_config: user.avatarConfig,
     frame_id: user.frameId,
   }
 }

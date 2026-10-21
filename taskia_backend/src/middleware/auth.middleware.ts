@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { env } from '../config/env.js'
 import { AppDataSource } from '../infrastructure/database/data-source.js'
 import { ParentStudentLink } from '../infrastructure/database/entities/index.js'
+import { resolveUserAvatar } from '../modules/auth/lib/avatar-config.js'
 import { findAuthById } from '../modules/auth/repositories/user.repository.js'
 import { AppError } from '../shared/errors/app-error.js'
 import type { JwtPayload, PublicUser, UserRole } from '../utils/helpers.js'
@@ -83,9 +84,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       email: user.email as string,
       role,
       ...progress,
-      avatar_kind: (user.avatar_kind as 'preset' | 'upload') ?? 'preset',
-      avatar_preset_id: (user.avatar_preset_id as string) ?? 'explorer_01',
-      avatar_file: (user.avatar_file as string | null) ?? null,
+      avatar_config: resolveUserAvatar(user.avatar_config, Number(user.id)),
       frame_id: (user.frame_id as string) ?? 'none',
     }
     next()

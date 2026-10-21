@@ -80,9 +80,7 @@ export type MemberRow = {
   level: number
   xp_total: number
   joined_at: Date
-  avatar_kind: string
-  avatar_preset_id: string | null
-  avatar_file: string | null
+  avatar_config: unknown
   frame_id: string | null
   xp_week: number
 }
@@ -98,9 +96,7 @@ export async function listActiveMembers(troopId: number, weekStart: string) {
     .addSelect('u.level', 'level')
     .addSelect('u.xp_total', 'xp_total')
     .addSelect('tm.joined_at', 'joined_at')
-    .addSelect('u.avatar_kind', 'avatar_kind')
-    .addSelect('u.avatar_preset_id', 'avatar_preset_id')
-    .addSelect('u.avatar_file', 'avatar_file')
+    .addSelect('u.avatar_config', 'avatar_config')
     .addSelect('u.frame_id', 'frame_id')
     .addSelect('COALESCE(SUM(a.amount), 0)', 'xp_week')
     .where('tm.troop_id = :troopId AND tm.left_at IS NULL', { troopId })
@@ -110,9 +106,7 @@ export async function listActiveMembers(troopId: number, weekStart: string) {
     .addGroupBy('u.level')
     .addGroupBy('u.xp_total')
     .addGroupBy('tm.joined_at')
-    .addGroupBy('u.avatar_kind')
-    .addGroupBy('u.avatar_preset_id')
-    .addGroupBy('u.avatar_file')
+    .addGroupBy('u.id')
     .addGroupBy('u.frame_id')
     .orderBy('u.level', 'DESC')
     .addOrderBy('u.xp_total', 'DESC')
