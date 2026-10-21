@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { Lightning, PaintBrush, Plus, SignOut, Trophy, Users } from '@phosphor-icons/react'
+import { Lightning, PaintBrush, Plus, SignOut, Trophy, UserMinus, Users } from '@phosphor-icons/react'
+import { ConfirmModal } from '../ui/ConfirmModal'
 import { ShipRenderer } from '../ship/ShipRenderer'
 import { MAX_CREW } from '../../lib/ship/types'
 import {
@@ -35,6 +37,7 @@ export function TroopSpaceCard({
   onKick?: (userId: number) => void
 }) {
   const reduceMotion = useReducedMotion()
+  const [kicking, setKicking] = useState<{ id: number; name: string } | null>(null)
   const isMine = detail.my_role != null
   const canInvite =
     detail.my_role === 'captain' || detail.my_role === 'copilot'
@@ -187,11 +190,7 @@ export function TroopSpaceCard({
                   type="button"
                   className="ghost troops-mini troops-mini--danger"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`¿Sacar a ${m.username}?`)) {
-                      onKick(m.user_id)
-                    }
-                  }}
+                  onClick={() => setKicking({ id: m.user_id, name: m.username })}
                 >
                   Sacar
                 </button>
@@ -200,6 +199,19 @@ export function TroopSpaceCard({
           </div>
         ))}
       </div>
+      <ConfirmModal
+        open={kicking != null}
+        icon={UserMinus}
+        title={`¿Sacar a ${kicking?.name ?? ''}?`}
+        message="Dejará de ser parte de la tripulación. Podrá volver si lo invitan otra vez."
+        confirmLabel="Sí, sacar"
+        busy={busy}
+        onClose={() => setKicking(null)}
+        onConfirm={() => {
+          if (kicking) onKick?.(kicking.id)
+          setKicking(null)
+        }}
+      />
     </motion.article>
   )
 }

@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { Star } from '@phosphor-icons/react'
 
 type Size = 'sm' | 'md' | 'lg'
 
@@ -16,6 +17,14 @@ const STAR = Array.from({ length: 10 }, (_, i) => {
 export function LevelBadge({ level, size = 'md', title }: { level: number; size?: Size; title?: string }) {
   const gradient = `lb-${useId().replace(/:/g, '')}`
   const digits = String(level).length
+  if (size === 'sm') {
+    return (
+      <span className="lvl-pill" role="img" aria-label={`Nivel ${level}`} title={title ?? `Nivel ${level}`}>
+        <Star size={13} weight="fill" aria-hidden />
+        Nv {level}
+      </span>
+    )
+  }
   return (
     <span className={`lvl-star lvl-star--${size}`} role="img" aria-label={`Nivel ${level}`} title={title ?? `Nivel ${level}`}>
       <svg viewBox="0 0 48 48" focusable="false" aria-hidden>

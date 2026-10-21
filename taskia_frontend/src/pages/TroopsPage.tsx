@@ -4,12 +4,14 @@ import {
   Bell,
   MagnifyingGlass,
   Plus,
+  SignOut,
   Trophy,
 } from '@phosphor-icons/react'
 import { api } from '../api'
 import { AppLoader } from '../components/AppLoader'
 import { ExplorerXpBar } from '../components/ExplorerXpBar'
 import { TextField } from '../components/ui/Field'
+import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { ModalShell } from '../components/ui/ModalShell'
 import { WorldsNav } from '../components/worlds/WorldsNav'
 import { GalaxyUniverse } from '../components/troops/space/GalaxyUniverse'
@@ -47,6 +49,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [shipOpen, setShipOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [leaveOpen, setLeaveOpen] = useState(false)
   const [rankingOpen, setRankingOpen] = useState(false)
   const [ranking, setRanking] = useState<TroopRankingRow[]>([])
   const [rankingHasMore, setRankingHasMore] = useState(true)
@@ -296,16 +299,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                     onEditAvatar={() => setAvatarOpen(true)}
                     onLeave={
                       openDetail.my_role
-                        ? () => {
-                            if (
-                              !window.confirm(
-                                '¿Salir de la tripulación? Si eres Capitán, el mando pasa al Copiloto o al de mayor nivel.',
-                              )
-                            ) {
-                              return
-                            }
-                            void runAction(() => api.leaveTroop(), 'Saliste de la tripulación')
-                          }
+                        ? () => setLeaveOpen(true)
                         : undefined
                     }
                     onSetCopilot={
@@ -513,6 +507,24 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
           }}
         />
       )}
+
+      <ConfirmModal
+        open={leaveOpen}
+        icon={SignOut}
+        title="¿Salir de la tripulación?"
+        message={
+          openDetail?.my_role === 'captain'
+            ? 'Eres Capitán: el mando pasará al Copiloto o al miembro de mayor nivel.'
+            : 'Dejarás de ser parte de esta tripulación. Podrás volver si te invitan otra vez.'
+        }
+        confirmLabel="Sí, salir"
+        busy={busy}
+        onClose={() => setLeaveOpen(false)}
+        onConfirm={() => {
+          setLeaveOpen(false)
+          void runAction(() => api.leaveTroop(), 'Saliste de la tripulación')
+        }}
+      />
 
       <AvatarModal
         open={avatarOpen}

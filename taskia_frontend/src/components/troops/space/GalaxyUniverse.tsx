@@ -6,12 +6,6 @@ import { MAX_CREW } from '../../../lib/ship/types'
 import { skyTile } from '../../../lib/skyTile'
 import type { UniverseTroop } from '../../../lib/troopsTypes'
 
-const RANK_COLOR: Record<number, string> = {
-  1: '#fbbf24',
-  2: '#e2e8f0',
-  3: '#d97706',
-}
-
 /** Ancho que ocupa la ficha abierta (px) y la pantalla mínima para que vaya al costado. */
 const CARD_INSET = 400
 const SIDE_CARD_MIN_WIDTH = 900
@@ -120,6 +114,13 @@ export function GalaxyUniverse({
     })
   }, [troops, myTroopId])
   const spotsRef = useRef(spots)
+  /** Nave con la ficha abierta y si ya llegó al centro de la vista; `clearRef` cierra la ficha cuando deja de ser el foco. */
+  const focus = useRef<{ id: number | null; seen: boolean }>({ id: openId, seen: false })
+  const clearRef = useRef(onClearTroop)
+  useEffect(() => {
+    focus.current = { id: openId, seen: false }
+    clearRef.current = onClearTroop
+  }, [openId, onClearTroop])
 
   /** Coloca cada nave según la cámara (posición, tamaño con el crecimiento por cercanía y profundidad) y mueve el fondo. */
   const draw = useCallback(() => {
@@ -148,6 +149,14 @@ export function GalaxyUniverse({
       const sy = cy + (spot.y + y) * zoom
       const dist = Math.hypot(sx - cx, sy - cy)
       const near = clamp(1 - dist / reach, 0, 1)
+      if (spot.troop.id === focus.current.id) {
+        // La ficha vive mientras su nave es el foco: llegó al centro (clic) y ya no se aleja de él.
+        if (near > 0.5) focus.current.seen = true
+        else if (focus.current.seen && near < 0.15) {
+          focus.current.seen = false
+          clearRef.current()
+        }
+      }
       const grow = 1 + (spot.mine ? BOOST_MINE : BOOST_OTHER) * (near * near * (3 - 2 * near))
       const scale = zoom * grow
       const half = spot.base * scale
@@ -535,7 +544,7 @@ export function GalaxyUniverse({
               >
                 {mine && <span className="galaxy-aura" />}
                 {rank != null && (
-                  <span className="galaxy-medal" style={{ background: RANK_COLOR[rank] }}>
+                  <span className={`galaxy-medal galaxy-medal--${rank}`} title={`Puesto ${rank} del ranking semanal`}>
                     {rank}
                   </span>
                 )}
