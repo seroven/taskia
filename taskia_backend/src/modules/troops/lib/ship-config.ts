@@ -90,18 +90,6 @@ function hexToRgb(color: string): [number, number, number] {
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
 }
 
-function mixHex(a: string, b: string, t: number) {
-  const [ar, ag, ab] = hexToRgb(a)
-  const [br, bg, bb] = hexToRgb(b)
-  const part = (n: number) => Math.round(Math.min(255, Math.max(0, n))).toString(16).padStart(2, '0')
-  return `#${part(ar + (br - ar) * t)}${part(ag + (bg - ag) * t)}${part(ab + (bb - ab) * t)}`
-}
-
-function luminance(color: string) {
-  const [r, g, b] = hexToRgb(color)
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-}
-
 /**
  * Una nave sin ninguna pieza se ve pelada: se exige un mínimo de piezas puestas entre las que son opcionales.
  */
@@ -164,7 +152,8 @@ function asHex(raw: unknown, fallback: string) {
 
 /**
  * Completa y corrige cualquier JSON (de la IA o del cliente) antes de guardarlo o dibujarlo: lo que falte o no
- * sea válido sale de la nave de la semilla, y los colores se empujan a tonos que se lean sobre el espacio.
+ * sea válido sale de la nave de la semilla. Los colores que elige el niño se respetan tal cual (aunque se vean
+ * apagados en el espacio: es su decisión); y los que devuelve la IA también (si el niño pide una nave negra, es negra).
  */
 export function sanitizeShipConfig(raw: unknown, fallbackSeed: string): ShipConfig {
   const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
@@ -174,18 +163,11 @@ export function sanitizeShipConfig(raw: unknown, fallbackSeed: string): ShipConf
   const paletteRaw = o.palette && typeof o.palette === 'object' ? (o.palette as Record<string, unknown>) : {}
   const count = Math.round(Number(engineRaw.count))
 
-  // Casco y detalles no pueden ser casi negros ni apagados; la luz de las ventanillas, siempre clara.
   const hull = asHex(paletteRaw.hull, base.palette.hull)
   const trim = asHex(paletteRaw.trim, base.palette.trim)
   const accent = asHex(paletteRaw.accent, base.palette.accent)
   const glass = asHex(paletteRaw.glass, base.palette.glass)
-  const palette: Palette = {
-    hull: luminance(hull) < 0.4 ? mixHex(hull, '#ffffff', 0.45) : hull,
-    trim: luminance(trim) < 0.18 ? mixHex(trim, '#ffffff', 0.4) : trim,
-    accent: luminance(accent) < 0.3 ? mixHex(accent, '#ffffff', 0.45) : accent,
-    // Con 0,85 de blanco hasta el gris más oscuro queda por encima del mínimo de claridad.
-    glass: luminance(glass) < 0.75 ? mixHex(glass, '#ffffff', 0.85) : glass,
-  }
+  const palette: Palette = { hull, trim, accent, glass }
 
   const config: ShipConfig = {
     seed,

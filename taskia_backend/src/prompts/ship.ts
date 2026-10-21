@@ -31,7 +31,10 @@ Qué es cada cosa:
 Reglas:
 - Pon al menos cuatro piezas que no sean "none" entre nose, cockpit, wings, tail, top, belly y decal.
 - Los colores van con # y seis dígitos, por ejemplo "#7dd3fc".
-- Colores vivos o pastel. Nada casi negro, gris sucio ni verde-marrón apagado. El cuerpo claro o medio, nunca oscuro.
+- El pedido del explorador manda, sobre todo en el color. Si pide un color (negro, blanco, gris, dorado, rojo, el que sea), ese color va de verdad en el cuerpo (palette.hull) y se nota a simple vista. No lo cambies por uno parecido ni lo suavices.
+- Negro: hull "#1f2937" o "#111827", trim "#374151" y accent un color brillante que contraste (por ejemplo "#38bdf8", "#fbbf24" o "#f43f5e") para que la nave se distinga del espacio. Blanco: hull "#ffffff" o "#f1f5f9". Con otros colores haz lo mismo: el cuerpo en el color pedido y los detalles en uno que combine.
+- Si no pide ningún color, elige colores vivos o pastel que combinen entre sí.
+- Lee el pedido completo y refléjalo todo: cada cosa que pida (forma, tamaño, velocidad, adornos, color) debe notarse en las piezas o en los colores.
 - Que combine con lo que pidió el explorador: si pide algo veloz, usa arrow o rocket con alas; si pide algo grande o de carga, barge con bodega.
 - Prohibido: armas, calaveras, sangre, miedo, contenido tenebroso o adulto.
 - Sé distinto de estos ejemplos, no los copies:

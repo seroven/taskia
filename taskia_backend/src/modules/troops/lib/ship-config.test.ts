@@ -66,14 +66,9 @@ test('los colores aceptan «d8b4fe» sin # y «#93c» abreviado (los modelos lo 
   assert.equal(ship.palette.accent, '#facc15')
 })
 
-test('un casco casi negro se aclara y la luz de las ventanillas siempre es clara', () => {
-  const ship = sanitizeShipConfig({ palette: { hull: '#101010', trim: '#000000', accent: '#111111', glass: '#222222' } }, 'oscura')
-  const lum = (hex: string) => {
-    const n = parseInt(hex.slice(1), 16)
-    return (0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255
-  }
-  assert.ok(lum(ship.palette.hull) >= 0.4, 'casco demasiado oscuro')
-  assert.ok(lum(ship.palette.glass) >= 0.75, 'luz demasiado oscura')
+test('los colores se respetan tal cual, aunque sean muy oscuros (el niño o la IA pidieron una nave negra)', () => {
+  const palette = { hull: '#101010', trim: '#000000', accent: '#111111', glass: '#222222' }
+  assert.deepEqual(sanitizeShipConfig({ palette }, 'oscura').palette, palette)
 })
 
 test('basura de entrada no rompe el saneado', () => {
