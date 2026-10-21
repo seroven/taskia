@@ -8,10 +8,10 @@ Devuelve SOLO un JSON que cumpla este esquema. Nada de texto alrededor.
   "cockpit": "none|bubble|visor|dome|twin|porthole|slit|hood|panorama|periscope|eye|tower|wedge",
   "wings": "none|delta|swept|stub|blade|leaf|manta|steps|hook|biplane|scissor|butterfly|saw|boomerang",
   "tail": "none|shark|twin|block|fins|sail|spike|crest|fishtail|sickle|disc|notch|zig|rotor|crown",
-  "engine": { "kind": "bell|pods|ring|orb", "count": 1 o 2 o 3, "flame": "classic|bolt|puff|none" },
-  "top": "none|antenna|dish|solar|beacon",
-  "belly": "none|pod|legs|tank",
-  "decal": "none|stripe|chevrons|checker|star",
+  "engine": { "kind": "bell|pods|ring|orb|jet|horn|cone|fan|crystal|box|bubble|saturn|nozzle|flare", "count": 1 o 2 o 3, "flame": "classic|bolt|puff|none|comet|rainbow|sparks|waves|drip|ribbon|stars|pulse|tongue|hearts" },
+  "top": "none|antenna|dish|solar|beacon|flag|windmill|balloon|lighthouse|sprout|umbrella|minirocket|moon|antlers|orbit",
+  "belly": "none|pod|legs|tank|wheels|skids|orb|claw|keel|dome|crates|tripod|spot|anchor",
+  "decal": "none|stripe|chevrons|checker|star|dots|zigzag|waves|diamonds|bands|flames|spots|bolt|plaid|hearts",
   "windows": "round|square|arch|hex|diamond|star|heart|slot|tri|oval|cross|moon|drop",
   "palette": { "hull": "#rrggbb", "trim": "#rrggbb", "accent": "#rrggbb", "glass": "#rrggbb" }
 }
@@ -21,6 +21,11 @@ Qué es cada cosa:
 - nose (la punta): probe una antenita; cap punta de color; drill un taladro; ball una bolita; cone un cono; fork una horquilla; ring un aro; beak un pico; lamp una linterna con luz; spark un chispazo; bumper una almohadilla; whisker bigotes; pennant un banderín.
 - cockpit (la cabina): bubble una burbuja; visor un visor largo; dome una cúpula grande; twin dos burbujas; porthole una escotilla redonda; slit una rendija; hood una capucha; panorama una cabina panorámica larga; periscope un periscopio; eye un ojo; tower una torreta; wedge una cuña.
 - windows (las ventanillas, una por tripulante): round redondas; square cuadradas; arch en arco; hex hexágonos; diamond rombos; star estrellitas; heart corazones; slot ranuras; tri triángulos; oval óvalos; cross cruces; moon lunas; drop gotas.
+- engine.kind (el motor): bell campana; pods cápsulas; ring anillo; orb orbe; jet turbina; horn trompeta; cone cohetín puntiagudo; fan ventilador; crystal cristal; box caja; bubble pompa de cristal; saturn orbe con anillos; nozzle boquilla; flare abanico ancho.
+- engine.flame (la estela): classic llama; bolt rayo; puff burbujas; none sin estela; comet meteoro; rainbow arcoíris; sparks chispas; waves ondas; drip gotitas; ribbon cinta; stars estrellas; pulse pulsos; tongue lengua larga; hearts corazones.
+- top (lo de arriba): antenna antena; dish parabólica; solar panel solar; beacon faro; flag bandera; windmill molino; balloon globo; lighthouse faro de torre; sprout plantita; umbrella sombrilla; minirocket cohetito; moon media luna; antlers cuernos; orbit satélite.
+- belly (lo de abajo): pod bodega; legs patas; tank tanque; wheels ruedas; skids patines; orb esfera; claw garra; keel quilla; dome mirador de cristal; crates cajas; tripod trípode; spot reflector; anchor ancla.
+- decal (las marcas): stripe franja; chevrons flechas; checker ajedrez; star estrella; dots lunares; zigzag; waves olas; diamonds rombos; bands bandas; flames llamas; spots manchas; bolt rayo; plaid cuadros; hearts corazones.
 - tail (aleta de arriba): shark de tiburón; twin dos aletas; block un bloque; fins aletas arriba y abajo; sail una vela alta; spike púas; crest una cresta de picos; fishtail cola de pez en horquilla; sickle una hoz curva; disc un disco; notch un bloque con muesca; zig un zigzag; rotor una hélice; crown una corona.
 - palette.hull es el color del cuerpo; trim, el de alas, cola y motores; accent, el de franjas, punta y llama; glass, la luz de las ventanillas (siempre muy claro).
 Reglas:
