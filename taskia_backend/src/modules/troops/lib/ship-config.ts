@@ -6,8 +6,8 @@ import { z } from 'zod'
  * que en `taskia_frontend/src/lib/ship/types.ts`.
  */
 export const HULLS = ['rocket', 'bean', 'arrow', 'barge', 'saucer', 'dart', 'drop', 'leaf', 'bullet', 'brick', 'dolphin', 'whale', 'needle', 'blimp', 'diamond'] as const
-export const NOSES = ['none', 'probe', 'cap', 'drill'] as const
-export const COCKPITS = ['none', 'bubble', 'visor'] as const
+export const NOSES = ['none', 'probe', 'cap', 'drill', 'ball', 'cone', 'fork', 'ring', 'beak', 'lamp', 'spark', 'bumper', 'whisker', 'pennant'] as const
+export const COCKPITS = ['none', 'bubble', 'visor', 'dome', 'twin', 'porthole', 'slit', 'hood', 'panorama', 'periscope', 'eye', 'tower', 'wedge'] as const
 export const WINGS = ['none', 'delta', 'swept', 'stub', 'blade', 'leaf', 'manta', 'steps', 'hook', 'biplane', 'scissor', 'butterfly', 'saw', 'boomerang'] as const
 export const TAILS = ['none', 'shark', 'twin', 'block', 'fins', 'sail', 'spike', 'crest', 'fishtail', 'sickle', 'disc', 'notch', 'zig', 'rotor', 'crown'] as const
 export const ENGINES = ['bell', 'pods', 'ring', 'orb'] as const
@@ -15,7 +15,7 @@ export const FLAMES = ['classic', 'bolt', 'puff', 'none'] as const
 export const TOPS = ['none', 'antenna', 'dish', 'solar', 'beacon'] as const
 export const BELLIES = ['none', 'pod', 'legs', 'tank'] as const
 export const DECALS = ['none', 'stripe', 'chevrons', 'checker', 'star'] as const
-export const WINDOWS = ['round', 'square', 'arch'] as const
+export const WINDOWS = ['round', 'square', 'arch', 'hex', 'diamond', 'star', 'heart', 'slot', 'tri', 'oval', 'cross', 'moon', 'drop'] as const
 
 const HEX = /^#([0-9a-fA-F]{6})$/
 
