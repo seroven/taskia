@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from 'react'
+import { memo, useId, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { darken, lighten } from '../../lib/ship/color'
 import type { AvatarConfig } from '../../lib/avatar/types'
@@ -12,6 +12,9 @@ type Pal = AvatarConfig['palette']
 
 const num = (value: number) => Math.round(value * 10) / 10
 const pts = (list: [number, number][]) => list.map(([x, y]) => `${num(x)},${num(y)}`).join(' ')
+
+/** La gorra de pelo corta, que varios peinados llevan debajo de lo suyo. */
+const SHORT = 'M27 45 C24 22 40 17 50 17 C62 17 76 23 73 45 C68 35 60 31 50 31 C40 31 32 35 27 45 Z'
 
 /** Dónde caen los ojos y la boca según el personaje (el gato los lleva un poco más abajo). */
 const faceY = (base: AvatarConfig['base']) => ({ ey: base === 'cat' ? 49 : 46, my: base === 'cat' ? 61 : 60 })
@@ -32,6 +35,32 @@ function HairBack({ hair, pal }: { hair: AvatarConfig['hair']; pal: Pal }) {
         <path d="M73 40 C86 42 89 60 83 76 C75 72 71 56 69 46 Z" />
       </g>
     )
+  }
+  if (hair === 'afro') {
+    return <circle cx={50} cy={35} r={30} fill={pal.hair} className={ink} />
+  }
+  if (hair === 'braids') {
+    return (
+      <g fill={pal.hair} className={ink}>
+        {[28.5, 71.5].map((x) => (
+          <g key={x}>
+            <ellipse cx={x} cy={54} rx={5.2} ry={6.2} />
+            <ellipse cx={x - (x < 50 ? 0.6 : -0.6)} cy={65} rx={4.8} ry={5.8} />
+            <ellipse cx={x - (x < 50 ? 1.2 : -1.2)} cy={76} rx={4.4} ry={5.4} />
+            <circle cx={x - (x < 50 ? 1.6 : -1.6)} cy={83.5} r={2.6} fill={pal.accent} className={thin} />
+          </g>
+        ))}
+      </g>
+    )
+  }
+  if (hair === 'ponytail') {
+    return <path d="M66 30 C90 26 96 52 84 72 C82 58 76 48 66 44 Z" fill={pal.hair} className={ink} />
+  }
+  if (hair === 'wavy') {
+    return <path d="M24 44 C17 54 26 60 20 70 C15 79 24 84 22 92 L78 92 C76 84 85 79 80 70 C74 60 83 54 76 44 Z" fill={pal.hair} className={ink} />
+  }
+  if (hair === 'fringe') {
+    return <path d="M23 44 C20 62 24 74 31 74 L69 74 C76 74 80 62 77 44 Z" fill={pal.hair} className={ink} />
   }
   return null
 }
@@ -79,6 +108,7 @@ function BaseBack({ base, pal }: { base: AvatarConfig['base']; pal: Pal }) {
 const TORSO = 'M8 104 C8 86 26 77 50 77 C74 77 92 86 92 104 Z'
 
 function Outfit({ outfit, pal }: { outfit: AvatarConfig['outfit']; pal: Pal }) {
+  const clip = `${useId().replace(/:/g, '')}-torso`
   if (outfit === 'hoodie') {
     return (
       <g>
@@ -151,6 +181,121 @@ function Outfit({ outfit, pal }: { outfit: AvatarConfig['outfit']; pal: Pal }) {
     return (
       <g>
         <path d={TORSO} fill={pal.outfit} className={ink} />
+      </g>
+    )
+  }
+  if (outfit === 'stripes') {
+    return (
+      <g>
+        <defs>
+          <clipPath id={clip}>
+            <path d={TORSO} />
+          </clipPath>
+        </defs>
+        <path d={TORSO} fill={pal.outfit} />
+        <g clipPath={`url(#${clip})`}>
+          <rect x={0} y={85} width={100} height={4.4} fill={pal.accent} />
+          <rect x={0} y={93} width={100} height={4.4} fill={pal.accent} />
+          <rect x={0} y={101} width={100} height={4.4} fill={pal.accent} />
+        </g>
+        <path d={TORSO} fill="none" className={ink} />
+        <path d="M39 77.5 Q50 89 61 77.5" fill={pal.skin} className={thin} />
+      </g>
+    )
+  }
+  if (outfit === 'vest') {
+    return (
+      <g>
+        <path d={TORSO} fill="#f8fafc" className={ink} />
+        <path d="M44 80 L50 98 L56 80" fill={pal.skin} className={thin} />
+        <polygon points={pts([[14, 104], [22, 86], [36, 79], [47, 86], [44, 104]])} fill={pal.outfit} className={ink} />
+        <polygon points={pts([[86, 104], [78, 86], [64, 79], [53, 86], [56, 104]])} fill={pal.outfit} className={ink} />
+        <circle cx={42} cy={94} r={1.6} fill={pal.accent} className={thin} />
+        <circle cx={58} cy={94} r={1.6} fill={pal.accent} className={thin} />
+      </g>
+    )
+  }
+  if (outfit === 'dress') {
+    return (
+      <g>
+        <path d={TORSO} fill={pal.outfit} className={ink} />
+        <path d="M37 78 Q43 88 50 82 Q57 88 63 78" fill={pal.skin} className={thin} />
+        <path d="M30 98 Q50 92 70 98" stroke={pal.accent} strokeWidth={3.4} strokeLinecap="round" fill="none" />
+        <g fill={pal.accent} className={thin}>
+          <polygon points={pts([[50, 95], [41, 90], [41, 100]])} />
+          <polygon points={pts([[50, 95], [59, 90], [59, 100]])} />
+        </g>
+      </g>
+    )
+  }
+  if (outfit === 'tie') {
+    return (
+      <g>
+        <path d={TORSO} fill="#f8fafc" className={ink} />
+        <polygon points={pts([[41, 77.5], [48, 82], [43, 88]])} fill="#e2e8f0" className={thin} />
+        <polygon points={pts([[59, 77.5], [52, 82], [57, 88]])} fill="#e2e8f0" className={thin} />
+        <polygon points={pts([[50, 82], [46.5, 87], [50, 103], [53.5, 87]])} fill={pal.accent} className={ink} />
+        <rect x={47} y={80.5} width={6} height={5} rx={1.6} fill={pal.accent} className={thin} />
+      </g>
+    )
+  }
+  if (outfit === 'cape') {
+    return (
+      <g>
+        <path d="M2 104 C2 82 20 72 50 72 C80 72 98 82 98 104 Z" fill={pal.accent} className={ink} />
+        <path d={TORSO} fill={pal.outfit} className={ink} />
+        <path d="M39 77.5 Q50 89 61 77.5" fill={pal.skin} className={thin} />
+        <circle cx={36} cy={80} r={3.4} fill="#fbbf24" className={thin} />
+        <circle cx={64} cy={80} r={3.4} fill="#fbbf24" className={thin} />
+      </g>
+    )
+  }
+  if (outfit === 'lab') {
+    return (
+      <g>
+        <path d={TORSO} fill="#f8fafc" className={ink} />
+        <polygon points={pts([[44, 79], [56, 79], [58, 104], [42, 104]])} fill={pal.outfit} className={thin} />
+        <path d="M44 79 L36 104 M56 79 L64 104" className={ink} fill="none" />
+        <rect x={22} y={91} width={11} height={9} rx={2} fill="#e2e8f0" className={thin} />
+        <path d="M25.5 91 V87.5" stroke={pal.accent} strokeWidth={2.4} strokeLinecap="round" />
+      </g>
+    )
+  }
+  if (outfit === 'sailor') {
+    return (
+      <g>
+        <path d={TORSO} fill="#f8fafc" className={ink} />
+        <path d="M30 79 L50 98 L70 79 L77 90 L50 106 L23 90 Z" fill={pal.outfit} className={ink} />
+        <path d="M33 85 L50 101 L67 85 M30 90 L50 105 L70 90" stroke="#fff" strokeWidth={1.6} fill="none" />
+        <polygon points={pts([[50, 94], [44, 101], [56, 101]])} fill={pal.accent} className={thin} />
+      </g>
+    )
+  }
+  if (outfit === 'puffer') {
+    return (
+      <g>
+        <path d={TORSO} fill={pal.outfit} className={ink} />
+        <path d="M13 90 Q50 82 87 90 M10 98 Q50 90 90 98" className={thin} fill="none" opacity={0.7} />
+        <path d="M50 82 V104" className={thin} fill="none" />
+        <path d="M40 78 Q50 86 60 78" fill={darken(pal.outfit, 0.18)} className={thin} />
+      </g>
+    )
+  }
+  if (outfit === 'tanktop') {
+    return (
+      <g>
+        <path d={TORSO} fill={pal.skin} className={ink} />
+        <path d="M24 104 L29 90 Q35 84 39 78 L43 80 Q50 90 57 80 L61 78 Q65 84 71 90 L76 104 Z" fill={pal.outfit} className={ink} />
+      </g>
+    )
+  }
+  if (outfit === 'scarf') {
+    return (
+      <g>
+        <path d={TORSO} fill={pal.outfit} className={ink} />
+        <path d="M63 86 L70 104 L61 102 L57 90 Z" fill={pal.accent} className={ink} />
+        <path d="M33 78 Q50 92 67 78 L69 87 Q50 100 31 87 Z" fill={pal.accent} className={ink} />
+        <path d="M38 84 L40 91 M50 88 V96 M62 84 L60 91" stroke="#fff" strokeWidth={1.4} strokeLinecap="round" opacity={0.7} />
       </g>
     )
   }
@@ -324,7 +469,46 @@ function HairFront({ hair, pal }: { hair: AvatarConfig['hair']; pal: Pal }) {
       </g>
     )
   }
-  return <path d="M27 45 C24 22 40 17 50 17 C62 17 76 23 73 45 C68 35 60 31 50 31 C40 31 32 35 27 45 Z" fill={fill} className={ink} />
+  if (hair === 'afro') return null
+  if (hair === 'braids' || hair === 'wavy') return <path d={SHORT} fill={fill} className={ink} />
+  if (hair === 'ponytail') {
+    return (
+      <g>
+        <path d={SHORT} fill={fill} className={ink} />
+        <circle cx={71} cy={35} r={3.2} fill={pal.accent} className={thin} />
+      </g>
+    )
+  }
+  if (hair === 'buns') {
+    return (
+      <g>
+        <circle cx={31} cy={20} r={8} fill={fill} className={ink} />
+        <circle cx={69} cy={20} r={8} fill={fill} className={ink} />
+        <path d={SHORT} fill={fill} className={ink} />
+      </g>
+    )
+  }
+  if (hair === 'fringe') {
+    return <path d="M24 46 C21 20 40 15 50 15 C62 15 79 20 76 46 L71 46 L71 34 H29 L29 46 Z" fill={fill} className={ink} />
+  }
+  if (hair === 'parted') {
+    return <path d="M27 46 C24 22 42 16 52 17 C64 18 76 26 73 46 C69 37 62 32 54 30 C46 36 36 38 28 42 Z" fill={fill} className={ink} />
+  }
+  if (hair === 'buzz') {
+    return <path d="M28 40 C27 24 40 19 50 19 C60 19 73 24 72 40 C66 30 58 27 50 27 C42 27 34 30 28 40 Z" fill={fill} opacity={0.9} className={thin} />
+  }
+  if (hair === 'tuft') {
+    return (
+      <g fill="none" strokeLinecap="round">
+        <path d="M50 24 C45 14 56 6 59 13 C61 18 54 19 54 15" className={ink} style={{ strokeWidth: 7 }} />
+        <path d="M50 24 C45 14 56 6 59 13 C61 18 54 19 54 15" stroke={fill} strokeWidth={3.2} />
+      </g>
+    )
+  }
+  if (hair === 'bowl') {
+    return <path d="M25 49 C22 20 40 15 50 15 C62 15 78 20 75 49 L68 49 C68 37 62 34 50 34 C38 34 32 37 32 49 Z" fill={fill} className={ink} />
+  }
+  return <path d={SHORT} fill={fill} className={ink} />
 }
 
 /* ---------- Accesorios ---------- */
@@ -388,6 +572,103 @@ function Accessory({ kind, base, pal }: { kind: AvatarConfig['accessory']; base:
         <polygon points={pts([[67, 24], [54, 15], [54, 33]])} />
         <circle cx={67} cy={24} r={3.8} fill={lighten(pal.accent, 0.35)} />
       </g>
+    )
+  }
+  if (kind === 'monocle') {
+    return (
+      <g>
+        <circle cx={59} cy={ey} r={8.6} fill="#fff" fillOpacity={0.3} className={ink} />
+        <path d={`M65.5 ${ey + 6} Q74 ${ey + 14} 70 ${ey + 28}`} className={thin} fill="none" />
+        <circle cx={70} cy={ey + 28.6} r={1.8} fill="#fbbf24" className={thin} />
+      </g>
+    )
+  }
+  if (kind === 'beanie') {
+    return (
+      <g>
+        <path d="M26 38 C26 10 74 10 74 38 Z" fill={pal.accent} className={ink} />
+        <path d="M33 22 V37 M42 17 V37 M50 15 V37 M58 17 V37 M67 22 V37" className={thin} fill="none" opacity={0.55} />
+        <rect x={23.5} y={34} width={53} height={10} rx={4.5} fill={darken(pal.accent, 0.18)} className={ink} />
+        <circle cx={50} cy={11} r={5.4} fill={lighten(pal.accent, 0.35)} className={ink} />
+      </g>
+    )
+  }
+  if (kind === 'tophat') {
+    return (
+      <g>
+        <rect x={34} y={0} width={32} height={26} rx={3} fill="#1f2937" className={ink} />
+        <rect x={34} y={19} width={32} height={6} fill={pal.accent} className={thin} />
+        <ellipse cx={50} cy={27} rx={29} ry={5.4} fill="#1f2937" className={ink} />
+      </g>
+    )
+  }
+  if (kind === 'patch') {
+    return (
+      <g>
+        <path d={`M34 ${ey - 3} L27 36 M48 ${ey - 5} L73 33`} className={ink} fill="none" />
+        <ellipse cx={41} cy={ey} rx={7.6} ry={6.6} fill="#1f2937" className={ink} />
+      </g>
+    )
+  }
+  if (kind === 'helmet') {
+    return (
+      <g>
+        <circle cx={50} cy={47} r={34} fill="#bae6fd" fillOpacity={0.2} className={ink} />
+        <path d="M30 28 Q36 18 48 16" stroke="#fff" strokeWidth={3} strokeLinecap="round" fill="none" opacity={0.85} />
+        <ellipse cx={50} cy={79} rx={25} ry={6.4} fill="#e2e8f0" className={ink} />
+        <circle cx={32} cy={79} r={1.8} fill={pal.accent} className={thin} />
+        <circle cx={68} cy={79} r={1.8} fill={pal.accent} className={thin} />
+      </g>
+    )
+  }
+  if (kind === 'bandana') {
+    return (
+      <g>
+        <path d="M26 40 C29 22 71 22 74 40 L74 46 C61 38 39 38 26 46 Z" fill={pal.accent} className={ink} />
+        <circle cx={38} cy={37} r={1.5} fill="#fff" opacity={0.9} />
+        <circle cx={50} cy={34} r={1.5} fill="#fff" opacity={0.9} />
+        <circle cx={62} cy={37} r={1.5} fill="#fff" opacity={0.9} />
+        <polygon points={pts([[74, 42], [84, 36], [82, 50]])} fill={pal.accent} className={ink} />
+      </g>
+    )
+  }
+  if (kind === 'flower') {
+    return (
+      <g>
+        {[0, 72, 144, 216, 288].map((deg) => {
+          const a = ((deg - 90) * Math.PI) / 180
+          return <circle key={deg} cx={68 + Math.cos(a) * 5.6} cy={27 + Math.sin(a) * 5.6} r={4.6} fill={pal.accent} className={thin} />
+        })}
+        <circle cx={68} cy={27} r={3.4} fill="#fbbf24" className={thin} />
+      </g>
+    )
+  }
+  if (kind === 'mask') {
+    const hole = (x: number) => `M${x - 5} ${ey} a5 4.2 0 1 0 10 0 a5 4.2 0 1 0 -10 0 Z`
+    return (
+      <path
+        d={`M29 ${ey - 5} Q50 ${ey - 13} 71 ${ey - 5} L72 ${ey + 5} Q50 ${ey + 1} 28 ${ey + 5} Z ${hole(41)} ${hole(59)}`}
+        fill={pal.accent}
+        fillRule="evenodd"
+        className={ink}
+      />
+    )
+  }
+  if (kind === 'halo') {
+    return (
+      <g fill="none">
+        <ellipse cx={50} cy={11} rx={17} ry={5} className={ink} style={{ strokeWidth: 7.4 }} />
+        <ellipse cx={50} cy={11} rx={17} ry={5} stroke="#fbbf24" strokeWidth={3.6} />
+      </g>
+    )
+  }
+  if (kind === 'mustache') {
+    return (
+      <path
+        d={`M50 ${ey + 11} C44 ${ey + 7} 35 ${ey + 9} 36 ${ey + 14.5} C42 ${ey + 13} 46 ${ey + 13} 50 ${ey + 14} C54 ${ey + 13} 58 ${ey + 13} 64 ${ey + 14.5} C65 ${ey + 9} 56 ${ey + 7} 50 ${ey + 11} Z`}
+        fill={pal.hair}
+        className={ink}
+      />
     )
   }
   return (

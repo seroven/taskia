@@ -7,9 +7,9 @@
 export const BASES = ['human', 'alien', 'robot', 'cat'] as const
 export const EYES = ['dots', 'round', 'happy', 'sleepy', 'wink', 'star', 'big', 'cyclops'] as const
 export const MOUTHS = ['smile', 'grin', 'open', 'tongue', 'smirk', 'flat'] as const
-export const HAIRS = ['none', 'short', 'spiky', 'long', 'curly', 'bun', 'mohawk', 'pigtails', 'bob'] as const
-export const OUTFITS = ['tee', 'hoodie', 'suit', 'overalls', 'jacket', 'armor', 'poncho', 'turtleneck'] as const
-export const ACCESSORIES = ['none', 'glasses', 'shades', 'headphones', 'antennas', 'cap', 'bow', 'crown'] as const
+export const HAIRS = ['none', 'short', 'spiky', 'long', 'curly', 'bun', 'mohawk', 'pigtails', 'bob', 'afro', 'braids', 'ponytail', 'buns', 'wavy', 'fringe', 'parted', 'buzz', 'tuft', 'bowl'] as const
+export const OUTFITS = ['tee', 'hoodie', 'suit', 'overalls', 'jacket', 'armor', 'poncho', 'turtleneck', 'stripes', 'vest', 'dress', 'tie', 'cape', 'lab', 'sailor', 'puffer', 'tanktop', 'scarf'] as const
+export const ACCESSORIES = ['none', 'glasses', 'shades', 'headphones', 'antennas', 'cap', 'bow', 'crown', 'monocle', 'beanie', 'tophat', 'patch', 'helmet', 'bandana', 'flower', 'mask', 'halo', 'mustache'] as const
 
 export type Base = (typeof BASES)[number]
 export type Eyes = (typeof EYES)[number]
@@ -77,6 +77,16 @@ export const AVATAR_OPTIONS = {
     { id: 'mohawk', label: 'Cresta' },
     { id: 'pigtails', label: 'Coletas' },
     { id: 'bob', label: 'Melena' },
+    { id: 'afro', label: 'Afro' },
+    { id: 'braids', label: 'Trenzas' },
+    { id: 'ponytail', label: 'Cola alta' },
+    { id: 'buns', label: 'Dos moños' },
+    { id: 'wavy', label: 'Ondas' },
+    { id: 'fringe', label: 'Flequillo' },
+    { id: 'parted', label: 'Raya' },
+    { id: 'buzz', label: 'Rapado' },
+    { id: 'tuft', label: 'Mechón' },
+    { id: 'bowl', label: 'Taza' },
   ] satisfies Option<Hair>[],
   outfit: [
     { id: 'tee', label: 'Camiseta' },
@@ -87,6 +97,16 @@ export const AVATAR_OPTIONS = {
     { id: 'armor', label: 'Armadura' },
     { id: 'poncho', label: 'Poncho' },
     { id: 'turtleneck', label: 'Cuello alto' },
+    { id: 'stripes', label: 'Rayas' },
+    { id: 'vest', label: 'Chaleco' },
+    { id: 'dress', label: 'Vestido' },
+    { id: 'tie', label: 'Corbata' },
+    { id: 'cape', label: 'Capa' },
+    { id: 'lab', label: 'Bata' },
+    { id: 'sailor', label: 'Marinero' },
+    { id: 'puffer', label: 'Plumífero' },
+    { id: 'tanktop', label: 'Tirantes' },
+    { id: 'scarf', label: 'Bufanda' },
   ] satisfies Option<Outfit>[],
   accessory: [
     { id: 'none', label: 'Ninguno' },
@@ -97,6 +117,16 @@ export const AVATAR_OPTIONS = {
     { id: 'cap', label: 'Gorra' },
     { id: 'bow', label: 'Lazo' },
     { id: 'crown', label: 'Corona' },
+    { id: 'monocle', label: 'Monóculo' },
+    { id: 'beanie', label: 'Gorro' },
+    { id: 'tophat', label: 'Sombrero' },
+    { id: 'patch', label: 'Parche' },
+    { id: 'helmet', label: 'Casco' },
+    { id: 'bandana', label: 'Pañuelo' },
+    { id: 'flower', label: 'Flor' },
+    { id: 'mask', label: 'Antifaz' },
+    { id: 'halo', label: 'Aureola' },
+    { id: 'mustache', label: 'Bigote' },
   ] satisfies Option<Accessory>[],
 }
 
