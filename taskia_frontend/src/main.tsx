@@ -28,6 +28,9 @@ const ShipLab = import.meta.env.DEV
 const GalaxyLab = import.meta.env.DEV
   ? lazy(() => import('./pages/GalaxyLab').then((m) => ({ default: m.GalaxyLab })))
   : null
+const RankingLab = import.meta.env.DEV
+  ? lazy(() => import('./pages/RankingLab').then((m) => ({ default: m.RankingLab })))
+  : null
 const AvatarLab = import.meta.env.DEV
   ? lazy(() => import('./pages/AvatarLab').then((m) => ({ default: m.AvatarLab })))
   : null
@@ -42,6 +45,14 @@ createRoot(document.getElementById('root')!).render(
         <AccentProvider>
           <Suspense fallback={null}>
             <ShipLab />
+          </Suspense>
+        </AccentProvider>
+      </ThemeProvider>
+    ) : RankingLab && lab === 'ranking' ? (
+      <ThemeProvider>
+        <AccentProvider>
+          <Suspense fallback={null}>
+            <RankingLab />
           </Suspense>
         </AccentProvider>
       </ThemeProvider>

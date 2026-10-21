@@ -44,11 +44,11 @@ export function TroopSpaceCard({
       className="troop-space-card"
       initial={reduceMotion ? false : { opacity: 0, y: 16, scale: 0.94 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={reduceMotion ? undefined : { opacity: 0, y: 10, scale: 0.96 }}
+      exit={reduceMotion ? undefined : { opacity: 0, y: 6, scale: 0.98, transition: { duration: 0.12 } }}
       transition={
         reduceMotion
           ? { duration: 0 }
-          : { type: 'spring', stiffness: 320, damping: 26 }
+          : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
       }
     >
       <div className="troop-space-card-ship">

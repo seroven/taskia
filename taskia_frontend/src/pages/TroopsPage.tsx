@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import {
   Bell,
@@ -97,8 +97,33 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
     })()
   }, [])
 
+  /** Lo que ya se sabe de las tripulaciones, para mostrar su ficha al instante mientras llega el detalle. */
+  const known = useRef<{ universe: UniverseTroop[]; mine: TroopDetail | null }>({ universe: [], mine: null })
+  useEffect(() => {
+    known.current = { universe, mine: myTroop }
+  }, [universe, myTroop])
+
   const selectTroop = useCallback(async (id: number) => {
     setOpenId(id)
+    // La ficha aparece enseguida con lo que ya se conoce (nombre, nave, nivel, puesto); los miembros llegan después.
+    const { universe: all, mine } = known.current
+    const row = all.find((troop) => troop.id === id)
+    if (mine?.id === id) setOpenDetail(mine)
+    else if (row) {
+      setOpenDetail({
+        id: row.id,
+        name: row.name,
+        member_count: row.member_count,
+        max_members: 10,
+        my_role: null,
+        members: [],
+        level: row.level,
+        xp_week: row.xp_week,
+        rank: row.rank,
+        ship_config: row.ship_config,
+        created_at: '',
+      })
+    }
     setBusy(true)
     try {
       const detail = await api.getTroop(id)
@@ -222,31 +247,33 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
               </button>
             )}
 
-            <button
-              type="button"
-              className="space-bell-fab"
-              aria-label="Bandeja de tripulación"
-              onClick={() => {
-                setInboxOpen(true)
-                void loadInbox().catch(() => undefined)
-              }}
-            >
-              <Bell size={22} weight="duotone" />
-              {inboxCount > 0 && (
+            {/* La bandeja (invitaciones y solicitudes) solo aparece cuando hay algo pendiente: así no ocupa la pantalla vacía. */}
+            {inboxCount > 0 && (
+              <button
+                type="button"
+                className={`space-bell-fab${!myTroop ? ' is-below' : ''}`}
+                aria-label={`Bandeja de tripulación: ${inboxCount} pendientes`}
+                onClick={() => {
+                  setInboxOpen(true)
+                  void loadInbox().catch(() => undefined)
+                }}
+              >
+                <Bell size={22} weight="duotone" />
                 <span className="space-bell-badge">{inboxCount}</span>
-              )}
-            </button>
+              </button>
+            )}
 
             <button
               type="button"
-              className="space-rank-fab"
-              aria-label="Ranking semanal"
+              className="space-rank-chip"
+              aria-label="Clasificación semanal"
               onClick={() => {
                 setRankingOpen(true)
                 void ensureRanking(ranking.length === 0)
               }}
             >
-              <Trophy size={22} weight="duotone" />
+              <Trophy size={18} weight="fill" />
+              Clasificación
             </button>
 
             {showBackHome && (
@@ -262,7 +289,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
               </button>
             )}
 
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {openDetail && (
                 <div className="space-card-slot" key={openDetail.id}>
                   <TroopSpaceCard
@@ -439,7 +466,8 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
               </div>
             )}
 
-            {rankingOpen && (
+            <AnimatePresence>
+              {rankingOpen && (
               <TroopRankingPanel
                 rows={ranking}
                 myTroopId={myTroopId}
@@ -451,7 +479,8 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
                   void selectTroop(id)
                 }}
               />
-            )}
+              )}
+            </AnimatePresence>
           </div>
         </div>
       )}
