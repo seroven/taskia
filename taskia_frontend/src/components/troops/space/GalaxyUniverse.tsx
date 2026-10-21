@@ -68,6 +68,32 @@ type Cam = { x: number; y: number; zoom: number; inset: number; insetY: number }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 
+/** Número estable entre 0 y 1 para un id y una «sal»: da a cada nave su propio ritmo sin azar. */
+const unit = (id: number, salt: number) => ((Math.imul(id ^ Math.imul(salt, 0x9e3779b1), 2654435761) >>> 0) % 1000) / 1000
+
+/**
+ * El ritmo de vuelo de cada nave: cuánto tarda en subir y bajar, en cabecear y en derivar de lado (tres periodos
+ * distintos, así el conjunto no se repite), cuánto se mueve (`amp`) y en qué punto del ciclo empieza.
+ */
+function rhythm(id: number) {
+  return {
+    ['--float-dur' as string]: `${(5.2 + unit(id, 1) * 3.2).toFixed(2)}s`,
+    ['--pitch-dur' as string]: `${(7 + unit(id, 2) * 4).toFixed(2)}s`,
+    ['--drift-dur' as string]: `${(10 + unit(id, 3) * 6).toFixed(2)}s`,
+    ['--amp' as string]: (0.75 + unit(id, 4) * 0.6).toFixed(2),
+    ['--bob-delay' as string]: `${(-unit(id, 5) * 12).toFixed(2)}s`,
+  }
+}
+
+/** Un muelle con rebote (subamortiguado): sigue a `target` y se pasa un poco antes de asentarse. */
+type Spring = { s: number; v: number }
+const FLEX_W = 0.011
+const FLEX_Z = 0.55
+function pull(spring: Spring, target: number, dt: number) {
+  spring.v += (FLEX_W * FLEX_W * (target - spring.s) - 2 * FLEX_Z * FLEX_W * spring.v) * dt
+  spring.s += spring.v * dt
+}
+
 /**
  * La galaxia de naves. Se arrastra desde cualquier punto (también sobre una nave), con inercia: al soltar la vista
  * sigue deslizando un poco y se frena sola. La rueda, los botones, el teclado o el pellizco hacen zoom, y una nave
@@ -89,6 +115,18 @@ export function GalaxyUniverse({
   const stageRef = useRef<HTMLDivElement>(null)
   const shipEls = useRef(new Map<number, HTMLElement>())
   const labelEls = useRef(new Map<number, HTMLElement>())
+  const artEls = useRef(new Map<number, HTMLElement>())
+  /** Cómo reaccionan las naves al movimiento de la cámara: velocidad suavizada y muelles de cabeceo, retraso y empuje. */
+  const motion = useRef({
+    prevX: 0,
+    prevY: 0,
+    vx: 0,
+    vy: 0,
+    pitch: { s: 0, v: 0 } as Spring,
+    lagX: { s: 0, v: 0 } as Spring,
+    lagY: { s: 0, v: 0 } as Spring,
+    thrust: { s: 0, v: 0 } as Spring,
+  })
   const skyEls = useRef(new Map<string, HTMLElement>())
   /** `cam` es lo que se ve; `goal`, hacia dónde va. Cada cuadro `cam` se acerca a `goal`. */
   const cam = useRef<Cam>({ x: 0, y: 0, zoom: 1, inset: 0, insetY: 0 })
@@ -119,7 +157,7 @@ export function GalaxyUniverse({
       const troop = byId.get(point.id)
       if (!troop) return []
       const mine = troop.id === myTroopId
-      return [{ troop, x: point.x, y: point.y, mine, base: mine ? MY_SHIP_WIDTH : OTHER_SHIP_WIDTH }]
+      return [{ troop, x: point.x, y: point.y, mine, base: mine ? MY_SHIP_WIDTH : OTHER_SHIP_WIDTH, resp: 0.7 + unit(troop.id, 6) * 0.6 }]
     })
   }, [troops, myTroopId])
   const spotsRef = useRef(spots)
@@ -210,6 +248,25 @@ export function GalaxyUniverse({
       // Solo se animan (balanceo, estela, parpadeos) las naves que se ven: es lo que más cuesta.
       const live = visible ? '1' : '0'
       if (el.dataset.live !== live) el.dataset.live = live
+      const art = visible ? artEls.current.get(spot.troop.id) : undefined
+      if (art) {
+        // La nave se arrastra un poco con la cámara: se inclina, se queda atrás y su estela se alarga al avanzar.
+        const m = motion.current
+        const lively = Math.abs(m.pitch.s) + Math.abs(m.lagX.s) + Math.abs(m.lagY.s) > 0.03
+        if (lively) {
+          const k = spot.resp
+          art.style.transform = `translate(${((m.lagX.s * k) / scale).toFixed(1)}px, ${((m.lagY.s * k) / scale).toFixed(1)}px) rotate(${(m.pitch.s * k).toFixed(2)}deg)`
+          art.dataset.moving = '1'
+        } else if (art.dataset.moving) {
+          art.style.transform = ''
+          delete art.dataset.moving
+        }
+        const thrust = (m.thrust.s * spot.resp).toFixed(2)
+        if (art.dataset.thrust !== thrust) {
+          art.dataset.thrust = thrust
+          art.style.setProperty('--thrust', thrust)
+        }
+      }
       el.style.transform = `translate(${(sx - spot.base / 2).toFixed(1)}px, ${(sy - spot.base / 4).toFixed(1)}px) scale(${scale.toFixed(3)})`
       el.style.zIndex = String(Math.round(scale * 100))
       if (label) {
@@ -279,16 +336,32 @@ export function GalaxyUniverse({
         g.x += dx
         g.y += dy
       }
+      if (!reduced) {
+        const m = motion.current
+        const ivx = clamp(((c.x - m.prevX) * c.zoom) / dt, -3, 3)
+        const ivy = clamp(((c.y - m.prevY) * c.zoom) / dt, -3, 3)
+        const smooth = 1 - Math.exp(-dt / 80)
+        m.vx += (ivx - m.vx) * smooth
+        m.vy += (ivy - m.vy) * smooth
+        pull(m.pitch, clamp(m.vy * 10, -9, 9), dt)
+        pull(m.lagX, clamp(-m.vx * 16, -18, 18), dt)
+        pull(m.lagY, clamp(-m.vy * 16, -18, 18), dt)
+        pull(m.thrust, clamp(m.vx * 0.8, -0.6, 1), dt)
+      }
+      motion.current.prevX = c.x
+      motion.current.prevY = c.y
       draw()
       checkFar()
 
+      const calm =
+        Math.abs(motion.current.pitch.s) + Math.abs(motion.current.pitch.v) * 300 + Math.abs(motion.current.lagX.s) + Math.abs(motion.current.lagY.s) + Math.abs(motion.current.thrust.s) * 4 < 0.04
       const settled =
         Math.abs(g.x - c.x) < 0.05 &&
         Math.abs(g.y - c.y) < 0.05 &&
         Math.abs(g.zoom - c.zoom) < 0.0004 &&
         Math.abs(g.inset - c.inset) < 0.3 &&
         Math.abs(g.insetY - c.insetY) < 0.3
-      if (settled && !inertia.current && !drag.current.active) {
+      if (settled && calm && !inertia.current && !drag.current.active) {
         Object.assign(c, g)
         anchor.current = null
         draw()
@@ -587,7 +660,7 @@ export function GalaxyUniverse({
       </div>
 
       <div className="galaxy-world" data-sky="1">
-        {spots.map(({ troop, base, mine }, index) => {
+        {spots.map(({ troop, base, mine }) => {
           if (!active.has(troop.id)) return null
           const rank = troop.rank != null && troop.rank <= 3 ? troop.rank : null
           const open = openId === troop.id
@@ -599,7 +672,7 @@ export function GalaxyUniverse({
                   else shipEls.current.delete(troop.id)
                 }}
                 className={`galaxy-ship${mine ? ' is-mine' : ''}${open ? ' is-open' : ''}${reduced ? ' is-still' : ''}`}
-                style={{ width: base, ['--bob-delay' as string]: `${-(index % 7) * 0.7}s` }}
+                style={{ width: base, ...rhythm(troop.id) }}
               >
                 {mine && <span className="galaxy-aura" />}
                 <button
@@ -611,7 +684,13 @@ export function GalaxyUniverse({
                   }}
                   aria-label={troop.name}
                 >
-                  <span className="galaxy-ship-art">
+                  <span
+                    ref={(node) => {
+                      if (node) artEls.current.set(troop.id, node)
+                      else artEls.current.delete(troop.id)
+                    }}
+                    className="galaxy-ship-art"
+                  >
                     <ShipRenderer
                       config={troop.ship_config}
                       crew={Math.min(troop.member_count, MAX_CREW)}

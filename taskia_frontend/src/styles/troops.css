@@ -545,17 +545,49 @@
   border-radius: 24px;
 }
 
+/*
+ * Vuelo en reposo: flota (sube y baja), cabecea (sube y baja la nariz) y deriva de lado, cada cosa con su propio
+ * periodo y amplitud por nave (variables de `rhythm`), así nunca se mueven al compás. `translate`, `rotate` y
+ * `transform` son propiedades distintas y se componen: el arrastre de la cámara (JS) usa `transform` en este mismo
+ * elemento, la flotación usa `translate` y el cabeceo `rotate`; la deriva va en el botón de arriba.
+ */
+.galaxy-ship {
+  animation: galaxy-appear 0.6s ease-out backwards;
+}
+
+.galaxy-ship-hit {
+  animation: galaxy-drift var(--drift-dur, 12s) ease-in-out infinite;
+  animation-delay: calc(var(--bob-delay, 0s) * 0.6);
+}
+
 .galaxy-ship-art {
   display: block;
-  animation: galaxy-bob 5.2s ease-in-out infinite;
-  animation-delay: var(--bob-delay, 0s);
-  transition: filter 0.2s ease;
+  transform-origin: 42% 58%;
+  animation:
+    galaxy-float var(--float-dur, 6s) ease-in-out infinite,
+    galaxy-pitch var(--pitch-dur, 8s) ease-in-out infinite;
+  animation-delay: var(--bob-delay, 0s), calc(var(--bob-delay, 0s) * 1.7);
+  transition:
+    filter 0.2s ease,
+    scale 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .galaxy-ship:hover .galaxy-ship-art {
   filter: drop-shadow(0 0 14px rgba(255, 255, 255, 0.35));
+  scale: 1.035;
 }
 
+/* La nave abierta «llega»: un pequeño asentamiento al quedar como foco. */
+.galaxy-ship.is-open .galaxy-ship-art {
+  animation:
+    galaxy-float var(--float-dur, 6s) ease-in-out infinite,
+    galaxy-pitch var(--pitch-dur, 8s) ease-in-out infinite,
+    galaxy-arrive 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  animation-delay: var(--bob-delay, 0s), calc(var(--bob-delay, 0s) * 1.7), 0s;
+}
+
+.galaxy-ship.is-still,
+.galaxy-ship.is-still .galaxy-ship-hit,
 .galaxy-ship.is-still .galaxy-ship-art {
   animation: none;
 }
@@ -571,6 +603,7 @@
   border-radius: 50%;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 38%, transparent), transparent 72%);
   pointer-events: none;
+  animation: galaxy-aura 4.8s ease-in-out infinite;
 }
 
 .galaxy-zoom {
@@ -604,9 +637,64 @@
   to { transform: translate(70vw, 28vh); opacity: 0; }
 }
 
-@keyframes galaxy-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3.5%); }
+@keyframes galaxy-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 calc(var(--amp, 1) * -3.4%);
+  }
+}
+
+@keyframes galaxy-pitch {
+  0%,
+  100% {
+    rotate: calc(var(--amp, 1) * -0.9deg);
+  }
+  50% {
+    rotate: calc(var(--amp, 1) * 1.3deg);
+  }
+}
+
+@keyframes galaxy-drift {
+  0%,
+  100% {
+    transform: translateX(calc(var(--amp, 1) * -1.1%));
+  }
+  50% {
+    transform: translateX(calc(var(--amp, 1) * 1.1%));
+  }
+}
+
+@keyframes galaxy-appear {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes galaxy-arrive {
+  0% {
+    scale: 0.97;
+  }
+  40% {
+    scale: 1.045;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes galaxy-aura {
+  0%,
+  100% {
+    opacity: 0.72;
+    scale: 1;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.07;
+  }
 }
 
 /* La ficha va al costado (la galaxia corre su centro para que la nave quede libre); en pantallas angostas, abajo. */
