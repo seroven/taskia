@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Crown, Lightning, Medal, Trophy, UsersThree, X } from '@phosphor-icons/react'
+import { AppLoader } from '../AppLoader'
 import { ShipRenderer } from '../ship/ShipRenderer'
 import { MAX_CREW } from '../../lib/ship/types'
 import type { TroopRankingRow } from '../../lib/troopsTypes'
@@ -148,7 +149,8 @@ export function TroopRankingPanel({ rows, myTroopId, loading, onMore, onClose, o
             </ol>
           )}
 
-          {loading && <p className="rank-empty">Cargando…</p>}
+          {loading && rows.length === 0 && <AppLoader context="troops" message="Cargando la clasificación…" variant="section" />}
+          {loading && rows.length > 0 && <p className="rank-empty">Cargando más…</p>}
         </div>
 
         {mine && (

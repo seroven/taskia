@@ -32,6 +32,7 @@ export function RankingLab() {
   const [mine, setMine] = useState(5)
   const [open, setOpen] = useState(true)
   const [picked, setPicked] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
   const rows = useMemo(() => fakeRows(count), [count])
   const myId = mine >= 1 && mine <= count ? mine : null
 
@@ -42,7 +43,7 @@ export function RankingLab() {
           <TroopRankingPanel
             rows={rows}
             myTroopId={myId}
-            loading={false}
+            loading={loading}
             onMore={() => undefined}
             onClose={() => setOpen(false)}
             onPick={(id) => setPicked(id)}
@@ -79,6 +80,9 @@ export function RankingLab() {
           Mi puesto: {myId ?? 'ninguno'}
           <input type="range" min={0} max={Math.max(1, count)} value={mine} onChange={(event) => setMine(Number(event.target.value))} />
         </label>
+        <button type="button" className={loading ? 'primary troops-mini' : 'ghost troops-mini'} onClick={() => setLoading((v) => !v)}>
+          Cargando: {loading ? 'sí' : 'no'}
+        </button>
         <button type="button" className="ghost troops-mini" onClick={() => setOpen(true)}>
           Abrir de nuevo
         </button>

@@ -51,9 +51,11 @@ createRoot(document.getElementById('root')!).render(
     ) : RankingLab && lab === 'ranking' ? (
       <ThemeProvider>
         <AccentProvider>
-          <Suspense fallback={null}>
-            <RankingLab />
-          </Suspense>
+          <AuthProvider>
+            <Suspense fallback={null}>
+              <RankingLab />
+            </Suspense>
+          </AuthProvider>
         </AccentProvider>
       </ThemeProvider>
     ) : AvatarLab && lab === 'avatars' ? (
