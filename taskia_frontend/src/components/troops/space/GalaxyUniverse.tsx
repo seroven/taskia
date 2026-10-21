@@ -504,9 +504,9 @@ export function GalaxyUniverse({
       }}
     >
       <div className="galaxy-sky" data-sky="1">
-        <div className="galaxy-nebula nebula-a" />
-        <div className="galaxy-nebula nebula-b" />
-        <div className="galaxy-nebula nebula-c" />
+        {[1, 2, 3, 4, 5, 6].map((n) => (
+          <div key={n} className={`galaxy-nebula nebula-${n}`} />
+        ))}
         {tiles.map((layer) => (
           <div
             key={layer.id}

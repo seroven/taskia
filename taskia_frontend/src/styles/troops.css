@@ -292,54 +292,172 @@
   pointer-events: none;
 }
 
+/* Nebulosas: cada una nace, brilla y se apaga en un sitio y a otra escala, con su propia duración; nunca coinciden. */
 .galaxy-nebula {
   position: absolute;
+  left: 0;
+  top: 0;
   border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent), transparent 70%);
   filter: blur(8px);
-  animation: nebula-float 28s ease-in-out infinite alternate;
+  opacity: 0;
+  animation: nebula-life var(--dur, 50s) ease-in-out var(--delay, 0s) infinite;
 }
 
-.nebula-b {
-  animation-duration: 34s;
-  animation-delay: -9s;
-}
-
-.nebula-c {
-  animation-duration: 22s;
-  animation-delay: -15s;
-}
-
-@keyframes nebula-float {
-  from {
-    transform: translate(-3%, -2%) scale(1);
+@keyframes nebula-life {
+  0% {
+    opacity: 0;
+    translate: var(--x1) var(--y1);
+    scale: var(--k1);
   }
-  to {
-    transform: translate(4%, 3%) scale(1.08);
+  11% {
+    opacity: var(--peak, 1);
+  }
+  22% {
+    opacity: var(--peak, 1);
+    translate: calc(var(--x1) + 3vw) calc(var(--y1) + 2vh);
+  }
+  33% {
+    opacity: 0;
+    translate: calc(var(--x1) + 4vw) calc(var(--y1) + 3vh);
+    scale: calc(var(--k1) * 1.15);
+  }
+  33.1% {
+    opacity: 0;
+    translate: var(--x2) var(--y2);
+    scale: var(--k2);
+  }
+  44% {
+    opacity: var(--peak, 1);
+  }
+  55% {
+    opacity: var(--peak, 1);
+    translate: calc(var(--x2) - 3vw) calc(var(--y2) + 2vh);
+  }
+  66% {
+    opacity: 0;
+    translate: calc(var(--x2) - 4vw) calc(var(--y2) + 3vh);
+    scale: calc(var(--k2) * 1.15);
+  }
+  66.1% {
+    opacity: 0;
+    translate: var(--x3) var(--y3);
+    scale: var(--k3);
+  }
+  77% {
+    opacity: var(--peak, 1);
+  }
+  88% {
+    opacity: var(--peak, 1);
+    translate: calc(var(--x3) + 2vw) calc(var(--y3) - 3vh);
+  }
+  100% {
+    opacity: 0;
+    translate: calc(var(--x3) + 3vw) calc(var(--y3) - 4vh);
+    scale: calc(var(--k3) * 1.15);
   }
 }
 
-.nebula-a {
-  width: 46%;
-  height: 38%;
-  left: 8%;
-  top: 12%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
+.nebula-1 {
+  width: 38vw;
+  height: 30vw;
+  --dur: 41s;
+  --delay: -7s;
+  --peak: 1;
+  --x1: 4vw;
+  --y1: 6vh;
+  --k1: 1;
+  --x2: 52vw;
+  --y2: 48vh;
+  --k2: 0.8;
+  --x3: 20vw;
+  --y3: 62vh;
+  --k3: 1.2;
 }
 
-.nebula-b {
-  width: 40%;
-  height: 34%;
-  right: 6%;
-  bottom: 10%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%);
+.nebula-2 {
+  width: 28vw;
+  height: 24vw;
+  --dur: 53s;
+  --delay: -31s;
+  --peak: 0.85;
+  --x1: 58vw;
+  --y1: 10vh;
+  --k1: 0.8;
+  --x2: 8vw;
+  --y2: 40vh;
+  --k2: 1.2;
+  --x3: 44vw;
+  --y3: 66vh;
+  --k3: 1;
 }
 
-.nebula-c {
-  width: 28%;
-  height: 24%;
-  left: 40%;
-  top: 42%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%);
+.nebula-3 {
+  width: 46vw;
+  height: 34vw;
+  --dur: 67s;
+  --delay: -19s;
+  --peak: 0.7;
+  --x1: 30vw;
+  --y1: 30vh;
+  --k1: 1.2;
+  --x2: 62vw;
+  --y2: 56vh;
+  --k2: 1;
+  --x3: 2vw;
+  --y3: 14vh;
+  --k3: 0.8;
+}
+
+.nebula-4 {
+  width: 22vw;
+  height: 20vw;
+  --dur: 47s;
+  --delay: -2s;
+  --peak: 1;
+  --x1: 72vw;
+  --y1: 58vh;
+  --k1: 1;
+  --x2: 26vw;
+  --y2: 8vh;
+  --k2: 0.8;
+  --x3: 50vw;
+  --y3: 34vh;
+  --k3: 1.2;
+}
+
+.nebula-5 {
+  width: 34vw;
+  height: 28vw;
+  --dur: 79s;
+  --delay: -48s;
+  --peak: 0.8;
+  --x1: 12vw;
+  --y1: 52vh;
+  --k1: 0.8;
+  --x2: 60vw;
+  --y2: 20vh;
+  --k2: 1.2;
+  --x3: 36vw;
+  --y3: 70vh;
+  --k3: 1;
+}
+
+.nebula-6 {
+  width: 18vw;
+  height: 16vw;
+  --dur: 59s;
+  --delay: -13s;
+  --peak: 0.9;
+  --x1: 40vw;
+  --y1: 56vh;
+  --k1: 1.2;
+  --x2: 78vw;
+  --y2: 30vh;
+  --k2: 1;
+  --x3: 6vw;
+  --y3: 28vh;
+  --k3: 0.8;
 }
 
 /*
@@ -630,6 +748,53 @@
 }
 
 .troop-space-member-main > .lvl-pill {
+  margin-left: auto;
+}
+
+.troop-space-member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* Insignia de nivel (LevelBadge): escudo con los colores de la nave y, para los miembros, una pastilla neutra. */
+.lvl-shield {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 44px;
+  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--text) 22%, transparent));
+  animation: badge-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.lvl-shield--lg {
+  width: 60px;
+}
+
+.lvl-shield svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.lvl-shield-body {
+  stroke: var(--text);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+}
+
+.lvl-shield-num {
+  stroke: var(--text);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.lvl-pill {
   margin-left: auto;
 }
 
@@ -1094,6 +1259,7 @@
   .galaxy-layer,
   .galaxy-nebula {
     animation: none;
+    opacity: 0.6;
   }
 }
 
