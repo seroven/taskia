@@ -22,6 +22,14 @@ export const FRAMES = [
   { id: 'laurel', minLevel: 12 },
   { id: 'flame', minLevel: 16 },
   { id: 'orbit', minLevel: 20 },
+  { id: 'wings', minLevel: 30 },
+  { id: 'crystal', minLevel: 40 },
+  { id: 'comet', minLevel: 50 },
+  { id: 'sun', minLevel: 60 },
+  { id: 'galaxy', minLevel: 70 },
+  { id: 'royal', minLevel: 80 },
+  { id: 'phoenix', minLevel: 90 },
+  { id: 'legend', minLevel: 100 },
 ] as const
 
 export const FRAME_IDS = FRAMES.map((frame) => frame.id) as unknown as readonly (typeof FRAMES)[number]['id'][]
