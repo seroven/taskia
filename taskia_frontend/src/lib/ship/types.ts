@@ -9,11 +9,11 @@ export const NOSES = ['none', 'probe', 'cap', 'drill', 'ball', 'cone', 'fork', '
 export const COCKPITS = ['none', 'bubble', 'visor', 'dome', 'twin', 'porthole', 'slit', 'hood', 'panorama', 'periscope', 'eye', 'tower', 'wedge'] as const
 export const WINGS = ['none', 'delta', 'swept', 'stub', 'blade', 'leaf', 'manta', 'steps', 'hook', 'biplane', 'scissor', 'butterfly', 'saw', 'boomerang'] as const
 export const TAILS = ['none', 'shark', 'twin', 'block', 'fins', 'sail', 'spike', 'crest', 'fishtail', 'sickle', 'disc', 'notch', 'zig', 'rotor', 'crown'] as const
-export const ENGINES = ['bell', 'pods', 'ring', 'orb'] as const
-export const FLAMES = ['classic', 'bolt', 'puff', 'none'] as const
-export const TOPS = ['none', 'antenna', 'dish', 'solar', 'beacon'] as const
-export const BELLIES = ['none', 'pod', 'legs', 'tank'] as const
-export const DECALS = ['none', 'stripe', 'chevrons', 'checker', 'star'] as const
+export const ENGINES = ['bell', 'pods', 'ring', 'orb', 'jet', 'horn', 'cone', 'fan', 'crystal', 'box', 'bubble', 'saturn', 'nozzle', 'flare'] as const
+export const FLAMES = ['classic', 'bolt', 'puff', 'none', 'comet', 'rainbow', 'sparks', 'waves', 'drip', 'ribbon', 'stars', 'pulse', 'tongue', 'hearts'] as const
+export const TOPS = ['none', 'antenna', 'dish', 'solar', 'beacon', 'flag', 'windmill', 'balloon', 'lighthouse', 'sprout', 'umbrella', 'minirocket', 'moon', 'antlers', 'orbit'] as const
+export const BELLIES = ['none', 'pod', 'legs', 'tank', 'wheels', 'skids', 'orb', 'claw', 'keel', 'dome', 'crates', 'tripod', 'spot', 'anchor'] as const
+export const DECALS = ['none', 'stripe', 'chevrons', 'checker', 'star', 'dots', 'zigzag', 'waves', 'diamonds', 'bands', 'flames', 'spots', 'bolt', 'plaid', 'hearts'] as const
 export const WINDOWS = ['round', 'square', 'arch', 'hex', 'diamond', 'star', 'heart', 'slot', 'tri', 'oval', 'cross', 'moon', 'drop'] as const
 
 export type Hull = (typeof HULLS)[number]
@@ -146,12 +146,32 @@ export const SHIP_OPTIONS = {
     { id: 'pods', label: 'Brote' },
     { id: 'ring', label: 'Aro solar' },
     { id: 'orb', label: 'Núcleo' },
+    { id: 'jet', label: 'Turbina' },
+    { id: 'horn', label: 'Trompeta' },
+    { id: 'cone', label: 'Cohetín' },
+    { id: 'fan', label: 'Ventilador' },
+    { id: 'crystal', label: 'Cristal' },
+    { id: 'box', label: 'Caja' },
+    { id: 'bubble', label: 'Pompa' },
+    { id: 'saturn', label: 'Anillos' },
+    { id: 'nozzle', label: 'Boquilla' },
+    { id: 'flare', label: 'Abanico' },
   ] satisfies Option<Engine>[],
   flame: [
     { id: 'classic', label: 'Fuego' },
     { id: 'bolt', label: 'Centella' },
     { id: 'puff', label: 'Nubecitas' },
     { id: 'none', label: 'Apagada' },
+    { id: 'comet', label: 'Meteoro' },
+    { id: 'rainbow', label: 'Arcoíris' },
+    { id: 'sparks', label: 'Chispas' },
+    { id: 'waves', label: 'Ondas' },
+    { id: 'drip', label: 'Gotitas' },
+    { id: 'ribbon', label: 'Cinta' },
+    { id: 'stars', label: 'Estrellas' },
+    { id: 'pulse', label: 'Pulsos' },
+    { id: 'tongue', label: 'Lengua' },
+    { id: 'hearts', label: 'Corazones' },
   ] satisfies Option<Flame>[],
   top: [
     { id: 'none', label: 'Despejado' },
@@ -159,12 +179,32 @@ export const SHIP_OPTIONS = {
     { id: 'dish', label: 'Oído' },
     { id: 'solar', label: 'Velas solares' },
     { id: 'beacon', label: 'Luciérnaga' },
+    { id: 'flag', label: 'Bandera' },
+    { id: 'windmill', label: 'Molino' },
+    { id: 'balloon', label: 'Globo' },
+    { id: 'lighthouse', label: 'Faro' },
+    { id: 'sprout', label: 'Plantita' },
+    { id: 'umbrella', label: 'Sombrilla' },
+    { id: 'minirocket', label: 'Cohetito' },
+    { id: 'moon', label: 'Media luna' },
+    { id: 'antlers', label: 'Cuernos' },
+    { id: 'orbit', label: 'Satélite' },
   ] satisfies Option<Top>[],
   belly: [
     { id: 'none', label: 'Liso' },
     { id: 'pod', label: 'Panza' },
     { id: 'legs', label: 'Zancos' },
     { id: 'tank', label: 'Barril' },
+    { id: 'wheels', label: 'Ruedas' },
+    { id: 'skids', label: 'Patines' },
+    { id: 'orb', label: 'Esfera' },
+    { id: 'claw', label: 'Garra' },
+    { id: 'keel', label: 'Quilla' },
+    { id: 'dome', label: 'Mirador' },
+    { id: 'crates', label: 'Cajas' },
+    { id: 'tripod', label: 'Trípode' },
+    { id: 'spot', label: 'Reflector' },
+    { id: 'anchor', label: 'Ancla' },
   ] satisfies Option<Belly>[],
   decal: [
     { id: 'none', label: 'Lisa' },
@@ -172,6 +212,16 @@ export const SHIP_OPTIONS = {
     { id: 'chevrons', label: 'Galones' },
     { id: 'checker', label: 'Meta' },
     { id: 'star', label: 'Estrella' },
+    { id: 'dots', label: 'Lunares' },
+    { id: 'zigzag', label: 'Zigzag' },
+    { id: 'waves', label: 'Olas' },
+    { id: 'diamonds', label: 'Rombos' },
+    { id: 'bands', label: 'Bandas' },
+    { id: 'flames', label: 'Llamas' },
+    { id: 'spots', label: 'Manchas' },
+    { id: 'bolt', label: 'Rayo' },
+    { id: 'plaid', label: 'Cuadros' },
+    { id: 'hearts', label: 'Corazones' },
   ] satisfies Option<Decal>[],
   windows: [
     { id: 'round', label: 'Ojos de buey' },

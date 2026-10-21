@@ -2,6 +2,13 @@ import { useMemo, useState } from 'react'
 import { ShipRenderer } from '../components/ship/ShipRenderer'
 import { HULLS, SHIP_OPTIONS, randomShip, type ShipConfig } from '../lib/ship/types'
 
+/** Pone una opción en su ranura (motor y estela viven dentro de `engine`). */
+function withOption(base: ShipConfig, slot: string, id: string): ShipConfig {
+  if (slot === 'engine') return { ...base, engine: { ...base.engine, kind: id as ShipConfig['engine']['kind'] } }
+  if (slot === 'flame') return { ...base, engine: { ...base.engine, flame: id as ShipConfig['engine']['flame'] } }
+  return { ...base, [slot]: id }
+}
+
 /** Solo dev: `?lab=ships` muestra naves al azar y una por casco con todas sus piezas, para revisar que encajen. */
 export function ShipLab() {
   const [crew, setCrew] = useState(6)
@@ -11,7 +18,7 @@ export function ShipLab() {
     () => HULLS.map((hull): ShipConfig => ({ ...randomShip(`hull-${hull}`), hull, nose: 'cap', cockpit: 'bubble', wings: 'delta', tail: 'shark', top: 'antenna', belly: 'pod', decal: 'stripe' })),
     [],
   )
-  const base = useMemo<ShipConfig>(() => ({ ...randomShip('base'), hull: 'rocket', nose: 'cap', cockpit: 'bubble', wings: 'delta', tail: 'shark', top: 'none', belly: 'none', decal: 'stripe' }), [])
+  const base = useMemo<ShipConfig>(() => ({ ...randomShip('base'), hull: 'rocket', nose: 'cap', cockpit: 'bubble', wings: 'delta', tail: 'shark', top: 'none', belly: 'none', decal: 'stripe', engine: { kind: 'bell', count: 2, flame: 'classic' } }), [])
   return (
     <div style={{ height: '100%', overflowY: 'auto', padding: '16px 28px 64px', background: 'var(--bg)' }}>
       <h2 style={{ fontFamily: 'var(--font-display)' }}>Naves ({SHIP_OPTIONS.hull.length} cascos)</h2>
@@ -22,13 +29,13 @@ export function ShipLab() {
       <button type="button" onClick={() => setOffset((n) => n + 1)}>
         Otras 24
       </button>
-      {(['hull', 'wings', 'tail', 'nose', 'cockpit', 'windows'] as const).map((slot) => (
+      {(['hull', 'wings', 'tail', 'nose', 'cockpit', 'windows', 'engine', 'flame', 'top', 'belly', 'decal'] as const).map((slot) => (
         <section key={slot}>
           <h3>Cada opción de «{slot}» sobre una nave base</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
             {(SHIP_OPTIONS[slot] as { id: string; label: string }[]).map((option) => (
               <figure key={option.id} style={{ margin: 0 }}>
-                <ShipRenderer config={{ ...base, [slot]: option.id }} crew={crew} label={option.label} />
+                <ShipRenderer config={withOption(base, slot, option.id)} crew={crew} label={option.label} />
                 <figcaption style={{ textAlign: 'center', fontWeight: 700 }}>{option.label}</figcaption>
               </figure>
             ))}

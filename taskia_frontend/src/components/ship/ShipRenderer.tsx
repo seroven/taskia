@@ -69,6 +69,87 @@ function Engines({ geo, pal, config }: Ctx & { config: ShipConfig['engine'] }) {
               <ellipse cx={xb - 6} cy={y} rx={2.4} ry={r * 0.95} fill={pal.accent} className="ship-ink ship-thin" />
             </>
           )
+        } else if (config.kind === 'jet') {
+          exit = xb - 14
+          body = (
+            <>
+              <rect x={xb - 14} y={y - r * 1.05} width={16} height={r * 2.1} rx={3} fill={pal.trim} className="ship-ink" />
+              <ellipse cx={xb - 14} cy={y} rx={2.4} ry={r * 0.8} fill={dark} className="ship-ink ship-thin" />
+              <path d={`M${xb - 8} ${y - r * 1.05} V${y + r * 1.05} M${xb - 3} ${y - r * 1.05} V${y + r * 1.05}`} className="ship-ink ship-thin" fill="none" />
+            </>
+          )
+        } else if (config.kind === 'horn') {
+          exit = xb - 19
+          body = (
+            <>
+              <polygon points={pts([[xb + 2, y - r * 0.55], [xb - 8, y - r * 0.6], [xb - 18, y - r * 1.7], [xb - 18, y + r * 1.7], [xb - 8, y + r * 0.6], [xb + 2, y + r * 0.55]])} fill={pal.trim} className="ship-ink" />
+              <ellipse cx={xb - 18} cy={y} rx={2.4} ry={r * 1.7} fill={pal.accent} className="ship-ink ship-thin" />
+            </>
+          )
+        } else if (config.kind === 'cone') {
+          exit = xb - 21
+          body = <polygon points={pts([[xb + 2, y - r], [xb - 20, y], [xb + 2, y + r]])} fill={pal.accent} className="ship-ink" />
+        } else if (config.kind === 'fan') {
+          exit = xb - 11
+          body = (
+            <>
+              <ellipse cx={xb - 5} cy={y} rx={4.5} ry={r * 1.6} fill={pal.trim} className="ship-ink" />
+              <ellipse cx={xb - 7} cy={y} rx={2.4} ry={r * 1.25} fill={pal.accent} className="ship-ink ship-thin" />
+              <path d={`M${xb - 8} ${y - r * 0.9} L${xb - 6} ${y - r * 0.1} M${xb - 8} ${y + r * 0.9} L${xb - 6} ${y + r * 0.1} M${xb - 8} ${y} H${xb - 5}`} className="ship-ink ship-thin" fill="none" />
+            </>
+          )
+        } else if (config.kind === 'crystal') {
+          exit = xb - 21
+          body = (
+            <>
+              <polygon points={pts([[xb + 2, y], [xb - 6, y - r * 1.5], [xb - 16, y - r * 1.1], [xb - 20, y], [xb - 16, y + r * 1.1], [xb - 6, y + r * 1.5]])} fill={pal.accent} className="ship-ink" />
+              <path d={`M${xb - 6} ${y - r * 1.5} L${xb - 10} ${y} L${xb - 6} ${y + r * 1.5} M${xb - 10} ${y} H${xb - 20}`} className="ship-ink ship-thin" fill="none" />
+              <circle cx={xb - 12} cy={y - r * 0.55} r={1.4} fill="#fff" opacity={0.9} />
+            </>
+          )
+        } else if (config.kind === 'box') {
+          exit = xb - 15
+          body = (
+            <>
+              <rect x={xb - 14} y={y - r * 1.3} width={16} height={r * 2.6} rx={2} fill={pal.trim} className="ship-ink" />
+              <path d={`M${xb - 11} ${y - r * 0.65} H${xb - 3} M${xb - 11} ${y} H${xb - 3} M${xb - 11} ${y + r * 0.65} H${xb - 3}`} className="ship-ink ship-thin" fill="none" />
+            </>
+          )
+        } else if (config.kind === 'bubble') {
+          const br = r * 1.6
+          exit = xb - 8 - br
+          body = (
+            <>
+              <circle cx={xb - 8} cy={y} r={br} fill={pal.glass} className="ship-ink" />
+              <circle cx={xb - 8} cy={y} r={br * 0.55} fill={pal.accent} opacity={0.9} />
+              <circle cx={xb - 8 - br * 0.4} cy={y - br * 0.45} r={Math.max(1.2, br * 0.18)} fill="#fff" opacity={0.95} />
+            </>
+          )
+        } else if (config.kind === 'saturn') {
+          exit = xb - 14
+          body = (
+            <>
+              <circle cx={xb - 7} cy={y} r={r * 1.15} fill={pal.accent} className="ship-ink" />
+              <ellipse cx={xb - 7} cy={y} rx={r * 2} ry={r * 0.6} transform={`rotate(-18 ${xb - 7} ${y})`} fill="none" className="ship-ink" />
+              <circle cx={xb - 9} cy={y - r * 0.4} r={r * 0.28} fill="#fff" opacity={0.85} />
+            </>
+          )
+        } else if (config.kind === 'nozzle') {
+          exit = xb - 16
+          body = (
+            <>
+              <polygon points={pts([[xb + 2, y - r * 0.8], [xb - 10, y - r * 0.8], [xb - 15, y - r * 1.3], [xb - 15, y + r * 1.3], [xb - 10, y + r * 0.8], [xb + 2, y + r * 0.8]])} fill={pal.trim} className="ship-ink" />
+              <path d={`M${xb - 10} ${y - r * 0.8} V${y + r * 0.8}`} className="ship-ink ship-thin" fill="none" />
+            </>
+          )
+        } else if (config.kind === 'flare') {
+          exit = xb - 17
+          body = (
+            <>
+              <polygon points={pts([[xb + 2, y - r * 0.5], [xb - 16, y - r * 2.1], [xb - 16, y + r * 2.1], [xb + 2, y + r * 0.5]])} fill={pal.trim} className="ship-ink" />
+              <path d={`M${xb + 1} ${y} L${xb - 16} ${y - r * 1.05} M${xb + 1} ${y} L${xb - 16} ${y + r * 1.05}`} stroke={pal.accent} strokeWidth={1.6} strokeLinecap="round" fill="none" />
+            </>
+          )
         } else {
           exit = xb - 12
           body = (
@@ -94,6 +175,116 @@ function Flame({ kind, x, y, r, pal }: { kind: ShipConfig['engine']['flame']; x:
   if (kind === 'none') return null
   const len = 15 + r * 2.1
   const core = lighten(pal.accent, 0.7)
+  const trail = (n: number) => Array.from({ length: n }, (_, i) => i)
+  if (kind === 'comet') {
+    return (
+      <g className="ship-flame">
+        <polygon points={pts([[x - 3, y - r * 0.9], [x - len * 1.05, y], [x - 3, y + r * 0.9]])} fill={pal.accent} opacity={0.85} className="ship-ink ship-thin" />
+        <circle cx={x - 4} cy={y} r={r * 0.95} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'rainbow') {
+    const h = r * 0.62
+    return (
+      <g className="ship-flame">
+        {['#f87171', '#fbbf24', '#60a5fa'].map((color, i) => (
+          <polygon key={color} points={pts([[x + 1, y + (i - 1) * h - h / 2], [x - len, y + (i - 1) * h * 1.25 - h / 2], [x - len, y + (i - 1) * h * 1.25 + h / 2], [x + 1, y + (i - 1) * h + h / 2]])} fill={color} />
+        ))}
+      </g>
+    )
+  }
+  if (kind === 'sparks') {
+    return (
+      <g className="ship-flame">
+        {[[-6, 0, 1], [-15, -r * 0.7, 0.7], [-22, r * 0.6, 0.85], [-31, -r * 0.2, 0.55]].map(([dx, dy, k], i) => (
+          <Spark key={i} x={x + dx!} y={y + dy!} s={r * 1.05 * k!} className="ship-ink ship-thin" style={{ fill: i % 2 ? core : pal.accent }} />
+        ))}
+      </g>
+    )
+  }
+  if (kind === 'waves') {
+    const h = r * 0.55
+    return (
+      <g className="ship-flame" fill="none" strokeLinecap="round">
+        {[-1, 0, 1].map((k) => {
+          const d = `M${x} ${y + k * r * 0.8} q${-len * 0.17} ${-h} ${-len * 0.33} 0 t${-len * 0.33} 0 t${-len * 0.33} 0`
+          return (
+            <g key={k}>
+              <path d={d} className="ship-ink" style={{ strokeWidth: 5.2 }} />
+              <path d={d} stroke={pal.accent} strokeWidth={2.4} />
+            </g>
+          )
+        })}
+      </g>
+    )
+  }
+  if (kind === 'drip') {
+    return (
+      <g className="ship-flame">
+        {trail(4).map((i) => (
+          <circle key={i} cx={x - 5 - i * r * 1.1} cy={y + i * i * 0.9} r={Math.max(1.4, r * (0.8 - i * 0.16))} fill={i === 0 ? pal.accent : core} className="ship-ink ship-thin" />
+        ))}
+      </g>
+    )
+  }
+  if (kind === 'ribbon') {
+    const d = `M${x} ${y} C${x - len * 0.3} ${y - r * 1.5} ${x - len * 0.6} ${y + r * 1.5} ${x - len} ${y}`
+    return (
+      <g className="ship-flame" fill="none" strokeLinecap="round">
+        <path d={d} className="ship-ink" style={{ strokeWidth: 6.4 }} />
+        <path d={d} stroke={pal.accent} strokeWidth={3.2} />
+      </g>
+    )
+  }
+  if (kind === 'stars') {
+    return (
+      <g className="ship-flame">
+        {trail(3).map((i) => (
+          <Spark key={i} x={x - 8 - i * len * 0.32} y={y + (i % 2 ? 2 : -2)} s={r * (1.25 - i * 0.3)} className="ship-ink ship-thin" style={{ fill: i === 0 ? pal.accent : core }} />
+        ))}
+      </g>
+    )
+  }
+  if (kind === 'pulse') {
+    return (
+      <g className="ship-flame" fill="none" strokeLinecap="round">
+        {trail(3).map((i) => {
+          const cx = x - 5 - i * r * 1.7
+          const ry = r * (0.9 + i * 0.35)
+          const d = `M${cx} ${y - ry} A${r * 0.7} ${ry} 0 0 0 ${cx} ${y + ry}`
+          return (
+            <g key={i} opacity={1 - i * 0.22}>
+              <path d={d} className="ship-ink" style={{ strokeWidth: 5.2 }} />
+              <path d={d} stroke={pal.accent} strokeWidth={2.4} />
+            </g>
+          )
+        })}
+      </g>
+    )
+  }
+  if (kind === 'tongue') {
+    const h = r * 0.5
+    const l = len * 1.45
+    return (
+      <g className="ship-flame">
+        <path d={`M${x + 1} ${y - h} C${x - l * 0.3} ${y - h} ${x - l * 0.7} ${y - h * 0.2} ${x - l} ${y} C${x - l * 0.7} ${y + h * 0.2} ${x - l * 0.3} ${y + h} ${x + 1} ${y + h} Z`} fill={pal.accent} className="ship-ink ship-thin" />
+        <path d={`M${x + 1} ${y - h * 0.4} C${x - l * 0.25} ${y - h * 0.4} ${x - l * 0.4} ${y} ${x - l * 0.55} ${y} C${x - l * 0.4} ${y} ${x - l * 0.25} ${y + h * 0.4} ${x + 1} ${y + h * 0.4} Z`} fill={core} />
+      </g>
+    )
+  }
+  if (kind === 'hearts') {
+    return (
+      <g className="ship-flame">
+        {trail(3).map((i) => {
+          const s = r * (0.85 - i * 0.2)
+          const cx = x - 8 - i * r * 1.6
+          const cy = y + (i % 2 ? 2 : -2)
+          return <path key={i} d={`M${cx} ${cy + s} C${cx - s * 1.7} ${cy - s * 0.1} ${cx - s * 0.8} ${cy - s * 1.3} ${cx} ${cy - s * 0.4} C${cx + s * 0.8} ${cy - s * 1.3} ${cx + s * 1.7} ${cy - s * 0.1} ${cx} ${cy + s} Z`} fill={i === 0 ? pal.accent : core} className="ship-ink ship-thin" />
+        })}
+      </g>
+    )
+  }
   if (kind === 'bolt') {
     const w = r * 0.95
     return (
@@ -252,6 +443,102 @@ function TopModule({ geo, pal, kind }: Ctx & { kind: ShipConfig['top'] }) {
   if (kind === 'none') return null
   const x = geo.at(0.47)
   const y = geo.top(x) + 2
+  if (kind === 'flag') {
+    return (
+      <g>
+        <path d={`M${x} ${y} V${y - 27}`} className="ship-ink" fill="none" />
+        <polygon points={pts([[x, y - 27], [x + 18, y - 21.5], [x, y - 15]])} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'windmill') {
+    return (
+      <g>
+        <path d={`M${x} ${y} V${y - 14}`} className="ship-ink" fill="none" />
+        <g className="ship-sweep" style={{ transformOrigin: `${x}px ${y - 15}px` }}>
+          <ellipse cx={x} cy={y - 15} rx={13} ry={2.8} fill={pal.trim} className="ship-ink" />
+          <ellipse cx={x} cy={y - 15} rx={2.8} ry={13} fill={pal.trim} className="ship-ink" />
+        </g>
+        <circle cx={x} cy={y - 15} r={2.6} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'balloon') {
+    return (
+      <g>
+        <path d={`M${x} ${y} Q${x - 4} ${y - 8} ${x} ${y - 15}`} className="ship-ink ship-thin" fill="none" />
+        <ellipse cx={x} cy={y - 26} rx={9} ry={11} fill={pal.accent} className="ship-ink" />
+        <path d={`M${x - 3} ${y - 15} L${x} ${y - 13} L${x + 3} ${y - 15} Z`} fill={pal.accent} className="ship-ink ship-thin" />
+        <circle cx={x - 3.5} cy={y - 30} r={1.8} fill="#fff" opacity={0.85} />
+      </g>
+    )
+  }
+  if (kind === 'lighthouse') {
+    return (
+      <g>
+        <polygon points={pts([[x - 7, y + 1], [x - 4.5, y - 17], [x + 4.5, y - 17], [x + 7, y + 1]])} fill={pal.trim} className="ship-ink" />
+        <path d={`M${x - 5.6} ${y - 8} H${x + 5.6}`} stroke={pal.accent} strokeWidth={3} />
+        <rect x={x - 5} y={y - 24} width={10} height={7} rx={1.6} fill={pal.glass} className="ship-ink ship-thin ship-blink" />
+        <polygon points={pts([[x - 7, y - 24], [x, y - 31], [x + 7, y - 24]])} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'sprout') {
+    return (
+      <g>
+        <path d={`M${x} ${y} Q${x - 1} ${y - 8} ${x} ${y - 14}`} className="ship-ink" fill="none" />
+        <ellipse cx={x - 7} cy={y - 17} rx={8} ry={4} transform={`rotate(-28 ${x - 7} ${y - 17})`} fill="#4ade80" className="ship-ink ship-thin" />
+        <ellipse cx={x + 7} cy={y - 20} rx={8} ry={4} transform={`rotate(28 ${x + 7} ${y - 20})`} fill="#86efac" className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'umbrella') {
+    return (
+      <g>
+        <path d={`M${x} ${y} V${y - 17}`} className="ship-ink" fill="none" />
+        <path d={`M${x - 15} ${y - 17} A15 11 0 0 1 ${x + 15} ${y - 17} Q${x + 7.5} ${y - 13} ${x} ${y - 17} Q${x - 7.5} ${y - 13} ${x - 15} ${y - 17} Z`} fill={pal.trim} className="ship-ink" />
+        <path d={`M${x} ${y - 28} V${y - 17} M${x - 8} ${y - 25} L${x - 5} ${y - 16} M${x + 8} ${y - 25} L${x + 5} ${y - 16}`} className="ship-ink ship-thin" fill="none" opacity={0.7} />
+      </g>
+    )
+  }
+  if (kind === 'minirocket') {
+    return (
+      <g>
+        <polygon points={pts([[x - 6, y + 1], [x - 10, y - 8], [x - 5, y - 7]])} fill={pal.accent} className="ship-ink ship-thin" />
+        <polygon points={pts([[x + 6, y + 1], [x + 10, y - 8], [x + 5, y - 7]])} fill={pal.accent} className="ship-ink ship-thin" />
+        <path d={`M${x - 5} ${y + 1} V${y - 15} Q${x - 5} ${y - 25} ${x} ${y - 29} Q${x + 5} ${y - 25} ${x + 5} ${y - 15} V${y + 1} Z`} fill={pal.trim} className="ship-ink" />
+        <circle cx={x} cy={y - 16} r={2.6} fill={pal.glass} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'moon') {
+    return (
+      <g>
+        <path d={`M${x} ${y} V${y - 11}`} className="ship-ink" fill="none" />
+        <path d={`M${x + 4} ${y - 33} A11 11 0 1 0 ${x + 4} ${y - 11} A8.5 8.5 0 1 1 ${x + 4} ${y - 33} Z`} fill={pal.accent} className="ship-ink" />
+      </g>
+    )
+  }
+  if (kind === 'antlers') {
+    return (
+      <g>
+        <path d={`M${x - 4} ${y} V${y - 11} L${x - 11} ${y - 22} M${x - 5.5} ${y - 14} L${x - 1} ${y - 22} M${x + 4} ${y} V${y - 11} L${x + 11} ${y - 22} M${x + 5.5} ${y - 14} L${x + 1} ${y - 22}`} className="ship-ink" fill="none" />
+        {[[-11, -22], [-1, -22], [11, -22], [1, -22]].map(([dx, dy]) => (
+          <circle key={`${dx}${dy}`} cx={x + dx!} cy={y + dy!} r={2.3} fill={pal.accent} className="ship-ink ship-thin" />
+        ))}
+      </g>
+    )
+  }
+  if (kind === 'orbit') {
+    return (
+      <g>
+        <path d={`M${x} ${y} V${y - 8}`} className="ship-ink" fill="none" />
+        <ellipse cx={x} cy={y - 17} rx={14} ry={5} transform={`rotate(-14 ${x} ${y - 17})`} fill="none" className="ship-ink ship-thin" strokeDasharray="3 2.5" />
+        <circle cx={x} cy={y - 17} r={5} fill={pal.trim} className="ship-ink" />
+        <circle cx={x + 12} cy={y - 20} r={2.6} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
   if (kind === 'antenna') {
     return (
       <g>
@@ -292,6 +579,104 @@ function TopModule({ geo, pal, kind }: Ctx & { kind: ShipConfig['top'] }) {
 function Belly({ geo, pal, kind }: Ctx & { kind: ShipConfig['belly'] }) {
   if (kind === 'none') return null
   const X = geo.at
+  const bt = (u: number) => geo.bot(X(u))
+  if (kind === 'wheels') {
+    return (
+      <g>
+        {[0.36, 0.64].map((u) => (
+          <g key={u}>
+            <path d={`M${X(u)} ${bt(u) - 1} V${bt(u) + 7}`} className="ship-ink" fill="none" />
+            <circle cx={X(u)} cy={bt(u) + 11} r={6} fill={pal.trim} className="ship-ink" />
+            <circle cx={X(u)} cy={bt(u) + 11} r={2.2} fill={pal.accent} className="ship-ink ship-thin" />
+          </g>
+        ))}
+      </g>
+    )
+  }
+  if (kind === 'skids') {
+    return (
+      <g>
+        {[0.34, 0.64].map((u) => (
+          <path key={u} d={`M${X(u)} ${bt(u) - 1} L${X(u) - 2} ${bt(u) + 11}`} className="ship-ink" fill="none" />
+        ))}
+        <rect x={X(0.24)} y={bt(0.5) + 10} width={X(0.74) - X(0.24)} height={4.2} rx={2.1} fill={pal.trim} className="ship-ink" />
+      </g>
+    )
+  }
+  if (kind === 'orb') {
+    return (
+      <g>
+        <circle cx={X(0.5)} cy={bt(0.5) + 10} r={9} fill={pal.accent} className="ship-ink" />
+        <circle cx={X(0.5) - 3} cy={bt(0.5) + 6.5} r={2.4} fill="#fff" opacity={0.85} />
+      </g>
+    )
+  }
+  if (kind === 'claw') {
+    const x = X(0.5)
+    const y = bt(0.5)
+    return (
+      <g>
+        <path d={`M${x} ${y - 1} V${y + 9} M${x} ${y + 9} Q${x - 10} ${y + 13} ${x - 7} ${y + 23} M${x} ${y + 9} Q${x + 10} ${y + 13} ${x + 7} ${y + 23}`} className="ship-ink" fill="none" />
+        <circle cx={x} cy={y + 9} r={3.4} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'keel') {
+    return <polygon points={pts([[X(0.6), bt(0.6) - 2], [X(0.5), bt(0.5) + 15], [X(0.3), bt(0.3) + 15], [X(0.24), bt(0.24) - 2]])} fill={pal.trim} className="ship-ink" />
+  }
+  if (kind === 'dome') {
+    const x = X(0.5)
+    const y = bt(0.5) - 1
+    return (
+      <g>
+        <path d={`M${x - 17} ${y} A17 14 0 0 0 ${x + 17} ${y} Z`} fill={mix(pal.glass, '#7dd3fc', 0.45)} className="ship-ink" />
+        <path d={`M${x - 10} ${y + 5} Q${x - 5} ${y + 10} ${x + 1} ${y + 11}`} stroke="#fff" strokeWidth={1.8} strokeLinecap="round" fill="none" opacity={0.85} />
+      </g>
+    )
+  }
+  if (kind === 'crates') {
+    return (
+      <g>
+        <rect x={X(0.32)} y={bt(0.38) + 4} width={14} height={12} rx={1.6} fill={pal.trim} className="ship-ink" />
+        <path d={`M${X(0.32)} ${bt(0.38) + 10} H${X(0.32) + 14} M${X(0.32) + 7} ${bt(0.38) + 4} V${bt(0.38) + 16}`} className="ship-ink ship-thin" fill="none" />
+        <rect x={X(0.56)} y={bt(0.6) + 4} width={11} height={9} rx={1.6} fill={pal.accent} className="ship-ink" />
+        <path d={`M${X(0.56)} ${bt(0.6) + 8.5} H${X(0.56) + 11}`} className="ship-ink ship-thin" fill="none" />
+      </g>
+    )
+  }
+  if (kind === 'tripod') {
+    const x = X(0.5)
+    const y = bt(0.5) - 1
+    return (
+      <g>
+        <path d={`M${x} ${y} L${x - 13} ${y + 17} M${x} ${y} V${y + 19} M${x} ${y} L${x + 13} ${y + 17}`} className="ship-ink" fill="none" />
+        {[-13, 0, 13].map((dx) => (
+          <ellipse key={dx} cx={x + dx} cy={y + (dx === 0 ? 20 : 18)} rx={4.4} ry={1.9} fill={pal.trim} className="ship-ink ship-thin" />
+        ))}
+      </g>
+    )
+  }
+  if (kind === 'spot') {
+    const x = X(0.5)
+    const y = bt(0.5) - 1
+    return (
+      <g>
+        <polygon points={pts([[x - 4, y + 11], [x + 4, y + 11], [x + 16, y + 34], [x - 16, y + 34]])} fill={lighten(pal.accent, 0.55)} opacity={0.45} />
+        <rect x={x - 6} y={y} width={12} height={10} rx={3} fill={pal.accent} className="ship-ink" />
+        <path d={`M${x - 6} ${y + 6} H${x + 6}`} className="ship-ink ship-thin" fill="none" />
+      </g>
+    )
+  }
+  if (kind === 'anchor') {
+    const x = X(0.5)
+    const y = bt(0.5)
+    return (
+      <g>
+        <path d={`M${x} ${y - 1} V${y + 18} M${x - 7} ${y + 6} H${x + 7} M${x - 10} ${y + 13} Q${x} ${y + 26} ${x + 10} ${y + 13}`} className="ship-ink" fill="none" />
+        <circle cx={x} cy={y + 3} r={3} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
   if (kind === 'pod') {
     const a = X(0.34)
     const b = X(0.64)
@@ -463,6 +848,14 @@ function Decals({ geo, pal, kind, clip }: Ctx & { kind: ShipConfig['decal']; cli
   if (kind === 'none') return null
   const X = geo.at
   if (kind === 'star') return <Spark x={X(0.3)} y={geo.bot(X(0.3)) - geo.H * 0.2} s={6.5} className="ship-ink" style={{ fill: pal.accent }} />
+  if (kind === 'bolt') {
+    const cx = X(0.34)
+    const cy = CY + geo.H * 0.22
+    const s = Math.max(6, geo.H * 0.2)
+    return <polygon points={pts([[cx + 2, cy - s], [cx - s * 0.6, cy + s * 0.1], [cx, cy + s * 0.1], [cx - 2, cy + s], [cx + s * 0.7, cy - s * 0.15], [cx + 1, cy - s * 0.15]])} fill={pal.accent} className="ship-ink ship-thin" />
+  }
+  const base = CY + geo.H * 0.17
+  const row = Array.from({ length: Math.floor(geo.L / 13) }, (_, i) => geo.x0 + 8 + i * 13)
   return (
     <g clipPath={`url(#${clip})`}>
       {kind === 'stripe' && (
@@ -482,6 +875,51 @@ function Decals({ geo, pal, kind, clip }: Ctx & { kind: ShipConfig['decal']; cli
             <rect x={geo.x0 + 6 + i * 7} y={CY + geo.H * 0.16 + ((i + 1) % 2) * 5} width={7} height={5} fill={i % 2 ? pal.accent : pal.trim} opacity={0.55} />
           </g>
         ))}
+      {kind === 'dots' &&
+        row.map((x, i) => <circle key={x} cx={x} cy={base + 5 + (i % 2) * 7} r={3.8} fill={i % 3 === 0 ? pal.trim : pal.accent} />)}
+      {kind === 'zigzag' && (
+        <path d={`M${geo.x0 - 2} ${base + 6} ${row.map((x, i) => `L${x + 6} ${base + (i % 2 ? 10 : 1)}`).join(' ')}`} fill="none" stroke={pal.accent} strokeWidth={4.2} strokeLinejoin="round" />
+      )}
+      {kind === 'waves' && (
+        <>
+          <path d={`M${geo.x0 - 2} ${base + 5} ${row.map(() => `q6.5 -7 13 0 t13 0`).slice(0, Math.ceil(row.length / 2)).join(' ')}`} fill="none" stroke={pal.accent} strokeWidth={4.2} />
+          <path d={`M${geo.x0 - 2} ${base + 13} ${row.map(() => `q6.5 -7 13 0 t13 0`).slice(0, Math.ceil(row.length / 2)).join(' ')}`} fill="none" stroke={pal.trim} strokeWidth={2} opacity={0.8} />
+        </>
+      )}
+      {kind === 'diamonds' &&
+        row.map((x) => <polygon key={x} points={pts([[x, base + 6], [x + 6.5, base], [x + 13, base + 6], [x + 6.5, base + 12]])} fill={pal.accent} />)}
+      {kind === 'bands' && (
+        <>
+          <rect x={X(0.14)} y={CY - geo.H} width={6} height={geo.H * 2} fill={pal.accent} />
+          <rect x={X(0.22)} y={CY - geo.H} width={3} height={geo.H * 2} fill={pal.trim} />
+          <rect x={X(0.78)} y={CY - geo.H} width={6} height={geo.H * 2} fill={pal.accent} />
+          <rect x={X(0.7)} y={CY - geo.H} width={3} height={geo.H * 2} fill={pal.trim} />
+        </>
+      )}
+      {kind === 'flames' && (
+        <>
+          <polygon points={pts([[geo.x0 - 2, CY + geo.H * 0.5], [X(0.5), CY + geo.H * 0.36], [geo.x0 - 2, CY + geo.H * 0.14]])} fill={pal.accent} />
+          <polygon points={pts([[geo.x0 - 2, CY + geo.H * 0.4], [X(0.32), CY + geo.H * 0.34], [geo.x0 - 2, CY + geo.H * 0.24]])} fill={pal.trim} />
+        </>
+      )}
+      {kind === 'spots' &&
+        [[0.18, 0.2, 6.5], [0.34, 0.32, 4.6], [0.5, 0.18, 6], [0.66, 0.32, 4.2], [0.82, 0.2, 5]].map(([u, k, r]) => (
+          <ellipse key={u} cx={X(u!)} cy={CY + geo.H * k!} rx={r!} ry={r! * 0.75} fill={pal.accent} opacity={0.9} />
+        ))}
+      {kind === 'plaid' && (
+        <>
+          <rect x={geo.x0} y={base} width={geo.L} height={7} fill={pal.accent} opacity={0.55} />
+          {row.map((x) => (
+            <rect key={x} x={x} y={CY - geo.H} width={4} height={geo.H * 2} fill={pal.trim} opacity={0.4} />
+          ))}
+        </>
+      )}
+      {kind === 'hearts' &&
+        row.map((x, i) => {
+          const cx = x + 5
+          const cy = base + 3 + (i % 2) * 5
+          return <path key={x} d={`M${cx} ${cy + 4.4} C${cx - 8} ${cy - 0.4} ${cx - 3.6} ${cy - 5.6} ${cx} ${cy - 1.7} C${cx + 3.6} ${cy - 5.6} ${cx + 8} ${cy - 0.4} ${cx} ${cy + 4.4} Z`} fill={i % 3 ? pal.accent : pal.trim} />
+        })}
     </g>
   )
 }
