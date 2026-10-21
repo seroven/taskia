@@ -149,6 +149,95 @@ function Tail({ geo, pal, kind }: Ctx & { kind: ShipConfig['tail'] }) {
     const b = X(0.3)
     return <polygon points={pts([[b, geo.top(b) + 3], [b - 3, geo.top(b) - 22], [a - 3, geo.top(a) - 22], [a, geo.top(a) + 3]])} fill={pal.trim} className="ship-ink" />
   }
+  const tp = (u: number) => geo.top(X(u))
+  if (kind === 'sail') {
+    const a = X(0.1)
+    const b = X(0.36)
+    return <path d={`M${b} ${tp(0.36) + 3} C${b + 1} ${tp(0.36) - 22} ${a + 8} ${tp(0.1) - 34} ${a - 6} ${tp(0.1) - 32} C${a + 2} ${tp(0.1) - 16} ${a + 3} ${tp(0.1) - 4} ${a + 4} ${tp(0.1) + 4} Z`} fill={pal.trim} className="ship-ink" />
+  }
+  if (kind === 'spike') {
+    return (
+      <g fill={pal.trim} className="ship-ink">
+        <polygon points={pts([[X(0.27), tp(0.27) + 3], [X(0.17), tp(0.17) - 32], [X(0.12), tp(0.12) + 3]])} />
+        <polygon points={pts([[X(0.4), tp(0.4) + 3], [X(0.33), tp(0.33) - 19], [X(0.28), tp(0.28) + 3]])} />
+      </g>
+    )
+  }
+  if (kind === 'crest') {
+    return (
+      <g fill={pal.trim} className="ship-ink">
+        {[0.1, 0.19, 0.28, 0.37].map((u, i) => (
+          <polygon key={u} points={pts([[X(u) + 9, tp(u + 0.04) + 3], [X(u) + 1, tp(u) - 16 + i * 2], [X(u) - 4, tp(u - 0.02) + 3]])} />
+        ))}
+      </g>
+    )
+  }
+  if (kind === 'fishtail') {
+    return (
+      <path
+        d={`M${X(0.32)} ${tp(0.32) + 2} Q${X(0.12)} ${tp(0.12) - 12} ${X(0)} ${tp(0.1) - 34} Q${X(0.1)} ${tp(0.1) - 8} ${X(0.12)} ${CY} Q${X(0.1)} ${geo.bot(X(0.1)) + 8} ${X(0)} ${geo.bot(X(0.1)) + 34} Q${X(0.12)} ${geo.bot(X(0.12)) + 12} ${X(0.32)} ${geo.bot(X(0.32)) - 2} Z`}
+        fill={pal.trim}
+        className="ship-ink"
+      />
+    )
+  }
+  if (kind === 'sickle') {
+    const b = X(0.3)
+    return <path d={`M${b} ${tp(0.3) + 3} C${X(0.3)} ${tp(0.3) - 20} ${X(0.12)} ${tp(0.1) - 32} ${X(-0.08)} ${tp(0.1) - 26} C${X(0.06)} ${tp(0.1) - 22} ${X(0.12)} ${tp(0.1) - 12} ${X(0.14)} ${tp(0.14) + 3} Z`} fill={pal.trim} className="ship-ink" />
+  }
+  if (kind === 'disc') {
+    const x = X(0.22)
+    const y = tp(0.22)
+    return (
+      <g>
+        <path d={`M${x} ${y + 3} V${y - 14}`} className="ship-ink" fill="none" />
+        <circle cx={x} cy={y - 24} r={11} fill={pal.trim} className="ship-ink" />
+        <circle cx={x} cy={y - 24} r={5} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'notch') {
+    const a = X(0.1)
+    const b = X(0.34)
+    const m = (a + b) / 2
+    return <polygon points={pts([[b, tp(0.34) + 3], [b - 2, tp(0.34) - 23], [m + 2, tp(0.22) - 23], [m - 1, tp(0.22) - 11], [m - 5, tp(0.2) - 23], [a - 3, tp(0.1) - 23], [a, tp(0.1) + 3]])} fill={pal.trim} className="ship-ink" />
+  }
+  if (kind === 'zig') {
+    return (
+      <polygon
+        points={pts([[X(0.36), tp(0.36) + 3], [X(0.33), tp(0.33) - 12], [X(0.29), tp(0.29) - 7], [X(0.25), tp(0.25) - 22], [X(0.2), tp(0.2) - 13], [X(0.16), tp(0.16) - 29], [X(0.1), tp(0.1) - 6], [X(0.1), tp(0.1) + 3]])}
+        fill={pal.trim}
+        className="ship-ink"
+      />
+    )
+  }
+  if (kind === 'rotor') {
+    const x = X(0.24)
+    const y = tp(0.24)
+    return (
+      <g>
+        <path d={`M${x} ${y + 3} V${y - 11}`} className="ship-ink" fill="none" />
+        <g className="ship-sweep" style={{ transformOrigin: `${x}px ${y - 11}px` }}>
+          <ellipse cx={x} cy={y - 12} rx={19} ry={3.4} fill={pal.trim} className="ship-ink" />
+        </g>
+        <circle cx={x} cy={y - 12} r={2.8} fill={pal.accent} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'crown') {
+    const a = X(0.08)
+    const b = X(0.4)
+    const at = (t: number) => a + (b - a) * t
+    const ty = (t: number) => geo.top(at(t))
+    return (
+      <g>
+        <polygon points={pts([[b, ty(1) + 3], [b, ty(1) - 20], [at(0.75), ty(0.75) - 9], [at(0.5), ty(0.5) - 27], [at(0.25), ty(0.25) - 9], [a, ty(0) - 20], [a, ty(0) + 3]])} fill={pal.trim} className="ship-ink" />
+        {[0, 0.5, 1].map((t) => (
+          <circle key={t} cx={at(t)} cy={ty(t) - (t === 0.5 ? 27 : 20)} r={3} fill={pal.accent} className="ship-ink ship-thin" />
+        ))}
+      </g>
+    )
+  }
   const a = X(0.1)
   const b = X(0.32)
   return (
@@ -265,13 +354,105 @@ function Wings({ geo, pal, kind }: Ctx & { kind: ShipConfig['wings'] }) {
       </g>
     )
   }
+  const y = (u: number) => geo.bot(X(u)) - 5
+  const line = (d: string, w = 2.6) => <path d={d} stroke={stripe} strokeWidth={w} strokeLinecap="round" fill="none" />
+  if (kind === 'blade') {
+    return (
+      <g>
+        <polygon points={pts([[X(0.78), y(0.78)], [X(0.4), y(0.4) + 9], [X(-0.08), y(0.1) + 11], [X(0.3), y(0.3) + 1]])} fill={pal.trim} className="ship-ink" />
+        {line(`M${X(0.6)} ${y(0.6) + 2.5} L${X(0.1)} ${y(0.1) + 8}`, 2.2)}
+      </g>
+    )
+  }
+  if (kind === 'leaf') {
+    return (
+      <g>
+        <path d={`M${X(0.66)} ${y(0.66)} C${X(0.62)} ${y(0.5) + 20} ${X(0.32)} ${y(0.3) + 32} ${X(0.1)} ${y(0.3) + 26} C${X(0.2)} ${y(0.3) + 10} ${X(0.3)} ${y(0.34) + 3} ${X(0.36)} ${y(0.36)} Z`} fill={pal.trim} className="ship-ink" />
+        {line(`M${X(0.5)} ${y(0.5) + 4} Q${X(0.32)} ${y(0.3) + 14} ${X(0.17)} ${y(0.3) + 22}`, 2.2)}
+      </g>
+    )
+  }
+  if (kind === 'manta') {
+    return (
+      <g>
+        <path d={`M${X(0.72)} ${y(0.72)} Q${X(0.5)} ${y(0.5) + 12} ${X(0.2)} ${y(0.3) + 16} Q${X(0.07)} ${y(0.3) + 24} ${X(0.02)} ${y(0.3) + 22} Q${X(0.06)} ${y(0.3) + 8} ${X(0.12)} ${y(0.3) + 2} L${X(0.3)} ${y(0.3)} Z`} fill={pal.trim} className="ship-ink" />
+        {line(`M${X(0.5)} ${y(0.5) + 2} Q${X(0.3)} ${y(0.3) + 8} ${X(0.12)} ${y(0.3) + 14}`, 2.2)}
+      </g>
+    )
+  }
+  if (kind === 'steps') {
+    const r = X(0.66)
+    const q = X(0.2)
+    const w = (r - q) / 3
+    return (
+      <g>
+        <polygon points={pts([[r, y(0.66)], [r, y(0.66) + 8], [r - w, y(0.5) + 8], [r - w, y(0.5) + 16], [r - 2 * w, y(0.4) + 16], [r - 2 * w, y(0.3) + 25], [q, y(0.3) + 25], [q, y(0.2)]])} fill={pal.trim} className="ship-ink" />
+        {line(`M${r - w} ${y(0.5) + 12} H${r - 2 * w + 3}`, 2.2)}
+      </g>
+    )
+  }
+  if (kind === 'hook') {
+    return (
+      <g>
+        <path d={`M${X(0.32)} ${y(0.32)} L${X(0.6)} ${y(0.6)} C${X(0.82)} ${y(0.7) + 10} ${X(0.9)} ${y(0.7) + 26} ${X(0.78)} ${y(0.7) + 34} C${X(0.7)} ${y(0.5) + 24} ${X(0.5)} ${y(0.4) + 12} ${X(0.24)} ${y(0.3) + 6} Z`} fill={pal.trim} className="ship-ink" />
+        {line(`M${X(0.5)} ${y(0.5) + 5} Q${X(0.7)} ${y(0.6) + 12} ${X(0.78)} ${y(0.7) + 26}`, 2.2)}
+      </g>
+    )
+  }
+  if (kind === 'biplane') {
+    return (
+      <g>
+        <polygon points={pts([[X(0.68), y(0.68)], [X(0.62), y(0.5) + 11], [X(0.3), y(0.4) + 11], [X(0.38), y(0.4)]])} fill={pal.trim} className="ship-ink" />
+        <polygon points={pts([[X(0.66), y(0.66) + 18], [X(0.6), y(0.5) + 29], [X(0.26), y(0.4) + 29], [X(0.34), y(0.4) + 18]])} fill={pal.trim} className="ship-ink" />
+        <path d={`M${X(0.6)} ${y(0.5) + 11} V${y(0.5) + 29} M${X(0.36)} ${y(0.4) + 11} V${y(0.4) + 29}`} className="ship-ink ship-thin" fill="none" />
+        {line(`M${X(0.6)} ${y(0.5) + 20} H${X(0.3)}`, 2.2)}
+      </g>
+    )
+  }
+  if (kind === 'scissor') {
+    const cx = X(0.5)
+    const cy = y(0.5) + 1
+    return (
+      <g>
+        <polygon points={pts([[cx + 4, cy], [cx - 4, cy], [X(0.1) - 2, y(0.3) + 24], [X(0.1) + 6, y(0.3) + 28]])} fill={pal.trim} className="ship-ink" />
+        <polygon points={pts([[cx + 4, cy], [cx - 4, cy], [X(0.86) - 6, cy + 26], [X(0.86) + 2, cy + 22]])} fill={pal.trim} className="ship-ink" />
+        <circle cx={cx} cy={cy + 3} r={3} fill={stripe} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'butterfly') {
+    return (
+      <g>
+        <ellipse cx={X(0.38)} cy={y(0.38) + 5} rx={19} ry={10} transform={`rotate(-22 ${X(0.38)} ${y(0.38) + 5})`} fill={pal.trim} className="ship-ink" />
+        <ellipse cx={X(0.6)} cy={y(0.6) + 5} rx={13} ry={7.5} transform={`rotate(24 ${X(0.6)} ${y(0.6) + 5})`} fill={pal.trim} className="ship-ink" />
+        <circle cx={X(0.34)} cy={y(0.38) + 7} r={3.4} fill={stripe} className="ship-ink ship-thin" />
+        <circle cx={X(0.62)} cy={y(0.6) + 6} r={2.5} fill={stripe} className="ship-ink ship-thin" />
+      </g>
+    )
+  }
+  if (kind === 'saw') {
+    return (
+      <g>
+        <polygon points={pts([[X(0.68), y(0.68)], [X(0.62), y(0.62) + 15], [X(0.56), y(0.56) + 8], [X(0.49), y(0.5) + 22], [X(0.43), y(0.43) + 12], [X(0.34), y(0.34) + 26], [X(0.28), y(0.28) + 15], [X(0.18), y(0.2) + 25], [X(0.22), y(0.25)]])} fill={pal.trim} className="ship-ink" />
+        {line(`M${X(0.6)} ${y(0.6) + 3} L${X(0.26)} ${y(0.28) + 6}`, 2)}
+      </g>
+    )
+  }
+  if (kind === 'boomerang') {
+    return (
+      <g>
+        <path d={`M${X(0.72)} ${y(0.72)} C${X(0.36)} ${y(0.4) - 2} ${X(0.1)} ${y(0.3) + 6} ${X(0.02)} ${y(0.3) + 34} L${X(0.16)} ${y(0.3) + 33} C${X(0.2)} ${y(0.3) + 16} ${X(0.4)} ${y(0.5) + 10} ${X(0.6)} ${y(0.6) + 6} Z`} fill={pal.trim} className="ship-ink" />
+        {line(`M${X(0.5)} ${y(0.5) + 3} Q${X(0.22)} ${y(0.3) + 8} ${X(0.09)} ${y(0.3) + 26}`, 2.2)}
+      </g>
+    )
+  }
   const a = X(0.62)
   const b = X(0.38)
-  const y = geo.bot(X(0.5)) - 5
+  const yy = geo.bot(X(0.5)) - 5
   return (
     <g>
-      <polygon points={pts([[a, y], [a - 5, y + 16], [b - 4, y + 16], [b, y]])} fill={pal.trim} className="ship-ink" />
-      <path d={`M${a - 4} ${y + 11} H${b - 3}`} stroke={stripe} strokeWidth={2.6} strokeLinecap="round" fill="none" />
+      <polygon points={pts([[a, yy], [a - 5, yy + 16], [b - 4, yy + 16], [b, yy]])} fill={pal.trim} className="ship-ink" />
+      <path d={`M${a - 4} ${yy + 11} H${b - 3}`} stroke={stripe} strokeWidth={2.6} strokeLinecap="round" fill="none" />
     </g>
   )
 }

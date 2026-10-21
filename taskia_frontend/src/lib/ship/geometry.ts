@@ -28,6 +28,16 @@ const SPECS: Record<Hull, HullSpec> = {
   arrow: { x0: 42, x1: 204, H: 36, um: 0.3, pT: 2.6, pN: 1.06, kTop: 1, kBot: 1 },
   barge: { x0: 48, x1: 194, H: 52, um: 0.5, pT: 5, pN: 3.4, kTop: 1, kBot: 1 },
   saucer: { x0: 42, x1: 200, H: 40, um: 0.5, pT: 1.65, pN: 1.65, kTop: 1.5, kBot: 0.5 },
+  dart: { x0: 38, x1: 208, H: 30, um: 0.34, pT: 2.5, pN: 1.0, kTop: 1, kBot: 1 },
+  drop: { x0: 40, x1: 190, H: 58, um: 0.66, pT: 1.15, pN: 2.0, kTop: 1, kBot: 1 },
+  leaf: { x0: 48, x1: 198, H: 58, um: 0.5, pT: 1.2, pN: 1.2, kTop: 1, kBot: 1 },
+  bullet: { x0: 48, x1: 200, H: 40, um: 0.5, pT: 12, pN: 1.45, kTop: 1, kBot: 1 },
+  brick: { x0: 52, x1: 190, H: 50, um: 0.5, pT: 9, pN: 6, kTop: 1, kBot: 1 },
+  dolphin: { x0: 44, x1: 200, H: 54, um: 0.3, pT: 2, pN: 1.3, kTop: 1.4, kBot: 0.7 },
+  whale: { x0: 54, x1: 192, H: 66, um: 0.42, pT: 2.2, pN: 2.4, kTop: 0.9, kBot: 1.15 },
+  needle: { x0: 36, x1: 210, H: 30, um: 0.3, pT: 2.2, pN: 1.0, kTop: 1, kBot: 1 },
+  blimp: { x0: 30, x1: 214, H: 44, um: 0.5, pT: 2, pN: 2, kTop: 1, kBot: 1 },
+  diamond: { x0: 46, x1: 198, H: 52, um: 0.48, pT: 1.0, pN: 1.0, kTop: 1, kBot: 1 },
 }
 
 export interface HullGeo {

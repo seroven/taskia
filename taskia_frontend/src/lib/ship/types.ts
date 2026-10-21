@@ -4,11 +4,11 @@
  * (`taskia_backend/src/modules/troops/lib/ship-config.ts`): si cambia una lista, cambia en los dos.
  */
 
-export const HULLS = ['rocket', 'bean', 'arrow', 'barge', 'saucer'] as const
+export const HULLS = ['rocket', 'bean', 'arrow', 'barge', 'saucer', 'dart', 'drop', 'leaf', 'bullet', 'brick', 'dolphin', 'whale', 'needle', 'blimp', 'diamond'] as const
 export const NOSES = ['none', 'probe', 'cap', 'drill'] as const
 export const COCKPITS = ['none', 'bubble', 'visor'] as const
-export const WINGS = ['none', 'delta', 'swept', 'stub'] as const
-export const TAILS = ['none', 'shark', 'twin', 'block', 'fins'] as const
+export const WINGS = ['none', 'delta', 'swept', 'stub', 'blade', 'leaf', 'manta', 'steps', 'hook', 'biplane', 'scissor', 'butterfly', 'saw', 'boomerang'] as const
+export const TAILS = ['none', 'shark', 'twin', 'block', 'fins', 'sail', 'spike', 'crest', 'fishtail', 'sickle', 'disc', 'notch', 'zig', 'rotor', 'crown'] as const
 export const ENGINES = ['bell', 'pods', 'ring', 'orb'] as const
 export const FLAMES = ['classic', 'bolt', 'puff', 'none'] as const
 export const TOPS = ['none', 'antenna', 'dish', 'solar', 'beacon'] as const
@@ -66,6 +66,16 @@ export const SHIP_OPTIONS = {
     { id: 'arrow', label: 'Halcón' },
     { id: 'barge', label: 'Titán' },
     { id: 'saucer', label: 'Nébula' },
+    { id: 'dart', label: 'Dardo' },
+    { id: 'drop', label: 'Gota' },
+    { id: 'leaf', label: 'Pétalo' },
+    { id: 'bullet', label: 'Bala' },
+    { id: 'brick', label: 'Ladrillo' },
+    { id: 'dolphin', label: 'Delfín' },
+    { id: 'whale', label: 'Ballena' },
+    { id: 'needle', label: 'Aguja' },
+    { id: 'blimp', label: 'Zepelín' },
+    { id: 'diamond', label: 'Diamante' },
   ] satisfies Option<Hull>[],
   nose: [
     { id: 'none', label: 'Pulida' },
@@ -83,6 +93,16 @@ export const SHIP_OPTIONS = {
     { id: 'delta', label: 'Alerón' },
     { id: 'swept', label: 'Pluma' },
     { id: 'stub', label: 'Remo' },
+    { id: 'blade', label: 'Cuchilla' },
+    { id: 'leaf', label: 'Hoja' },
+    { id: 'manta', label: 'Raya' },
+    { id: 'steps', label: 'Escalón' },
+    { id: 'hook', label: 'Gancho' },
+    { id: 'biplane', label: 'Biplano' },
+    { id: 'scissor', label: 'Tijera' },
+    { id: 'butterfly', label: 'Mariposa' },
+    { id: 'saw', label: 'Sierra' },
+    { id: 'boomerang', label: 'Bumerán' },
   ] satisfies Option<Wing>[],
   tail: [
     { id: 'none', label: 'Sin cola' },
@@ -90,6 +110,16 @@ export const SHIP_OPTIONS = {
     { id: 'twin', label: 'Mellizas' },
     { id: 'block', label: 'Timón' },
     { id: 'fins', label: 'Plumaje' },
+    { id: 'sail', label: 'Vela' },
+    { id: 'spike', label: 'Púa' },
+    { id: 'crest', label: 'Cresta' },
+    { id: 'fishtail', label: 'Pez' },
+    { id: 'sickle', label: 'Hoz' },
+    { id: 'disc', label: 'Disco' },
+    { id: 'notch', label: 'Muesca' },
+    { id: 'zig', label: 'Zigzag' },
+    { id: 'rotor', label: 'Rotor' },
+    { id: 'crown', label: 'Corona' },
   ] satisfies Option<Tail>[],
   engine: [
     { id: 'bell', label: 'Trueno' },
