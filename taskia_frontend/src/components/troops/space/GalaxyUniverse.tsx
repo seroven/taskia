@@ -10,7 +10,13 @@ import type { UniverseTroop } from '../../../lib/troopsTypes'
 const CARD_INSET = 400
 const SIDE_CARD_MIN_WIDTH = 900
 
+/**
+ * Lo más lejos que se puede ver. Cuántas naves caben en pantalla depende del área del mundo que se ve, así que el zoom
+ * mínimo sube con la pantalla (`ZOOM_FLOOR_AREA` px² de mundo como máximo): en un monitor grande no se ven más naves
+ * a la vez que en uno chico, y el coste de dibujarlas queda acotado. Nunca baja de `ZOOM_MIN`.
+ */
 const ZOOM_MIN = 0.5
+const ZOOM_FLOOR_AREA = 4_300_000
 const ZOOM_MAX = 2.4
 /** Cuánto crece una nave al llegar al centro de la vista (1 = nada): las ajenas más; la propia ya es grande. */
 const BOOST_OTHER = 0.95
@@ -21,8 +27,8 @@ const BOOST_MINE = 0.12
  * va cuando se aleja más de `UNMOUNT_MARGIN` (la diferencia evita que parpadee en el borde). Así el coste depende de
  * lo que se ve y no de cuántas naves hay cargadas. Los cambios se agrupan cada `ACTIVE_DELAY` ms.
  */
-const MOUNT_MARGIN = 0.9
-const UNMOUNT_MARGIN = 1.5
+const MOUNT_MARGIN = 0.6
+const UNMOUNT_MARGIN = 1.1
 const ACTIVE_DELAY = 110
 
 /**
@@ -384,17 +390,23 @@ export function GalaxyUniverse({
   }, [tick])
 
   /** Lleva la cámara a `to`: planea hacia allá (o salta si el sistema pide menos movimiento o `ms` es 0). */
+  /** Zoom más lejano permitido en esta pantalla. */
+  const minZoom = useCallback(() => {
+    const stage = stageRef.current
+    return stage ? clamp(Math.sqrt((stage.clientWidth * stage.clientHeight) / ZOOM_FLOOR_AREA), ZOOM_MIN, 1) : ZOOM_MIN
+  }, [])
+
   const flyTo = useCallback(
     (to: Partial<Cam>, ms = 650) => {
       inertia.current = false
       vel.current = { x: 0, y: 0 }
       anchor.current = null
-      goal.current = { ...goal.current, ...to, zoom: clamp(to.zoom ?? goal.current.zoom, ZOOM_MIN, ZOOM_MAX) }
+      goal.current = { ...goal.current, ...to, zoom: clamp(to.zoom ?? goal.current.zoom, minZoom(), ZOOM_MAX) }
       tc.current = TC_FLY
       if (ms === 0) cam.current = { ...goal.current }
       wake()
     },
-    [wake],
+    [wake, minZoom],
   )
 
   const zoomTo = useCallback(
@@ -404,11 +416,11 @@ export function GalaxyUniverse({
       const cx = (stage.clientWidth - cam.current.inset) / 2
       const cy = (stage.clientHeight - cam.current.insetY) / 2
       anchor.current = { ox: (cursorX ?? cx) - cx, oy: (cursorY ?? cy) - cy }
-      goal.current.zoom = clamp(zoom, ZOOM_MIN, ZOOM_MAX)
+      goal.current.zoom = clamp(zoom, minZoom(), ZOOM_MAX)
       tc.current = TC_ZOOM
       wake()
     },
-    [wake],
+    [wake, minZoom],
   )
 
   useEffect(() => {
@@ -487,10 +499,14 @@ export function GalaxyUniverse({
   }, [openId, flyTo, insetFor, fitZoom])
 
   useEffect(() => {
-    const onResize = () => draw()
+    const onResize = () => {
+      // Si la ventana creció y ya se ve más mundo del permitido, se acerca hasta el nuevo mínimo.
+      if (goal.current.zoom < minZoom()) zoomTo(minZoom())
+      draw()
+    }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [draw])
+  }, [draw, minZoom, zoomTo])
 
   useEffect(() => {
     const el = stageRef.current
