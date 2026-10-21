@@ -5,11 +5,11 @@ import { z } from 'zod'
  * (`taskia_frontend/src/components/ship/ShipRenderer.tsx`); las listas de abajo deben ser las mismas
  * que en `taskia_frontend/src/lib/ship/types.ts`.
  */
-export const HULLS = ['rocket', 'bean', 'arrow', 'barge', 'saucer'] as const
+export const HULLS = ['rocket', 'bean', 'arrow', 'barge', 'saucer', 'dart', 'drop', 'leaf', 'bullet', 'brick', 'dolphin', 'whale', 'needle', 'blimp', 'diamond'] as const
 export const NOSES = ['none', 'probe', 'cap', 'drill'] as const
 export const COCKPITS = ['none', 'bubble', 'visor'] as const
-export const WINGS = ['none', 'delta', 'swept', 'stub'] as const
-export const TAILS = ['none', 'shark', 'twin', 'block', 'fins'] as const
+export const WINGS = ['none', 'delta', 'swept', 'stub', 'blade', 'leaf', 'manta', 'steps', 'hook', 'biplane', 'scissor', 'butterfly', 'saw', 'boomerang'] as const
+export const TAILS = ['none', 'shark', 'twin', 'block', 'fins', 'sail', 'spike', 'crest', 'fishtail', 'sickle', 'disc', 'notch', 'zig', 'rotor', 'crown'] as const
 export const ENGINES = ['bell', 'pods', 'ring', 'orb'] as const
 export const FLAMES = ['classic', 'bolt', 'puff', 'none'] as const
 export const TOPS = ['none', 'antenna', 'dish', 'solar', 'beacon'] as const
