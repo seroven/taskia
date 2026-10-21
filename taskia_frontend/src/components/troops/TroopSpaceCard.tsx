@@ -1,15 +1,25 @@
 import { useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { Lightning, PaintBrush, Plus, SignOut, Trophy, UserMinus, Users } from '@phosphor-icons/react'
+import { Lightning, Lock, PaintBrush, Plus, SignOut, Trophy, UserMinus, Users } from '@phosphor-icons/react'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { ShipRenderer } from '../ship/ShipRenderer'
-import { MAX_CREW } from '../../lib/ship/types'
+import { MAX_CREW, SHIP_LOCKS, SHIP_OPTIONS, levelTier } from '../../lib/ship/types'
 import {
   troopRoleLabel,
   type TroopDetail,
 } from '../../lib/troopsTypes'
 import { UserAvatar } from '../avatar/UserAvatar'
 import { LevelBadge } from './LevelBadge'
+
+const xp = (n: number) => n.toLocaleString('es')
+
+/** La próxima pieza de nave que desbloquea el nivel de la tripulación, con su nombre. */
+function nextUnlock(level: number) {
+  const lock = SHIP_LOCKS.find((l) => l.level > level)
+  if (!lock) return null
+  const options = SHIP_OPTIONS[lock.slot] as { id: string; label: string }[]
+  return { level: lock.level, label: options.find((o) => o.id === lock.id)?.label ?? lock.id }
+}
 
 export function TroopSpaceCard({
   detail,
@@ -38,6 +48,9 @@ export function TroopSpaceCard({
   const canInvite =
     detail.my_role === 'captain' || detail.my_role === 'copilot'
   const isCaptain = detail.my_role === 'captain'
+  /** La ficha nace con datos parciales (sin XP del nivel) y se completa al cargar el detalle: antes no hay aro que dibujar. */
+  const loaded = detail.created_at !== ''
+  const unlock = nextUnlock(detail.level)
 
   return (
     <motion.article
@@ -64,7 +77,9 @@ export function TroopSpaceCard({
         <LevelBadge
           level={detail.level}
           size="lg"
-          title={`Nivel de la tripulación: ${detail.level}`}
+          title={loaded ? `Nivel de la tripulación: ${detail.level} · ${xp(detail.xp_into_level)} / ${xp(detail.xp_into_level + detail.xp_to_next)} XP · faltan ${xp(detail.xp_to_next)}` : `Nivel de la tripulación: ${detail.level}`}
+          progress={loaded ? detail.xp_into_level / (detail.xp_into_level + detail.xp_to_next) : undefined}
+          tier={levelTier(detail.level)}
           color={detail.ship_config.palette.trim}
           light={detail.ship_config.palette.hull}
         />
@@ -85,6 +100,20 @@ export function TroopSpaceCard({
               {detail.member_count}/{detail.max_members}
             </li>
           </ul>
+          {loaded && (
+            <p className="troop-space-card-next">
+              <span>
+                <Lightning size={13} weight="fill" />
+                Faltan {xp(detail.xp_to_next)} XP para el nivel {detail.level + 1}
+              </span>
+              {unlock && (
+                <span>
+                  <Lock size={13} weight="fill" />
+                  Nivel {unlock.level}: {unlock.label}
+                </span>
+              )}
+            </p>
+          )}
         </div>
       </header>
 

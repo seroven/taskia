@@ -28,6 +28,9 @@ export const SHIP_LOCKS = [
   { slot: 'tail', id: 'crown', level: 25 },
 ] as const
 
+/** Cuántos hitos de la nave (niveles 5, 10, 15, 20 y 25) ya alcanzó un nivel: el escudo de nivel gana un adorno por cada uno. */
+export const levelTier = (level: number) => SHIP_LOCKS.filter((lock) => level >= lock.level).length
+
 /** Nivel de tripulación que pide una pieza (1 si está libre). */
 export function shipPartLevel(slot: string, id: string): number {
   return SHIP_LOCKS.find((lock) => lock.slot === slot && lock.id === id)?.level ?? 1

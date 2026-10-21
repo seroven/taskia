@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ShipRenderer } from '../components/ship/ShipRenderer'
-import { HULLS, SHIP_OPTIONS, randomShip, type ShipConfig } from '../lib/ship/types'
+import { LevelBadge } from '../components/troops/LevelBadge'
+import { HULLS, SHIP_OPTIONS, levelTier, randomShip, type ShipConfig } from '../lib/ship/types'
 
 /** Pone una opción en su ranura (motor y estela viven dentro de `engine`). */
 function withOption(base: ShipConfig, slot: string, id: string): ShipConfig {
@@ -46,6 +47,12 @@ export function ShipLab() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
         {hulls.map((config) => (
           <ShipRenderer key={config.hull} config={config} crew={crew} label={config.hull} />
+        ))}
+      </div>
+      <h3>Escudo de nivel: un adorno por hito (5, 10, 15, 20, 25)</h3>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 28, padding: '16px 8px 8px' }}>
+        {[1, 4, 5, 10, 15, 20, 25, 60].map((level) => (
+          <LevelBadge key={level} level={level} size="lg" progress={(level * 0.17) % 1} tier={levelTier(level)} color="#dc2626" light="#fee2e2" />
         ))}
       </div>
       <h3>Al azar</h3>

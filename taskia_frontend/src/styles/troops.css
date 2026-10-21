@@ -1025,6 +1025,92 @@
   white-space: nowrap;
 }
 
+/* Aro de progreso del nivel y adornos de los hitos (5, 10, 15, 20 y 25). */
+.lvl-shield.has-ring {
+  margin: 7px;
+}
+
+.lvl-ring-track,
+.lvl-ring-fill {
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.lvl-ring-track {
+  stroke: color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+.lvl-ring-fill {
+  transition: stroke-dasharray 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lvl-shield-inner {
+  stroke-width: 1.4;
+  opacity: 0.85;
+}
+
+.lvl-wings {
+  stroke: var(--text);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.lvl-star {
+  fill: #fbbf24;
+  stroke: var(--text);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.lvl-shield-body.is-gold {
+  stroke: #f59e0b;
+  stroke-width: 3.2;
+}
+
+.lvl-shield[data-tier='5'] {
+  animation:
+    badge-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) backwards,
+    lvl-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes lvl-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--text) 22%, transparent)) drop-shadow(0 0 3px #fbbf24);
+  }
+  50% {
+    filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--text) 22%, transparent)) drop-shadow(0 0 10px #fbbf24);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lvl-shield[data-tier='5'] {
+    animation: none;
+  }
+
+  .lvl-ring-fill {
+    transition: none;
+  }
+}
+
+.troop-space-card-next {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.troop-space-card-next span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 @keyframes badge-pop {
   from {
     opacity: 0;
