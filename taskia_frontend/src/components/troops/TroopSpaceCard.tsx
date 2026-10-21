@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Lightning, Lock, PaintBrush, Plus, SignOut, Trophy, UserMinus, Users } from '@phosphor-icons/react'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { ShipRenderer } from '../ship/ShipRenderer'
-import { MAX_CREW, SHIP_LOCKS, SHIP_OPTIONS, levelTier } from '../../lib/ship/types'
+import { MAX_CREW, SHIP_LOCKS, levelTier } from '../../lib/ship/types'
 import {
   troopRoleLabel,
   type TroopDetail,
@@ -13,12 +13,11 @@ import { LevelBadge } from './LevelBadge'
 
 const xp = (n: number) => n.toLocaleString('es')
 
-/** La próxima pieza de nave que desbloquea el nivel de la tripulación, con su nombre. */
+/** El próximo nivel que desbloquea piezas de nave, y cuántas. */
 function nextUnlock(level: number) {
-  const lock = SHIP_LOCKS.find((l) => l.level > level)
-  if (!lock) return null
-  const options = SHIP_OPTIONS[lock.slot] as { id: string; label: string }[]
-  return { level: lock.level, label: options.find((o) => o.id === lock.id)?.label ?? lock.id }
+  const next = SHIP_LOCKS.filter((l) => l.level > level).reduce<number | null>((min, l) => (min == null || l.level < min ? l.level : min), null)
+  if (next == null) return null
+  return { level: next, count: SHIP_LOCKS.filter((l) => l.level === next).length }
 }
 
 export function TroopSpaceCard({
@@ -110,7 +109,7 @@ export function TroopSpaceCard({
               {unlock && (
                 <span>
                   <Lock size={13} weight="fill" />
-                  Nivel {unlock.level}: {unlock.label}
+                  Nivel {unlock.level}: {unlock.count} piezas nuevas
                 </span>
               )}
             </p>

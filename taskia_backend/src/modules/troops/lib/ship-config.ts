@@ -18,18 +18,30 @@ export const DECALS = ['none', 'stripe', 'chevrons', 'checker', 'star', 'dots', 
 export const WINDOWS = ['round', 'square', 'arch', 'hex', 'diamond', 'star', 'heart', 'slot', 'tri', 'oval', 'cross', 'moon', 'drop'] as const
 
 /**
- * Las cinco piezas que se desbloquean con el nivel de la tripulación; todo lo demás está libre desde el nivel 1.
- * Debe ser igual a `SHIP_LOCKS` de `taskia_frontend/src/lib/ship/types.ts`.
+ * Piezas que se desbloquean con el nivel de la tripulación: en cada parte, tres (a los niveles 5, 15 y 25); todo lo
+ * demás está libre desde el nivel 1. Debe ser igual a `SHIP_LOCKS` de `taskia_frontend/src/lib/ship/types.ts`.
  */
-export const SHIP_LOCKS = [
-  { slot: 'flame', id: 'rainbow', level: 5 },
-  { slot: 'wings', id: 'butterfly', level: 10 },
-  { slot: 'engine', id: 'saturn', level: 15 },
-  { slot: 'top', id: 'orbit', level: 20 },
-  { slot: 'tail', id: 'crown', level: 25 },
-] as const
+export const LOCK_LEVELS = [5, 15, 25] as const
 
-type LockSlot = (typeof SHIP_LOCKS)[number]['slot']
+const LOCKED = {
+  hull: ['dolphin', 'blimp', 'diamond'],
+  nose: ['whisker', 'lamp', 'spark'],
+  cockpit: ['periscope', 'eye', 'panorama'],
+  wings: ['manta', 'biplane', 'butterfly'],
+  tail: ['rotor', 'fishtail', 'crown'],
+  engine: ['fan', 'crystal', 'saturn'],
+  flame: ['ribbon', 'stars', 'rainbow'],
+  top: ['windmill', 'lighthouse', 'orbit'],
+  belly: ['wheels', 'claw', 'anchor'],
+  decal: ['diamonds', 'flames', 'plaid'],
+  windows: ['hex', 'star', 'heart'],
+} as const
+
+export type LockSlot = keyof typeof LOCKED
+
+export const SHIP_LOCKS = (Object.keys(LOCKED) as LockSlot[]).flatMap((slot) =>
+  LOCKED[slot].map((id, index) => ({ slot, id: id as string, level: LOCK_LEVELS[index]! })),
+)
 
 /** Nivel de tripulación que pide una pieza (1 si está libre). */
 export function shipPartLevel(slot: string, id: string): number {
@@ -144,9 +156,9 @@ export function generateShipFromSeed(seed: string, level = 1): ShipConfig {
   const rand = mulberry32(hashString(`ship:${safeSeed}`))
   const config: ShipConfig = {
     seed: safeSeed,
-    hull: pick(rand, HULLS),
-    nose: pick(rand, NOSES),
-    cockpit: pick(rand, COCKPITS),
+    hull: pick(rand, available('hull', HULLS, level)),
+    nose: pick(rand, available('nose', NOSES, level)),
+    cockpit: pick(rand, available('cockpit', COCKPITS, level)),
     wings: pick(rand, available('wings', WINGS, level)),
     tail: pick(rand, available('tail', TAILS, level)),
     engine: {
@@ -155,9 +167,9 @@ export function generateShipFromSeed(seed: string, level = 1): ShipConfig {
       flame: pick(rand, available('flame', FLAMES, level)),
     },
     top: pick(rand, available('top', TOPS, level)),
-    belly: pick(rand, BELLIES),
-    decal: pick(rand, DECALS),
-    windows: pick(rand, WINDOWS),
+    belly: pick(rand, available('belly', BELLIES, level)),
+    decal: pick(rand, available('decal', DECALS, level)),
+    windows: pick(rand, available('windows', WINDOWS, level)),
     palette: { ...pick(rand, PALETTES) },
   }
   fillMinimum(config, rand, level)
@@ -223,7 +235,21 @@ export function sanitizeShipConfig(
   return limit ? lockToLevel(parsed, limit.level, limit.current == null ? null : sanitizeShipConfig(limit.current, seed)) : parsed
 }
 
-const partOf = (config: ShipConfig, slot: LockSlot) =>
+const SLOT_LISTS: Record<LockSlot, readonly string[]> = {
+  hull: HULLS,
+  nose: NOSES,
+  cockpit: COCKPITS,
+  wings: WINGS,
+  tail: TAILS,
+  engine: ENGINES,
+  flame: FLAMES,
+  top: TOPS,
+  belly: BELLIES,
+  decal: DECALS,
+  windows: WINDOWS,
+}
+
+const partOf = (config: ShipConfig, slot: LockSlot): string =>
   slot === 'flame' ? config.engine.flame : slot === 'engine' ? config.engine.kind : config[slot]
 
 /**
@@ -235,7 +261,7 @@ export function lockToLevel(config: ShipConfig, level: number, kept: ShipConfig 
   for (const lock of SHIP_LOCKS) {
     if (level >= lock.level || partOf(next, lock.slot) !== lock.id) continue
     if (kept && partOf(kept, lock.slot) === lock.id) continue
-    const list: readonly string[] = lock.slot === 'flame' ? FLAMES : lock.slot === 'engine' ? ENGINES : lock.slot === 'wings' ? WINGS : lock.slot === 'top' ? TOPS : TAILS
+    const list: readonly string[] = SLOT_LISTS[lock.slot]
     const free = list.find((id) => id !== 'none' && shipPartLevel(lock.slot, id) <= level)!
     if (lock.slot === 'flame') next.engine.flame = free as ShipConfig['engine']['flame']
     else if (lock.slot === 'engine') next.engine.kind = free as ShipConfig['engine']['kind']

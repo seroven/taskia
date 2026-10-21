@@ -10,6 +10,9 @@ import {
   TAILS,
   TOPS,
   WINGS,
+  WINDOWS,
+  ENGINES,
+  FLAMES,
   generateShipFromSeed,
   sanitizeShipConfig,
   shipConfigSchema,
@@ -78,36 +81,44 @@ test('basura de entrada no rompe el saneado', () => {
   }
 })
 
-test('las naves nuevas solo usan piezas libres y las cinco bloqueadas esperan a su nivel', () => {
+test('cada parte bloquea tres piezas reales (niveles 5, 15 y 25) y las naves nuevas solo usan las libres', () => {
+  const lists: Record<string, readonly string[]> = {
+    hull: HULLS, nose: NOSES, cockpit: COCKPITS, wings: WINGS, tail: TAILS, engine: ENGINES, flame: FLAMES, top: TOPS, belly: BELLIES, decal: DECALS, windows: WINDOWS,
+  }
+  assert.equal(SHIP_LOCKS.length, 33)
+  for (const lock of SHIP_LOCKS) assert.ok(lists[lock.slot]!.includes(lock.id), `${lock.slot}:${lock.id} no existe`)
+  for (const slot of Object.keys(lists)) assert.deepEqual(SHIP_LOCKS.filter((l) => l.slot === slot).map((l) => l.level), [5, 15, 25])
+
   const locked = new Set(SHIP_LOCKS.map((lock) => `${lock.slot}:${lock.id}`))
   for (let i = 0; i < 400; i++) {
-    const ship = generateShipFromSeed(`libre-${i}`)
-    const used = [`flame:${ship.engine.flame}`, `engine:${ship.engine.kind}`, `wings:${ship.wings}`, `top:${ship.top}`, `tail:${ship.tail}`]
+    const s = generateShipFromSeed(`libre-${i}`)
+    const used = [`hull:${s.hull}`, `nose:${s.nose}`, `cockpit:${s.cockpit}`, `wings:${s.wings}`, `tail:${s.tail}`, `engine:${s.engine.kind}`, `flame:${s.engine.flame}`, `top:${s.top}`, `belly:${s.belly}`, `decal:${s.decal}`, `windows:${s.windows}`]
     assert.ok(used.every((piece) => !locked.has(piece)), `la semilla libre-${i} usa una pieza bloqueada`)
   }
-  assert.deepEqual(SHIP_LOCKS.map((lock) => lock.level), [5, 10, 15, 20, 25])
 })
 
-test('al guardar, una pieza bloqueada se cambia por una libre salvo que la nave ya la tuviera', () => {
+test('al guardar, las piezas bloqueadas se cambian por una libre salvo las que la nave ya tenía', () => {
   const base = generateShipFromSeed('nivel')
-  const ask = { ...base, engine: { ...base.engine, flame: 'rainbow' as const, kind: 'saturn' as const }, wings: 'butterfly' as const, top: 'orbit' as const, tail: 'crown' as const }
+  const top = (slot: string) => SHIP_LOCKS.find((l) => l.slot === slot && l.level === 25)!.id
+  const ask = {
+    ...base,
+    hull: top('hull'), nose: top('nose'), cockpit: top('cockpit'), wings: top('wings'), tail: top('tail'), top: top('top'),
+    belly: top('belly'), decal: top('decal'), windows: top('windows'),
+    engine: { ...base.engine, kind: top('engine'), flame: top('flame') },
+  }
+  type Ship = ReturnType<typeof generateShipFromSeed>
+  const pieces = (s: Ship) => [s.hull, s.nose, s.cockpit, s.wings, s.tail, s.top, s.belly, s.decal, s.windows, s.engine.kind, s.engine.flame] as string[]
+  const wanted = pieces(ask as unknown as Ship)
 
   const low = sanitizeShipConfig(ask, 'nivel', { level: 1 })
-  assert.notEqual(low.engine.flame, 'rainbow')
-  assert.notEqual(low.engine.kind, 'saturn')
-  assert.notEqual(low.wings, 'butterfly')
-  assert.notEqual(low.top, 'orbit')
-  assert.notEqual(low.tail, 'crown')
+  assert.ok(pieces(low).every((piece, i) => piece !== wanted[i]), 'a nivel 1 no debe quedar ninguna pieza de nivel 25')
 
-  const mid = sanitizeShipConfig(ask, 'nivel', { level: 10 })
-  assert.equal(mid.engine.flame, 'rainbow')
-  assert.equal(mid.wings, 'butterfly')
-  assert.notEqual(mid.engine.kind, 'saturn')
+  const mid = sanitizeShipConfig(ask, 'nivel', { level: 15 })
+  assert.ok(pieces(mid).every((piece, i) => piece !== wanted[i]), 'a nivel 15 aún no se abren las de nivel 25')
 
   const full = sanitizeShipConfig(ask, 'nivel', { level: 25 })
-  assert.equal(full.tail, 'crown')
+  assert.deepEqual(pieces(full), wanted)
 
   const kept = sanitizeShipConfig(ask, 'nivel', { level: 1, current: ask })
-  assert.equal(kept.tail, 'crown')
-  assert.equal(kept.engine.flame, 'rainbow')
+  assert.deepEqual(pieces(kept), wanted)
 })

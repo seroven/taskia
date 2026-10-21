@@ -78,8 +78,14 @@ function mapMember(r: MemberRow) {
 /** El nivel de una tripulación sale de su propio XP acumulado, que solo sube. */
 const troopLevel = (troop: { xpTotal: unknown }) => troopProgressFromXp(Number(troop.xpTotal ?? 0)).level
 
-/** Las piezas de nave que esta tripulación aún no desbloquea, para decírselo a Taskia. */
-const lockedPartNames = (level: number) => SHIP_LOCKS.filter((lock) => lock.level > level).map((lock) => lock.id)
+/** Las piezas de nave que esta tripulación aún no desbloquea, por parte, para decírselo a Taskia. */
+const lockedPartNames = (level: number) => {
+  const bySlot = new Map<string, string[]>()
+  for (const lock of SHIP_LOCKS) {
+    if (lock.level > level) bySlot.set(lock.slot, [...(bySlot.get(lock.slot) ?? []), lock.id])
+  }
+  return [...bySlot].map(([slot, ids]) => `${slot}: ${ids.join(', ')}`)
+}
 
 function mapInvite(
   i: {
@@ -457,7 +463,7 @@ export async function generateShip(req: TroopReq) {
   const level = troopLevel(troop)
   const limit = { level, current: troop.shipConfig }
   const locked = lockedPartNames(level)
-  const only = locked.length ? `\nPiezas que esta tripulación aún no tiene y NO debes usar: ${locked.join(', ')}.` : ''
+  const only = locked.length ? `\nPiezas que esta tripulación aún no tiene y NO debes usar (parte: piezas) -> ${locked.join('; ')}.` : ''
   let note = ''
   let preview = null as ReturnType<typeof sanitizeShipConfig> | null
   for (let attempt = 0; attempt < 3; attempt++) {

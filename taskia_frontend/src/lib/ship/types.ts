@@ -17,19 +17,36 @@ export const DECALS = ['none', 'stripe', 'chevrons', 'checker', 'star', 'dots', 
 export const WINDOWS = ['round', 'square', 'arch', 'hex', 'diamond', 'star', 'heart', 'slot', 'tri', 'oval', 'cross', 'moon', 'drop'] as const
 
 /**
- * Las cinco piezas que se desbloquean con el nivel de la tripulación; todo lo demás está libre desde el nivel 1.
- * Debe ser igual a `SHIP_LOCKS` de `taskia_backend/src/modules/troops/lib/ship-config.ts`.
+ * Piezas que se desbloquean con el nivel de la tripulación: en cada parte, tres (a los niveles 5, 15 y 25); todo lo
+ * demás está libre desde el nivel 1. Debe ser igual a `SHIP_LOCKS` de `taskia_backend/src/modules/troops/lib/ship-config.ts`.
  */
-export const SHIP_LOCKS = [
-  { slot: 'flame', id: 'rainbow', level: 5 },
-  { slot: 'wings', id: 'butterfly', level: 10 },
-  { slot: 'engine', id: 'saturn', level: 15 },
-  { slot: 'top', id: 'orbit', level: 20 },
-  { slot: 'tail', id: 'crown', level: 25 },
-] as const
+export const LOCK_LEVELS = [5, 15, 25] as const
 
-/** Cuántos hitos de la nave (niveles 5, 10, 15, 20 y 25) ya alcanzó un nivel: el escudo de nivel gana un adorno por cada uno. */
-export const levelTier = (level: number) => SHIP_LOCKS.filter((lock) => level >= lock.level).length
+const LOCKED = {
+  hull: ['dolphin', 'blimp', 'diamond'],
+  nose: ['whisker', 'lamp', 'spark'],
+  cockpit: ['periscope', 'eye', 'panorama'],
+  wings: ['manta', 'biplane', 'butterfly'],
+  tail: ['rotor', 'fishtail', 'crown'],
+  engine: ['fan', 'crystal', 'saturn'],
+  flame: ['ribbon', 'stars', 'rainbow'],
+  top: ['windmill', 'lighthouse', 'orbit'],
+  belly: ['wheels', 'claw', 'anchor'],
+  decal: ['diamonds', 'flames', 'plaid'],
+  windows: ['hex', 'star', 'heart'],
+} as const
+
+export type LockSlot = keyof typeof LOCKED
+
+export const SHIP_LOCKS = (Object.keys(LOCKED) as LockSlot[]).flatMap((slot) =>
+  LOCKED[slot].map((id, index) => ({ slot, id: id as string, level: LOCK_LEVELS[index]! })),
+)
+
+/** Los hitos del escudo de nivel: gana un adorno en cada uno (no todos desbloquean piezas). */
+export const LEVEL_MILESTONES = [5, 10, 15, 20, 25] as const
+
+/** Cuántos hitos ya alcanzó un nivel. */
+export const levelTier = (level: number) => LEVEL_MILESTONES.filter((m) => level >= m).length
 
 /** Nivel de tripulación que pide una pieza (1 si está libre). */
 export function shipPartLevel(slot: string, id: string): number {
@@ -311,9 +328,9 @@ export function randomShip(seed: string, level = Number.POSITIVE_INFINITY): Ship
   const ids = <T extends string>(list: { id: T }[], slot = '') => list.map((item) => item.id).filter((id) => shipPartLevel(slot, id) <= level)
   return {
     seed,
-    hull: pick(rand, ids(SHIP_OPTIONS.hull)),
-    nose: pick(rand, ids(SHIP_OPTIONS.nose)),
-    cockpit: pick(rand, ids(SHIP_OPTIONS.cockpit)),
+    hull: pick(rand, ids(SHIP_OPTIONS.hull, 'hull')),
+    nose: pick(rand, ids(SHIP_OPTIONS.nose, 'nose')),
+    cockpit: pick(rand, ids(SHIP_OPTIONS.cockpit, 'cockpit')),
     wings: pick(rand, ids(SHIP_OPTIONS.wings, 'wings')),
     tail: pick(rand, ids(SHIP_OPTIONS.tail, 'tail')),
     engine: {
@@ -322,9 +339,9 @@ export function randomShip(seed: string, level = Number.POSITIVE_INFINITY): Ship
       flame: pick(rand, ids(SHIP_OPTIONS.flame, 'flame')),
     },
     top: pick(rand, ids(SHIP_OPTIONS.top, 'top')),
-    belly: pick(rand, ids(SHIP_OPTIONS.belly)),
-    decal: pick(rand, ids(SHIP_OPTIONS.decal)),
-    windows: pick(rand, ids(SHIP_OPTIONS.windows)),
+    belly: pick(rand, ids(SHIP_OPTIONS.belly, 'belly')),
+    decal: pick(rand, ids(SHIP_OPTIONS.decal, 'decal')),
+    windows: pick(rand, ids(SHIP_OPTIONS.windows, 'windows')),
     palette: pick(rand, PALETTE_PRESETS).palette,
   }
 }
