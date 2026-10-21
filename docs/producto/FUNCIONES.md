@@ -443,7 +443,7 @@ Quien crea la tripulación es Capitán. Solo se puede estar en **una** tripulaci
 - Crear tripulación (nombre limpio, 3–80 caracteres) o aceptar/rechazar invitaciones en la **campana**.
 - Sin tripulación: pedir unirse desde la ficha de otra tripulación (Capitán o Copiloto decide).
 - Buscar compañeros **por nombre** (global) e invitar (Capitán/Copiloto).
-- Ver miembros (avatar + marco + nivel) y el **ranking semanal** entre tripulaciones (XP lun–dom, en un panel aparte con podio de tres y la lista con la nave de cada una; un toque en una fila lleva hasta esa tripulación).
+- Ver miembros (avatar + marco + nivel) y la **clasificación semanal** entre tripulaciones (XP lun–dom), que se abre desde el chip «Clasificación» de arriba como un panel en el centro, con el podio de tres, la lista con la nave de cada una, tu puesto siempre visible y los días que faltan para el reinicio; un toque en una fila lleva hasta esa tripulación).
 - Salir: si se va el Capitán, el mando pasa al Copiloto; si no hay, al de mayor nivel.
 
 Hay límites anti-abuso: pocas invitaciones pendientes por tripulación y un tope de invitaciones enviadas por día.
