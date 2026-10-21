@@ -3,10 +3,11 @@ import { civilDayFromInstant } from '../../../infrastructure/database/civil-date
 import { callGemini } from '../../../infrastructure/gemini/gemini.client.js'
 import { SHIP_GENERATE_SYSTEM } from '../../../prompts/ship.js'
 import { resolveUserAvatar } from '../../auth/lib/avatar-config.js'
-import { PRODUCT_TZ, weekStartMonday } from '../../../services/xp.js'
+import { PRODUCT_TZ, troopProgressFromXp, weekStartMonday } from '../../../services/xp.js'
 import { AppError, extractJson, toInstantISO } from '../../../utils/helpers.js'
 import {
   DECALS,
+  SHIP_LOCKS,
   generateShipFromSeed,
   resolveTroopShip,
   sanitizeShipConfig,
@@ -74,11 +75,11 @@ function mapMember(r: MemberRow) {
   }
 }
 
-function troopLevelFromMembers(members: { level: number }[]) {
-  if (members.length === 0) return 1
-  const sum = members.reduce((acc, m) => acc + m.level, 0)
-  return Math.max(1, Math.round(sum / members.length))
-}
+/** El nivel de una tripulación sale de su propio XP acumulado, que solo sube. */
+const troopLevel = (troop: { xpTotal: unknown }) => troopProgressFromXp(Number(troop.xpTotal ?? 0)).level
+
+/** Las piezas de nave que esta tripulación aún no desbloquea, para decírselo a Taskia. */
+const lockedPartNames = (level: number) => SHIP_LOCKS.filter((lock) => lock.level > level).map((lock) => lock.id)
 
 function mapInvite(
   i: {
@@ -112,7 +113,7 @@ async function loadTroopDetail(troopId: number, viewerId: number) {
   const members = await listActiveMembers(troopId, weekStart)
   const myRow = members.find((m) => Number(m.user_id) === viewerId)
   const ranked = members.map((m, i) => ({ ...mapMember(m), rank: i + 1 }))
-  const level = troopLevelFromMembers(ranked)
+  const progress = troopProgressFromXp(Number(troop.xpTotal ?? 0))
   const ranks = await weeklyRanks(weekStart)
   const xpWeek = await troopWeekXp(troopId, weekStart)
 
@@ -123,7 +124,10 @@ async function loadTroopDetail(troopId: number, viewerId: number) {
     max_members: MAX_MEMBERS,
     my_role: (myRow?.role as TroopRole | undefined) ?? null,
     members: ranked,
-    level,
+    level: progress.level,
+    xp_total: progress.xp_total,
+    xp_into_level: progress.xp_into_level,
+    xp_to_next: progress.xp_to_next,
     xp_week: xpWeek,
     rank: ranks.get(Number(troop.id)) ?? null,
     ship_config: resolveTroopShip(troop.shipConfig, Number(troop.id)),
@@ -208,7 +212,7 @@ export async function getUniverse(req: TroopReq) {
         id,
         name: r.name,
         member_count: Number(r.member_count),
-        level: Math.max(1, Math.round(Number(r.avg_level ?? 1))),
+        level: troopProgressFromXp(Number(r.xp_total ?? 0)).level,
         xp_week: Number(r.xp_week),
         rank: ranks.get(id) ?? null,
         is_mine: myTroopId != null && id === myTroopId,
@@ -448,22 +452,28 @@ export async function generateShip(req: TroopReq) {
   }
   const prompt = parseShipPrompt(req.body.prompt)
   const troopId = Number(membership.troop_id)
+  const troop = await findTroop(troopId)
+  if (!troop) throw new AppError('Tripulación no encontrada', 404)
+  const level = troopLevel(troop)
+  const limit = { level, current: troop.shipConfig }
+  const locked = lockedPartNames(level)
+  const only = locked.length ? `\nPiezas que esta tripulación aún no tiene y NO debes usar: ${locked.join(', ')}.` : ''
   let note = ''
   let preview = null as ReturnType<typeof sanitizeShipConfig> | null
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const raw = await callGemini({
         system: SHIP_GENERATE_SYSTEM,
-        user: `Pedido del explorador: ${prompt}\n${note}`,
+        user: `Pedido del explorador: ${prompt}${only}\n${note}`,
         usage: { userId, kind: 'ship_generate' },
       })
-      preview = sanitizeShipConfig(JSON.parse(extractJson(raw)), `${prompt}:${attempt}`)
+      preview = sanitizeShipConfig(JSON.parse(extractJson(raw)), `${prompt}:${attempt}`, limit)
       break
     } catch (err) {
       note = `El intento anterior no era un JSON válido (${err instanceof Error ? err.message : 'error'}). Devuelve solo el JSON del esquema.`
     }
   }
-  if (!preview) preview = generateShipFromSeed(prompt)
+  if (!preview) preview = generateShipFromSeed(prompt, level)
 
   const taken = new Set(
     (await listShipConfigs(troopId)).map((row) => {
@@ -476,7 +486,7 @@ export async function generateShip(req: TroopReq) {
   )
   // Si otra tripulación ya tiene exactamente este dibujo, se cambia la marca del casco hasta que sea distinto.
   for (let step = 1; step <= DECALS.length && taken.has(shipFingerprint(preview)); step++) {
-    preview = sanitizeShipConfig({ ...preview, decal: DECALS[(DECALS.indexOf(preview.decal) + 1) % DECALS.length] }, preview.seed)
+    preview = sanitizeShipConfig({ ...preview, decal: DECALS[(DECALS.indexOf(preview.decal) + 1) % DECALS.length] }, preview.seed, limit)
   }
   return { preview, prompt }
 }
@@ -493,7 +503,13 @@ export async function updateShip(req: TroopReq) {
   if (req.body.ship_config === undefined || req.body.ship_config === null) {
     throw new AppError('Indica la nave')
   }
-  await setShipConfig(troopId, sanitizeShipConfig(req.body.ship_config, `troop-${troopId}`))
+  const troop = await findTroop(troopId)
+  if (!troop) throw new AppError('Tripulación no encontrada', 404)
+  // El servidor manda: una pieza aún bloqueada se cambia por una libre, salvo que la nave ya la tuviera.
+  await setShipConfig(
+    troopId,
+    sanitizeShipConfig(req.body.ship_config, `troop-${troopId}`, { level: troopLevel(troop), current: troop.shipConfig }),
+  )
   return loadTroopDetail(troopId, userId)
 }
 

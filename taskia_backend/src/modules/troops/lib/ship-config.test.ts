@@ -6,6 +6,7 @@ import {
   DECALS,
   HULLS,
   NOSES,
+  SHIP_LOCKS,
   TAILS,
   TOPS,
   WINGS,
@@ -75,4 +76,38 @@ test('basura de entrada no rompe el saneado', () => {
   for (const junk of [null, undefined, 42, 'texto', [], { hull: 7, palette: 'rojo' }]) {
     assert.doesNotThrow(() => sanitizeShipConfig(junk, 'basura'))
   }
+})
+
+test('las naves nuevas solo usan piezas libres y las cinco bloqueadas esperan a su nivel', () => {
+  const locked = new Set(SHIP_LOCKS.map((lock) => `${lock.slot}:${lock.id}`))
+  for (let i = 0; i < 400; i++) {
+    const ship = generateShipFromSeed(`libre-${i}`)
+    const used = [`flame:${ship.engine.flame}`, `engine:${ship.engine.kind}`, `wings:${ship.wings}`, `top:${ship.top}`, `tail:${ship.tail}`]
+    assert.ok(used.every((piece) => !locked.has(piece)), `la semilla libre-${i} usa una pieza bloqueada`)
+  }
+  assert.deepEqual(SHIP_LOCKS.map((lock) => lock.level), [5, 10, 15, 20, 25])
+})
+
+test('al guardar, una pieza bloqueada se cambia por una libre salvo que la nave ya la tuviera', () => {
+  const base = generateShipFromSeed('nivel')
+  const ask = { ...base, engine: { ...base.engine, flame: 'rainbow' as const, kind: 'saturn' as const }, wings: 'butterfly' as const, top: 'orbit' as const, tail: 'crown' as const }
+
+  const low = sanitizeShipConfig(ask, 'nivel', { level: 1 })
+  assert.notEqual(low.engine.flame, 'rainbow')
+  assert.notEqual(low.engine.kind, 'saturn')
+  assert.notEqual(low.wings, 'butterfly')
+  assert.notEqual(low.top, 'orbit')
+  assert.notEqual(low.tail, 'crown')
+
+  const mid = sanitizeShipConfig(ask, 'nivel', { level: 10 })
+  assert.equal(mid.engine.flame, 'rainbow')
+  assert.equal(mid.wings, 'butterfly')
+  assert.notEqual(mid.engine.kind, 'saturn')
+
+  const full = sanitizeShipConfig(ask, 'nivel', { level: 25 })
+  assert.equal(full.tail, 'crown')
+
+  const kept = sanitizeShipConfig(ask, 'nivel', { level: 1, current: ask })
+  assert.equal(kept.tail, 'crown')
+  assert.equal(kept.engine.flame, 'rainbow')
 })

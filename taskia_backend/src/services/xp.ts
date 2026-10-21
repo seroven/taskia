@@ -54,6 +54,19 @@ export function progressFromXpTotal(xpTotal: number): XpProgress {
   }
 }
 
+/** Subir de nivel como tripulación cuesta el triple que como explorador: es el esfuerzo de todos juntos. */
+export const TROOP_XP_PER_LEVEL = 3000
+
+export function troopProgressFromXp(xpTotal: number) {
+  const total = Math.max(0, Math.floor(xpTotal))
+  return {
+    level: 1 + Math.floor(total / TROOP_XP_PER_LEVEL),
+    xp_total: total,
+    xp_into_level: total % TROOP_XP_PER_LEVEL,
+    xp_to_next: TROOP_XP_PER_LEVEL - (total % TROOP_XP_PER_LEVEL),
+  }
+}
+
 /** Lunes (YYYY-MM-DD) de la semana civil que contiene `instant` en America/Lima. */
 export function weekStartMonday(instant: Date = new Date()): string {
   const civil = civilDayFromInstant(instant, PRODUCT_TZ)
@@ -220,6 +233,13 @@ export async function awardXp(opts: {
       const progress = progressFromXpTotal(Number(user?.xpTotal ?? 0))
       return { ...progress, awarded: false, xp_gained: 0 }
     }
+
+    // La tripulación del explorador también gana este XP (y no lo pierde si luego él sale).
+    await manager.query(
+      `UPDATE troops SET xp_total = xp_total + $1
+        WHERE id IN (SELECT troop_id FROM troop_members WHERE user_id = $2 AND left_at IS NULL)`,
+      [amount, opts.userId],
+    )
 
     const sumRow = await manager
       .getRepository(XpAward)

@@ -16,6 +16,23 @@ export const BELLIES = ['none', 'pod', 'legs', 'tank', 'wheels', 'skids', 'orb',
 export const DECALS = ['none', 'stripe', 'chevrons', 'checker', 'star', 'dots', 'zigzag', 'waves', 'diamonds', 'bands', 'flames', 'spots', 'bolt', 'plaid', 'hearts'] as const
 export const WINDOWS = ['round', 'square', 'arch', 'hex', 'diamond', 'star', 'heart', 'slot', 'tri', 'oval', 'cross', 'moon', 'drop'] as const
 
+/**
+ * Las cinco piezas que se desbloquean con el nivel de la tripulación; todo lo demás está libre desde el nivel 1.
+ * Debe ser igual a `SHIP_LOCKS` de `taskia_backend/src/modules/troops/lib/ship-config.ts`.
+ */
+export const SHIP_LOCKS = [
+  { slot: 'flame', id: 'rainbow', level: 5 },
+  { slot: 'wings', id: 'butterfly', level: 10 },
+  { slot: 'engine', id: 'saturn', level: 15 },
+  { slot: 'top', id: 'orbit', level: 20 },
+  { slot: 'tail', id: 'crown', level: 25 },
+] as const
+
+/** Nivel de tripulación que pide una pieza (1 si está libre). */
+export function shipPartLevel(slot: string, id: string): number {
+  return SHIP_LOCKS.find((lock) => lock.slot === slot && lock.id === id)?.level ?? 1
+}
+
 export type Hull = (typeof HULLS)[number]
 export type Nose = (typeof NOSES)[number]
 export type Cockpit = (typeof COCKPITS)[number]
@@ -282,23 +299,26 @@ function hashString(value: string) {
   return h >>> 0
 }
 
-/** Una nave al azar pero válida por construcción (el botón «Sorpréndeme» del editor y el banco de pruebas). */
-export function randomShip(seed: string): ShipConfig {
+/**
+ * Una nave al azar pero válida por construcción (el botón «Sorpréndeme» del editor y el banco de pruebas).
+ * Con `level` solo usa piezas ya desbloqueadas; sin él, todas (los laboratorios).
+ */
+export function randomShip(seed: string, level = Number.POSITIVE_INFINITY): ShipConfig {
   const rand = mulberry32(hashString(seed))
-  const ids = <T extends string>(list: { id: T }[]) => list.map((item) => item.id)
+  const ids = <T extends string>(list: { id: T }[], slot = '') => list.map((item) => item.id).filter((id) => shipPartLevel(slot, id) <= level)
   return {
     seed,
     hull: pick(rand, ids(SHIP_OPTIONS.hull)),
     nose: pick(rand, ids(SHIP_OPTIONS.nose)),
     cockpit: pick(rand, ids(SHIP_OPTIONS.cockpit)),
-    wings: pick(rand, ids(SHIP_OPTIONS.wings)),
-    tail: pick(rand, ids(SHIP_OPTIONS.tail)),
+    wings: pick(rand, ids(SHIP_OPTIONS.wings, 'wings')),
+    tail: pick(rand, ids(SHIP_OPTIONS.tail, 'tail')),
     engine: {
-      kind: pick(rand, ids(SHIP_OPTIONS.engine)),
+      kind: pick(rand, ids(SHIP_OPTIONS.engine, 'engine')),
       count: pick(rand, [1, 2, 3] as const),
-      flame: pick(rand, ids(SHIP_OPTIONS.flame)),
+      flame: pick(rand, ids(SHIP_OPTIONS.flame, 'flame')),
     },
-    top: pick(rand, ids(SHIP_OPTIONS.top)),
+    top: pick(rand, ids(SHIP_OPTIONS.top, 'top')),
     belly: pick(rand, ids(SHIP_OPTIONS.belly)),
     decal: pick(rand, ids(SHIP_OPTIONS.decal)),
     windows: pick(rand, ids(SHIP_OPTIONS.windows)),

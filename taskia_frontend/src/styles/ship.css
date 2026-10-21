@@ -379,6 +379,46 @@
   white-space: nowrap;
 }
 
+/* Pieza que aún no se desbloquea: se ve (es el motivo para subir de nivel) pero no se puede elegir. */
+.ship-tile.is-locked {
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.ship-tile.is-locked:hover {
+  transform: none;
+  border-color: var(--border);
+}
+
+.ship-tile.is-locked .ship-tile-art {
+  opacity: 0.4;
+  filter: grayscale(0.85);
+}
+
+.ship-tile.is-locked .ship-tile-name {
+  color: var(--text-muted);
+}
+
+.ship-tile-level {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.ship-tile-lock {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
 .ship-tile-check {
   position: absolute;
   top: 6px;

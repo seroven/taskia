@@ -10,6 +10,7 @@ import {
   Eye,
   Fire,
   Fish,
+  Lock,
   MagicWand,
   NavigationArrow,
   Package,
@@ -31,6 +32,7 @@ import {
   PALETTE_PRESETS,
   SHIP_OPTIONS,
   randomShip,
+  shipPartLevel,
   type ShipConfig,
   type ShipPalette,
 } from '../../lib/ship/types'
@@ -40,6 +42,8 @@ type Props = {
   current: ShipConfig
   /** Miembros de la tripulación: cuántas ventanillas ve la vista previa. */
   crew: number
+  /** Nivel de la tripulación: algunas piezas se desbloquean con él. */
+  level: number
   onClose: () => void
   onSave: (config: ShipConfig) => Promise<void>
   onGenerate: (prompt: string) => Promise<{ preview: ShipConfig; prompt: string }>
@@ -93,20 +97,37 @@ function OptionTile({
   crew,
   label,
   selected,
+  lockedUntil,
   onPick,
 }: {
   preview: ShipConfig
   crew: number
   label: string
   selected: boolean
+  /** Nivel que falta alcanzar para usar la pieza; si es 0, está disponible. */
+  lockedUntil: number
   onPick: () => void
 }) {
+  const locked = lockedUntil > 0
   return (
-    <button type="button" className={`ship-tile${selected ? ' is-selected' : ''}`} aria-pressed={selected} onClick={onPick}>
+    <button
+      type="button"
+      className={`ship-tile${selected ? ' is-selected' : ''}${locked ? ' is-locked' : ''}`}
+      aria-pressed={selected}
+      aria-disabled={locked}
+      title={locked ? `Se desbloquea en el nivel ${lockedUntil} de la tripulación` : undefined}
+      onClick={locked ? undefined : onPick}
+    >
       <span className="ship-tile-art">
         <ShipRenderer config={preview} crew={crew} animate={false} />
       </span>
       <span className="ship-tile-name">{label}</span>
+      {locked && <small className="ship-tile-level">Nivel {lockedUntil}</small>}
+      {locked && (
+        <span className="ship-tile-lock" aria-hidden>
+          <Lock size={14} weight="fill" />
+        </span>
+      )}
       {selected && (
         <span className="ship-tile-check" aria-hidden>
           <Check size={12} weight="bold" />
@@ -134,7 +155,7 @@ export function ShipEditorModal({ open, onClose, ...form }: Props) {
   )
 }
 
-function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Props, 'open'>) {
+function ShipEditorForm({ current, crew, level, onClose, onSave, onGenerate }: Omit<Props, 'open'>) {
   const [draft, setDraft] = useState<ShipConfig>(current)
   const [tab, setTab] = useState<Tab>('parts')
   const [slot, setSlot] = useState<SlotKey | null>(null)
@@ -161,10 +182,15 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
 
   const slotMeta = SLOTS.find((s) => s.key === slot)
 
+  /** Lo que ya trae la nave guardada sigue disponible aunque el nivel no lo pida (nunca se quita una pieza que ya tenías). */
+  const ownedPiece = (lockSlot: string) =>
+    lockSlot === 'flame' ? current.engine.flame : lockSlot === 'engine' ? current.engine.kind : (current as unknown as Record<string, string>)[lockSlot]
+
   const tiles = <T extends string>(
     options: { id: T; label: string }[],
     value: T,
     apply: (id: T) => ShipConfig,
+    lockSlot: string,
   ) => (
     <div className="ship-tiles">
       {options.map((option) => (
@@ -174,6 +200,7 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
           crew={shown}
           label={option.label}
           selected={option.id === value}
+          lockedUntil={option.id === ownedPiece(lockSlot) || shipPartLevel(lockSlot, option.id) <= level ? 0 : shipPartLevel(lockSlot, option.id)}
           onPick={() => update(apply(option.id))}
         />
       ))}
@@ -183,12 +210,12 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
   const slotOptions = (key: SlotKey) => {
     if (key !== 'engine') {
       const options = SHIP_OPTIONS[key] as { id: string; label: string }[]
-      return tiles(options, draft[key], (id) => ({ ...draft, [key]: id }) as ShipConfig)
+      return tiles(options, draft[key], (id) => ({ ...draft, [key]: id }) as ShipConfig, key)
     }
     return (
       <>
         <h4 className="ship-sub">Tipo</h4>
-        {tiles(SHIP_OPTIONS.engine, draft.engine.kind, (kind) => ({ ...draft, engine: { ...draft.engine, kind } }))}
+        {tiles(SHIP_OPTIONS.engine, draft.engine.kind, (kind) => ({ ...draft, engine: { ...draft.engine, kind } }), 'engine')}
         <h4 className="ship-sub">Cuántos</h4>
         <div className="ship-counts" role="group" aria-label="Cuántos motores">
           {([1, 2, 3] as const).map((count) => (
@@ -204,7 +231,7 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
           ))}
         </div>
         <h4 className="ship-sub">Estela</h4>
-        {tiles(SHIP_OPTIONS.flame, draft.engine.flame, (flame) => ({ ...draft, engine: { ...draft.engine, flame } }))}
+        {tiles(SHIP_OPTIONS.flame, draft.engine.flame, (flame) => ({ ...draft, engine: { ...draft.engine, flame } }), 'flame')}
       </>
     )
   }
@@ -231,7 +258,7 @@ function ShipEditorForm({ current, crew, onClose, onSave, onGenerate }: Omit<Pro
           <motion.div className="ship-editor-stage" animate={bounce}>
             <ShipRenderer config={draft} crew={shown} edit={{ appear: touched }} label="Vista previa de la nave" />
           </motion.div>
-          <button type="button" className="ghost" disabled={busy} onClick={() => update(randomShip(`nave-${Date.now()}`))}>
+          <button type="button" className="ghost" disabled={busy} onClick={() => update(randomShip(`nave-${Date.now()}`, level))}>
             <DiceFive size={18} weight="bold" />
             Sorpréndeme
           </button>

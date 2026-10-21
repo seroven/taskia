@@ -17,6 +17,25 @@ export const BELLIES = ['none', 'pod', 'legs', 'tank', 'wheels', 'skids', 'orb',
 export const DECALS = ['none', 'stripe', 'chevrons', 'checker', 'star', 'dots', 'zigzag', 'waves', 'diamonds', 'bands', 'flames', 'spots', 'bolt', 'plaid', 'hearts'] as const
 export const WINDOWS = ['round', 'square', 'arch', 'hex', 'diamond', 'star', 'heart', 'slot', 'tri', 'oval', 'cross', 'moon', 'drop'] as const
 
+/**
+ * Las cinco piezas que se desbloquean con el nivel de la tripulación; todo lo demás está libre desde el nivel 1.
+ * Debe ser igual a `SHIP_LOCKS` de `taskia_frontend/src/lib/ship/types.ts`.
+ */
+export const SHIP_LOCKS = [
+  { slot: 'flame', id: 'rainbow', level: 5 },
+  { slot: 'wings', id: 'butterfly', level: 10 },
+  { slot: 'engine', id: 'saturn', level: 15 },
+  { slot: 'top', id: 'orbit', level: 20 },
+  { slot: 'tail', id: 'crown', level: 25 },
+] as const
+
+type LockSlot = (typeof SHIP_LOCKS)[number]['slot']
+
+/** Nivel de tripulación que pide una pieza (1 si está libre). */
+export function shipPartLevel(slot: string, id: string): number {
+  return SHIP_LOCKS.find((lock) => lock.slot === slot && lock.id === id)?.level ?? 1
+}
+
 const HEX = /^#([0-9a-fA-F]{6})$/
 
 const hex = z
@@ -95,15 +114,19 @@ function hexToRgb(color: string): [number, number, number] {
  */
 const OPTIONAL = ['nose', 'cockpit', 'wings', 'tail', 'top', 'belly', 'decal'] as const
 
-function fillMinimum(config: ShipConfig, rand: () => number) {
+/** Las piezas de una ranura que ya puede usar una tripulación de ese nivel. */
+const available = <T extends string>(slot: string, list: readonly T[], level: number): readonly T[] =>
+  list.filter((id) => shipPartLevel(slot, id) <= level)
+
+function fillMinimum(config: ShipConfig, rand: () => number, level: number) {
   const lists: Record<(typeof OPTIONAL)[number], readonly string[]> = {
-    nose: NOSES,
-    cockpit: COCKPITS,
-    wings: WINGS,
-    tail: TAILS,
-    top: TOPS,
-    belly: BELLIES,
-    decal: DECALS,
+    nose: available('nose', NOSES, level),
+    cockpit: available('cockpit', COCKPITS, level),
+    wings: available('wings', WINGS, level),
+    tail: available('tail', TAILS, level),
+    top: available('top', TOPS, level),
+    belly: available('belly', BELLIES, level),
+    decal: available('decal', DECALS, level),
   }
   const empty = () => OPTIONAL.filter((slot) => config[slot] === 'none')
   while (OPTIONAL.length - empty().length < 4) {
@@ -115,8 +138,8 @@ function fillMinimum(config: ShipConfig, rand: () => number) {
   }
 }
 
-/** La misma semilla da siempre la misma nave. */
-export function generateShipFromSeed(seed: string): ShipConfig {
+/** La misma semilla da siempre la misma nave. Solo usa piezas ya desbloqueadas para `level` (por defecto, las del nivel 1). */
+export function generateShipFromSeed(seed: string, level = 1): ShipConfig {
   const safeSeed = seed.trim().slice(0, 80) || 'taskia'
   const rand = mulberry32(hashString(`ship:${safeSeed}`))
   const config: ShipConfig = {
@@ -124,16 +147,20 @@ export function generateShipFromSeed(seed: string): ShipConfig {
     hull: pick(rand, HULLS),
     nose: pick(rand, NOSES),
     cockpit: pick(rand, COCKPITS),
-    wings: pick(rand, WINGS),
-    tail: pick(rand, TAILS),
-    engine: { kind: pick(rand, ENGINES), count: pick(rand, [1, 2, 3] as const), flame: pick(rand, FLAMES) },
-    top: pick(rand, TOPS),
+    wings: pick(rand, available('wings', WINGS, level)),
+    tail: pick(rand, available('tail', TAILS, level)),
+    engine: {
+      kind: pick(rand, available('engine', ENGINES, level)),
+      count: pick(rand, [1, 2, 3] as const),
+      flame: pick(rand, available('flame', FLAMES, level)),
+    },
+    top: pick(rand, available('top', TOPS, level)),
     belly: pick(rand, BELLIES),
     decal: pick(rand, DECALS),
     windows: pick(rand, WINDOWS),
     palette: { ...pick(rand, PALETTES) },
   }
-  fillMinimum(config, rand)
+  fillMinimum(config, rand, level)
   return config
 }
 
@@ -155,10 +182,15 @@ function asHex(raw: unknown, fallback: string) {
  * sea válido sale de la nave de la semilla. Los colores que elige el niño se respetan tal cual (aunque se vean
  * apagados en el espacio: es su decisión); y los que devuelve la IA también (si el niño pide una nave negra, es negra).
  */
-export function sanitizeShipConfig(raw: unknown, fallbackSeed: string): ShipConfig {
+export function sanitizeShipConfig(
+  raw: unknown,
+  fallbackSeed: string,
+  /** `level`: si se indica, las piezas aún bloqueadas se cambian por una libre, salvo las que ya tiene la nave `current`. */
+  limit?: { level: number; current?: unknown },
+): ShipConfig {
   const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
   const seed = typeof o.seed === 'string' && o.seed.trim() ? o.seed.trim().slice(0, 80) : fallbackSeed
-  const base = generateShipFromSeed(seed)
+  const base = generateShipFromSeed(seed, limit?.level ?? Number.POSITIVE_INFINITY)
   const engineRaw = o.engine && typeof o.engine === 'object' ? (o.engine as Record<string, unknown>) : {}
   const paletteRaw = o.palette && typeof o.palette === 'object' ? (o.palette as Record<string, unknown>) : {}
   const count = Math.round(Number(engineRaw.count))
@@ -187,7 +219,29 @@ export function sanitizeShipConfig(raw: unknown, fallbackSeed: string): ShipConf
     windows: asEnum(o.windows, WINDOWS, base.windows),
     palette,
   }
-  return shipConfigSchema.parse(config)
+  const parsed = shipConfigSchema.parse(config)
+  return limit ? lockToLevel(parsed, limit.level, limit.current == null ? null : sanitizeShipConfig(limit.current, seed)) : parsed
+}
+
+const partOf = (config: ShipConfig, slot: LockSlot) =>
+  slot === 'flame' ? config.engine.flame : slot === 'engine' ? config.engine.kind : config[slot]
+
+/**
+ * Cambia por la primera pieza libre toda pieza que aún no se desbloquea con `level`. Las que ya tenía la nave
+ * guardada (`kept`) se respetan: el nivel solo sube, pero una nave heredada no debe perder su aspecto.
+ */
+export function lockToLevel(config: ShipConfig, level: number, kept: ShipConfig | null): ShipConfig {
+  const next: ShipConfig = { ...config, engine: { ...config.engine } }
+  for (const lock of SHIP_LOCKS) {
+    if (level >= lock.level || partOf(next, lock.slot) !== lock.id) continue
+    if (kept && partOf(kept, lock.slot) === lock.id) continue
+    const list: readonly string[] = lock.slot === 'flame' ? FLAMES : lock.slot === 'engine' ? ENGINES : lock.slot === 'wings' ? WINGS : lock.slot === 'top' ? TOPS : TAILS
+    const free = list.find((id) => id !== 'none' && shipPartLevel(lock.slot, id) <= level)!
+    if (lock.slot === 'flame') next.engine.flame = free as ShipConfig['engine']['flame']
+    else if (lock.slot === 'engine') next.engine.kind = free as ShipConfig['engine']['kind']
+    else (next as Record<string, unknown>)[lock.slot] = free
+  }
+  return next
 }
 
 /** Sin la semilla: dos naves con el mismo dibujo chocan aunque el seed cambie. */

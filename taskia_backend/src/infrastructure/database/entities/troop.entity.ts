@@ -15,6 +15,10 @@ export class Troop {
   @Column({ type: 'jsonb' })
   shipConfig!: unknown
 
+  /** XP acumulado de la tripulación (lo que ganan sus miembros mientras están en ella). Solo sube; da su nivel. */
+  @Column({ type: 'bigint', default: 0 })
+  xpTotal!: number
+
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
   createdAt!: Date
 

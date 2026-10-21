@@ -24,6 +24,10 @@ export interface TroopDetail {
   my_role: TroopRole | null
   members: TroopMember[]
   level: number
+  /** XP acumulado de la tripulación y lo que lleva del nivel actual (cada nivel pide 3.000). */
+  xp_total: number
+  xp_into_level: number
+  xp_to_next: number
   xp_week: number
   rank: number | null
   ship_config: ShipConfig

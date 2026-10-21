@@ -118,6 +118,9 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
         my_role: null,
         members: [],
         level: row.level,
+        xp_total: 0,
+        xp_into_level: 0,
+        xp_to_next: 0,
         xp_week: row.xp_week,
         rank: row.rank,
         ship_config: row.ship_config,
@@ -519,6 +522,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
           open={shipOpen}
           current={(openDetail?.my_role != null ? openDetail : myTroop)!.ship_config}
           crew={(openDetail?.my_role != null ? openDetail : myTroop)!.member_count}
+          level={(openDetail?.my_role != null ? openDetail : myTroop)!.level}
           onClose={() => setShipOpen(false)}
           onGenerate={(prompt) => api.generateTroopShip(prompt)}
           onSave={async (config) => {

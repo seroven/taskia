@@ -209,12 +209,13 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
     .addSelect('t.name', 'name')
     .addSelect('t.ship_config', 'ship_config')
     .addSelect('COUNT(DISTINCT tm.user_id)', 'member_count')
-    .addSelect('COALESCE(AVG(u.level), 1)', 'avg_level')
+    .addSelect('t.xp_total', 'xp_total')
     .addSelect('COALESCE(SUM(a.amount), 0)', 'xp_week')
     .where('t.is_active = TRUE')
     .groupBy('t.id')
     .addGroupBy('t.name')
     .addGroupBy('t.ship_config')
+    .addGroupBy('t.xp_total')
     .addSelect(`CASE WHEN t.id = ${mine} THEN 0 ELSE 1 END`, 'mine_sort')
     .orderBy('mine_sort', 'ASC')
     .addOrderBy('t.id', 'ASC')
@@ -225,7 +226,7 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
       name: string
       ship_config: unknown
       member_count: string
-      avg_level: string
+      xp_total: string
       xp_week: string
     }>()
 }
