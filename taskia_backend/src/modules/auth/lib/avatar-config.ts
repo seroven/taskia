@@ -5,9 +5,9 @@ import { z } from 'zod'
  * (`taskia_frontend/src/components/avatar/AvatarRenderer.tsx`); las listas de abajo deben ser las mismas que en
  * `taskia_frontend/src/lib/avatar/types.ts`. Es del usuario, en toda la aplicación (no depende de la tripulación).
  */
-export const BASES = ['human', 'alien', 'robot', 'cat'] as const
-export const EYES = ['dots', 'round', 'happy', 'sleepy', 'wink', 'star', 'big', 'cyclops'] as const
-export const MOUTHS = ['smile', 'grin', 'open', 'tongue', 'smirk', 'flat'] as const
+export const BASES = ['human', 'alien', 'robot', 'cat', 'panda', 'bunny', 'ghost', 'monster', 'dino', 'owl'] as const
+export const EYES = ['dots', 'round', 'happy', 'sleepy', 'wink', 'star', 'big', 'cyclops', 'heart', 'angry', 'wide', 'lashes', 'tired', 'spiral', 'cross', 'shiny', 'sad', 'led'] as const
+export const MOUTHS = ['smile', 'grin', 'open', 'tongue', 'smirk', 'flat', 'laugh', 'frown', 'kiss', 'fangs', 'wavy', 'buck', 'cat', 'oh', 'braces', 'teasing'] as const
 export const HAIRS = ['none', 'short', 'spiky', 'long', 'curly', 'bun', 'mohawk', 'pigtails', 'bob', 'afro', 'braids', 'ponytail', 'buns', 'wavy', 'fringe', 'parted', 'buzz', 'tuft', 'bowl'] as const
 export const OUTFITS = ['tee', 'hoodie', 'suit', 'overalls', 'jacket', 'armor', 'poncho', 'turtleneck', 'stripes', 'vest', 'dress', 'tie', 'cape', 'lab', 'sailor', 'puffer', 'tanktop', 'scarf'] as const
 export const ACCESSORIES = ['none', 'glasses', 'shades', 'headphones', 'antennas', 'cap', 'bow', 'crown', 'monocle', 'beanie', 'tophat', 'patch', 'helmet', 'bandana', 'flower', 'mask', 'halo', 'mustache'] as const
