@@ -257,3 +257,33 @@
     transition: none;
   }
 }
+
+/* Marcos de nivel alto: giros lentos y destellos. */
+.av-spin-slow {
+  transform-origin: 62px 62px;
+  animation: av-spin 24s linear infinite;
+}
+
+.av-twinkle {
+  animation: av-twinkle 1.9s ease-in-out infinite alternate;
+}
+
+.av-twinkle:nth-child(odd) {
+  animation-delay: -0.95s;
+}
+
+@keyframes av-twinkle {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .av-spin-slow,
+  .av-twinkle {
+    animation: none;
+  }
+}

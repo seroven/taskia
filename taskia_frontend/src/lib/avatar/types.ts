@@ -166,6 +166,14 @@ export const FRAMES = [
   { id: 'laurel', label: 'Laureles', minLevel: 12 },
   { id: 'flame', label: 'Llamas', minLevel: 16 },
   { id: 'orbit', label: 'Órbita', minLevel: 20 },
+  { id: 'wings', label: 'Alas', minLevel: 30 },
+  { id: 'crystal', label: 'Cristales', minLevel: 40 },
+  { id: 'comet', label: 'Cometa', minLevel: 50 },
+  { id: 'sun', label: 'Sol', minLevel: 60 },
+  { id: 'galaxy', label: 'Galaxia', minLevel: 70 },
+  { id: 'royal', label: 'Realeza', minLevel: 80 },
+  { id: 'phoenix', label: 'Fénix', minLevel: 90 },
+  { id: 'legend', label: 'Leyenda', minLevel: 100 },
 ] as const
 
 export type FrameId = (typeof FRAMES)[number]['id']
