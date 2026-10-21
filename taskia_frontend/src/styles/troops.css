@@ -215,6 +215,33 @@
   font-size: 17px;
 }
 
+/* Puesto del podio semanal: etiqueta plana junto al nombre de la nave. */
+.space-rank-tag {
+  --tag: #fbbf24;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 7px;
+  padding: 1px 8px 1px 6px;
+  border: 2px solid var(--text);
+  border-radius: 999px;
+  background: var(--tag);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--text) 30%, transparent);
+  color: #1c1917;
+  font-size: 0.78em;
+  font-weight: 800;
+  text-shadow: none;
+  vertical-align: 1px;
+}
+
+.space-rank-tag--2 {
+  --tag: #cbd5e1;
+}
+
+.space-rank-tag--3 {
+  --tag: #fdba74;
+}
+
 .space-rank-badge {
   width: 30px;
   height: 30px;
@@ -420,51 +447,6 @@
   pointer-events: none;
 }
 
-/* Medalla del podio semanal: disco metálico con aro y brillo; su tamaño sigue al de la nave (container query). */
-.galaxy-ship {
-  container-type: inline-size;
-}
-
-.galaxy-medal {
-  --medal-hi: #fde68a;
-  --medal-lo: #f59e0b;
-  --medal-ring: #92400e;
-  position: absolute;
-  top: -3%;
-  right: 3%;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 12cqw;
-  aspect-ratio: 1;
-  border: 0.7cqw solid var(--medal-ring);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.85) 0, rgba(255, 255, 255, 0) 38%),
-    linear-gradient(150deg, var(--medal-hi), var(--medal-lo));
-  box-shadow:
-    inset 0 0 0 0.6cqw rgba(255, 255, 255, 0.35),
-    0 1.2cqw 2.6cqw rgba(0, 0, 0, 0.32);
-  color: var(--medal-ring);
-  font-family: var(--font-display);
-  font-size: 6.4cqw;
-  font-weight: 800;
-  line-height: 1;
-  pointer-events: none;
-}
-
-.galaxy-medal--2 {
-  --medal-hi: #f1f5f9;
-  --medal-lo: #94a3b8;
-  --medal-ring: #334155;
-}
-
-.galaxy-medal--3 {
-  --medal-hi: #fdba74;
-  --medal-lo: #c2410c;
-  --medal-ring: #7c2d12;
-}
-
 .galaxy-zoom {
   position: absolute;
   left: 16px;
@@ -658,74 +640,128 @@
   justify-content: flex-end;
 }
 
-/* Insignia de nivel: estrella de línea con el número grande (LevelBadge). */
-.lvl-star {
+/* Insignia de nivel (LevelBadge): escudo con los colores de la nave y, para los miembros, una pastilla neutra. */
+.lvl-shield {
   position: relative;
-  display: inline-grid;
+  display: inline-block;
   flex-shrink: 0;
-  place-items: center;
-  width: 34px;
-  aspect-ratio: 1;
-  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--text) 18%, transparent));
+  width: 44px;
+  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--text) 22%, transparent));
   animation: badge-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
 }
 
-.lvl-star--sm {
-  width: 30px;
+.lvl-shield--lg {
+  width: 60px;
 }
 
-.lvl-star--lg {
-  width: 56px;
-}
-
-.lvl-star svg {
+.lvl-shield svg {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   overflow: visible;
 }
 
-.lvl-star-star {
+.lvl-shield-body {
   stroke: var(--text);
-  stroke-width: 2.2;
+  stroke-width: 2.4;
   stroke-linejoin: round;
 }
 
-.lvl-star-shine {
-  stroke: #fff;
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  opacity: 0.75;
+.lvl-shield-inner {
+  stroke: var(--text);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
 }
 
-.lvl-star-num {
+.lvl-shield-label,
+.lvl-shield-num {
+  fill: var(--text);
   font-family: var(--font-display);
   font-weight: 800;
-  fill: #3a2a00;
 }
 
-/* Nivel de un miembro: pastilla dorada con estrella y número (LevelBadge sm). */
+.lvl-shield-label {
+  font-size: 6px;
+  letter-spacing: 0.08em;
+}
+
+.lvl-pill {
+  margin-left: auto;
+}
+
+.troop-space-member-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* Insignia de nivel (LevelBadge): escudo con los colores de la nave y, para los miembros, una pastilla neutra. */
+.lvl-shield {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 44px;
+  filter: drop-shadow(0 2px 0 color-mix(in srgb, var(--text) 22%, transparent));
+  animation: badge-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.lvl-shield--lg {
+  width: 60px;
+}
+
+.lvl-shield svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.lvl-shield-body {
+  stroke: var(--text);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+}
+
+.lvl-shield-inner {
+  stroke: var(--text);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.lvl-shield-label,
+.lvl-shield-num {
+  fill: #fff;
+  stroke: rgba(15, 23, 42, 0.85);
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.lvl-shield-label {
+  font-size: 6.4px;
+  letter-spacing: 0.08em;
+  stroke-width: 2.2px;
+}
+
+.lvl-shield-num {
+  stroke-width: 4px;
+}
+
 .lvl-pill {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px 3px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
-  background: linear-gradient(to bottom, #ffe48a, var(--star));
-  box-shadow:
-    inset 0 0 0 1.5px rgba(58, 42, 0, 0.5),
-    0 2px 0 rgba(58, 42, 0, 0.22);
-  color: #3a2a00;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
   font-family: var(--font-display);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
   line-height: 1.2;
   white-space: nowrap;
-}
-
-.lvl-pill svg {
-  flex-shrink: 0;
 }
 
 @keyframes badge-pop {
@@ -736,7 +772,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lvl-star {
+  .lvl-shield {
     animation: none;
   }
 }

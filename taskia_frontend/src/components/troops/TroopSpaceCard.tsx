@@ -65,7 +65,13 @@ export function TroopSpaceCard({
       </div>
 
       <header className="troop-space-card-head">
-        <LevelBadge level={detail.level} size="lg" title={`Nivel de la tripulación: ${detail.level}`} />
+        <LevelBadge
+          level={detail.level}
+          size="lg"
+          title={`Nivel de la tripulación: ${detail.level}`}
+          color={detail.ship_config.palette.trim}
+          light={detail.ship_config.palette.hull}
+        />
         <div className="troop-space-card-head-text">
           <h2>{detail.name}</h2>
           <ul className="troop-space-card-stats">

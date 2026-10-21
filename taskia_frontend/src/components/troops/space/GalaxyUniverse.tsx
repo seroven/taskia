@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Minus, Plus } from '@phosphor-icons/react'
+import { Crown, Medal, Minus, Plus } from '@phosphor-icons/react'
 import { ShipRenderer } from '../../ship/ShipRenderer'
 import { MY_SHIP_WIDTH, OTHER_SHIP_WIDTH, layoutShips } from '../../../lib/shipLayout'
 import { MAX_CREW } from '../../../lib/ship/types'
@@ -543,11 +543,6 @@ export function GalaxyUniverse({
                 style={{ width: base, ['--bob-delay' as string]: `${-(index % 7) * 0.7}s` }}
               >
                 {mine && <span className="galaxy-aura" />}
-                {rank != null && (
-                  <span className={`galaxy-medal galaxy-medal--${rank}`} title={`Puesto ${rank} del ranking semanal`}>
-                    {rank}
-                  </span>
-                )}
                 <button
                   type="button"
                   className="galaxy-ship-hit"
@@ -579,6 +574,12 @@ export function GalaxyUniverse({
                   onSelectTroop(troop.id)
                 }}
               >
+                {rank != null && (
+                  <span className={`space-rank-tag space-rank-tag--${rank}`} title={`Puesto ${rank} del ranking semanal`}>
+                    {rank === 1 ? <Crown size={13} weight="fill" aria-hidden /> : <Medal size={13} weight="fill" aria-hidden />}
+                    {rank}º
+                  </span>
+                )}
                 {troop.name}
               </button>
             </div>

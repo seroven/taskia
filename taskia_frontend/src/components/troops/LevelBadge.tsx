@@ -1,42 +1,46 @@
-import { useId } from 'react'
-import { Star } from '@phosphor-icons/react'
-
 type Size = 'sm' | 'md' | 'lg'
 
-/** Estrella de cinco puntas (centro 24,25; puntas a 21,5 y valles a 10,8), con el trazo redondeado por `stroke-linejoin`. */
-const STAR = Array.from({ length: 10 }, (_, i) => {
-  const angle = (Math.PI / 5) * i - Math.PI / 2
-  const radius = i % 2 === 0 ? 21.5 : 10.8
-  return `${(24 + Math.cos(angle) * radius).toFixed(2)},${(25 + Math.sin(angle) * radius).toFixed(2)}`
-}).join(' ')
+/** Escudo y su interior (viewBox 48×56). */
+const SHIELD = 'M24 3 L43 10 V27 C43 40 33 49 24 53 C15 49 5 40 5 27 V10 Z'
+const INNER = 'M24 9 L37.5 14 V27 C37.5 36.5 30.5 43.5 24 46.5 C17.5 43.5 10.5 36.5 10.5 27 V14 Z'
 
 /**
- * Insignia de nivel: una estrella de línea con el número grande al centro. Con tres cifras el número se achica.
- * `title` es el tooltip (por ejemplo «Nivel de la tripulación»).
+ * Insignia de nivel. En tamaño `sm` es una pastilla neutra («Nv 6»); en `md` y `lg`, un escudo con el trazo oscuro de las
+ * ilustraciones de la app y colores planos (sin degradados), los de la nave de la tripulación (`color` y `light`). Con tres cifras el número se achica. `title` es el tooltip.
  */
-export function LevelBadge({ level, size = 'md', title }: { level: number; size?: Size; title?: string }) {
-  const gradient = `lb-${useId().replace(/:/g, '')}`
+export function LevelBadge({
+  level,
+  size = 'md',
+  title,
+  color = '#3b82f6',
+  light = '#bfdbfe',
+}: {
+  level: number
+  size?: Size
+  title?: string
+  /** Color del escudo (el de las alas y motores de la nave). */
+  color?: string
+  /** Color del interior (el del casco). */
+  light?: string
+}) {
   const digits = String(level).length
+  const tip = title ?? `Nivel ${level}`
   if (size === 'sm') {
     return (
-      <span className="lvl-pill" role="img" aria-label={`Nivel ${level}`} title={title ?? `Nivel ${level}`}>
-        <Star size={13} weight="fill" aria-hidden />
+      <span className="lvl-pill" role="img" aria-label={`Nivel ${level}`} title={tip}>
         Nv {level}
       </span>
     )
   }
   return (
-    <span className={`lvl-star lvl-star--${size}`} role="img" aria-label={`Nivel ${level}`} title={title ?? `Nivel ${level}`}>
-      <svg viewBox="0 0 48 48" focusable="false" aria-hidden>
-        <defs>
-          <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#ffe48a" />
-            <stop offset="1" stopColor="var(--star)" />
-          </linearGradient>
-        </defs>
-        <polygon points={STAR} fill={`url(#${gradient})`} className="lvl-star-star" />
-        <path d="M14 19.5 Q19 11.5 25 11" className="lvl-star-shine" fill="none" />
-        <text x="24" y={digits > 2 ? 29.5 : 30.5} textAnchor="middle" className="lvl-star-num" fontSize={digits > 2 ? 13 : digits > 1 ? 16 : 19}>
+    <span className={`lvl-shield lvl-shield--${size}`} role="img" aria-label={`Nivel ${level}`} title={tip}>
+      <svg viewBox="0 0 48 56" focusable="false" aria-hidden>
+        <path d={SHIELD} fill={color} className="lvl-shield-body" />
+        <path d={INNER} fill={light} className="lvl-shield-inner" />
+        <text x="24" y="21" textAnchor="middle" className="lvl-shield-label">
+          NIVEL
+        </text>
+        <text x="24" y={digits > 2 ? 41 : 42} textAnchor="middle" className="lvl-shield-num" fontSize={digits > 2 ? 16 : digits > 1 ? 20 : 24}>
           {level}
         </text>
       </svg>
