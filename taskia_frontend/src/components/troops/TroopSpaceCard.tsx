@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Lightning, Lock, PaintBrush, Plus, SignOut, Trophy, UserMinus, Users } from '@phosphor-icons/react'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { AuraBackdrop } from '../ship/AuraBackdrop'
 import { ShipRenderer } from '../ship/ShipRenderer'
 import { MAX_CREW, SHIP_LOCKS, levelTier } from '../../lib/ship/types'
 import {
@@ -64,12 +65,14 @@ export function TroopSpaceCard({
       }
     >
       <div className="troop-space-card-ship">
-        <ShipRenderer
-          config={detail.ship_config}
-          crew={Math.min(detail.member_count, MAX_CREW)}
-          crewNames={detail.members.map((m) => m.username)}
-          label={`Nave de ${detail.name}`}
-        />
+        <AuraBackdrop aura={detail.aura_id}>
+          <ShipRenderer
+            config={detail.ship_config}
+            crew={Math.min(detail.member_count, MAX_CREW)}
+            crewNames={detail.members.map((m) => m.username)}
+            label={`Nave de ${detail.name}`}
+          />
+        </AuraBackdrop>
       </div>
 
       <header className="troop-space-card-head">

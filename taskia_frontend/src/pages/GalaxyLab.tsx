@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GalaxyUniverse } from '../components/troops/space/GalaxyUniverse'
+import { GL_KINDS, type GlKind } from '../lib/ship/auraGl'
 import { randomShip } from '../lib/ship/types'
 import type { UniverseTroop } from '../lib/troopsTypes'
 
@@ -7,6 +8,17 @@ const STEP = 100
 
 const WORDS = ['Cometas', 'Halcones', 'Nébulas', 'Pioneros', 'Veloces', 'Titanes', 'Lunares', 'Exploradores', 'Astros', 'Meteoros']
 const SUFFIX = ['del Sur', 'de Plata', 'Rojos', 'Alegres', 'del Alba', 'Cósmicos', 'Valientes', 'de Hielo', 'del Norte', 'Brillantes']
+
+/**
+ * Auras de prueba: `?aura=todas` (por defecto) las reparte en rotación, `?aura=ninguna` no pone ninguna y
+ * `?aura=nova` (o cualquier otra) pone la misma a todas, para medir cuánto cuesta cada una.
+ */
+const AURA_PARAM = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('aura')
+function auraFor(id: number): GlKind | null {
+  if (AURA_PARAM === 'ninguna') return null
+  if (AURA_PARAM && (GL_KINDS as readonly string[]).includes(AURA_PARAM)) return AURA_PARAM as GlKind
+  return GL_KINDS[id % GL_KINDS.length] ?? null
+}
 
 /** Una tripulación inventada y siempre la misma para un mismo número. */
 function fakeTroop(id: number): UniverseTroop {
@@ -19,6 +31,7 @@ function fakeTroop(id: number): UniverseTroop {
     rank: id <= 3 ? id : null,
     is_mine: id === 1,
     ship_config: randomShip(`galaxy-lab-${id}`),
+    aura_id: auraFor(id),
   }
 }
 

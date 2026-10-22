@@ -1,4 +1,5 @@
 import type { AvatarConfig } from './avatar/types'
+import type { GlKind } from './ship/auraGl'
 import type { ShipConfig } from './ship/types'
 
 export type TroopRole = 'captain' | 'copilot' | 'member'
@@ -31,6 +32,7 @@ export interface TroopDetail {
   xp_week: number
   rank: number | null
   ship_config: ShipConfig
+  aura_id?: GlKind | null
   created_at: string
 }
 
@@ -80,6 +82,8 @@ export interface UniverseTroop {
   rank: number | null
   is_mine: boolean
   ship_config: ShipConfig
+  /** Aura que eligió la tripulación (aún sin respaldo en el servidor). */
+  aura_id?: GlKind | null
 }
 
 export interface UniverseResponse {

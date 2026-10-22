@@ -393,6 +393,7 @@ Contenedor de la tripulación. Cupo máximo **10** miembros activos: se valida e
 | `name` | varchar(80) | nombre visible |
 | `is_active` | boolean | baja lógica de la tripulación |
 | `ship_config` | jsonb NOT NULL | la nave: una pieza por ranura (casco, cabina, nariz, alas, cola, motores, módulo de arriba y de abajo, marcas, ventanillas) y 4 colores. Esquema en `modules/troops/lib/ship-config.ts`. Se genera al crear la tripulación y la cambian el Capitán o el Copiloto |
+| `aura_id` | varchar(24) NULL | aura elegida para la nave (migración `008`); NULL = sin aura. La lista y el nivel que pide cada una están en `modules/troops/lib/auras.ts`, no en la base |
 | `created_at` / `updated_at` | timestamptz | |
 
 ### `troop_members`

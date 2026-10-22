@@ -208,6 +208,7 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
     .select('t.id', 'id')
     .addSelect('t.name', 'name')
     .addSelect('t.ship_config', 'ship_config')
+    .addSelect('t.aura_id', 'aura_id')
     .addSelect('COUNT(DISTINCT tm.user_id)', 'member_count')
     .addSelect('t.xp_total', 'xp_total')
     .addSelect('COALESCE(SUM(a.amount), 0)', 'xp_week')
@@ -215,6 +216,7 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
     .groupBy('t.id')
     .addGroupBy('t.name')
     .addGroupBy('t.ship_config')
+    .addGroupBy('t.aura_id')
     .addGroupBy('t.xp_total')
     .addSelect(`CASE WHEN t.id = ${mine} THEN 0 ELSE 1 END`, 'mine_sort')
     .orderBy('mine_sort', 'ASC')
@@ -225,6 +227,7 @@ export async function universePage(weekStart: string, myTroopId: number | null, 
       id: number
       name: string
       ship_config: unknown
+      aura_id: string | null
       member_count: string
       xp_total: string
       xp_week: string
@@ -469,6 +472,10 @@ export async function setShipConfig(troopId: number, config: unknown) {
     .setParameter('config', JSON.stringify(config))
     .where('id = :id', { id: troopId })
     .execute()
+}
+
+export async function setAura(troopId: number, auraId: string | null) {
+  await AppDataSource.getRepository(Troop).update({ id: troopId }, { auraId })
 }
 
 /** Las naves de las demás tripulaciones, para no repetir el dibujo. */

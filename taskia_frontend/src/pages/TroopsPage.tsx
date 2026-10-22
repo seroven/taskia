@@ -124,6 +124,7 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
         xp_week: row.xp_week,
         rank: row.rank,
         ship_config: row.ship_config,
+        aura_id: row.aura_id ?? null,
         created_at: '',
       })
     }
@@ -523,13 +524,14 @@ export function TroopsPage({ onBack }: { onBack: () => void }) {
           current={(openDetail?.my_role != null ? openDetail : myTroop)!.ship_config}
           crew={(openDetail?.my_role != null ? openDetail : myTroop)!.member_count}
           level={(openDetail?.my_role != null ? openDetail : myTroop)!.level}
+          currentAura={(openDetail?.my_role != null ? openDetail : myTroop)!.aura_id ?? null}
           onClose={() => setShipOpen(false)}
           onGenerate={(prompt) => api.generateTroopShip(prompt)}
-          onSave={async (config) => {
-            const updated = await api.applyTroopShip(config)
+          onSave={async (config, aura) => {
+            const updated = await api.applyTroopShip(config, aura)
             setOpenDetail(updated)
             setMyTroop(updated)
-            setUniverse((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ship_config: updated.ship_config } : t)))
+            setUniverse((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ship_config: updated.ship_config, aura_id: updated.aura_id ?? null } : t)))
             showToast({ tone: 'success', title: 'Nave guardada', subtitle: updated.name })
           }}
         />

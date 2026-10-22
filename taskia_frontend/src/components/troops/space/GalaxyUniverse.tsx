@@ -2,6 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Crown, Medal, Minus, Plus } from '@phosphor-icons/react'
 import { ShipRenderer } from '../../ship/ShipRenderer'
 import { MY_SHIP_WIDTH, OTHER_SHIP_WIDTH, layoutShips } from '../../../lib/shipLayout'
+import { AURA_LOOK } from '../../../lib/ship/auraGl'
+import { createAuraLayer, type AuraLayer } from '../../../lib/ship/auraLayer'
 import { MAX_CREW } from '../../../lib/ship/types'
 import { skyTile } from '../../../lib/skyTile'
 import type { UniverseTroop } from '../../../lib/troopsTypes'
@@ -13,10 +15,10 @@ const SIDE_CARD_MIN_WIDTH = 900
 /**
  * Lo más lejos que se puede ver. Cuántas naves caben en pantalla depende del área del mundo que se ve, así que el zoom
  * mínimo sube con la pantalla (`ZOOM_FLOOR_AREA` px² de mundo como máximo): en un monitor grande no se ven más naves
- * a la vez que en uno chico, y el coste de dibujarlas queda acotado. Nunca baja de `ZOOM_MIN`.
+ * a la vez que en uno chico, y el coste de dibujarlas queda acotado (unas 6 en pantalla). Nunca baja de `ZOOM_MIN`.
  */
 const ZOOM_MIN = 0.5
-const ZOOM_FLOOR_AREA = 4_300_000
+const ZOOM_FLOOR_AREA = 2_300_000
 const ZOOM_MAX = 2.4
 /** Cuánto crece una nave al llegar al centro de la vista (1 = nada): las ajenas más; la propia ya es grande. */
 const BOOST_OTHER = 0.95
@@ -122,6 +124,10 @@ export function GalaxyUniverse({
   const shipEls = useRef(new Map<number, HTMLElement>())
   const labelEls = useRef(new Map<number, HTMLElement>())
   const artEls = useRef(new Map<number, HTMLElement>())
+  /** Alto sin escalar de cada nave (px de layout): sirve para centrar su aura. */
+  const shipHeights = useRef(new Map<number, number>())
+  const auraCanvas = useRef<HTMLCanvasElement>(null)
+  const auraLayer = useRef<AuraLayer | null>(null)
   /** Cómo reaccionan las naves al movimiento de la cámara: velocidad suavizada y muelles de cabeceo, retraso y empuje. */
   const motion = useRef({
     prevX: 0,
@@ -193,6 +199,8 @@ export function GalaxyUniverse({
     const cx = (w - inset) / 2
     const cy = (h - insetY) / 2
     const reach = 0.55 * Math.min(w - inset, h - insetY)
+    const auras = auraLayer.current?.items
+    if (auras) auras.length = 0
 
     for (const layer of SKY_LAYERS) {
       const el = skyEls.current.get(layer.id)
@@ -275,13 +283,47 @@ export function GalaxyUniverse({
       }
       el.style.transform = `translate(${(sx - spot.base / 2).toFixed(1)}px, ${(sy - spot.base / 4).toFixed(1)}px) scale(${scale.toFixed(3)})`
       el.style.zIndex = String(Math.round(scale * 100))
+      const look = auras && spot.troop.aura_id ? AURA_LOOK[spot.troop.aura_id] : undefined
+      if (auras && look && sx > -half * 2 && sx < w + half * 2 && sy > -half * 2 && sy < h + half * 2) {
+        let tall = shipHeights.current.get(spot.troop.id)
+        if (!tall) {
+          tall = el.offsetHeight
+          if (tall) shipHeights.current.set(spot.troop.id, tall)
+        }
+        const height = tall || spot.base / 2
+        const centerY = sy - spot.base / 4 + height / 2
+        auras.push({
+          kind: spot.troop.aura_id!,
+          rect: { left: sx - half, top: centerY - (height * scale) / 2, width: half * 2, height: height * scale },
+          a: look.a,
+          b: look.b,
+          c: look.c,
+          seed: spot.troop.id % 7,
+        })
+      }
       if (label) {
         label.style.visibility = visible ? 'visible' : 'hidden'
         label.style.transform = `translate(${sx.toFixed(1)}px, ${(sy + (spot.base / 4) * scale + 4).toFixed(1)}px) translateX(-50%)`
         label.style.zIndex = String(Math.round(scale * 100) + 1)
       }
     }
+    auraLayer.current?.render()
   }, [])
+
+  // El lienzo de las auras: uno solo para toda la galaxia.
+  useEffect(() => {
+    const canvas = auraCanvas.current
+    const stage = stageRef.current
+    if (!canvas || !stage) return
+    const layer = createAuraLayer(canvas, stage)
+    auraLayer.current = layer
+    layer?.setStill(reduced)
+    draw()
+    return () => {
+      layer?.dispose()
+      auraLayer.current = null
+    }
+  }, [draw, reduced])
 
   // Las naves recién montadas no tienen posición hasta que se dibujan: se colocan antes del primer pintado.
   useLayoutEffect(() => {
@@ -393,7 +435,7 @@ export function GalaxyUniverse({
   /** Zoom más lejano permitido en esta pantalla. */
   const minZoom = useCallback(() => {
     const stage = stageRef.current
-    return stage ? clamp(Math.sqrt((stage.clientWidth * stage.clientHeight) / ZOOM_FLOOR_AREA), ZOOM_MIN, 1) : ZOOM_MIN
+    return stage ? clamp(Math.sqrt((stage.clientWidth * stage.clientHeight) / ZOOM_FLOOR_AREA), ZOOM_MIN, ZOOM_MAX) : ZOOM_MIN
   }, [])
 
   const flyTo = useCallback(
@@ -675,6 +717,8 @@ export function GalaxyUniverse({
         {shooting && <span className="galaxy-shooting" />}
       </div>
 
+      <canvas ref={auraCanvas} className="galaxy-aura-gl" aria-hidden />
+
       <div className="galaxy-world" data-sky="1">
         {spots.map(({ troop, base, mine }) => {
           if (!active.has(troop.id)) return null
@@ -690,7 +734,7 @@ export function GalaxyUniverse({
                 className={`galaxy-ship${mine ? ' is-mine' : ''}${open ? ' is-open' : ''}${reduced ? ' is-still' : ''}`}
                 style={{ width: base, ...rhythm(troop.id) }}
               >
-                {mine && <span className="galaxy-aura" />}
+                {mine && !troop.aura_id && <span className="galaxy-aura" />}
                 <button
                   type="button"
                   className="galaxy-ship-hit"

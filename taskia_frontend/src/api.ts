@@ -20,6 +20,7 @@ import type {
   StudyWorldCourse,
 } from './lib/worldsTypes'
 import type { AvatarConfig } from './lib/avatar/types'
+import type { GlKind } from './lib/ship/auraGl'
 import type { ShipConfig } from './lib/ship/types'
 import type {
   StudyChatResponse,
@@ -773,10 +774,11 @@ export const api = {
       },
     )
   },
-  applyTroopShip(ship_config: ShipConfig) {
+  /** Guarda la nave y/o el aura (`null` quita el aura); lo que no se manda no se toca. */
+  applyTroopShip(ship_config: ShipConfig | undefined, aura_id?: GlKind | null) {
     return request<TroopDetail>('/troops/ship', {
       method: 'PATCH',
-      body: JSON.stringify({ ship_config }),
+      body: JSON.stringify({ ship_config, aura_id }),
     })
   },
 }

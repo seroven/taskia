@@ -17,6 +17,7 @@ import {
   PaintBucket,
   Rocket,
   Shapes,
+  Sparkle,
   Sticker,
   Warning,
   AirplaneTilt,
@@ -25,8 +26,12 @@ import {
 import { ColorPicker } from '../ui/ColorPicker'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { ModalShell } from '../ui/ModalShell'
+import { AuraBackdrop } from '../ship/AuraBackdrop'
+import { AuraShowcase } from '../ship/AuraShowcase'
 import { ShipRenderer } from '../ship/ShipRenderer'
 import { errorMessage } from '../../lib/errors'
+import type { GlKind } from '../../lib/ship/auraGl'
+import { AURAS, auraLabel, auraLevel } from '../../lib/ship/auras'
 import {
   MAX_CREW,
   PALETTE_PRESETS,
@@ -44,14 +49,16 @@ type Props = {
   crew: number
   /** Nivel de la tripulación: algunas piezas se desbloquean con él. */
   level: number
+  /** Aura que ya tiene la nave (`null` = ninguna). */
+  currentAura: GlKind | null
   onClose: () => void
-  onSave: (config: ShipConfig) => Promise<void>
+  onSave: (config: ShipConfig, aura: GlKind | null) => Promise<void>
   onGenerate: (prompt: string) => Promise<{ preview: ShipConfig; prompt: string }>
 }
 
 type SimpleSlot = 'hull' | 'cockpit' | 'nose' | 'wings' | 'tail' | 'top' | 'belly' | 'decal' | 'windows'
 type SlotKey = SimpleSlot | 'engine'
-type Tab = 'parts' | 'colors' | 'taskia'
+type Tab = 'parts' | 'colors' | 'aura' | 'taskia'
 
 const SLOTS: { key: SlotKey; label: string; icon: Icon }[] = [
   { key: 'hull', label: 'Casco', icon: Rocket },
@@ -76,6 +83,7 @@ const COLOR_FIELDS: { key: keyof ShipPalette; label: string }[] = [
 const TABS: { key: Tab; label: string; icon: Icon }[] = [
   { key: 'parts', label: 'Piezas', icon: Shapes },
   { key: 'colors', label: 'Colores', icon: PaintBucket },
+  { key: 'aura', label: 'Aura', icon: Sparkle },
   { key: 'taskia', label: 'Taskia', icon: MagicWand },
 ]
 
@@ -137,6 +145,53 @@ function OptionTile({
   )
 }
 
+/** Un aura puesta en la nave actual: la muestra se ve como quedaría. Las que piden más nivel salen bloqueadas. */
+function AuraTile({
+  label,
+  auraId,
+  config,
+  crew,
+  selected,
+  lockedUntil,
+  onPick,
+}: {
+  label: string
+  auraId: GlKind | null
+  config: ShipConfig
+  crew: number
+  selected: boolean
+  lockedUntil: number
+  onPick: () => void
+}) {
+  const locked = lockedUntil > 0
+  return (
+    <button
+      type="button"
+      className={`ship-tile${selected ? ' is-selected' : ''}${locked ? ' is-locked' : ''}`}
+      aria-pressed={selected}
+      aria-disabled={locked}
+      title={locked ? `Se desbloquea en el nivel ${lockedUntil} de la tripulación` : undefined}
+      onClick={locked ? undefined : onPick}
+    >
+      <span className="ship-tile-art aura-tile-art" data-aura={auraId ?? undefined}>
+        <ShipRenderer config={config} crew={crew} animate={false} />
+      </span>
+      <span className="ship-tile-name">{label}</span>
+      {locked && <small className="ship-tile-level">Nivel {lockedUntil}</small>}
+      {locked && (
+        <span className="ship-tile-lock" aria-hidden>
+          <Lock size={14} weight="fill" />
+        </span>
+      )}
+      {selected && (
+        <span className="ship-tile-check" aria-hidden>
+          <Check size={12} weight="bold" />
+        </span>
+      )}
+    </button>
+  )
+}
+
 /** Arma la nave pieza por pieza, o la pide a Taskia; lo que se ve en la vista previa es lo que se guarda. */
 export function ShipEditorModal({ open, onClose, ...form }: Props) {
   return (
@@ -155,8 +210,9 @@ export function ShipEditorModal({ open, onClose, ...form }: Props) {
   )
 }
 
-function ShipEditorForm({ current, crew, level, onClose, onSave, onGenerate }: Omit<Props, 'open'>) {
+function ShipEditorForm({ current, crew, level, currentAura, onClose, onSave, onGenerate }: Omit<Props, 'open'>) {
   const [draft, setDraft] = useState<ShipConfig>(current)
+  const [aura, setAura] = useState<GlKind | null>(currentAura)
   const [tab, setTab] = useState<Tab>('parts')
   const [slot, setSlot] = useState<SlotKey | null>(null)
   const [colorKey, setColorKey] = useState<keyof ShipPalette>('hull')
@@ -170,7 +226,7 @@ function ShipEditorForm({ current, crew, level, onClose, onSave, onGenerate }: O
   const bounce = useAnimationControls()
 
   const busy = aiBusy || saving
-  const changed = JSON.stringify(draft) !== JSON.stringify(current)
+  const changed = JSON.stringify(draft) !== JSON.stringify(current) || aura !== currentAura
   const shown = Math.min(Math.max(crew, 1), MAX_CREW)
 
   /** Todo cambio de la nave pasa por aquí: guarda el borrador, activa las animaciones y la hace rebotar un poco. */
@@ -179,6 +235,19 @@ function ShipEditorForm({ current, crew, level, onClose, onSave, onGenerate }: O
     setTouched(true)
     void bounce.start({ y: [0, -9, 0], rotate: [0, -1.6, 1, 0], transition: { duration: 0.55, ease: 'easeOut' } })
   }
+
+  /** Cambiar el aura: la nave da un salto con un pequeño latido y el aura nueva aparece con su animación. */
+  const pickAura = (next: GlKind | null) => {
+    if (next === aura) return
+    setAura(next)
+    setTouched(true)
+    void bounce.start({ y: [0, -14, 0], scale: [1, 1.05, 1], rotate: [0, 1.2, -0.8, 0], transition: { duration: 0.7, ease: 'easeOut' } })
+  }
+
+  /** Las libres primero (en su orden) y las bloqueadas al final, de menor a mayor nivel. */
+  const auraOrder = AURAS.map(({ id }) => ({ id, until: id === currentAura || auraLevel(id) <= level ? 0 : auraLevel(id) })).sort(
+    (x, y) => x.until - y.until,
+  )
 
   const slotMeta = SLOTS.find((s) => s.key === slot)
 
@@ -260,9 +329,11 @@ function ShipEditorForm({ current, crew, level, onClose, onSave, onGenerate }: O
     <>
       <div className="modal-panel-body ship-editor">
         <div className="ship-editor-preview">
-          <motion.div className="ship-editor-stage" animate={bounce}>
-            <ShipRenderer config={draft} crew={shown} edit={{ appear: touched }} label="Vista previa de la nave" />
-          </motion.div>
+          <AuraBackdrop aura={aura} className="ship-editor-stage">
+            <motion.div animate={bounce}>
+              <ShipRenderer config={draft} crew={shown} edit={{ appear: touched }} label="Vista previa de la nave" />
+            </motion.div>
+          </AuraBackdrop>
           <button type="button" className="ghost" disabled={busy} onClick={() => update(randomShip(`nave-${Date.now()}`, level))}>
             <DiceFive size={18} weight="bold" />
             Sorpréndeme
@@ -377,6 +448,21 @@ function ShipEditorForm({ current, crew, level, onClose, onSave, onGenerate }: O
                 </>
               )}
 
+              {tab === 'aura' && (
+                <>
+                  <h3 className="ship-pane-title">Aura</h3>
+                  <p className="ship-pane-lead">Un resplandor detrás de tu nave. Se desbloquean al subir de nivel la tripulación.</p>
+                  <AuraShowcase signature={auraOrder.map((a) => `${a.id}${a.until}`).join()}>
+                    <div className="ship-tiles">
+                      <AuraTile label="Sin aura" auraId={null} config={draft} crew={shown} selected={aura == null} lockedUntil={0} onPick={() => pickAura(null)} />
+                      {auraOrder.map(({ id, until }) => (
+                        <AuraTile key={id} label={auraLabel(id)} auraId={id} config={draft} crew={shown} selected={aura === id} lockedUntil={until} onPick={() => pickAura(id)} />
+                      ))}
+                    </div>
+                  </AuraShowcase>
+                </>
+              )}
+
               {tab === 'taskia' && (
                 <div className="ship-taskia">
                   <p className="ship-taskia-lead">
@@ -427,7 +513,7 @@ function ShipEditorForm({ current, crew, level, onClose, onSave, onGenerate }: O
               setSaving(true)
               setError(null)
               try {
-                await onSave(draft)
+                await onSave(draft, aura)
                 onClose()
               } catch (err) {
                 setError(errorMessage(err))

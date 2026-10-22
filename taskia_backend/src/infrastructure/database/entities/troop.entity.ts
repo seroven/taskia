@@ -15,6 +15,10 @@ export class Troop {
   @Column({ type: 'jsonb' })
   shipConfig!: unknown
 
+  /** Aura elegida para la nave (ver modules/troops/lib/auras.ts); `null` = sin aura. */
+  @Column({ type: 'varchar', length: 24, nullable: true })
+  auraId!: string | null
+
   /** XP acumulado de la tripulación (lo que ganan sus miembros mientras están en ella). Solo sube; da su nivel. */
   @Column({ type: 'bigint', default: 0 })
   xpTotal!: number

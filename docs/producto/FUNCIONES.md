@@ -425,8 +425,8 @@ Una **tripulación** es el equipo del explorador: hasta **10** compañeros. Se v
 
 | Rol | Puede |
 | --- | --- |
-| **Capitán** | Invitar, sacar miembros, elegir o cambiar **Copiloto**, aceptar/rechazar pedidos de unión, personalizar la nave (piezas, colores o IA) |
-| **Copiloto** | Invitar, aceptar/rechazar pedidos de unión, personalizar la nave |
+| **Capitán** | Invitar, sacar miembros, elegir o cambiar **Copiloto**, aceptar/rechazar pedidos de unión, personalizar la nave (piezas, colores, aura o IA) |
+| **Copiloto** | Invitar, aceptar/rechazar pedidos de unión, personalizar la nave (piezas, colores y aura) |
 | **Explorador** | Ver el universo, su tripulación y el ranking; pedir unirse si aún no tiene tripulación; salir cuando quiera |
 
 Quien crea la tripulación es Capitán. Solo se puede estar en **una** tripulación a la vez.

@@ -5,6 +5,7 @@ import { SHIP_GENERATE_SYSTEM } from '../../../prompts/ship.js'
 import { resolveUserAvatar } from '../../auth/lib/avatar-config.js'
 import { PRODUCT_TZ, troopProgressFromXp, weekStartMonday } from '../../../services/xp.js'
 import { AppError, extractJson, toInstantISO } from '../../../utils/helpers.js'
+import { checkAura, resolveAura } from '../lib/auras.js'
 import {
   DECALS,
   SHIP_LOCKS,
@@ -35,6 +36,7 @@ import {
   replaceCopilot,
   searchExplorers as searchExplorerRows,
   setInviteStatus,
+  setAura,
   setShipConfig,
   listShipConfigs,
   troopWeekXp,
@@ -137,6 +139,7 @@ async function loadTroopDetail(troopId: number, viewerId: number) {
     xp_week: xpWeek,
     rank: ranks.get(Number(troop.id)) ?? null,
     ship_config: resolveTroopShip(troop.shipConfig, Number(troop.id)),
+    aura_id: resolveAura(troop.auraId),
     created_at: toInstantISO(troop.createdAt) ?? '',
   }
 }
@@ -223,6 +226,7 @@ export async function getUniverse(req: TroopReq) {
         rank: ranks.get(id) ?? null,
         is_mine: myTroopId != null && id === myTroopId,
         ship_config: resolveTroopShip(r.ship_config, id),
+        aura_id: resolveAura(r.aura_id),
       }
     }),
   }
@@ -506,16 +510,22 @@ export async function updateShip(req: TroopReq) {
     throw new AppError('Solo el Capitán o el Copiloto pueden personalizar la nave')
   }
   const troopId = Number(membership.troop_id)
-  if (req.body.ship_config === undefined || req.body.ship_config === null) {
-    throw new AppError('Indica la nave')
-  }
+  const hasShip = req.body.ship_config !== undefined && req.body.ship_config !== null
+  const hasAura = req.body.aura_id !== undefined
+  if (!hasShip && !hasAura) throw new AppError('Indica la nave')
   const troop = await findTroop(troopId)
   if (!troop) throw new AppError('Tripulación no encontrada', 404)
-  // El servidor manda: una pieza aún bloqueada se cambia por una libre, salvo que la nave ya la tuviera.
-  await setShipConfig(
-    troopId,
-    sanitizeShipConfig(req.body.ship_config, `troop-${troopId}`, { level: troopLevel(troop), current: troop.shipConfig }),
-  )
+  const level = troopLevel(troop)
+  // El servidor manda. Antes de guardar nada se valida el aura, para no dejar la nave a medias si esta falla.
+  const aura = hasAura ? checkAura(req.body.aura_id, level, troop.auraId) : undefined
+  // Una pieza aún bloqueada se cambia por una libre, salvo que la nave ya la tuviera.
+  if (hasShip) {
+    await setShipConfig(
+      troopId,
+      sanitizeShipConfig(req.body.ship_config, `troop-${troopId}`, { level, current: troop.shipConfig }),
+    )
+  }
+  if (aura !== undefined) await setAura(troopId, aura)
   return loadTroopDetail(troopId, userId)
 }
 

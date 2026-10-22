@@ -507,6 +507,15 @@
   animation: galaxy-shoot 1.3s linear forwards;
 }
 
+/* Todas las auras en un solo lienzo WebGL, detrás de las naves (ver GalaxyUniverse y lib/ship/auraGl). */
+.galaxy-aura-gl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 /* Las naves se colocan en px desde la esquina de la vista (ver GalaxyUniverse). */
 .galaxy-world {
   position: absolute;

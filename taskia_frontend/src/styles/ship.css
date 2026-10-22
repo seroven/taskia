@@ -141,7 +141,113 @@
 }
 
 .ship-editor-stage {
+  width: 68%;
+}
+
+/* El botón de «Sorpréndeme» queda por encima del aura. */
+.ship-editor-preview > button {
+  position: relative;
+  z-index: 2;
+}
+
+/* El aura se sale de la caja de la nave: el panel la recorta con sus esquinas. */
+.ship-editor-preview {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Aura de una nave suelta (vista previa y ficha): su lienzo mide 1,5 × 1,15 veces la caja y queda centrado detrás. */
+.aura-backdrop {
+  position: relative;
+}
+
+.aura-backdrop-canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150%;
+  aspect-ratio: 150 / 115;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.aura-backdrop > :not(canvas) {
+  position: relative;
+}
+
+/* El aura al cambiarla: aparece con un golpe de escala y luz. */
+.aura-backdrop-canvas.is-pop {
+  animation: aura-pop 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes aura-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55);
+    filter: brightness(1.8) saturate(1.4);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.12);
+    filter: brightness(1.35) saturate(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura-backdrop-canvas.is-pop {
+    animation: none;
+  }
+}
+
+/* Selector de auras: un solo lienzo detrás de todas las muestras (ver AuraShowcase); la nave de cada una va encima. */
+.aura-showcase {
+  position: relative;
+  isolation: isolate;
+}
+
+.aura-showcase-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ship-tile .aura-tile-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+}
+
+.ship-tile .aura-tile-art .ship {
+  position: relative;
+  z-index: 2;
+  width: 58%;
+}
+
+/* Bloqueada: un velo apagado sobre la muestra entera (aura y nave). */
+.ship-tile.is-locked .aura-tile-art {
+  opacity: 1;
+  filter: none;
+}
+
+.ship-tile.is-locked .aura-tile-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--space-canvas-bg) 58%, transparent);
+  backdrop-filter: grayscale(0.9);
 }
 
 .ship-editor-preview .ship {
@@ -158,7 +264,7 @@
 
 .ship-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   padding: 4px;
   border-radius: 16px;
